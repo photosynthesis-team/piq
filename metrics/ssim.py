@@ -7,15 +7,16 @@ import torch
 
 import torch.nn.functional as F
 
-from typing import Union, Optional, Tuple, List
+from typing import Union
 
 
-def _fspecial_gauss_1d(size: int, sigma: float) -> torch.Tensor:
+def __fspecial_gauss_1d(size: int, sigma: float) -> torch.Tensor:
     """ Creates a 1-D gauss kernel.
 
     Args:
         size: The size of gauss kernel.
         sigma: Sigma of normal distribution.
+
     Returns:
         A 1D kernel.
     """
@@ -34,6 +35,7 @@ def gaussian_filter(to_blur: torch.Tensor, window: torch.Tensor) -> torch.Tensor
     Args:
         to_blur: A batch of tensors to be blured.
         window: 1-D gauss kernel.
+
     Returns:
         A batch of blurred tensors.
     """
@@ -43,9 +45,8 @@ def gaussian_filter(to_blur: torch.Tensor, window: torch.Tensor) -> torch.Tensor
     return out
 
 
-def compute_ssim(x: torch.Tensor, y: torch.Tensor, win: torch.Tensor, data_range: Union[float, int] = 255,
-                 size_average: bool = True, full: bool = False,
-                 k: Union[List[float, float], Tuple[float, float]] = (0.01, 0.03)) -> torch.Tensor:
+def __compute_ssim(x: torch.Tensor, y: torch.Tensor, win: torch.Tensor, data_range: Union[float, int] = 255,
+                   size_average: bool = True, full: bool = False, k1: float = 0.01, k2: float = 0.03) -> torch.Tensor:
     """Calculate Structural Similarity (SSIM) index for X and Y.
 
     Args:
@@ -55,12 +56,13 @@ def compute_ssim(x: torch.Tensor, y: torch.Tensor, win: torch.Tensor, data_range
         data_range: Value range of input images (usually 1.0 or 255).
         size_average: If size_average=True, ssim of all images will be averaged as a scalar.
         full: Return sc or not.
-        k: Constants used to avoid problems with negative covariances of input images.
+        k1: Algorithm parameter, K1 (small constant, see [1]).
+        k2: Algorithm parameter, K2 (small constant, see [1]).
+            Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
+
     Returns:
         Value of Structural Similarity (SSIM) index.
     """
-    k1, k2 = k
-
     c1 = (k1 * data_range)**2
     c2 = (k2 * data_range)**2
 
@@ -92,56 +94,59 @@ def compute_ssim(x: torch.Tensor, y: torch.Tensor, win: torch.Tensor, data_range
 
     if full:
         return ssim_val, cs
-    else:
-        return ssim_val
+
+    return ssim_val
 
 
 def structural_similarity(x: torch.Tensor, y: torch.Tensor, win_size: int = 11, win_sigma: float = 1.5,
-                          win: Optional[torch.Tensor] = None, data_range: Union[int, float] = 255,
-                          size_average: bool = True, full: bool = False,
-                          k: Union[List[float, float], Tuple[float, float]] = (0.01, 0.03)) -> torch.Tensor:
+                          data_range: Union[int, float] = 255, size_average: bool = True, full: bool = False,
+                          k1: float = 0.01, k2: float = 0.03) -> torch.Tensor:
     """Interface of Structural Similarity (SSIM) index.
 
     Args:
-        x: Batch of images, (N,C,H,W).
-        y: Batch of images, (N,C,H,W).
-        win_size: The size of gauss kernel.
+        x: Batch of images. Required to be 4D, channels first (N,C,H,W).
+        y: Batch of images. Required to be 4D, channels first (N,C,H,W).
+        win_size: The side-length of the sliding window used in comparison. Must be an odd value.
         win_sigma: Sigma of normal distribution.
-        win: 1-D gauss kernel. If None, a new kernel will be created according to win_size and win_sigma.
         data_range: Value range of input images (usually 1.0 or 255).
         size_average: If size_average=True, ssim of all images will be averaged as a scalar.
         full: Return sc or not.
-        k: scalar constants (K1, K2). Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
+        k1: Algorithm parameter, K1 (small constant, see [1]).
+        k2: Algorithm parameter, K2 (small constant, see [1]).
+            Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
+
     Returns:
         Value of Structural Similarity (SSIM) index.
+
+    References:
+        .. [1] Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P.
+           (2004). Image quality assessment: From error visibility to
+           structural similarity. IEEE Transactions on Image Processing,
+           13, 600-612.
+           https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
+           :DOI:`10.1109/TIP.2003.819861`
     """
-    if len(x.shape) != 4:
-        raise ValueError('Input images must be 4-d tensors.')
+    assert len(x.shape) == 4, f'Input images must be 4D tensors, got images of shape {x.shape}.'
+    assert x.type() == y.type(), f'Input images must have the same dtype, got {x.type()} and {y.type()}.'
+    assert x.shape == y.shape, f'Input images must have the same dimensions, got {x.shape} and {y.shape}.'
+    assert win_size % 2 == 1, f'Window size must be odd, got {win_size}.'
 
-    if not x.type() == y.type():
-        raise ValueError('Input images must have the same dtype.')
+    win = __fspecial_gauss_1d(win_size, win_sigma)
+    win = win.repeat(x.shape[1], 1, 1, 1)
 
-    if not x.shape == y.shape:
-        raise ValueError('Input images must have the same dimensions.')
-
-    if not (win_size % 2 == 1):
-        raise ValueError('Window size must be odd.')
-
-    win_sigma = win_sigma
-    if win is None:
-        win = _fspecial_gauss_1d(win_size, win_sigma)
-        win = win.repeat(x.shape[1], 1, 1, 1)
-
-    ssim_val, cs = compute_ssim(x, y,
-                                win=win,
-                                data_range=data_range,
-                                size_average=False,
-                                full=True, k=k)
+    ssim_val, cs = __compute_ssim(x=x,
+                                  y=y,
+                                  win=win,
+                                  data_range=data_range,
+                                  size_average=False,
+                                  full=True,
+                                  k1=k1,
+                                  k2=k2)
     if size_average:
         ssim_val = ssim_val.mean()
         cs = cs.mean()
 
     if full:
         return ssim_val, cs
-    else:
-        return ssim_val
+
+    return ssim_val
