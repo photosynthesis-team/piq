@@ -10,94 +10,6 @@ import torch.nn.functional as F
 from typing import Union
 
 
-def __fspecial_gauss_1d(size: int, sigma: float) -> torch.Tensor:
-    """ Creates a 1-D gauss kernel.
-
-    Args:
-        size: The size of gauss kernel.
-        sigma: Sigma of normal distribution.
-
-    Returns:
-        A 1D kernel.
-    """
-    coords = torch.arange(size).to(dtype=torch.float)
-    coords -= size//2
-
-    g = torch.exp(-(coords**2) / (2*sigma**2))
-    g /= g.sum()
-
-    return g.unsqueeze(0).unsqueeze(0)
-
-
-def gaussian_filter(to_blur: torch.Tensor, window: torch.Tensor) -> torch.Tensor:
-    """ Blur input with 1-D kernel.
-
-    Args:
-        to_blur: A batch of tensors to be blured.
-        window: 1-D gauss kernel.
-
-    Returns:
-        A batch of blurred tensors.
-    """
-    _, n_channels, _, _ = to_blur.shape
-    out = F.conv2d(to_blur, window, stride=1, padding=0, groups=n_channels)
-    out = F.conv2d(out, window.transpose(2, 3), stride=1, padding=0, groups=n_channels)
-    return out
-
-
-def __compute_ssim(x: torch.Tensor, y: torch.Tensor, win: torch.Tensor, data_range: Union[float, int] = 255,
-                   size_average: bool = True, full: bool = False, k1: float = 0.01, k2: float = 0.03) -> torch.Tensor:
-    """Calculate Structural Similarity (SSIM) index for X and Y.
-
-    Args:
-        x: Batch of images, (N,C,H,W).
-        y: Batch of images, (N,C,H,W).
-        win: 1-D gauss kernel.
-        data_range: Value range of input images (usually 1.0 or 255).
-        size_average: If size_average=True, ssim of all images will be averaged as a scalar.
-        full: Return sc or not.
-        k1: Algorithm parameter, K1 (small constant, see [1]).
-        k2: Algorithm parameter, K2 (small constant, see [1]).
-            Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
-
-    Returns:
-        Value of Structural Similarity (SSIM) index.
-    """
-    c1 = (k1 * data_range)**2
-    c2 = (k2 * data_range)**2
-
-    win = win.to(x.device, dtype=x.dtype)
-
-    mu1 = gaussian_filter(x, win)
-    mu2 = gaussian_filter(y, win)
-
-    mu1_sq = mu1.pow(2)
-    mu2_sq = mu2.pow(2)
-    mu1_mu2 = mu1 * mu2
-
-    compensation = 1.0
-    sigma1_sq = compensation * (gaussian_filter(x * x, win) - mu1_sq)
-    sigma2_sq = compensation * (gaussian_filter(y * y, win) - mu2_sq)
-    sigma12   = compensation * (gaussian_filter(x * y, win) - mu1_mu2)
-
-    # Set alpha = beta = gamma = 1.
-    cs_map = (2 * sigma12 + c2) / (sigma1_sq + sigma2_sq + c2)
-    ssim_map = ((2 * mu1_mu2 + c1) / (mu1_sq + mu2_sq + c1)) * cs_map
-
-    if size_average:
-        ssim_val = ssim_map.mean()
-        cs = cs_map.mean()
-    else:
-        # Reduce along CHW.
-        ssim_val = ssim_map.mean(-1).mean(-1).mean(-1)
-        cs = cs_map.mean(-1).mean(-1).mean(-1)
-
-    if full:
-        return ssim_val, cs
-
-    return ssim_val
-
-
 def structural_similarity(x: torch.Tensor, y: torch.Tensor, win_size: int = 11, win_sigma: float = 1.5,
                           data_range: Union[int, float] = 255, size_average: bool = True, full: bool = False,
                           k1: float = 0.01, k2: float = 0.03) -> torch.Tensor:
@@ -150,3 +62,91 @@ def structural_similarity(x: torch.Tensor, y: torch.Tensor, win_size: int = 11, 
         return ssim_val, cs
 
     return ssim_val
+
+
+def __fspecial_gauss_1d(size: int, sigma: float) -> torch.Tensor:
+    """ Creates a 1-D gauss kernel.
+
+    Args:
+        size: The size of gauss kernel.
+        sigma: Sigma of normal distribution.
+
+    Returns:
+        A 1D kernel.
+    """
+    coords = torch.arange(size).to(dtype=torch.float)
+    coords -= size//2
+
+    g = torch.exp(-(coords**2) / (2*sigma**2))
+    g /= g.sum()
+
+    return g.unsqueeze(0).unsqueeze(0)
+
+
+def __compute_ssim(x: torch.Tensor, y: torch.Tensor, win: torch.Tensor, data_range: Union[float, int] = 255,
+                   size_average: bool = True, full: bool = False, k1: float = 0.01, k2: float = 0.03) -> torch.Tensor:
+    """Calculate Structural Similarity (SSIM) index for X and Y.
+
+    Args:
+        x: Batch of images, (N,C,H,W).
+        y: Batch of images, (N,C,H,W).
+        win: 1-D gauss kernel.
+        data_range: Value range of input images (usually 1.0 or 255).
+        size_average: If size_average=True, ssim of all images will be averaged as a scalar.
+        full: Return sc or not.
+        k1: Algorithm parameter, K1 (small constant, see [1]).
+        k2: Algorithm parameter, K2 (small constant, see [1]).
+            Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
+
+    Returns:
+        Value of Structural Similarity (SSIM) index.
+    """
+    c1 = (k1 * data_range)**2
+    c2 = (k2 * data_range)**2
+
+    win = win.to(x.device, dtype=x.dtype)
+
+    mu1 = __gaussian_filter(x, win)
+    mu2 = __gaussian_filter(y, win)
+
+    mu1_sq = mu1.pow(2)
+    mu2_sq = mu2.pow(2)
+    mu1_mu2 = mu1 * mu2
+
+    compensation = 1.0
+    sigma1_sq = compensation * (__gaussian_filter(x * x, win) - mu1_sq)
+    sigma2_sq = compensation * (__gaussian_filter(y * y, win) - mu2_sq)
+    sigma12   = compensation * (__gaussian_filter(x * y, win) - mu1_mu2)
+
+    # Set alpha = beta = gamma = 1.
+    cs_map = (2 * sigma12 + c2) / (sigma1_sq + sigma2_sq + c2)
+    ssim_map = ((2 * mu1_mu2 + c1) / (mu1_sq + mu2_sq + c1)) * cs_map
+
+    if size_average:
+        ssim_val = ssim_map.mean()
+        cs = cs_map.mean()
+    else:
+        # Reduce along CHW.
+        ssim_val = ssim_map.mean(-1).mean(-1).mean(-1)
+        cs = cs_map.mean(-1).mean(-1).mean(-1)
+
+    if full:
+        return ssim_val, cs
+
+    return ssim_val
+
+
+def __gaussian_filter(to_blur: torch.Tensor, window: torch.Tensor) -> torch.Tensor:
+    """ Blur input with 1-D kernel.
+
+    Args:
+        to_blur: A batch of tensors to be blured.
+        window: 1-D gauss kernel.
+
+    Returns:
+        A batch of blurred tensors.
+    """
+    _, n_channels, _, _ = to_blur.shape
+    out = F.conv2d(to_blur, window, stride=1, padding=0, groups=n_channels)
+    out = F.conv2d(out, window.transpose(2, 3), stride=1, padding=0, groups=n_channels)
+    return out
