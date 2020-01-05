@@ -1,1 +1,1 @@
-from .ssim import ssim, ms_ssim
+from .ssim import ssim, ms_ssim, SSIMLoss, MultiScaleSSIMLoss
