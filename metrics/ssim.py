@@ -13,7 +13,7 @@ from typing import Union, Optional, List, Tuple
 def ssim(x: torch.Tensor, y: torch.Tensor, win_size: int = 11, win_sigma: float = 1.5,
          data_range: Union[int, float] = 255, size_average: bool = True, full: bool = False,
          k1: float = 0.01, k2: float = 0.03) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
-    """Interface of Structural Similarity (SSIM) index.
+    r"""Interface of Structural Similarity (SSIM) index.
 
     Args:
         x: Batch of images. Required to be 4D, channels first (N,C,H,W).
@@ -64,7 +64,7 @@ def ssim(x: torch.Tensor, y: torch.Tensor, win_size: int = 11, win_sigma: float 
 def ms_ssim(x: torch.Tensor, y: torch.Tensor, win_size: int = 11, win_sigma: float = 1.5,
             data_range: Union[int, float] = 255, size_average: bool = True,
             weights: Optional[Union[Tuple[float], List[float]]] = None, k1=0.01, k2=0.03) -> torch.Tensor:
-    """ Interface of Multi-scale Structural Similarity (MS-SSIM) index.
+    r""" Interface of Multi-scale Structural Similarity (MS-SSIM) index.
 
     Args:
         x: Batch of images. Required to be 4D, channels first (N,C,H,W).
@@ -154,7 +154,7 @@ def __validate_input(x: torch.Tensor, y: torch.Tensor, win_size: int,
 
 
 def __fspecial_gauss_1d(size: int, sigma: float) -> torch.Tensor:
-    """ Creates a 1-D gauss kernel.
+    r""" Creates a 1-D gauss kernel.
 
     Args:
         size: The size of gauss kernel.
@@ -175,7 +175,7 @@ def __fspecial_gauss_1d(size: int, sigma: float) -> torch.Tensor:
 def __compute_ssim(x: torch.Tensor, y: torch.Tensor, win: torch.Tensor, data_range: Union[float, int] = 255,
                    size_average: bool = True, full: bool = False, k1: float = 0.01, k2: float = 0.03) \
         -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
-    """Calculate Structural Similarity (SSIM) index for X and Y.
+    r"""Calculate Structural Similarity (SSIM) index for X and Y.
 
     Args:
         x: Batch of images, (N,C,H,W).
@@ -227,7 +227,7 @@ def __compute_ssim(x: torch.Tensor, y: torch.Tensor, win: torch.Tensor, data_ran
 
 
 def __gaussian_filter(to_blur: torch.Tensor, window: torch.Tensor) -> torch.Tensor:
-    """ Blur input with 1-D kernel.
+    r""" Blur input with 1-D kernel.
 
     Args:
         to_blur: A batch of tensors to be blured.
