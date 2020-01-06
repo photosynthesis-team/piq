@@ -185,9 +185,9 @@ class SSIMLoss(_Loss):
         return torch.tensor(1) - ret
 
 
-def ms_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: float = 1.5,
-            data_range: Union[int, float] = 255, size_average: bool = True,
-            scale_weights: Optional[Union[Tuple[float], List[float]]] = None, k1=0.01, k2=0.03) -> torch.Tensor:
+def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: float = 1.5,
+                     data_range: Union[int, float] = 255, size_average: bool = True,
+                     scale_weights: Optional[Union[Tuple[float], List[float]]] = None, k1=0.01, k2=0.03) -> torch.Tensor:
     r""" Interface of Multi-scale Structural Similarity (MS-SSIM) index.
 
     Args:
@@ -230,13 +230,13 @@ def ms_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigm
     kernel = _fspecial_gauss_1d(kernel_size, kernel_sigma)
     kernel = kernel.repeat(x.shape[1], 1, 1, 1)
 
-    msssim_val = _compute_ms_ssim(x=x,
-                                  y=y,
-                                  data_range=data_range,
-                                  kernel=kernel,
-                                  scale_weights_tensor=scale_weights_tensor,
-                                  k1=k1,
-                                  k2=k2)
+    msssim_val = _compute_multi_scale_ssim(x=x,
+                                           y=y,
+                                           data_range=data_range,
+                                           kernel=kernel,
+                                           scale_weights_tensor=scale_weights_tensor,
+                                           k1=k1,
+                                           k2=k2)
 
     if size_average:
         msssim_val = msssim_val.mean()
@@ -358,13 +358,13 @@ class MultiScaleSSIMLoss(_Loss):
         kernel = self.kernel.repeat(prediction.shape[1], 1, 1, 1)
         self.scale_weights_tensor.to(device=prediction.device)
 
-        ret = _compute_ms_ssim(x=prediction,
-                               y=target,
-                               data_range=data_range,
-                               kernel=kernel,
-                               scale_weights_tensor=self.scale_weights_tensor,
-                               k1=self.k1,
-                               k2=self.k2)
+        ret = _compute_multi_scale_ssim(x=prediction,
+                                        y=target,
+                                        data_range=data_range,
+                                        kernel=kernel,
+                                        scale_weights_tensor=self.scale_weights_tensor,
+                                        k1=self.k1,
+                                        k2=self.k2)
 
         if self.reduction != 'none':
             ret = torch.mean(ret) if self.reduction == 'mean' else torch.sum(ret)
@@ -479,8 +479,8 @@ def _compute_ssim(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, data_r
     return ssim_val
 
 
-def _compute_ms_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float], kernel: torch.Tensor,
-                     scale_weights_tensor: torch.Tensor, k1: float, k2: float) -> torch.Tensor:
+def _compute_multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float], kernel: torch.Tensor,
+                              scale_weights_tensor: torch.Tensor, k1: float, k2: float) -> torch.Tensor:
     levels = scale_weights_tensor.shape[0]
     mcs = []
     ssim_val = None
