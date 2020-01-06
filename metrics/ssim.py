@@ -182,7 +182,7 @@ class SSIMLoss(_Loss):
         if self.reduction != 'none':
             ret = torch.mean(ret) if self.reduction == 'mean' else torch.sum(ret)
 
-        return torch.tensor(1) - ret
+        return ret
 
 
 def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: float = 1.5,
@@ -369,7 +369,7 @@ class MultiScaleSSIMLoss(_Loss):
         if self.reduction != 'none':
             ret = torch.mean(ret) if self.reduction == 'mean' else torch.sum(ret)
 
-        return torch.tensor(1) - ret
+        return ret
 
 
 def _adjust_dimensions(x: torch.Tensor, y: torch.Tensor):
