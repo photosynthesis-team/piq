@@ -43,7 +43,7 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
            https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
            :DOI:`10.1109/TIP.2003.819861`
     """
-    _validate_input(x=x, y=y, kernel_size=kernel_size, weights=None)
+    _validate_input(x=x, y=y, kernel_size=kernel_size, scale_weights=None)
 
     kernel = _fspecial_gauss_1d(kernel_size, kernel_sigma)
     kernel = kernel.repeat(x.shape[1], 1, 1, 1)
@@ -220,7 +220,7 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
            https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
            :DOI:`10.1109/TIP.2003.819861`
     """
-    _validate_input(x=x, y=y, kernel_size=kernel_size, weights=scale_weights)
+    _validate_input(x=x, y=y, kernel_size=kernel_size, scale_weights=scale_weights)
 
     if scale_weights is None:
         scale_weights_from_ms_ssim_paper = [0.0448, 0.2856, 0.3001, 0.2363, 0.1333]
@@ -389,21 +389,17 @@ def _adjust_dimensions(x: torch.Tensor, y: torch.Tensor):
 
 
 def _validate_input(x: torch.Tensor, y: torch.Tensor, kernel_size: int,
-                    weights: Union[Optional[Tuple[float]], Optional[List[float]]]) -> None:
+                    scale_weights: Union[Optional[Tuple[float]], Optional[List[float]]]) -> None:
     assert len(x.shape) == 4, f'Input images must be 4D tensors, got images of shape {x.shape}.'
     assert x.type() == y.type(), f'Input images must have the same dtype, got {x.type()} and {y.type()}.'
     assert x.shape == y.shape, f'Input images must have the same dimensions, got {x.shape} and {y.shape}.'
     assert kernel_size % 2 == 1, f'Kernel size must be odd, got {kernel_size}.'
-    if weights is None:
+    if scale_weights is None:
         return
 
-    assert type(weights) in (list, tuple, torch.Tensor), \
-        f'Scale weights must be of type list or tuple, got {type(weights)}.'
-    if type(weights) in (list, tuple):
-        assert len(weights) == 4, f'Scale weights collection must contain 4 values, got {len(weights)}.'
-        return
-
-    assert weights.shape[0] == 4, f'Scale weights collection must contain 4 values, got {weights.shape[0]}.'
+    assert type(scale_weights) in (list, tuple), \
+        f'Scale weights must be of type list or tuple, got {type(scale_weights)}.'
+    assert len(scale_weights) == 4, f'Scale weights collection must contain 4 values, got {len(scale_weights)}.'
 
 
 def _fspecial_gauss_1d(size: int, sigma: float) -> torch.Tensor:
