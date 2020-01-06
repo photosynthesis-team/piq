@@ -164,7 +164,7 @@ class SSIMLoss(_Loss):
                 The pixel value interval of both input and output should remain the same.
 
         Returns:
-            Value of SSIM loss to be minimized (1 - SSIM). 0 <= SSIM loss <= 1.
+            Value of SSIM loss to be minimized. 0 <= SSIM loss <= 1.
         """
         prediction, target = _adjust_dimensions(x=prediction, y=target)
         kernel = self.kernel.repeat(prediction.shape[1], 1, 1, 1)
@@ -175,7 +175,7 @@ class SSIMLoss(_Loss):
                             kernel=kernel,
                             data_range=data_range,
                             size_average=False,
-                            full=True,
+                            full=False,
                             k1=self.k1,
                             k2=self.k2)
 
@@ -352,7 +352,7 @@ class MultiScaleSSIMLoss(_Loss):
                 The pixel value interval of both input and output should remain the same.
 
         Returns:
-            Value of MS-SSIM loss to be minimized (1 - MS-SSIM). 0 <= MS-SSIM loss <= 1.
+            Value of MS-SSIM loss to be minimized. 0 <= MS-SSIM loss <= 1.
         """
         prediction, target = _adjust_dimensions(x=prediction, y=target)
         kernel = self.kernel.repeat(prediction.shape[1], 1, 1, 1)
