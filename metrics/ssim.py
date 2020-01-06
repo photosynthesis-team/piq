@@ -66,7 +66,6 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
     return ssim_val
 
 
-
 class SSIMLoss(_Loss):
     r"""Creates a criterion that measures the structural similarity index error between
     each element in the input :math:`x` and target :math:`y`.
@@ -152,7 +151,6 @@ class SSIMLoss(_Loss):
         # Cash kernel between calls.
         self.kernel = _fspecial_gauss_1d(kernel_size, kernel_sigma)
 
-
     def forward(self, prediction: torch.Tensor, target: torch.Tensor, data_range: Union[int, float] = 255) \
             -> torch.Tensor:
         r"""Computation of Structural Similarity (SSIM) index as a loss function.
@@ -173,13 +171,13 @@ class SSIMLoss(_Loss):
         kernel = kernel.to(device=prediction.device)
 
         ret = _compute_ssim(x=prediction,
-                                     y=target,
-                                     kernel=kernel,
-                                     data_range=data_range,
-                                     size_average=False,
-                                     full=True,
-                                     k1=self.k1,
-                                     k2=self.k2)
+                            y=target,
+                            kernel=kernel,
+                            data_range=data_range,
+                            size_average=False,
+                            full=True,
+                            k1=self.k1,
+                            k2=self.k2)
 
         if self.reduction != 'none':
             ret = torch.mean(ret) if self.reduction == 'mean' else torch.sum(ret)
@@ -361,12 +359,12 @@ class MultiScaleSSIMLoss(_Loss):
         self.scale_weights_tensor.to(device=prediction.device)
 
         ret = _compute_ms_ssim(x=prediction,
-                                       y=target,
-                                       data_range=data_range,
-                                       kernel=kernel,
-                                       scale_weights_tensor=self.scale_weights_tensor,
-                                       k1=self.k1,
-                                       k2=self.k2)
+                               y=target,
+                               data_range=data_range,
+                               kernel=kernel,
+                               scale_weights_tensor=self.scale_weights_tensor,
+                               k1=self.k1,
+                               k2=self.k2)
 
         if self.reduction != 'none':
             ret = torch.mean(ret) if self.reduction == 'mean' else torch.sum(ret)
@@ -421,7 +419,7 @@ def _fspecial_gauss_1d(size: int, sigma: float) -> torch.Tensor:
     coords = torch.arange(size).to(dtype=torch.float)
     coords -= size//2
 
-    g = torch.exp(-(coords**2) / (2*sigma**2))
+    g = torch.exp(-(coords**2) / (2 * sigma**2))
     g /= g.sum()
 
     return g.unsqueeze(0).unsqueeze(0)
@@ -508,7 +506,6 @@ def _compute_ms_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, fl
                             (ssim_val ** scale_weights_tensor[-1]), dim=0)
 
     return msssim_val
-
 
 
 def _gaussian_filter(to_blur: torch.Tensor, window: torch.Tensor) -> torch.Tensor:
