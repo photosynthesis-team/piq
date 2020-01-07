@@ -390,8 +390,8 @@ def _adjust_dimensions(x: torch.Tensor, y: torch.Tensor):
 
 def _validate_input(x: torch.Tensor, y: torch.Tensor, kernel_size: int,
                     scale_weights: Union[Optional[Tuple[float]], Optional[List[float]]]) -> None:
+    assert type(x) == type(y) == torch.Tensor, f'Both images must be torch.Tensors, got {type(x)} and {type(y)}.'
     assert len(x.shape) == 4, f'Input images must be 4D tensors, got images of shape {x.shape}.'
-    assert x.type() == y.type(), f'Input images must have the same dtype, got {x.type()} and {y.type()}.'
     assert x.shape == y.shape, f'Input images must have the same dimensions, got {x.shape} and {y.shape}.'
     assert kernel_size % 2 == 1, f'Kernel size must be odd, got {kernel_size}.'
     if scale_weights is None:
