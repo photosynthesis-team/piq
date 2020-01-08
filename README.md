@@ -1,4 +1,6 @@
 # PhotoSynthesis.Metrics
+![CI flake-8 style check](https://github.com/photosynthesis-team/photosynthesis.metrics/workflows/flake-8%20style%20check/badge.svg)
+![CI testing](https://github.com/photosynthesis-team/photosynthesis.metrics/workflows/testing/badge.svg)
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
