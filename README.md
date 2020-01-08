@@ -53,7 +53,7 @@ from metrics import ssim
 
 prediction = torch.rand(3, 3, 256, 256)
 target = torch.rand(3, 3, 256, 256)
-ssim_index = ssim(prediction, target)
+ssim_index = ssim(prediction, target, data_range=1.)
 ```
 
 In order to use SSIM as a loss function, use corresponding PyTorch module:
@@ -67,7 +67,7 @@ from metrics import SSIMLoss
 loss = SSIMLoss()
 prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
 target = torch.rand(3, 3, 256, 256)
-output = loss(prediction, target, max_val=1.)
+output = loss(prediction, target, data_range=1.)
 output.backward()
 ``` 
 
