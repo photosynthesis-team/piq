@@ -1,6 +1,6 @@
 # PhotoSynthesis.Metrics
-![CI flake-8 style check](https://github.com/photosynthesis-team/photosynthesis.metrics/workflows/flake-8%20style%20check/badge.svg)
-![CI testing](https://github.com/photosynthesis-team/photosynthesis.metrics/workflows/testing/badge.svg)
+![CI flake-8 style check][ci-flake-8-style-check-shield]
+![CI testing][ci-testing]  
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
@@ -29,8 +29,7 @@ various image-to-image tasks like denoising, super-resolution, image generation 
 
 ### Prerequisites
 
-* [PyTorch 1.3+](https://pytorch.org) :white_check_mark:
-* [segmentation_models.pytorch 0.1.0+](https://github.com/qubvel/segmentation_models.pytorch) :white_check_mark:  
+* [PyTorch 1.3+](https://pytorch.org) :white_check_mark:  
 
 ### Installation
  
@@ -44,11 +43,34 @@ Wheel and pip installations will be added later.
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-```python
-from photosynthesis_metrics.fid import compute_fid
+To compute measure or metric, for instance SSIM index, use lower case function from the library:  
 
-fid = compute_fid(gt_stack, denoised_stack)
+```python
+import torch
+
+from metrics import ssim
+
+
+prediction = torch.rand(3, 3, 256, 256)
+target = torch.rand(3, 3, 256, 256)
+ssim_index = ssim(prediction, target)
 ```
+
+In order to use SSIM as a loss function, use corresponding PyTorch module:
+
+```python
+import torch
+
+from metrics import SSIMLoss
+
+
+loss = SSIMLoss()
+prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+target = torch.rand(3, 3, 256, 256)
+output = loss(prediction, target, max_val=1.)
+output.backward()
+``` 
+
 <!-- ROADMAP -->
 ## Roadmap
 
@@ -98,3 +120,5 @@ PhotoSynthesis.Models: [https://github.com/photosynthesis-team/photosynthesis.mo
 [license-url]: https://github.com/photosynthesis-team/photosynthesis.metrics/blob/master/LICENSE
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=flat-square&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/in/sergey-kastryulin/
+[ci-flake-8-style-check-shield]: https://github.com/photosynthesis-team/photosynthesis.metrics/workflows/flake-8%20style%20check/badge.svg
+[ci-testing]: https://github.com/photosynthesis-team/photosynthesis.metrics/workflows/testing/badge.svg
