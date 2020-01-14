@@ -1,5 +1,4 @@
 name: deployment to pypi
-description: Upload Photosynthesis.Metrics Python distribution to PyPI
 
 # Trigger upload only on tagged commits in master.
 if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
