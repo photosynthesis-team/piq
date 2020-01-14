@@ -1,7 +1,7 @@
 import torch
 import pytest
 
-from metrics import ssim, SSIMLoss
+from photosynthesis_metrics import ssim, SSIMLoss
 
 
 @pytest.fixture(scope='module')

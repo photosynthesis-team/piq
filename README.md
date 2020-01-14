@@ -48,7 +48,7 @@ To compute measure or metric, for instance SSIM index, use lower case function f
 ```python
 import torch
 
-from metrics import ssim
+from photosynthesis_metrics import ssim
 
 
 prediction = torch.rand(3, 3, 256, 256)
@@ -61,7 +61,7 @@ In order to use SSIM as a loss function, use corresponding PyTorch module:
 ```python
 import torch
 
-from metrics import SSIMLoss
+from photosynthesis_metrics import SSIMLoss
 
 
 loss = SSIMLoss()
