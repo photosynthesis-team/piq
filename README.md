@@ -89,6 +89,11 @@ Contributions are what make the open source community such an amazing place to b
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
+Please follow [Google Python style guide](http://google.github.io/styleguide/pyguide.html) as a guidance on your code style 
+decisions. The code will be checked with [flake-8 linter](http://flake8.pycqa.org/en/latest/) during the CI pipeline. 
+Use [commitizen](https://github.com/commitizen/cz-cli) commit style where possible for simplification of understanding of 
+performed changes.    
+
 
 <!-- LICENSE -->
 ## License
