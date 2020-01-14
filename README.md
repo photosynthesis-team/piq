@@ -3,6 +3,7 @@
 ![CI testing][ci-testing]  
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
+[![PyPI version][pypi-version-shield]][pypi-version-url]
 
 
 <!-- TABLE OF CONTENTS -->
@@ -127,3 +128,5 @@ PhotoSynthesis.Models: [https://github.com/photosynthesis-team/photosynthesis.mo
 [linkedin-url]: https://www.linkedin.com/in/sergey-kastryulin/
 [ci-flake-8-style-check-shield]: https://github.com/photosynthesis-team/photosynthesis.metrics/workflows/flake-8%20style%20check/badge.svg
 [ci-testing]: https://github.com/photosynthesis-team/photosynthesis.metrics/workflows/testing/badge.svg
+[pypi-version-shield]: https://badge.fury.io/py/photosynthesis-metrics.svg
+[pypi-version-url]: https://badge.fury.io/py/photosynthesis-metrics
