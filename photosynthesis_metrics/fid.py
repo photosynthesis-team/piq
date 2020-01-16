@@ -1,8 +1,28 @@
+import torch
+
 import numpy as np
 
 from scipy import linalg
+from typing import Tuple, Optional
+from torch import nn
 
-from typing import Tuple
+
+def frechet_inception_distance(predicted_images: torch.Tensor, target_images: torch.Tensor,
+                               feature_extractor: Optional[nn.Module] = None) -> float:
+    assert isinstance(predicted_images, torch.Tensor) and isinstance(target_images, torch.Tensor), \
+        f'Both image stacks must be of type torch.Tensor, got {type(predicted_images)} and {type(target_images)}.'
+
+    # There is no assert for the full equality of shapes because it is not required.
+    # Stacks can have any number of elements, but shapes of feature maps obtained from the images need to be equal.
+    # Otherwise it will not be possible to correctly compute statistics.
+    predicted_image_shape, target_image_shape = predicted_images.shape[1:], target_images.shape[1:]
+    assert predicted_image_shape == target_image_shape, \
+        f'Both image stacks must have images of the same shape, got {predicted_image_shape} and {target_image_shape}.'
+    assert isinstance(feature_extractor, nn.Module) or feature_extractor is None, \
+        f'Only PyTorch models are supported as feature extractors, got {type(feature_extractor)}.'
+
+    if feature_extractor is None:
+        print('WARNING: default feature extractor (InceptionNet V2) is used.')
 
 
 def __compute_fid(mu1: float, sigma1: np.ndarray, mu2: float, sigma2: np.ndarray, eps=1e-6) -> float:
