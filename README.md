@@ -122,7 +122,7 @@ PhotoSynthesis.Models: [https://github.com/photosynthesis-team/photosynthesis.mo
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[license-shield]: https://img.shields.io/github/license/othneildrew/Best-README-Template.svg?style=flat-square
+[license-shield]: https://img.shields.io/badge/License-Apache%202.0-blue.svg
 [license-url]: https://github.com/photosynthesis-team/photosynthesis.metrics/blob/master/LICENSE
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=flat-square&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/in/sergey-kastryulin/
