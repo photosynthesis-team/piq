@@ -6,6 +6,8 @@ from scipy import linalg
 from typing import Tuple, Optional
 from torch import nn
 
+from photosynthesis_metrics.feature_extractors.fid_inception import InceptionV3
+
 
 def frechet_inception_distance(predicted_images: torch.Tensor, target_images: torch.Tensor,
                                feature_extractor: Optional[nn.Module] = None) -> float:
@@ -23,6 +25,13 @@ def frechet_inception_distance(predicted_images: torch.Tensor, target_images: to
 
     if feature_extractor is None:
         print('WARNING: default feature extractor (InceptionNet V2) is used.')
+        feature_extractor = InceptionV3()
+
+    predicted_features = torch.stack([feature_extractor(img) for img in predicted_images], dim=0)
+    target_features = torch.stack([feature_extractor(img) for img in target_images], dim=0)
+
+    # TODO: `compute_fid` works with np.arrays, but need to work with torch.Tensors. Refactor that
+    return compute_fid(predicted_features, target_features)
 
 
 def __compute_fid(mu1: float, sigma1: np.ndarray, mu2: float, sigma2: np.ndarray, eps=1e-6) -> float:
