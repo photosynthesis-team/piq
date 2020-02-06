@@ -14,6 +14,8 @@ import torch.nn.functional as f
 from torch.nn.modules.loss import _Loss
 from typing import Union, Optional, List, Tuple
 
+from .utils import _adjust_dimensions, _validate_input
+
 
 def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: float = 1.5,
          data_range: Union[int, float] = 255, size_average: bool = True, full: bool = False,
@@ -370,37 +372,6 @@ class MultiScaleSSIMLoss(_Loss):
             ret = torch.mean(ret) if self.reduction == 'mean' else torch.sum(ret)
 
         return ret
-
-
-def _adjust_dimensions(x: torch.Tensor, y: torch.Tensor):
-    # TODO: try to move this block in __compute_ssim since it is very general.
-    # TODO: add support of 5D tensors here or in the __compute_ssim function.
-    num_dimentions = x.dim()
-    if num_dimentions == 2:
-        x = x.expand(1, 1, *x.shape)
-        y = y.expand(1, 1, *y.shape)
-    elif num_dimentions == 3:
-        x = x.expand(1, *x.shape)
-        y = y.expand(1, *y.shape)
-    elif num_dimentions != 4:
-        raise ValueError('Expected 2, 3, or 4 dimensions (got {})'.format(num_dimentions))
-
-    return x, y
-
-
-def _validate_input(x: torch.Tensor, y: torch.Tensor, kernel_size: int,
-                    scale_weights: Union[Optional[Tuple[float]], Optional[List[float]]]) -> None:
-    assert isinstance(x, torch.Tensor) and isinstance(y, torch.Tensor),\
-        f'Both images must be torch.Tensors, got {type(x)} and {type(y)}.'
-    assert len(x.shape) == 4, f'Input images must be 4D tensors, got images of shape {x.shape}.'
-    assert x.shape == y.shape, f'Input images must have the same dimensions, got {x.shape} and {y.shape}.'
-    assert kernel_size % 2 == 1, f'Kernel size must be odd, got {kernel_size}.'
-    if scale_weights is None:
-        return
-
-    assert isinstance(scale_weights, (list, tuple)), \
-        f'Scale weights must be of type list or tuple, got {type(scale_weights)}.'
-    assert len(scale_weights) == 4, f'Scale weights collection must contain 4 values, got {len(scale_weights)}.'
 
 
 def _fspecial_gauss_1d(size: int, sigma: float) -> torch.Tensor:
