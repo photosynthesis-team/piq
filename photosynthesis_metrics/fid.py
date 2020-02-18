@@ -27,8 +27,8 @@ def frechet_inception_distance(predicted_images: torch.Tensor, target_images: to
         print('WARNING: default feature extractor (InceptionNet V2) is used.')
         feature_extractor = InceptionV3()
 
-    predicted_features = torch.stack([feature_extractor(img) for img in predicted_images], dim=0)
-    target_features = torch.stack([feature_extractor(img) for img in target_images], dim=0)
+    predicted_features = feature_extractor(predicted_images)
+    target_features = feature_extractor(target_images)
 
     # TODO: `compute_fid` works with np.arrays, but need to work with torch.Tensors. Refactor that
     return compute_fid(predicted_features, target_features)
