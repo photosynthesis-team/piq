@@ -2,22 +2,22 @@ r"""Implemetation of Multi-scale Evaluation metric, based on paper
  https://arxiv.org/abs/1905.11141 and author's repository https://github.com/xgfs/msid
 """
 from functools import partial
-from typing import List
+from typing import List, Tuple, Optional
 
 import torch
-import torch.nn.functional as f
 import torch.nn as nn
 import numpy as np
 
 import scipy.sparse as sps
 from scipy.sparse import lil_matrix, diags, eye
+# from pykgraph import KGraph  # Not used for with sparce builder
 
 from .utils import _validate_input
 EPSILON = 1e-6
 NORMALIZATION = 1e6
 
 # ---- laplacian.py
-def np_euc_cdist(data):
+def _np_euc_cdist(data : np.ndarray) -> np.ndarray: 
     dd = np.sum(data*data, axis=1)
     dist = -2*np.dot(data, data.T)
     dist += dd + dd[:, np.newaxis] 
@@ -26,7 +26,7 @@ def np_euc_cdist(data):
     return dist
 
 
-def construct_graph_sparse(data, k):
+def _construct_graph_sparse(data : np.ndarray, k: int):
     n = len(data)
     spmat = lil_matrix((n, n))
     dd = np.sum(data*data, axis=1)
@@ -40,19 +40,18 @@ def construct_graph_sparse(data, k):
     return spmat.tocsr()
 
 
-def construct_graph_kgraph(data, k):
-    import pykgraph
+def _construct_graph_kgraph(data : np.ndarray, k : int):
 
     n = len(data)
     spmat = lil_matrix((n, n))
-    index = pykgraph.KGraph(data, 'euclidean')
+    index = KGraph(data, 'euclidean')
     index.build(reverse=0, K=2 * k + 1, L=2 * k + 50)
     result = index.search(data, K=k + 1)[:, 1:]
     spmat[np.repeat(np.arange(n), k, 0), result.ravel()] = 1
     return spmat.tocsr()
 
 
-def _laplacian_sparse(A, normalized=True):
+def _laplacian_sparse(A : np.ndarray, normalized : bool = True):
     D = A.sum(1).A1
     if normalized:
         Dsqrt = diags(1/np.sqrt(D))
@@ -63,8 +62,8 @@ def _laplacian_sparse(A, normalized=True):
 
 ## -------- slq.py
 
-def _lanczos_m(A, m, nv, rademacher, SV=None):
-    '''
+def _lanczos_m(A : np.ndarray, m : int, nv : int, rademacher : bool, SV : np.ndarray = None) -> Tuple[np.ndarray, np.ndarray]:
+    r"""
     Lanczos algorithm computes symmetric m x m tridiagonal matrix T and matrix V with orthogonal rows
         constituting the basis of the Krylov subspace K_m(A, x),
         where x is an arbitrary starting unit vector.
@@ -80,7 +79,7 @@ def _lanczos_m(A, m, nv, rademacher, SV=None):
     Returns:
         T: a nv x m x m tensor, T[i, :, :] is the ith symmetric tridiagonal matrix
         V: a n x m x nv tensor, V[:, :, i] is the ith matrix with orthogonal rows 
-    '''
+    """
     orthtol = 1e-5
     if type(SV) != np.ndarray:
         if rademacher:
@@ -148,8 +147,8 @@ def _lanczos_m(A, m, nv, rademacher, SV=None):
     return T, V
 
 
-def _slq(A, m, niters, rademacher):
-    '''
+def _slq(A : np.ndarray, m : int, niters : int, rademacher : bool) -> np.ndarray:
+    r"""
     Compute the trace of matrix exponential
     
     Arguments:
@@ -159,7 +158,7 @@ def _slq(A, m, niters, rademacher):
         rademacher: True to use Rademacher distribution, False - standard normal for random vectors in Hutchinson
     Returns:
         trace: estimate of trace of matrix exponential
-    '''
+    """
     T, _ = _lanczos_m(A, m, niters, rademacher)
     eigvals, eigvecs = np.linalg.eigh(T)
     expeig = np.exp(eigvals)
@@ -168,8 +167,8 @@ def _slq(A, m, niters, rademacher):
     return trace
 
 
-def _slq_ts(A, m, niters, ts, rademacher):
-    '''
+def _slq_ts(A : np.ndarray, m : int, niters : int, ts : np.ndarray, rademacher : bool) -> np.ndarray:
+    r"""
     Compute the trace of matrix exponential
     
     Arguments:
@@ -180,7 +179,7 @@ def _slq_ts(A, m, niters, ts, rademacher):
         rademacher: True to use Rademacher distribution, False - standard normal for random vectors in Hutchinson
     Returns:
         trace: estimate of trace of matrix exponential across temperatures `ts`
-    '''
+    """
     T, _ = _lanczos_m(A, m, niters, rademacher)
     eigvals, eigvecs = np.linalg.eigh(T)
     expeig = np.exp(-np.outer(ts, eigvals)).reshape(ts.shape[0], niters, m)
@@ -189,8 +188,8 @@ def _slq_ts(A, m, niters, ts, rademacher):
     return traces
 
 
-def _slq_ts_fs(A, m, niters, ts, rademacher, fs):
-    '''
+def _slq_ts_fs(A : np.ndarray, m : int, niters : int, ts : np.ndarray, rademacher : bool, fs : List) -> np.ndarray:
+    r"""
     Compute the trace of matrix functions
     
     Arguments:
@@ -202,7 +201,7 @@ def _slq_ts_fs(A, m, niters, ts, rademacher, fs):
         fs: a list of functions
     Returns:
         traces: estimate of traces for each of the functions in fs
-    '''
+    """
     T, _ = _lanczos_m(A, m, niters, rademacher)
     eigvals, eigvecs = np.linalg.eigh(T)
     traces = np.zeros((len(fs), len(ts)))
@@ -213,8 +212,8 @@ def _slq_ts_fs(A, m, niters, ts, rademacher, fs):
     return traces
 
 
-def slq_red_var(A, m, niters, ts, rademacher):
-    '''
+def slq_red_var(A : np.ndarray, m : int, niters : int, ts : np.ndarray, rademacher : bool) -> np.ndarray:
+    r"""
     Compute the trace of matrix exponential with reduced variance
     
     Arguments:
@@ -224,7 +223,7 @@ def slq_red_var(A, m, niters, ts, rademacher):
         ts: an array with temperatures
     Returns:
         traces: estimate of trace for each temperature value in `ts`
-    '''
+    """
     fs = [np.exp, lambda x: x]
 
     traces = _slq_ts_fs(A, m, niters, ts, rademacher, fs)
@@ -234,8 +233,8 @@ def slq_red_var(A, m, niters, ts, rademacher):
 
 # ---- msid.py
 
-def _build_graph(data, k=5, graph_builder='sparse', normalized=True):
-    """
+def _build_graph(data : np.ndarray, k : int = 5, graph_builder : str = 'sparse', normalized : bool = True):
+    r"""
     Return Laplacian from data or load preconstructed from path
     Arguments:
         data: samples
@@ -246,18 +245,18 @@ def _build_graph(data, k=5, graph_builder='sparse', normalized=True):
         L: Laplacian of the graph constructed with data
     """
     if graph_builder == 'sparse':
-        A = construct_graph_sparse(data, k)
+        A = _construct_graph_sparse(data, k)
     elif graph_builder == 'kgraph':
-        A = construct_graph_kgraph(data, k)
+        A = _construct_graph_kgraph(data, k)
     else:
-        raise Exception('Please specify graph builder: sparse or kgraph.')
+        raise ValueError('Specify graph builder: sparse or kgraph.')
     A = (A + A.T) / 2
     A.data = np.ones(A.data.shape)
     L = _laplacian_sparse(A, normalized)
     return L
 
 
-def _normalize_msid(msid, normalization, n, k, ts):
+def _normalize_msid(msid : np.ndarray, normalization : str, n : int, k : int, ts : np.ndarray):
     normed_msid = msid.copy()
     if normalization == 'empty':
         normed_msid /= n
@@ -275,10 +274,14 @@ def _normalize_msid(msid, normalization, n, k, ts):
     return normed_msid
 
 
-def msid_score(x, y, ts=np.logspace(-1, 1, 256), k=5, m=10, niters=100, rademacher=False, graph_builder='sparse',
-              msid_mode='max', normalized_laplacian=True, normalize='empty'):
-    '''
-    Compute the msid score between two samples, x and y
+def msid_score(
+    x : np.ndarray, 
+    y : np.ndarray, 
+    ts : np.ndarray = np.logspace(-1, 1, 256),
+    k : int = 5, m : int = 10, niters : int = 100, rademacher : bool = False, 
+    graph_builder : str = 'sparse', msid_mode : str = 'max', normalized_laplacian : bool = True, normalize = 'empty'):
+
+    r"""Compute the msid score between two samples, x and y
     Arguments:
         x: x samples
         y: y samples
@@ -296,7 +299,7 @@ def msid_score(x, y, ts=np.logspace(-1, 1, 256), k=5, m=10, niters=100, rademach
                 normalization, 'none' for no normalization
     Returns:
         msid_score: the scalar value of the distance between discriptors
-    '''
+    """
     normed_msidx = msid_descriptor(x, ts, k, m, niters, rademacher, graph_builder, normalized_laplacian, normalize)
     normed_msidy = msid_descriptor(y, ts, k, m, niters, rademacher, graph_builder, normalized_laplacian, normalize)
 
@@ -307,14 +310,14 @@ def msid_score(x, y, ts=np.logspace(-1, 1, 256), k=5, m=10, niters=100, rademach
     elif msid_mode == 'max':
         score = np.amax(c * np.abs(normed_msidx - normed_msidy))
     else:
-        raise Exception('Use either l2 or max mode.')
+        raise ValueError('mode must be in {`l2`, `max`}')
 
     return score
 
 
-def msid_descriptor(x, ts=np.logspace(-1, 1, 256), k=5, m=10, niters=100, rademacher=False, graph_builder='sparse',
-              normalized_laplacian=True, normalize='empty'):
-    '''
+def msid_descriptor(x : np.ndarray, ts : np.ndarray = np.logspace(-1, 1, 256), k : int = 5, m : int = 10, niters : int = 100, rademacher : bool =False, graph_builder : str = 'sparse',
+              normalized_laplacian : bool = True, normalize : str = 'empty') -> np.ndarray:
+    r"""
     Compute the msid descriptor for a single sample x
     Arguments:
         x: x samples
@@ -330,7 +333,7 @@ def msid_descriptor(x, ts=np.logspace(-1, 1, 256), k=5, m=10, niters=100, radema
                 normalization, 'none' for no normalization
     Returns:
         normed_msidx: normalized msid descriptor
-    '''
+    """
     Lx = _build_graph(x, k, graph_builder, normalized_laplacian)
 
     nx = Lx.shape[0]
