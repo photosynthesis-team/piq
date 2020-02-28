@@ -40,15 +40,15 @@ def _construct_graph_sparse(data : np.ndarray, k: int):
     return spmat.tocsr()
 
 
-def _construct_graph_kgraph(data : np.ndarray, k : int):
+# def _construct_graph_kgraph(data : np.ndarray, k : int):
 
-    n = len(data)
-    spmat = lil_matrix((n, n))
-    index = KGraph(data, 'euclidean')
-    index.build(reverse=0, K=2 * k + 1, L=2 * k + 50)
-    result = index.search(data, K=k + 1)[:, 1:]
-    spmat[np.repeat(np.arange(n), k, 0), result.ravel()] = 1
-    return spmat.tocsr()
+#     n = len(data)
+#     spmat = lil_matrix((n, n))
+#     index = KGraph(data, 'euclidean')
+#     index.build(reverse=0, K=2 * k + 1, L=2 * k + 50)
+#     result = index.search(data, K=k + 1)[:, 1:]
+#     spmat[np.repeat(np.arange(n), k, 0), result.ravel()] = 1
+#     return spmat.tocsr()
 
 
 def _laplacian_sparse(A : np.ndarray, normalized : bool = True):
@@ -246,8 +246,8 @@ def _build_graph(data : np.ndarray, k : int = 5, graph_builder : str = 'sparse',
     """
     if graph_builder == 'sparse':
         A = _construct_graph_sparse(data, k)
-    elif graph_builder == 'kgraph':
-        A = _construct_graph_kgraph(data, k)
+    # elif graph_builder == 'kgraph':
+    #     A = _construct_graph_kgraph(data, k)
     else:
         raise ValueError('Specify graph builder: sparse or kgraph.')
     A = (A + A.T) / 2
@@ -421,3 +421,27 @@ class MSID(nn.Module):
                 result.append(scores)
 
             return torch.Tensor(result)
+
+def frechet_inception_distance(predicted_images: torch.Tensor, target_images: torch.Tensor,
+                               feature_extractor: Optional[nn.Module] = None) -> float:
+    assert isinstance(predicted_images, torch.Tensor) and isinstance(target_images, torch.Tensor), \
+        f'Both image stacks must be of type torch.Tensor, got {type(predicted_images)} and {type(target_images)}.'
+
+    # There is no assert for the full equality of shapes because it is not required.
+    # Stacks can have any number of elements, but shapes of feature maps obtained from the images need to be equal.
+    # Otherwise it will not be possible to correctly compute statistics.
+    predicted_image_shape, target_image_shape = predicted_images.shape[1:], target_images.shape[1:]
+    assert predicted_image_shape == target_image_shape, \
+        f'Both image stacks must have images of the same shape, got {predicted_image_shape} and {target_image_shape}.'
+    assert isinstance(feature_extractor, nn.Module) or feature_extractor is None, \
+        f'Only PyTorch models are supported as feature extractors, got {type(feature_extractor)}.'
+
+    if feature_extractor is None:
+        print('WARNING: default feature extractor (InceptionNet V2) is used.')
+        feature_extractor = InceptionV3()
+
+    predicted_features = feature_extractor(predicted_images)
+    target_features = feature_extractor(target_images)
+
+    # TODO: `compute_fid` works with np.arrays, but need to work with torch.Tensors. Refactor that
+    return compute_fid(predicted_features, target_features)
