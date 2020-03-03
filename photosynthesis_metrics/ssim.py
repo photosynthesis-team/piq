@@ -6,15 +6,14 @@ https://github.com/VainF/pytorch-msssim
 and implementation of one of pull requests to the PyTorch by Kangfu Mei (@MKFMIKU):
 https://github.com/pytorch/pytorch/pull/22289/files
 """
-import torch
+from typing import List, Optional, Tuple, Union
 
+import torch
 import torch.nn._reduction as _Reduction
 import torch.nn.functional as f
-
 from torch.nn.modules.loss import _Loss
-from typing import Union, Optional, List, Tuple
 
-from .utils import _adjust_dimensions, _validate_input
+from photosynthesis_metrics.utils import _adjust_dimensions, _validate_input
 
 
 def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: float = 1.5,

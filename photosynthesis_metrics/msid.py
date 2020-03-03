@@ -2,7 +2,7 @@ r"""Implemetation of Multi-scale Evaluation metric, based on paper
  https://arxiv.org/abs/1905.11141 and author's repository https://github.com/xgfs/msid
 """
 from functools import partial
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Callable
 
 import torch
 import torch.nn as nn
@@ -10,9 +10,9 @@ import numpy as np
 
 import scipy.sparse as sps
 from scipy.sparse import lil_matrix, diags, eye
-# from pykgraph import KGraph  # Not used for with sparce builder
 
-from .utils import _validate_input
+from photosynthesis_metrics.feature_extractors.fid_inception import InceptionV3
+from photosynthesis_metrics.utils import _validate_input
 EPSILON = 1e-6
 NORMALIZATION = 1e6
 
@@ -40,17 +40,6 @@ def _construct_graph_sparse(data : np.ndarray, k: int):
     return spmat.tocsr()
 
 
-# def _construct_graph_kgraph(data : np.ndarray, k : int):
-
-#     n = len(data)
-#     spmat = lil_matrix((n, n))
-#     index = KGraph(data, 'euclidean')
-#     index.build(reverse=0, K=2 * k + 1, L=2 * k + 50)
-#     result = index.search(data, K=k + 1)[:, 1:]
-#     spmat[np.repeat(np.arange(n), k, 0), result.ravel()] = 1
-#     return spmat.tocsr()
-
-
 def _laplacian_sparse(A : np.ndarray, normalized : bool = True):
     D = A.sum(1).A1
     if normalized:
@@ -61,7 +50,6 @@ def _laplacian_sparse(A : np.ndarray, normalized : bool = True):
     return L
 
 ## -------- slq.py
-
 def _lanczos_m(A : np.ndarray, m : int, nv : int, rademacher : bool, SV : np.ndarray = None) -> Tuple[np.ndarray, np.ndarray]:
     r"""
     Lanczos algorithm computes symmetric m x m tridiagonal matrix T and matrix V with orthogonal rows
@@ -232,7 +220,6 @@ def slq_red_var(A : np.ndarray, m : int, niters : int, ts : np.ndarray, rademach
     return subee + sub
 
 # ---- msid.py
-
 def _build_graph(data : np.ndarray, k : int = 5, graph_builder : str = 'sparse', normalized : bool = True):
     r"""
     Return Laplacian from data or load preconstructed from path
@@ -274,12 +261,18 @@ def _normalize_msid(msid : np.ndarray, normalization : str, n : int, k : int, ts
     return normed_msid
 
 
-def msid_score(
+def _compute_msid(
     x : np.ndarray, 
     y : np.ndarray, 
     ts : np.ndarray = np.logspace(-1, 1, 256),
-    k : int = 5, m : int = 10, niters : int = 100, rademacher : bool = False, 
-    graph_builder : str = 'sparse', msid_mode : str = 'max', normalized_laplacian : bool = True, normalize = 'empty'):
+    k : int = 5, 
+    m : int = 10, 
+    niters : int = 100, 
+    rademacher : bool = False, 
+    graph_builder : str = 'sparse', 
+    msid_mode : str = 'max', 
+    normalized_laplacian : bool = True, 
+    normalize = 'empty'):
 
     r"""Compute the msid score between two samples, x and y
     Arguments:
@@ -300,8 +293,8 @@ def msid_score(
     Returns:
         msid_score: the scalar value of the distance between discriptors
     """
-    normed_msidx = msid_descriptor(x, ts, k, m, niters, rademacher, graph_builder, normalized_laplacian, normalize)
-    normed_msidy = msid_descriptor(y, ts, k, m, niters, rademacher, graph_builder, normalized_laplacian, normalize)
+    normed_msidx = _msid_descriptor(x, ts, k, m, niters, rademacher, graph_builder, normalized_laplacian, normalize)
+    normed_msidy = _msid_descriptor(y, ts, k, m, niters, rademacher, graph_builder, normalized_laplacian, normalize)
 
     c = np.exp(-2 * (ts + 1 / ts))
 
@@ -315,7 +308,7 @@ def msid_score(
     return score
 
 
-def msid_descriptor(x : np.ndarray, ts : np.ndarray = np.logspace(-1, 1, 256), k : int = 5, m : int = 10, niters : int = 100, rademacher : bool =False, graph_builder : str = 'sparse',
+def _msid_descriptor(x : np.ndarray, ts : np.ndarray = np.logspace(-1, 1, 256), k : int = 5, m : int = 10, niters : int = 100, rademacher : bool =False, graph_builder : str = 'sparse',
               normalized_laplacian : bool = True, normalize : str = 'empty') -> np.ndarray:
     r"""
     Compute the msid descriptor for a single sample x
@@ -344,104 +337,100 @@ def msid_descriptor(x : np.ndarray, ts : np.ndarray = np.logspace(-1, 1, 256), k
     return normed_msidx
 
 class MSID(nn.Module):
-    r"""Creates a criterion that measures MSID score for a batch of images
+    r"""Creates a criterion that measures MSID score for two batches of images
     See https://arxiv.org/abs/1905.11141 for reference.
-
-
-    Args:
-        ts: temperature values
-        k: number of neighbours for graph construction
-        m: Lanczos steps in SLQ
-        niters: number of starting random vectors for SLQ
-        rademacher: if True, sample random vectors from Rademacher distributions, else sample standard normal distribution
-        graph_builder: if 'kgraph', uses faster graph construction (options: 'sparse', 'kgraph')
-        normalized_laplacian: if True, use normalized Laplacian
-        normalize: 'empty' for average heat kernel (corresponds to the empty graph normalization of NetLSD),
-                'complete' for the complete, 'er' for erdos-renyi
-                normalization, 'none' for no normalization
-        msid_reduction: 'l2' to compute the l2 norm of the distance between `predictoon` and `target`;
-                'max' to find the maximum abosulute difference between two descriptors over temperature
-        channel_reduction: Specifies the reduction to apply to the output:
-            ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
-            ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed. 
-
     """
 
-    def __init__(self, ts: List[float] = np.logspace(-1, 1, 256), k: int = 5, m: int = 10, niters: int = 100, rademacher: bool = False, graph_builder: str = 'sparse',
-              normalized_laplacian: bool = True, normalize: str = 'empty', msid_reduction: str = "max", channel_reduction: str = 'mean'):
-
+    # TODO: jamil 27.02 Add out_features for Inception V2 as default
+    def __init__(
+        self, 
+        ts: List[float] = np.logspace(-1, 1, 256), 
+        k: int = 5, 
+        m: int = 10, 
+        niters: int = 100, 
+        rademacher: bool = False, 
+        graph_builder: str = 'sparse',
+        normalized_laplacian: bool = True, 
+        normalize: str = 'empty', 
+        msid_mode: str = "max", 
+        ):
+        r"""
+        Args:
+            ts: temperature values
+            k: number of neighbours for graph construction
+            m: Lanczos steps in SLQ
+            niters: number of starting random vectors for SLQ
+            rademacher: if True, sample random vectors from Rademacher distributions, else sample standard normal distribution
+            graph_builder (not used): if 'kgraph', uses faster graph construction (options: 'sparse', 'kgraph')
+            normalized_laplacian: if True, use normalized Laplacian
+            normalize: 'empty' for average heat kernel (corresponds to the empty graph normalization of NetLSD),
+                    'complete' for the complete, 'er' for erdos-renyi
+                    normalization, 'none' for no normalization
+            msid_mode: 'l2' to compute the l2 norm of the distance between `predictoon` and `target`;
+                    'max' to find the maximum abosulute difference between two descriptors over temperature
+        """
         super(MSID, self).__init__()
 
-        self.msid_score = partial(msid_score, ts=ts, 
-                                                    k=k, 
-                                                    m=m, 
-                                                    niters=niters, 
-                                                    rademacher=rademacher, 
-                                                    graph_builder=graph_builder, 
-                                                    msid_mode=msid_reduction,
-                                                    normalized_laplacian=normalized_laplacian, 
-                                                    normalize=normalize)
+        self.msid_score = partial(_compute_msid, ts=ts, 
+                                                k=k, 
+                                                m=m, 
+                                                niters=niters, 
+                                                rademacher=rademacher, 
+                                                # graph_builder=graph_builder, 
+                                                msid_mode=msid_mode,
+                                                normalized_laplacian=normalized_laplacian, 
+                                                normalize=normalize)
 
 
-        # Generic loss parameters.
-        self.channel_reduction = channel_reduction
 
-        # Loss-specific parameters.
-
-
-    def forward(self, x: torch.Tensor, y: torch.Tensor = None) -> torch.Tensor:
-        r"""Computation of MSID
-
+    def forward(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+        r"""Interface of Intrinsic Multi-scale Distance score.
+        It's computed for a whole set of data and uses features from encoder instead of images itself to decrease computation cost.
+        MSID can compare two data distributions with different number of samples or different dimensionalities.
+    
         Args:
-            x: Batch of images. Required to be 4D, channels first (N,C,H,W).
-            y: Batch of images. Required to be 4D, channels first (N,C,H,W).
-
+            predicted_features: Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
+            target_features: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
+            
         Returns:
-            normed_msidx: normalized msid descriptor (if no `target` specified).
+            normed_msidx: normalized msid descriptor (if no `target_generator` specified).
             msid_score: the scalar value of the distance between discriptor if both `prediction` and `target` given.
         """
 
-        N, _, _, _ = x.shape
-        result = []
-        for i in range(N):
-            x_i = x[i]
-            y_i = y[i]
-            
-            channels_x = [t.numpy() for t in map(torch.Tensor.squeeze_, torch.split(x_i, 1, dim=0))]
-            channels_y = [t.numpy() for t in map(torch.Tensor.squeeze_, torch.split(y_i, 1, dim=0))]
+        assert predicted_features.dims == 2, f"Predicted features must have shape  (N_samples, encoder_dim), got {predicted_features.dims}"
+        assert target_features.dims == 2, f"Target features must have shape  (N_samples, encoder_dim), got {target_features.dims}"
 
-            scores = torch.Tensor([self.msid_score(x, y) for x, y in zip(channels_x, channels_y)])
-            
-            if self.channel_reduction == 'mean':
-                result.append(scores.mean())
-            elif self.channel_reduction == 'sum':
-                result.append(scores.sum())
-            else:
-                result.append(scores)
+        score = self.msid_score(predicted_features.numpy(), target_features.numpy())
+        return score
 
-            return torch.Tensor(result)
 
-def frechet_inception_distance(predicted_images: torch.Tensor, target_images: torch.Tensor,
-                               feature_extractor: Optional[nn.Module] = None) -> float:
-    assert isinstance(predicted_images, torch.Tensor) and isinstance(target_images, torch.Tensor), \
-        f'Both image stacks must be of type torch.Tensor, got {type(predicted_images)} and {type(target_images)}.'
+    def _compute_feats(self, loader, feature_extractor : Callable = None, device: str = 'cuda') -> np.ndarray:
+        r"""Generate low-dimensional image desciptors to be used for computing MSID score. 
+        Args:
+            loader: Batch of images generator. Batche required to be 4D, channels first (N,C,H,W).
+            feature_extractor: model used to generate image features, if None use `InceptionNet V2` model
+            out_features: size of `feature_extractor` output
+            device: Device on which to compute inference of the model
+        """
 
-    # There is no assert for the full equality of shapes because it is not required.
-    # Stacks can have any number of elements, but shapes of feature maps obtained from the images need to be equal.
-    # Otherwise it will not be possible to correctly compute statistics.
-    predicted_image_shape, target_image_shape = predicted_images.shape[1:], target_images.shape[1:]
-    assert predicted_image_shape == target_image_shape, \
-        f'Both image stacks must have images of the same shape, got {predicted_image_shape} and {target_image_shape}.'
-    assert isinstance(feature_extractor, nn.Module) or feature_extractor is None, \
-        f'Only PyTorch models are supported as feature extractors, got {type(feature_extractor)}.'
+        if feature_extractor is None:
+            print('WARNING: default feature extractor (InceptionNet V2) is used.')
+            feature_extractor = InceptionV3()
+            # self.out_features = ... # Inception V2() out features
+        else:
+            assert callable(feature_extractor), f"Feature_extractor must be callabel. Got {type(feature_extractor)}"
 
-    if feature_extractor is None:
-        print('WARNING: default feature extractor (InceptionNet V2) is used.')
-        feature_extractor = InceptionV3()
+        if out_features is None:
+            # Figure `out_size` from output shape
+            mock_batch = torch.rand((1, 3, 256, 256))
+            out_features = feature_extractor(mock_batch).reshape((1, -1)).shape[1]
 
-    predicted_features = feature_extractor(predicted_images)
-    target_features = feature_extractor(target_images)
+        total_feats = []
+        for batch in loader:
+            N = batch.shape[0]
+            batch = batch.float().to(device)
 
-    # TODO: `compute_fid` works with np.arrays, but need to work with torch.Tensors. Refactor that
-    return compute_fid(predicted_features, target_features)
+            # Getting features
+            batch_feats = feature_extractor(batch).view(N, )
+            total_feats.append(batch_feats)
+        return torch.Tensor(total_feats)
