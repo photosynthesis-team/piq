@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from photosynthesis_metrics import frechet_inception_distance
+from photosynthesis_metrics import FID
 
 
 # ================== Test function: `frechet_inception_distance` ==================

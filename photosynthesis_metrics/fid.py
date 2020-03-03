@@ -131,6 +131,8 @@ class FID(nn.Module):
         else:
             assert callable(feature_extractor), f"Feature_extractor must be callabel. Got {type(feature_extractor)}"
 
+        feature_extractor.eval()
+        
         if out_features is None:
             # Figure `out_size` from output shape
             mock_batch = torch.rand((1, 3, 256, 256))
