@@ -2,12 +2,12 @@ r"""Implemetation of Total Variation metric, based on article
  remi.flamary.com/demos/proxtv.html and www.wikiwand.com/en/Total_variation_denoising
 """
 
-from typing import Union, Tuple, Optional
 import functools
+
 import torch
 from torch.nn.modules.loss import _Loss
 
-from .utils import _adjust_dimensions, _validate_input
+from photosynthesis_metrics.utils import _adjust_dimensions, _validate_input
 
 
 def _compute_tv(x: torch.Tensor, size_average: bool = True, reduction_type: str = 'l2') -> torch.Tensor:
@@ -22,9 +22,6 @@ def _compute_tv(x: torch.Tensor, size_average: bool = True, reduction_type: str 
     Returns:
         tv : Total variation of a given tensor
     """
-
-    assert isinstance(x, torch.Tensor), f'Image stack must be of type torch.Tensor, got {type(x)} instead.'
-
     if reduction_type == 'l1':
         w_variance = torch.sum(torch.abs(x[:,:,:,1:] - x[:,:,:,:-1]), dim=[1, 2, 3])
         h_variance = torch.sum(torch.abs(x[:,:,1:,:] - x[:,:,:-1,:]), dim=[1, 2, 3])
@@ -45,6 +42,7 @@ def _compute_tv(x: torch.Tensor, size_average: bool = True, reduction_type: str 
     else:
         return tv_val
 
+
 def total_variation(x: torch.Tensor, size_average: bool = True, reduction_type: str = 'l2') -> torch.Tensor:
     r"""Interface of Total Variation.
 
@@ -54,24 +52,17 @@ def total_variation(x: torch.Tensor, size_average: bool = True, reduction_type: 
         reduction_type: one of {'l1', 'l2', 'l2_squared'}
 
     Returns:
-        Value of Structural Similarity (SSIM) index.
+        Total variation of a given tensor
 
     References:
-        .. [1] Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P.
-           (2004). Image quality assessment: From error visibility to
-           structural similarity. IEEE Transactions on Image Processing,
-           13, 600-612.
-           https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
-           :DOI:`10.1109/TIP.2003.819861`
+        remi.flamary.com/demos/proxtv.html and www.wikiwand.com/en/Total_variation_denoising
     """
-    _validate_input(x=x, y=x, kernel_size=3)
+    _validate_input(x=x, y=x)
     
     tv = _compute_tv(x=x, 
                      size_average=size_average, 
                      reduction_type=reduction_type)
-
     return tv
-
 
 
 class TVLoss(_Loss):
@@ -110,7 +101,7 @@ class TVLoss(_Loss):
             specifying either of those two args will override :attr:`reduction`. Default: ``'mean'``
     Examples::
 
-        >>> loss = SSIMLoss()
+        >>> loss = TVLoss()
         >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
         >>> target = torch.rand(3, 3, 256, 256)
         >>> output = loss(prediction, target, max_val=1.)
@@ -118,12 +109,9 @@ class TVLoss(_Loss):
     """
 
     def __init__(self, size_average: bool = True, reduction_type: str = 'l2', reduction: str = 'mean'):
-
         super(TVLoss, self).__init__()
 
         # Generic loss parameters.
-        self.size_average = size_average
-        self.reduction_type = reduction_type
         self.reduction = reduction
 
         # Loss-specific parameters.
@@ -145,9 +133,9 @@ class TVLoss(_Loss):
         prediction_tv = self.tv_func(prediction)
         target_tv = self.tv_func(target)
         
-        ret = torch.abs(prediction_tv - target_tv)
+        res = torch.abs(prediction_tv - target_tv)
 
         if self.reduction != 'none':
-            ret = torch.mean(ret) if self.reduction == 'mean' else torch.sum(ret)
+            res = torch.mean(res) if self.reduction == 'mean' else torch.sum(res)
 
-        return ret
+        return res
