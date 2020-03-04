@@ -1,13 +1,19 @@
 import sys
-
+from typing import Optional, List, Tuple
 import numpy as np
 
 from tqdm import tqdm
 from sklearn.metrics.pairwise import polynomial_kernel
 
 
-def compute_polynomial_mmd_averages(codes_g, codes_r, n_subsets=50, subset_size=1000,
-                                    ret_var=True, output=sys.stdout, **kernel_args):
+def compute_polynomial_mmd_averages(
+    codes_g : np.ndarray, 
+    codes_r : np.ndarray, 
+    n_subsets : int = 50, 
+    subset_size : int = 1000,
+    ret_var : bool = True, 
+    **kernel_args
+    ) -> Optional[List[np.ndarray], Tuple[List[np.ndarray], List[np.ndarray]]]:
     m = min(codes_g.shape[0], codes_r.shape[0])
     mmds = np.zeros(n_subsets)
     if ret_var:
@@ -15,7 +21,7 @@ def compute_polynomial_mmd_averages(codes_g, codes_r, n_subsets=50, subset_size=
 
     choice = np.random.choice
 
-    with tqdm(range(n_subsets), desc='MMD', file=output) as bar:
+    with tqdm(range(n_subsets), desc='MMD') as bar:
         for i in bar:
             g = codes_g[choice(len(codes_g), subset_size, replace=False)]
             r = codes_r[choice(len(codes_r), subset_size, replace=False)]
@@ -29,8 +35,14 @@ def compute_polynomial_mmd_averages(codes_g, codes_r, n_subsets=50, subset_size=
     return (mmds, vars) if ret_var else mmds
 
 
-def compute_polynomial_mmd(codes_g, codes_r, degree=3, gamma=None, coef0=1,
-                           var_at_m=None, ret_var=True):
+def compute_polynomial_mmd(
+    codes_g : np.ndarray, 
+    codes_r : np.ndarray, 
+    degree : int = 3, 
+    gamma : Optional[float] = None, 
+    coef0 : int = 1,
+    var_at_m : Optional[int] = None, 
+    ret_var : bool = True) -> np.ndarray:
     """
     Computes KID (polynomial MMD) for given sets of features, obtained from Inception net
     or any other feature extractor.
@@ -61,9 +73,15 @@ def compute_polynomial_mmd(codes_g, codes_r, degree=3, gamma=None, coef0=1,
                               var_at_m=var_at_m, ret_var=ret_var)
 
 
-def _mmd2_and_variance(K_XX, K_XY, K_YY, unit_diagonal=False,
-                       mmd_est='unbiased', block_size=1024,
-                       var_at_m=None, ret_var=True):
+def _mmd2_and_variance(
+    K_XX : np.ndarray, 
+    K_XY : np.ndarray,  
+    K_YY : np.ndarray, 
+    unit_diagonal : bool = False,
+    mmd_est : str = 'unbiased', 
+    block_size : int = 1024,
+    var_at_m : Optional[int] = None, 
+    ret_var : bool = True) -> Tuple[float, float]:
     # based on
     # https://github.com/dougalsutherland/opt-mmd/blob/master/two_sample/mmd.py
     # but changed to not compute the full kernel matrix at once
@@ -147,6 +165,6 @@ def _mmd2_and_variance(K_XX, K_XY, K_YY, unit_diagonal=False,
     return mmd2, var_est
 
 
-def _sqn(arr):
+def _sqn(arr : np.ndarray) -> np.ndarray:
     flat = np.ravel(arr)
     return flat.dot(flat)
