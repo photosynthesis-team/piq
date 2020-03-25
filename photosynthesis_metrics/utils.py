@@ -86,6 +86,7 @@ class BaseFeatureMetric(torch.nn.Module):
             assert isinstance(feature_extractor, torch.nn.Module), \
                 f"Feature extractor must be PyTorch module. Got {type(feature_extractor)}"
 
+        feature_extractor.to(device)
         feature_extractor.eval()
 
         total_feats = []
