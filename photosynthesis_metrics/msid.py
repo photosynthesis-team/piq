@@ -12,61 +12,66 @@ import scipy.sparse as sps
 from scipy.sparse import lil_matrix, diags, eye
 
 from photosynthesis_metrics.feature_extractors.fid_inception import InceptionV3
-from photosynthesis_metrics.utils import _validate_input
+from photosynthesis_metrics.utils import _validate_features, BaseFeatureMetric
+
 EPSILON = 1e-6
 NORMALIZATION = 1e6
 
-# ---- laplacian.py
-def _np_euc_cdist(data : np.ndarray) -> np.ndarray: 
-    dd = np.sum(data*data, axis=1)
-    dist = -2*np.dot(data, data.T)
-    dist += dd + dd[:, np.newaxis] 
+
+def _np_euc_cdist(data : np.ndarray) -> np.ndarray:
+    dd = np.sum(data * data, axis=1)
+    dist = -2 * np.dot(data, data.T)
+    dist += dd + dd[:, np.newaxis]
     np.fill_diagonal(dist, 0)
     np.sqrt(dist, dist)
     return dist
 
 
-def _construct_graph_sparse(data : np.ndarray, k: int):
+def _construct_graph_sparse(data : np.ndarray, k: int) -> np.ndarray:
     n = len(data)
     spmat = lil_matrix((n, n))
-    dd = np.sum(data*data, axis=1)
-    
+    dd = np.sum(data * data, axis=1)
+
     for i in range(n):
-        dists = dd - 2*data[i, :].dot(data.T)
-        inds = np.argpartition(dists, k+1)[:k+1]
-        inds = inds[inds!=i]
+        dists = dd - 2 * data[i, :].dot(data.T)
+        inds = np.argpartition(dists, k + 1)[:k + 1]
+        inds = inds[inds != i]
         spmat[i, inds] = 1
-            
+
     return spmat.tocsr()
 
 
 def _laplacian_sparse(A : np.ndarray, normalized : bool = True):
     D = A.sum(1).A1
     if normalized:
-        Dsqrt = diags(1/np.sqrt(D))
+        Dsqrt = diags(1 / np.sqrt(D))
         L = eye(A.shape[0]) - Dsqrt.dot(A).dot(Dsqrt)
     else:
         L = diags(D) - A
     return L
 
-## -------- slq.py
-def _lanczos_m(A : np.ndarray, m : int, nv : int, rademacher : bool, SV : np.ndarray = None) -> Tuple[np.ndarray, np.ndarray]:
-    r"""
-    Lanczos algorithm computes symmetric m x m tridiagonal matrix T and matrix V with orthogonal rows
+
+def _lanczos_m(
+    A : np.ndarray,
+    m : int,
+    nv : int,
+    rademacher : bool,
+    SV : np.ndarray = None) -> Tuple[np.ndarray, np.ndarray]:
+    r"""Lanczos algorithm computes symmetric m x m tridiagonal matrix T and matrix V with orthogonal rows
         constituting the basis of the Krylov subspace K_m(A, x),
         where x is an arbitrary starting unit vector.
         This implementation parallelizes `nv` starting vectors.
-    
-    Arguments:
-        m: number of Lanczos steps
-        nv: number of random vectors
-        rademacher: True to use Rademacher distribution, 
-                    False - standard normal for random vectors
-        SV: specified starting vectors
-    
+
+    Args:
+        m: Number of Lanczos steps.
+        nv: Number of random vectors.
+        rademacher: True to use Rademacher distribution,
+            False - standard normal for random vectors
+        SV: Specified starting vectors.
+
     Returns:
-        T: a nv x m x m tensor, T[i, :, :] is the ith symmetric tridiagonal matrix
-        V: a n x m x nv tensor, V[:, :, i] is the ith matrix with orthogonal rows 
+        T: A nv x m x m tensor, T[i, :, :] is the ith symmetric tridiagonal matrix.
+        V: A n x m x nv tensor, V[:, :, i] is the ith matrix with orthogonal rows.
     """
     orthtol = 1e-5
     if type(SV) != np.ndarray:
@@ -136,16 +141,16 @@ def _lanczos_m(A : np.ndarray, m : int, nv : int, rademacher : bool, SV : np.nda
 
 
 def _slq(A : np.ndarray, m : int, niters : int, rademacher : bool) -> np.ndarray:
-    r"""
-    Compute the trace of matrix exponential
-    
-    Arguments:
-        A: square matrix in trace(exp(A))
-        m: number of Lanczos steps
-        niters: number of quadratures (also, the number of random vectors in the hutchinson trace estimator)
-        rademacher: True to use Rademacher distribution, False - standard normal for random vectors in Hutchinson
+    r"""Compute the trace of matrix exponential
+
+    Args:
+        A: Square matrix in trace(exp(A)).
+        m: Number of Lanczos steps.
+        niters: Number of quadratures (also, the number of random vectors in the hutchinson trace estimator).
+        rademacher: True to use Rademacher distribution,
+            False - standard normal for random vectors in Hutchinson.
     Returns:
-        trace: estimate of trace of matrix exponential
+        trace: Estimate of trace of matrix exponential.
     """
     T, _ = _lanczos_m(A, m, niters, rademacher)
     eigvals, eigvecs = np.linalg.eigh(T)
@@ -156,17 +161,17 @@ def _slq(A : np.ndarray, m : int, niters : int, rademacher : bool) -> np.ndarray
 
 
 def _slq_ts(A : np.ndarray, m : int, niters : int, ts : np.ndarray, rademacher : bool) -> np.ndarray:
-    r"""
-    Compute the trace of matrix exponential
-    
-    Arguments:
-        A: square matrix in trace(exp(-t*A)), where t is temperature
-        m: number of Lanczos steps
-        niters: number of quadratures (also, the number of random vectors in the hutchinson trace estimator)
-        ts: an array with temperatures
+    r"""Compute the trace of matrix exponential
+
+    Args:
+        A: Square matrix in trace(exp(-t*A)), where t is temperature
+        m: Number of Lanczos steps.
+        niters: Number of quadratures (also, the number of random vectors in the hutchinson trace estimator).
+        ts: Array with temperatures.
         rademacher: True to use Rademacher distribution, False - standard normal for random vectors in Hutchinson
+
     Returns:
-        trace: estimate of trace of matrix exponential across temperatures `ts`
+        trace: Estimate of trace of matrix exponential across temperatures `ts`
     """
     T, _ = _lanczos_m(A, m, niters, rademacher)
     eigvals, eigvecs = np.linalg.eigh(T)
@@ -177,18 +182,18 @@ def _slq_ts(A : np.ndarray, m : int, niters : int, ts : np.ndarray, rademacher :
 
 
 def _slq_ts_fs(A : np.ndarray, m : int, niters : int, ts : np.ndarray, rademacher : bool, fs : List) -> np.ndarray:
-    r"""
-    Compute the trace of matrix functions
-    
-    Arguments:
-        A: square matrix in trace(exp(-t*A)), where t is temperature
-        m: number of Lanczos steps
-        niters: number of quadratures (also, the number of random vectors in the hutchinson trace estimator)
-        ts: an array with temperatures
+    r"""Compute the trace of matrix functions
+
+    Args:
+        A: Square matrix in trace(exp(-t*A)), where t is temperature.
+        m: Number of Lanczos steps.
+        niters: Number of quadratures (also, the number of random vectors in the hutchinson trace estimator).
+        ts: Array with temperatures.
         rademacher: True to use Rademacher distribution, else - standard normal for random vectors in Hutchinson
-        fs: a list of functions
+        fs: A list of functions.
+
     Returns:
-        traces: estimate of traces for each of the functions in fs
+        traces: Estimate of traces for each of the functions in `fs`.
     """
     T, _ = _lanczos_m(A, m, niters, rademacher)
     eigvals, eigvecs = np.linalg.eigh(T)
@@ -201,16 +206,16 @@ def _slq_ts_fs(A : np.ndarray, m : int, niters : int, ts : np.ndarray, rademache
 
 
 def slq_red_var(A : np.ndarray, m : int, niters : int, ts : np.ndarray, rademacher : bool) -> np.ndarray:
-    r"""
-    Compute the trace of matrix exponential with reduced variance
-    
-    Arguments:
-        A: square matrix in trace(exp(-t*A)), where t is temperature
-        m: number of Lanczos steps
-        niters: number of quadratures (also, the number of random vectors in the hutchinson trace estimator)
-        ts: an array with temperatures
+    r"""Compute the trace of matrix exponential with reduced variance
+
+    Args:
+        A: Square matrix in trace(exp(-t*A)), where t is temperature.
+        m: Number of Lanczos steps.
+        niters: Number of quadratures (also, the number of random vectors in the hutchinson trace estimator).
+        ts: Array with temperatures.
+
     Returns:
-        traces: estimate of trace for each temperature value in `ts`
+        traces: Estimate of trace for each temperature value in `ts`.
     """
     fs = [np.exp, lambda x: x]
 
@@ -219,24 +224,20 @@ def slq_red_var(A : np.ndarray, m : int, niters : int, ts : np.ndarray, rademach
     sub = - ts * A.shape[0] / np.exp(ts)
     return subee + sub
 
-# ---- msid.py
-def _build_graph(data : np.ndarray, k : int = 5, graph_builder : str = 'sparse', normalized : bool = True):
-    r"""
-    Return Laplacian from data or load preconstructed from path
-    Arguments:
-        data: samples
-        k: number of neighbours for graph construction
-        graph_builder: if 'kgraph', use faster graph construction
-        normalized: if True, use nnormalized Laplacian
+
+def _build_graph(data : np.ndarray, k : int = 5, normalized : bool = True):
+    r"""Return Laplacian from data or load preconstructed from path
+
+    Args:
+        data: Samples.
+        k: Number of neighbours for graph construction.
+        normalized: if True, use nnormalized Laplacian.
+
     Returns:
-        L: Laplacian of the graph constructed with data
+        L: Laplacian of the graph constructed with data.
     """
-    if graph_builder == 'sparse':
-        A = _construct_graph_sparse(data, k)
-    # elif graph_builder == 'kgraph':
-    #     A = _construct_graph_kgraph(data, k)
-    else:
-        raise ValueError('Specify graph builder: sparse or kgraph.')
+
+    A = _construct_graph_sparse(data, k)
     A = (A + A.T) / 2
     A.data = np.ones(A.data.shape)
     L = _laplacian_sparse(A, normalized)
@@ -261,73 +262,32 @@ def _normalize_msid(msid : np.ndarray, normalization : str, n : int, k : int, ts
     return normed_msid
 
 
-def _compute_msid(
-    x : np.ndarray, 
-    y : np.ndarray, 
+def _msid_descriptor(
+    x : np.ndarray,
     ts : np.ndarray = np.logspace(-1, 1, 256),
-    k : int = 5, 
-    m : int = 10, 
-    niters : int = 100, 
-    rademacher : bool = False, 
-    graph_builder : str = 'sparse', 
-    msid_mode : str = 'max', 
-    normalized_laplacian : bool = True, 
-    normalize = 'empty'):
+    k : int = 5,
+    m : int = 10,
+    niters : int = 100,
+    rademacher : bool = False,
+    normalized_laplacian : bool = True,
+    normalize : str = 'empty') -> np.ndarray:
+    r"""Compute the msid descriptor for a single set of samples
 
-    r"""Compute the msid score between two samples, x and y
-    Arguments:
-        x: x samples
-        y: y samples
-        ts: temperature values
-        k: number of neighbours for graph construction
-        m: Lanczos steps in SLQ
-        niters: number of starting random vectors for SLQ
-        rademacher: if True, sample random vectors from Rademacher distributions, else sample standard normal distribution
-        graph_builder: if 'kgraph', uses faster graph construction (options: 'sparse', 'kgraph')
-        msid_mode: 'l2' to compute the l2 norm of the distance between `msid1` and `msid2`;
-                'max' to find the maximum abosulute difference between two descriptors over temperature
+    Args:
+        x: Samples from data distribution. Shape (N_samples, data_dim)
+        ts: Temperature values.
+        k: Number of neighbours for graph construction.
+        m: Lanczos steps in SLQ.
+        niters: Number of starting random vectors for SLQ.
+        rademacher: True to use Rademacher distribution,
+            False - standard normal for random vectors in Hutchinson.
         normalized_laplacian: if True, use normalized Laplacian
         normalize: 'empty' for average heat kernel (corresponds to the empty graph normalization of NetLSD),
-                'complete' for the complete, 'er' for erdos-renyi
-                normalization, 'none' for no normalization
-    Returns:
-        msid_score: the scalar value of the distance between discriptors
-    """
-    normed_msidx = _msid_descriptor(x, ts, k, m, niters, rademacher, graph_builder, normalized_laplacian, normalize)
-    normed_msidy = _msid_descriptor(y, ts, k, m, niters, rademacher, graph_builder, normalized_laplacian, normalize)
-
-    c = np.exp(-2 * (ts + 1 / ts))
-
-    if msid_mode == 'l2':
-        score = np.linalg.norm(normed_msidx - normed_msidy)
-    elif msid_mode == 'max':
-        score = np.amax(c * np.abs(normed_msidx - normed_msidy))
-    else:
-        raise ValueError('mode must be in {`l2`, `max`}')
-
-    return score
-
-
-def _msid_descriptor(x : np.ndarray, ts : np.ndarray = np.logspace(-1, 1, 256), k : int = 5, m : int = 10, niters : int = 100, rademacher : bool =False, graph_builder : str = 'sparse',
-              normalized_laplacian : bool = True, normalize : str = 'empty') -> np.ndarray:
-    r"""
-    Compute the msid descriptor for a single sample x
-    Arguments:
-        x: x samples
-        ts: temperature values
-        k: number of neighbours for graph construction
-        m: Lanczos steps in SLQ
-        niters: number of starting random vectors for SLQ
-        rademacher: if True, sample random vectors from Rademacher distributions, else sample standard normal distribution
-        graph_builder: if 'kgraph', uses faster graph construction (options: 'sparse', 'kgraph')
-        normalized_laplacian: if True, use normalized Laplacian
-        normalize: 'empty' for average heat kernel (corresponds to the empty graph normalization of NetLSD),
-                'complete' for the complete, 'er' for erdos-renyi
-                normalization, 'none' for no normalization
+                'complete' for the complete, 'er' for erdos-renyi normalization, 'none' for no normalization
     Returns:
         normed_msidx: normalized msid descriptor
     """
-    Lx = _build_graph(x, k, graph_builder, normalized_laplacian)
+    Lx = _build_graph(x, k, normalized_laplacian)
 
     nx = Lx.shape[0]
     msidx = slq_red_var(Lx, m, niters, ts, rademacher)
@@ -336,101 +296,111 @@ def _msid_descriptor(x : np.ndarray, ts : np.ndarray = np.logspace(-1, 1, 256), 
 
     return normed_msidx
 
-class MSID(nn.Module):
+
+def compute_msid(
+    x : torch.Tensor,
+    y : torch.Tensor,
+    ts : torch.Tensor = torch.logspace(-1, 1, 256),
+    k : int = 5,
+    m : int = 10,
+    niters : int = 100,
+    rademacher : bool = False,
+    msid_mode : str = 'max',
+    normalized_laplacian : bool = True,
+    normalize='empty'
+    ):
+
+    r"""Compute MSID score between two sets of samples.
+    Args:
+        x: Samples from data distribution. Shape (N_samples, data_dim).
+        y: Samples from data distribution. Shape (N_samples, data_dim).
+        ts: Temperature values.
+        k: Number of neighbours for graph construction.
+        m: Lanczos steps in SLQ.
+        niters: Number of starting random vectors for SLQ.
+        rademacher: True to use Rademacher distribution,
+            False - standard normal for random vectors in Hutchinson.
+        msid_mode: 'l2' to compute the l2 norm of the distance between `msid1` and `msid2`;
+                'max' to find the maximum abosulute difference between two descriptors over temperature
+        normalized_laplacian: if True, use normalized Laplacian.
+        normalize: 'empty' for average heat kernel (corresponds to the empty graph normalization of NetLSD),
+                'complete' for the complete, 'er' for erdos-renyi normalization, 'none' for no normalization
+
+    Returns:
+        score: Scalar value of the distance between distributions.
+    """
+    _validate_features(x, y)
+    ts = ts.numpy()
+    normed_msidx = _msid_descriptor(x.numpy(), ts, k, m, niters, rademacher, normalized_laplacian, normalize)
+    normed_msidy = _msid_descriptor(y.numpy(), ts, k, m, niters, rademacher, normalized_laplacian, normalize)
+
+    c = np.exp(-2 * (ts + 1 / ts))
+
+    if msid_mode == 'l2':
+        score = np.linalg.norm(normed_msidx - normed_msidy)
+    elif msid_mode == 'max':
+        score = np.amax(c * np.abs(normed_msidx - normed_msidy))
+    else:
+        raise ValueError('Mode must be in {`l2`, `max`}')
+
+    return score
+
+
+class MSID(BaseFeatureMetric):
     r"""Creates a criterion that measures MSID score for two batches of images
     See https://arxiv.org/abs/1905.11141 for reference.
     """
 
-    # TODO: jamil 27.02 Add out_features for Inception V2 as default
     def __init__(
-        self, 
-        ts: List[float] = np.logspace(-1, 1, 256), 
-        k: int = 5, 
-        m: int = 10, 
-        niters: int = 100, 
-        rademacher: bool = False, 
-        graph_builder: str = 'sparse',
-        normalized_laplacian: bool = True, 
-        normalize: str = 'empty', 
-        msid_mode: str = "max", 
-        ):
+        self,
+        ts: torch.Tensor = torch.logspace(-1, 1, 256),
+        k: int = 5,
+        m: int = 10,
+        niters: int = 100,
+        rademacher: bool = False,
+        normalized_laplacian: bool = True,
+        normalize: str = 'empty',
+        msid_mode: str = "max",
+        ) -> None:
         r"""
         Args:
-            ts: temperature values
-            k: number of neighbours for graph construction
-            m: Lanczos steps in SLQ
-            niters: number of starting random vectors for SLQ
-            rademacher: if True, sample random vectors from Rademacher distributions, else sample standard normal distribution
-            graph_builder (not used): if 'kgraph', uses faster graph construction (options: 'sparse', 'kgraph')
-            normalized_laplacian: if True, use normalized Laplacian
+            ts: Temperature values.
+            k: Number of neighbours for graph construction.
+            m: Lanczos steps in SLQ.
+            niters: Number of starting random vectors for SLQ.
+            rademacher: True to use Rademacher distribution,
+                False - standard normal for random vectors in Hutchinson.
+            normalized_laplacian: if True, use normalized Laplacian.
             normalize: 'empty' for average heat kernel (corresponds to the empty graph normalization of NetLSD),
-                    'complete' for the complete, 'er' for erdos-renyi
-                    normalization, 'none' for no normalization
-            msid_mode: 'l2' to compute the l2 norm of the distance between `predictoon` and `target`;
+                    'complete' for the complete, 'er' for erdos-renyi normalization, 'none' for no normalization
+            msid_mode: 'l2' to compute the l2 norm of the distance between `msid1` and `msid2`;
                     'max' to find the maximum abosulute difference between two descriptors over temperature
         """
         super(MSID, self).__init__()
 
-        self.msid_score = partial(_compute_msid, ts=ts, 
-                                                k=k, 
-                                                m=m, 
-                                                niters=niters, 
-                                                rademacher=rademacher, 
-                                                # graph_builder=graph_builder, 
-                                                msid_mode=msid_mode,
-                                                normalized_laplacian=normalized_laplacian, 
-                                                normalize=normalize)
-
-
+        self.compute = partial(
+            compute_msid,
+            ts=ts,
+            k=k,
+            m=m,
+            niters=niters,
+            rademacher=rademacher,
+            msid_mode=msid_mode,
+            normalized_laplacian=normalized_laplacian,
+            normalize=normalize)
 
     def forward(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
         r"""Interface of Intrinsic Multi-scale Distance score.
-        It's computed for a whole set of data and uses features from encoder instead of images itself to decrease computation cost.
-        MSID can compare two data distributions with different number of samples or different dimensionalities.
-    
+        It's computed for a whole set of data and uses features from encoder instead of images itself
+        to decrease computation cost. MSID can compare two data distributions with different
+        number of samples or different dimensionalities.
+
         Args:
             predicted_features: Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
             target_features: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
-            
+
         Returns:
-            normed_msidx: normalized msid descriptor (if no `target_generator` specified).
-            msid_score: the scalar value of the distance between discriptor if both `prediction` and `target` given.
+            score: Scalar value of the distance between image sets features.
         """
-
-        assert predicted_features.dims == 2, f"Predicted features must have shape  (N_samples, encoder_dim), got {predicted_features.dims}"
-        assert target_features.dims == 2, f"Target features must have shape  (N_samples, encoder_dim), got {target_features.dims}"
-
-        score = self.msid_score(predicted_features.numpy(), target_features.numpy())
-        return score
-
-
-    def _compute_feats(self, loader, feature_extractor : Callable = None, device: str = 'cuda') -> np.ndarray:
-        r"""Generate low-dimensional image desciptors to be used for computing MSID score. 
-        Args:
-            loader: Batch of images generator. Batche required to be 4D, channels first (N,C,H,W).
-            feature_extractor: model used to generate image features, if None use `InceptionNet V2` model
-            out_features: size of `feature_extractor` output
-            device: Device on which to compute inference of the model
-        """
-
-        if feature_extractor is None:
-            print('WARNING: default feature extractor (InceptionNet V2) is used.')
-            feature_extractor = InceptionV3()
-            # self.out_features = ... # Inception V2() out features
-        else:
-            assert callable(feature_extractor), f"Feature_extractor must be callabel. Got {type(feature_extractor)}"
-
-        if out_features is None:
-            # Figure `out_size` from output shape
-            mock_batch = torch.rand((1, 3, 256, 256))
-            out_features = feature_extractor(mock_batch).reshape((1, -1)).shape[1]
-
-        total_feats = []
-        for batch in loader:
-            N = batch.shape[0]
-            batch = batch.float().to(device)
-
-            # Getting features
-            batch_feats = feature_extractor(batch).view(N, )
-            total_feats.append(batch_feats)
-        return torch.Tensor(total_feats)
+        super(MSID, self).forward(predicted_features, target_features)
+        return self.compute(predicted_features, target_features)
