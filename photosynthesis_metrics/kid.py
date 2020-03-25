@@ -3,75 +3,70 @@ from typing import Optional, List, Tuple, Union
 from functools import partial
 
 import numpy as np
-from tqdm import tqdm
 import torch
 from sklearn.metrics.pairwise import polynomial_kernel
 
 from photosynthesis_metrics.utils import BaseFeatureMetric
 
 def compute_polynomial_mmd_averages(
-    codes_g : np.ndarray,
-    codes_r : np.ndarray,
+    x : np.ndarray,
+    y : np.ndarray,
     n_subsets : int = 50,
     subset_size : int = 1000,
     ret_var : bool = True,
     **kernel_args
     ) -> Union[List[np.ndarray], Tuple[List[np.ndarray], List[np.ndarray]]]:
-    m = min(codes_g.shape[0], codes_r.shape[0])
+    m = min(x.shape[0], y.shape[0])
     mmds = np.zeros(n_subsets)
     if ret_var:
         vars = np.zeros(n_subsets)
 
     choice = np.random.choice
 
-    with tqdm(range(n_subsets), desc='MMD') as bar:
-        for i in bar:
-            g = codes_g[choice(len(codes_g), subset_size, replace=False)]
-            r = codes_r[choice(len(codes_r), subset_size, replace=False)]
-            o = compute_polynomial_mmd(g, r, **kernel_args, var_at_m=m, ret_var=ret_var)
-            if ret_var:
-                mmds[i], vars[i] = o
-            else:
-                mmds[i] = o
-            bar.set_postfix({'mean': mmds[:i + 1].mean()})
+    for i in range(n_subsets):
+        g = x[choice(len(x), subset_size, replace=False)]
+        r = y[choice(len(y), subset_size, replace=False)]
+        o = compute_polynomial_mmd(g, r, **kernel_args, var_at_m=m, ret_var=ret_var)
+        if ret_var:
+            mmds[i], vars[i] = o
+        else:
+            mmds[i] = o
 
     return (mmds, vars) if ret_var else mmds
 
 
 def compute_polynomial_mmd(
-    codes_g : np.ndarray,
-    codes_r : np.ndarray,
+    x : torch.Tensor,
+    y : torch.Tensor,
     degree : int = 3,
     gamma : Optional[float] = None,
     coef0 : int = 1,
     var_at_m : Optional[int] = None,
-    ret_var : bool = True) -> np.ndarray:
+    ret_var : bool = True) -> torch.Tensor:
     """
     Computes KID (polynomial MMD) for given sets of features, obtained from Inception net
     or any other feature extractor.
     Args:
-        codes_g: 2D array of features from feature extractor e.g. (1000, 2048).
-        codes_r: 2D array of features from feature extractor e.g. (1000, 2048).
-        degree: the distance can work with polynomial functions of any degree.
-        gamma: ---
-        coef0: ---
-        var_at_m: ---
+        x: Samples from data distribution. Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1.
+        y: Samples from data distribution. Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1
+        degree: Degree of a polynomial functions used in kernels. Default: 3
+        gamma: Kernel parameter. See paper for details
+        coef0: Kernel parameter. See paper for details
+        var_at_m: Kernel variance. Default is `None`
         ret_var: whether to return variance after the distance is computed.
-                    This function will return Tuple[float, float] in this case.
+                       This function will return Tuple[float, float] in this case.
     Returns:
         float or Tuple[float, float]: KID score and variance (optional).
     """
     # use  k(x, y) = (gamma <x, y> + coef0)^degree
     # default gamma is 1 / dim
-    X = codes_g
-    Y = codes_r
 
-    K_XX = polynomial_kernel(X, degree=degree, gamma=gamma, coef0=coef0)
-    K_YY = polynomial_kernel(Y, degree=degree, gamma=gamma, coef0=coef0)
-    K_XY = polynomial_kernel(X, Y, degree=degree, gamma=gamma, coef0=coef0)
+    K_XX = polynomial_kernel(x.numpy(), degree=degree, gamma=gamma, coef0=coef0)
+    K_YY = polynomial_kernel(y.numpy(), degree=degree, gamma=gamma, coef0=coef0)
+    K_XY = polynomial_kernel(x.numpy(), y.numpy(), degree=degree, gamma=gamma, coef0=coef0)
 
-    return _mmd2_and_variance(K_XX, K_XY, K_YY,
-                              var_at_m=var_at_m, ret_var=ret_var)
+    score = _mmd2_and_variance(K_XX, K_XY, K_YY, var_at_m=var_at_m, ret_var=ret_var)
+    return torch.from_numpy(np.array(score))
 
 
 def _mmd2_and_variance(
@@ -79,9 +74,9 @@ def _mmd2_and_variance(
     K_XY : np.ndarray,
     K_YY : np.ndarray,
     unit_diagonal : bool = False,
-    mmd_est : str = 'unbiased', 
+    mmd_est : str = 'unbiased',
     block_size : int = 1024,
-    var_at_m : Optional[int] = None, 
+    var_at_m : Optional[int] = None,
     ret_var : bool = True
     ) -> Tuple[float, float]:
     # based on
@@ -173,13 +168,15 @@ def _sqn(arr : np.ndarray) -> np.ndarray:
 
 class KID(BaseFeatureMetric):
     r"""Creates a criterion that measures Kernel Inception Distance (polynomial MMD) for two datasets of images.
-    Args: 
+
+    Args:
         degree: Degree of a polynomial functions used in kernels. Default: 3
         gamma: Kernel parameter. See paper for details
         coef0: Kernel parameter. See paper for details
         var_at_m: Kernel variance. Default is `None`
         ret_var: whether to return variance after the distance is computed.
                        This function will return Tuple[float, float] in this case.
+
     Reference:
         Demystifying MMD GANs https://arxiv.org/abs/1801.01401 
     """
@@ -210,12 +207,10 @@ class KID(BaseFeatureMetric):
             target_features: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
 
         Returns:
-            normed_msidx: normalized msid descriptor (if no `target_generator` specified).
-            msid_score: the scalar value of the distance between discriptor if both `prediction` and `target` given.
+            score: Scalar value of the distance between image sets features.
         """
         # Check inputs
         super(KID, self).forward(predicted_features, target_features)
 
-        result = self.compute(predicted_features.numpy(), target_features.numpy())
+        result = self.compute(predicted_features, target_features)
         return torch.from_numpy(np.array(result))
-
