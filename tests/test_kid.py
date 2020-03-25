@@ -29,16 +29,14 @@ def features_prediction_constant() -> torch.Tensor:
 # ================== Test function: `compute_polynomial_mmd` ==================
 def test_compute_polynomial_mmd_fails_for_different_dimensions(features_target_normal : torch.Tensor) -> None:
     features_prediction_normal = torch.rand(1000, 21)
+    with pytest.raises(ValueError):
+        compute_polynomial_mmd(features_target_normal, features_prediction_normal)
+
+
+def test_compute_polynomial_mmd_fails_for_different_number_of_images_in_stack(features_target_normal : torch.Tensor) -> None:
+    features_prediction_normal = torch.rand(1001, 20)
     with pytest.raises(AssertionError):
         compute_polynomial_mmd(features_target_normal, features_prediction_normal)
-
-
-def test_compute_polynomial_mmd_works_for_different_number_of_images_in_stack(features_target_normal : torch.Tensor) -> None:
-    features_prediction_normal = torch.rand(1001, 20)
-    try:
-        compute_polynomial_mmd(features_target_normal, features_prediction_normal)
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred: {e}")
 
 
 def test_KID_init() -> None:
