@@ -72,12 +72,16 @@ def test_MSID_init() -> None:
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
-def test_msid_is_small_for_equal_tensors(
+def test_msid_is_smaller_for_equal_tensors(
     features_target_normal: torch.Tensor,
-    features_prediction_normal : torch.Tensor) -> None:
+    features_prediction_normal : torch.Tensor,
+    features_prediction_constant : torch.Tensor
+    ) -> None:
     metric = MSID()
     measure = metric(features_target_normal, features_prediction_normal)
-    assert measure.sum() <= 10, f'If equal tensors are passed MSID must be small, got {measure}'
+    measure_constant = metric(features_target_normal, features_prediction_normal)
+    assert measure <= measure_constant, \
+        f'MSID should be smaller for samples from the same distribution, got {measure} and {measure_constant}'
 
 def test_MSID_forward(features_target_normal : torch.Tensor, features_prediction_normal : torch.Tensor,) -> None:
     try:
