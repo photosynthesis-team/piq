@@ -15,11 +15,11 @@ import torch
 from scipy import linalg
 from torch import nn
 
-from photosynthesis_metrics.utils import BaseFeatureMetric
+from photosynthesis_metrics.utils import BaseFeatureMetric, _validate_features
 
 def __compute_fid(mu1: float, sigma1: np.ndarray, mu2: float, sigma2: np.ndarray, eps=1e-6) -> float:
     r"""
-    The Frechet distance between two multivariate Gaussians X_predicted ~ N(mu_1, sigm_1)
+    The Frechet Inception Distance between two multivariate Gaussians X_predicted ~ N(mu_1, sigm_1)
     and X_target ~ N(mu_2, sigm_2) is
         d^2 = ||mu_1 - mu_2||^2 + Tr(sigm_1 + sigm_2 - 2*sqrt(sigm_1*sigm_2)).
     Args:
@@ -33,7 +33,7 @@ def __compute_fid(mu1: float, sigma1: np.ndarray, mu2: float, sigma2: np.ndarray
     covmean, _ = linalg.sqrtm(sigma1.dot(sigma2), disp=False)
     # Product might be almost singular
     if not np.isfinite(covmean).all():
-        print(f'fid calculation produces singular product; adding {eps} to diagonal of cov estimates')
+        print(f'FID calculation produces singular product; adding {eps} to diagonal of cov estimates')
         offset = np.eye(sigma1.shape[0]) * eps
         covmean = linalg.sqrtm((sigma1 + offset).dot(sigma2 + offset))
 
@@ -48,36 +48,37 @@ def __compute_fid(mu1: float, sigma1: np.ndarray, mu2: float, sigma2: np.ndarray
     tr_covmean = np.trace(covmean)
     return (diff.dot(diff) + np.trace(sigma1) + np.trace(sigma2) - 2 * tr_covmean)
 
+def _compute_statistics(samples: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    r"""Calculates the statistics used by FID
+    Args:
+        samples:  Low-dimension representation of image set.
+            Shape (N_samples, dims) and dtype: np.float32 in range 0 - 1
+    Returns:
+        mu: mean over all activations from the encoder.
+        sigma: covariance matrix over all activations from the encoder.
+    """
+    mu = np.mean(samples, axis=0)
+    sigma = np.cov(samples, rowvar=False)
+    return mu, sigma
 
-def compute_fid(predicted_stack: np.ndarray, target_stack: np.ndarray) -> float:
+
+def compute_fid(x: torch.Tensor, y: torch.Tensor) -> float:
     r"""Numpy implementation of the Frechet Distance.
-    Fits multivariate Gaussians: X_predicted ~ N(mu_1, sigm_1) and X_target ~ N(mu_2, sigm_2) to image stacks.
+    Fits multivariate Gaussians: X ~ N(mu_1, sigm_1) and Y ~ N(mu_2, sigm_2) to image stacks.
     Then computes FID as d^2 = ||mu_1 - mu_2||^2 + Tr(sigm_1 + sigm_2 - 2*sqrt(sigm_1*sigm_2)).
 
     Args:
-        predicted_stack: activations from encoder with shape (N_samples, dims) and dtype: np.float32 in range 0 - 1
-        target_stack: activations from encoder with shape (N_samples, dims) and dtype: np.float32 in range 0 - 1
+        x: Samples from data distribution. Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1.
+        y: Samples from data distribution. Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1
+
     Returns:
     --   : The Frechet Distance.
     """
-    m_pred, s_pred = compute_statistics(predicted_stack)
-    m_targ, s_targ = compute_statistics(target_stack)
+    m_pred, s_pred = _compute_statistics(x.numpy())
+    m_targ, s_targ = _compute_statistics(y.numpy())
 
-    fid_score = __compute_fid(m_pred, s_pred, m_targ, s_targ)
-    return fid_score
-
-
-def compute_statistics(stack: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-    r"""Calculates the statistics used by FID
-    Args:
-        stack: activations from encoder with shape (N_samples, dims) and dtype: np.float32 in range 0 - 1
-    Returns:
-        mu:     mean over all activations from the encoder.
-        sigma:  covariance matrix over all activations from the encoder.
-    """
-    mu = np.mean(stack, axis=0)
-    sigma = np.cov(stack, rowvar=False)
-    return mu, sigma
+    score = __compute_fid(m_pred, s_pred, m_targ, s_targ)
+    return score
 
 
 class FID(BaseFeatureMetric):
@@ -99,12 +100,8 @@ class FID(BaseFeatureMetric):
             target_features: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
 
         Returns:
-            normed_msidx: normalized msid descriptor (if no `target_generator` specified).
-            msid_score: the scalar value of the distance between discriptor if both `prediction` and `target` given.
+            score: Scalar value of the distance between image sets features.
         """
         # Check inputs
         super(FID, self).forward(predicted_features, target_features)
-
-        result = self.compute(predicted_features.numpy(), target_features.numpy())
-        return torch.from_numpy(np.array(result))
-
+        return self.compute(predicted_features, target_features)

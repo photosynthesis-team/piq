@@ -1,9 +1,27 @@
-from typing import Callable
+from typing import Callable, Optional, Union, Tuple, List
 
 import torch
 import numpy as np
 
+
 from photosynthesis_metrics.feature_extractors.fid_inception import InceptionV3
+
+def _validate_features(x: torch.Tensor, y: torch.Tensor, ) -> None:
+    r"""Check, that computed features satisfy metric requirements.
+
+    Args:
+        x : Low-dimensional representation of predicted images.
+        y : Low-dimensional representation of target images.
+    """
+    assert torch.is_tensor(x) and torch.is_tensor(y), \
+        f"Both features should be torch.Tensors, got {type(x)} and {type(y)}"
+    assert len(x.shape) == 2, \
+        f"Predicted features must have shape (N_samples, encoder_dim), got {x.shape}"
+    assert len(y.shape) == 2, \
+        f"Target features must have shape  (N_samples, encoder_dim), got {y.shape}"
+    assert x.shape[1] == y.shape[1], \
+        f"Features dimensionalities should match, otherwise it won't be possible to correctly compute statistics. \
+            Got {x.shape[1]} and {y.shape[1]}"
 
 class BaseFeatureMetric(torch.nn.Module):
     r"""Base class for all metrics, which require computation of per image features.
@@ -15,18 +33,12 @@ class BaseFeatureMetric(torch.nn.Module):
 
     def forward(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
         # Sanity check for input
-        assert predicted_features.shape[1] == target_features.shape[1], \
-            f"Features dimensionalities should match, otherwise it won't be possible to correctly compute statistics. \
-                Got {predicted_features.shape[1]} and {target_features.shape[1]}"
-        assert len(predicted_features.shape) == 2, \
-            f"Predicted features must have shape  (N_samples, encoder_dim), got {predicted_features.shape}"
-        assert len(target_features.shape) == 2, \
-            f"Target features must have shape  (N_samples, encoder_dim), got {target_features.shape}"
-
+        _validate_features(predicted_features, target_features)
+        
     def _compute_feats(
         self,
         loader: torch.utils.data.DataLoader,
-        feature_extractor : Callable = None,
+        feature_extractor : torch.nn.Module = None,
         device : str = 'cuda') -> torch.Tensor:
         r"""Generate low-dimensional image desciptors to be used for computing MSID score.
         Args:
@@ -43,7 +55,7 @@ class BaseFeatureMetric(torch.nn.Module):
         else:
             assert isinstance(feature_extractor, torch.nn.Module), \
                 f"Feature extractor must be PyTorch module. Got {type(feature_extractor)}"
-
+        feature_extractor.to(device)
         feature_extractor.eval()
 
         total_feats = []
@@ -52,9 +64,10 @@ class BaseFeatureMetric(torch.nn.Module):
             N = images.shape[0]
             images = images.float().to(device)
 
-            # Getting features
-            batch_feats = feature_extractor(images).view(N, -1)
-            total_feats.append(batch_feats)
-        return torch.Tensor(total_feats)
+            # Get features
+            features = feature_extractor(images)
+            assert len(features) == 1, \
+                f"feature_encoder must return list with features from one layer. Got {len(features)}"
+            total_feats.append(features[0].view(N, -1))
 
-
+        return torch.cat(total_feats, dim=0)
