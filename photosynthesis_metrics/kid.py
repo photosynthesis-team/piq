@@ -56,7 +56,7 @@ def compute_polynomial_mmd(
         ret_var: whether to return variance after the distance is computed.
                        This function will return Tuple[float, float] in this case.
     Returns:
-        float or Tuple[float, float]: KID score and variance (optional).
+        KID score and variance (optional).
     """
     # use  k(x, y) = (gamma <x, y> + coef0)^degree
     # default gamma is 1 / dim

@@ -19,7 +19,7 @@ from scipy import linalg
 from photosynthesis_metrics.base import BaseFeatureMetric
 
 
-def __compute_fid(mu1: float, sigma1: np.ndarray, mu2: float, sigma2: np.ndarray, eps=1e-6) -> float:
+def __compute_fid(mu1: np.ndarray, sigma1: np.ndarray, mu2: np.ndarray, sigma2: np.ndarray, eps=1e-6) -> float:
     r"""
     The Frechet Inception Distance between two multivariate Gaussians X_predicted ~ N(mu_1, sigm_1)
     and X_target ~ N(mu_2, sigm_2) is
