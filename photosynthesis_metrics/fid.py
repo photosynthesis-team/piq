@@ -89,7 +89,7 @@ class FID(BaseFeatureMetric):
         super(FID, self).__init__()
         self.compute = compute_fid
 
-    def forward(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+    def forward(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> float:
         r"""Interface of Frechet Inception Distance.
         It's computed for a whole set of data and uses features from encoder instead of images itself to decrease
         computation cost. FID can compare two data distributions with different number of samples.
