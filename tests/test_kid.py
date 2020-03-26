@@ -2,7 +2,6 @@ import pytest
 import torch
 
 from photosynthesis_metrics import KID, compute_polynomial_mmd
-from photosynthesis_metrics.feature_extractors.fid_inception import InceptionV3
 
 
 @pytest.fixture(scope='module')
@@ -37,6 +36,12 @@ def test_compute_polynomial_mmd_fails_for_different_number_of_images_in_stack(fe
     features_prediction_normal = torch.rand(1001, 20)
     with pytest.raises(AssertionError):
         compute_polynomial_mmd(features_target_normal, features_prediction_normal)
+
+def test_compute_polynomial_mmd_returns_variance(features_target_normal : torch.Tensor, features_prediction_normal : torch.Tensor) -> None:
+    result = compute_polynomial_mmd(features_target_normal, features_prediction_normal, ret_var=True)
+    assert len(result) == 2, \
+        f'Expected to get score and variance, got {result}'
+
 
 
 def test_KID_init() -> None:

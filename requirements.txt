@@ -1,4 +1,4 @@
 torch==1.4.0
 scipy==1.4.1
-sklearn
+sklearn==0.21.3
 torchvision==0.5.0

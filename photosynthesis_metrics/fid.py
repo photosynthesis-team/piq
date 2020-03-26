@@ -8,26 +8,32 @@ Credits:
     https://github.com/mseitzer/pytorch-fid
 """
 
-from typing import Callable, Tuple
+from typing import Tuple
+
 
 import numpy as np
 import torch
 from scipy import linalg
-from torch import nn
 
-from photosynthesis_metrics.utils import BaseFeatureMetric, _validate_features
+
+from photosynthesis_metrics.base import BaseFeatureMetric
+
 
 def __compute_fid(mu1: float, sigma1: np.ndarray, mu2: float, sigma2: np.ndarray, eps=1e-6) -> float:
     r"""
     The Frechet Inception Distance between two multivariate Gaussians X_predicted ~ N(mu_1, sigm_1)
     and X_target ~ N(mu_2, sigm_2) is
         d^2 = ||mu_1 - mu_2||^2 + Tr(sigm_1 + sigm_2 - 2*sqrt(sigm_1*sigm_2)).
+    
     Args:
         mu1: mean of activations calculated on predicted samples
         sigma1: covariance matrix over activations calculated on predicted samples
         mu2: mean of activations calculated on target samples
         sigma2: covariance matrix over activations calculated on target samples
         eps: offset constant. used if sigma_1 @ sigma_2 matrix is singular
+
+    Returns:
+        Scalar value of the distance between sets.
     """
     diff = mu1 - mu2
     covmean, _ = linalg.sqrtm(sigma1.dot(sigma2), disp=False)

@@ -1,4 +1,3 @@
-import sys
 from typing import Optional, List, Tuple, Union
 from functools import partial
 
@@ -6,16 +5,16 @@ import numpy as np
 import torch
 from sklearn.metrics.pairwise import polynomial_kernel
 
-from photosynthesis_metrics.utils import BaseFeatureMetric
+from photosynthesis_metrics.base import BaseFeatureMetric
 
 def compute_polynomial_mmd_averages(
     x : np.ndarray,
     y : np.ndarray,
     n_subsets : int = 50,
     subset_size : int = 1000,
-    ret_var : bool = True,
+    ret_var : bool = False,
     **kernel_args
-    ) -> Union[List[np.ndarray], Tuple[List[np.ndarray], List[np.ndarray]]]:
+    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
     m = min(x.shape[0], y.shape[0])
     mmds = np.zeros(n_subsets)
     if ret_var:
@@ -42,7 +41,8 @@ def compute_polynomial_mmd(
     gamma : Optional[float] = None,
     coef0 : int = 1,
     var_at_m : Optional[int] = None,
-    ret_var : bool = True) -> torch.Tensor:
+    ret_var : bool = False
+    ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
     """
     Computes KID (polynomial MMD) for given sets of features, obtained from Inception net
     or any other feature extractor.
@@ -65,8 +65,11 @@ def compute_polynomial_mmd(
     K_YY = polynomial_kernel(y.numpy(), degree=degree, gamma=gamma, coef0=coef0)
     K_XY = polynomial_kernel(x.numpy(), y.numpy(), degree=degree, gamma=gamma, coef0=coef0)
 
-    score = _mmd2_and_variance(K_XX, K_XY, K_YY, var_at_m=var_at_m, ret_var=ret_var)
-    return torch.from_numpy(np.array(score))
+    result = _mmd2_and_variance(K_XX, K_XY, K_YY, var_at_m=var_at_m, ret_var=ret_var)
+    if not ret_var:
+        return torch.from_numpy(np.array(result))
+    else:
+        return torch.from_numpy(np.array(result[0])), torch.from_numpy(np.array(result[1]))
 
 
 def _mmd2_and_variance(
@@ -75,10 +78,9 @@ def _mmd2_and_variance(
     K_YY : np.ndarray,
     unit_diagonal : bool = False,
     mmd_est : str = 'unbiased',
-    block_size : int = 1024,
     var_at_m : Optional[int] = None,
-    ret_var : bool = True
-    ) -> Tuple[float, float]:
+    ret_var : bool = False
+    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
     # based on
     # https://github.com/dougalsutherland/opt-mmd/blob/master/two_sample/mmd.py
     # but changed to not compute the full kernel matrix at once
@@ -174,8 +176,8 @@ class KID(BaseFeatureMetric):
         gamma: Kernel parameter. See paper for details
         coef0: Kernel parameter. See paper for details
         var_at_m: Kernel variance. Default is `None`
-        ret_var: whether to return variance after the distance is computed.
-                       This function will return Tuple[float, float] in this case.
+        ret_var: Whether to return variance after the distance is computed.
+                    This function will return Tuple[float, float] in this case. Default: False
 
     Reference:
         Demystifying MMD GANs https://arxiv.org/abs/1801.01401 
@@ -186,7 +188,7 @@ class KID(BaseFeatureMetric):
         gamma : Optional[float] = None,
         coef0 : int = 1,
         var_at_m : Optional[int] = None,
-        ret_var : bool = True
+        ret_var : bool = False
         ) -> np.ndarray:
         super(KID, self).__init__()
         self.compute = partial(
@@ -194,9 +196,10 @@ class KID(BaseFeatureMetric):
             degree=degree,
             gamma=gamma,
             coef0=coef0,
-            ret_var=False)
+            ret_var=ret_var)
 
-    def forward(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+    def forward(self, predicted_features: torch.Tensor, target_features: torch.Tensor
+    ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
         r"""Interface of Kernel Inception Distance.
         It's computed for a whole set of data and uses features from encoder instead of images itself to decrease
         computation cost. KID can compare two data distributions with different number of samples.
@@ -211,6 +214,4 @@ class KID(BaseFeatureMetric):
         """
         # Check inputs
         super(KID, self).forward(predicted_features, target_features)
-
-        result = self.compute(predicted_features, target_features)
-        return torch.from_numpy(np.array(result))
+        return self.compute(predicted_features, target_features)
