@@ -37,7 +37,7 @@ def _validate_input(x: torch.Tensor, y: torch.Tensor, kernel_size: Optional[int]
     
     return
 
-  
+
 def _validate_features(x: torch.Tensor, y: torch.Tensor, ) -> None:
     r"""Check, that computed features satisfy metric requirements.
 
