@@ -5,13 +5,10 @@ from functools import partial
 from typing import List, Tuple
 
 import torch
-import torch.nn as nn
 import numpy as np
 
-import scipy.sparse as sps
 from scipy.sparse import lil_matrix, diags, eye
 
-from photosynthesis_metrics.feature_extractors.fid_inception import InceptionV3
 from photosynthesis_metrics.utils import _validate_features, BaseFeatureMetric
 
 EPSILON = 1e-6
