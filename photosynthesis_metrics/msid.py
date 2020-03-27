@@ -9,7 +9,8 @@ import numpy as np
 
 from scipy.sparse import lil_matrix, diags, eye
 
-from photosynthesis_metrics.utils import _validate_features, BaseFeatureMetric
+from photosynthesis_metrics.utils import _validate_features
+from photosynthesis_metrics.base import BaseFeatureMetric
 
 EPSILON = 1e-6
 NORMALIZATION = 1e6
