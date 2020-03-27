@@ -117,6 +117,7 @@ PhotoSynthesis.Models: [https://github.com/photosynthesis-team/photosynthesis.mo
 ## Acknowledgements
 
 * **Pavel Parunin** - [@PavelParunin](https://github.com/ParuninPavel) - idea proposal and development
+* **Djamil Zakirov** - [@zakajd](https://github.com/zakajd) - development
 
 
 
