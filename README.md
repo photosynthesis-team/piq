@@ -33,8 +33,10 @@ various image-to-image tasks like denoising, super-resolution, image generation 
 * [PyTorch 1.3+](https://pytorch.org) :white_check_mark:  
 
 ### Installation
+
+`$ pip install photosynthesis-metrics`
  
-Clone the repo:
+If you want to use the latest features straight from the master, clone the repo:
 ```sh
 $ git clone https://github.com/photosynthesis-team/photosynthesis.metrics.git
 ```
