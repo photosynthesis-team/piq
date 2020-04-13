@@ -8,7 +8,7 @@ with open("README.md", "r") as f, open("requirements.txt", "r") as g:
 
 setuptools.setup(
     name='photosynthesis_metrics',
-    version='0.0.2',
+    version='0.1.0',
     author="Sergey Kastryulin",
     author_email="snk4tr@gmail.com",
     description="Measures and metrics for image2image tasks. PyTorch.",
@@ -19,7 +19,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: Apache-2.0 License",
         "Operating System :: OS Independent",
     ],
 )
