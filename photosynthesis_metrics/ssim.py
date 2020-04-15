@@ -118,6 +118,9 @@ class SSIMLoss(_Loss):
             elements in the output, ``'sum'``: the output will be summed. Note: :attr:`size_average`
             and :attr:`reduce` are in the process of being deprecated, and in the meantime,
             specifying either of those two args will override :attr:`reduction`. Default: ``'mean'``
+        data_range: The difference between the maximum and minimum of the pixel value,
+            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then max_val = 1.
+            The pixel value interval of both input and output should remain the same.
 
     Shape:
         - Input: :math:`(N, *)` where :math:`*` means, any number of additional dimensions
@@ -134,7 +137,8 @@ class SSIMLoss(_Loss):
     __constants__ = ['filter_size', 'k1', 'k2', 'sigma', 'kernel', 'reduction']
 
     def __init__(self, kernel_size: int = 11, kernel_sigma: float = 1.5, k1: float = 0.01, k2: float = 0.03,
-                 size_average: Optional[bool] = None, reduce: Optional[bool] = None, reduction: str = 'mean') -> None:
+                 size_average: Optional[bool] = None, reduce: Optional[bool] = None, reduction: str = 'mean',
+                 data_range: Union[int, float] = 1.) -> None:
         super(SSIMLoss, self).__init__(size_average, reduce, reduction)
 
         # Generic loss parameters.
@@ -150,21 +154,17 @@ class SSIMLoss(_Loss):
         self.kernel_sigma = kernel_sigma
         self.k1 = k1
         self.k2 = k2
+        self.data_range = data_range
 
         # Cash kernel between calls.
         self.kernel = _fspecial_gauss_1d(kernel_size, kernel_sigma)
 
-    def forward(self, prediction: torch.Tensor, target: torch.Tensor, data_range: Union[int, float] = 255) \
-            -> torch.Tensor:
+    def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         r"""Computation of Structural Similarity (SSIM) index as a loss function.
-
 
         Args:
             prediction: Tensor of prediction of the network.
             target: Reference tensor.
-            data_range: The difference between the maximum and minimum of the pixel value,
-                i.e., if for image x it holds min(x) = 0 and max(x) = 1, then max_val = 1.
-                The pixel value interval of both input and output should remain the same.
 
         Returns:
             Value of SSIM loss to be minimized. 0 <= SSIM loss <= 1.
@@ -176,7 +176,7 @@ class SSIMLoss(_Loss):
         ret = _compute_ssim(x=prediction,
                             y=target,
                             kernel=kernel,
-                            data_range=data_range,
+                            data_range=self.data_range,
                             size_average=False,
                             full=False,
                             k1=self.k1,
@@ -300,6 +300,10 @@ class MultiScaleSSIMLoss(_Loss):
             elements in the output, ``'sum'``: the output will be summed. Note: :attr:`size_average`
             and :attr:`reduce` are in the process of being deprecated, and in the meantime,
             specifying either of those two args will override :attr:`reduction`. Default: ``'mean'``
+        data_range: The difference between the maximum and minimum of the pixel value,
+            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then max_val = 1.
+            The pixel value interval of both input and output should remain the same.
+
 
     Shape:
         - Input: :math:`(N, *)` where :math:`*` means, any number of additional dimensions
@@ -317,7 +321,7 @@ class MultiScaleSSIMLoss(_Loss):
 
     def __init__(self, kernel_size: int = 11, kernel_sigma: float = 1.5, k1: float = 0.01, k2: float = 0.03,
                  scale_weights: Optional[Union[Tuple[float], List[float]]] = None, size_average: Optional[bool] = None,
-                 reduce: Optional[bool] = None, reduction: str = 'mean') -> None:
+                 reduce: Optional[bool] = None, reduction: str = 'mean', data_range: Union[int, float] = 1.) -> None:
         super(MultiScaleSSIMLoss, self).__init__(size_average, reduce, reduction)
 
         # Generic loss parameters.
@@ -338,34 +342,31 @@ class MultiScaleSSIMLoss(_Loss):
         self.kernel_sigma = kernel_sigma
         self.k1 = k1
         self.k2 = k2
+        self.data_range = data_range
 
         # Cash kernel between calls.
         self.kernel = _fspecial_gauss_1d(kernel_size, kernel_sigma)
 
-    def forward(self, prediction: torch.Tensor, target: torch.Tensor, data_range: Union[int, float] = 255) \
-            -> torch.Tensor:
+    def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         r"""Computation of Multi-scale Structural Similarity (MS-SSIM) index as a loss function.
 
 
         Args:
             prediction: Tensor of prediction of the network.
             target: Reference tensor.
-            data_range: The difference between the maximum and minimum of the pixel value,
-                i.e., if for image x it holds min(x) = 0 and max(x) = 1, then max_val = 1.
-                The pixel value interval of both input and output should remain the same.
 
         Returns:
             Value of MS-SSIM loss to be minimized. 0 <= MS-SSIM loss <= 1.
         """
         prediction, target = _adjust_dimensions(x=prediction, y=target)
         kernel = self.kernel.repeat(prediction.shape[1], 1, 1, 1)
-        self.scale_weights_tensor.to(device=prediction.device)
+        scale_weights_tensor = self.scale_weights_tensor.to(device=prediction.device)
 
         ret = _compute_multi_scale_ssim(x=prediction,
                                         y=target,
-                                        data_range=data_range,
+                                        data_range=self.data_range,
                                         kernel=kernel,
-                                        scale_weights_tensor=self.scale_weights_tensor,
+                                        scale_weights_tensor=scale_weights_tensor,
                                         k1=self.k1,
                                         k2=self.k2)
 
