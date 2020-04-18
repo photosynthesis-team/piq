@@ -96,8 +96,13 @@ def _polynomial_kernel(
     if Y is None:
         Y = X
 
-    assert X.dim() == 2 and Y.dim() == 2
-    assert X.size(1) == Y.size(1)
+    if X.dim() != 2 or Y.dim() != 2:
+        raise ValueError('Incompatible dimension for X and Y matrices: '
+                         'X.dim() == {} while Y.dim() == {}'.format(X.dim(), Y.dim()))
+
+    if X.size(1) != Y.size(1):
+        raise ValueError('Incompatible dimension for X and Y matrices: '
+                         'X.size(1) == {} while Y.size(1) == {}'.format(X.size(1), Y.size(1)))
 
     if gamma is None:
         gamma = 1.0 / X.size(1)
