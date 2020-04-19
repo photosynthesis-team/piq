@@ -1,4 +1,4 @@
-from typing import Optional, List, Tuple, Union
+from typing import Optional, Tuple, Union
 from functools import partial
 
 import torch
@@ -209,6 +209,7 @@ def _mmd2_and_variance(
 def _sqn(tensor : torch.Tensor) -> torch.Tensor:
     flat = tensor.flatten()
     return flat.dot(flat)
+
 
 class KID(BaseFeatureMetric):
     r"""Creates a criterion that measures Kernel Inception Distance (polynomial MMD) for two datasets of images.
