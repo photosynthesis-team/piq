@@ -54,3 +54,5 @@ def _validate_features(x: torch.Tensor, y: torch.Tensor, ) -> None:
     assert x.shape[1] == y.shape[1], \
         f"Features dimensionalities should match, otherwise it won't be possible to correctly compute statistics. \
             Got {x.shape[1]} and {y.shape[1]}"
+    assert x.device == y.device, \
+        f"Both tensors should be on the same device"

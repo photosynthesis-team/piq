@@ -7,11 +7,11 @@ from photosynthesis_metrics.base import BaseFeatureMetric
 
 
 def compute_polynomial_mmd_averages(
-    x : torch.Tensor,
-    y : torch.Tensor,
-    n_subsets : int = 50,
-    subset_size : int = 1000,
-    ret_var : bool = False,
+    x: torch.Tensor,
+    y: torch.Tensor,
+    n_subsets: int = 50,
+    subset_size: int = 1000,
+    ret_var: bool = False,
     **kernel_args
     ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
     m = min(x.size(0), y.size(0))
@@ -31,50 +31,12 @@ def compute_polynomial_mmd_averages(
     return (mmds, vars) if ret_var else mmds
 
 
-def compute_polynomial_mmd(
-    x : torch.Tensor,
-    y : torch.Tensor,
-    degree : int = 3,
-    gamma : Optional[float] = None,
-    coef0 : float = 1.,
-    var_at_m : Optional[int] = None,
-    ret_var : bool = False
-    ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
-    """
-    Computes KID (polynomial MMD) for given sets of features, obtained from Inception net
-    or any other feature extractor.
-    Args:
-        x: Samples from data distribution. Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1.
-        y: Samples from data distribution. Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1
-        degree: Degree of a polynomial functions used in kernels. Default: 3
-        gamma: Kernel parameter. See paper for details
-        coef0: Kernel parameter. See paper for details
-        var_at_m: Kernel variance. Default is `None`
-        ret_var: whether to return variance after the distance is computed.
-                       This function will return Tuple[float, float] in this case.
-    Returns:
-        KID score and variance (optional).
-    """
-    # use  k(x, y) = (gamma <x, y> + coef0)^degree
-    # default gamma is 1 / dim
-
-    K_XX = _polynomial_kernel(x, degree=degree, gamma=gamma, coef0=coef0)
-    K_YY = _polynomial_kernel(y, degree=degree, gamma=gamma, coef0=coef0)
-    K_XY = _polynomial_kernel(x, y, degree=degree, gamma=gamma, coef0=coef0)
-
-    result = _mmd2_and_variance(K_XX, K_XY, K_YY, var_at_m=var_at_m, ret_var=ret_var)
-    if not ret_var:
-        return result
-    else:
-        return result[0], result[1]
-
-
 def _polynomial_kernel(
-    X : torch.Tensor,
-    Y : torch.Tensor = None,
-    degree : int = 3,
-    gamma : Optional[float] = None,
-    coef0 : float = 1.
+    X: torch.Tensor,
+    Y: torch.Tensor = None,
+    degree: int = 3,
+    gamma: Optional[float] = None,
+    coef0: float = 1.
     ) -> torch.Tensor:
     """
         Compute the polynomial kernel between x and y::
@@ -115,11 +77,11 @@ def _polynomial_kernel(
 
 
 def _mmd2_and_variance(
-    K_XX : torch.Tensor,
-    K_XY : torch.Tensor,
-    K_YY : torch.Tensor,
-    unit_diagonal : bool = False,
-    mmd_est : str = 'unbiased',
+    K_XX: torch.Tensor,
+    K_XY: torch.Tensor,
+    K_YY: torch.Tensor,
+    unit_diagonal: bool = False,
+    mmd_est: str = 'unbiased',
     var_at_m : Optional[int] = None,
     ret_var : bool = False
     ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
@@ -220,26 +182,25 @@ class KID(BaseFeatureMetric):
         coef0: Kernel parameter. See paper for details
         var_at_m: Kernel variance. Default is `None`
         ret_var: Whether to return variance after the distance is computed.
-                    This function will return Tuple[float, float] in this case. Default: False
+                    This function will return Tuple[torch.Tensor, torch.Tensor] in this case. Default: False
 
     Reference:
         Demystifying MMD GANs https://arxiv.org/abs/1801.01401 
     """
     def __init__(
         self,
-        degree : int = 3,
-        gamma : Optional[float] = None,
-        coef0 : int = 1,
-        var_at_m : Optional[int] = None,
-        ret_var : bool = False
+        degree: int = 3,
+        gamma: Optional[float] = None,
+        coef0: int = 1,
+        var_at_m: Optional[int] = None,
+        ret_var: bool = False
         ) -> torch.Tensor:
-        super(KID, self).__init__()
-        self.compute = partial(
-            compute_polynomial_mmd,
-            degree=degree,
-            gamma=gamma,
-            coef0=coef0,
-            ret_var=ret_var)
+        super().__init__()
+
+        self.degree = degree
+        self.gamma = gamma
+        self.coef0 = coef0
+        self.ret_var = ret_var
 
     def forward(self, predicted_features: torch.Tensor, target_features: torch.Tensor
     ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
@@ -254,7 +215,53 @@ class KID(BaseFeatureMetric):
 
         Returns:
             score: Scalar value of the distance between image sets features.
+            variance (optional): If `ret_var` is True, also returns variance
         """
-        # Check inputs
-        super(KID, self).forward(predicted_features, target_features)
-        return self.compute(predicted_features, target_features)
+        super().forward(predicted_features, target_features)
+
+    def compute_metric(
+        self,
+        predicted_features: torch.Tensor,
+        target_features: torch.Tensor,
+        ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+        """
+        Computes KID (polynomial MMD) for given sets of features, obtained from Inception net
+        or any other feature extractor.
+        Args:
+            x: Samples from data distribution. Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1.
+            y: Samples from data distribution. Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1
+            degree: Degree of a polynomial functions used in kernels. Default: 3
+            gamma: Kernel parameter. See paper for details
+            coef0: Kernel parameter. See paper for details
+            var_at_m: Kernel variance. Default is `None`
+            ret_var: whether to return variance after the distance is computed.
+                        This function will return Tuple[float, float] in this case.
+        Returns:
+            KID score and variance (optional).
+        """
+        # use  k(x, y) = (gamma <x, y> + coef0)^degree
+        # default gamma is 1 / dim
+        K_XX = _polynomial_kernel(
+            predicted_features,
+            None,
+            degree=self.degree,
+            gamma=self.gamma,
+            coef0=self.coef0)
+        K_YY = _polynomial_kernel(
+            target_features,
+            None,
+            degree=self.degree,
+            gamma=self.gamma,
+            coef0=self.coef0)
+        K_XY = _polynomial_kernel(
+            predicted_features,
+            target_features,
+            degree=self.degree,
+            gamma=self.gamma,
+            coef0=self.coef0)
+
+        result = _mmd2_and_variance(K_XX, K_XY, K_YY, var_at_m=self.var_at_m, ret_var=self.ret_var)
+        if not self.ret_var:
+            return result
+        else:
+            return result[0], result[1]

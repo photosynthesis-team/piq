@@ -68,34 +68,11 @@ def _compute_statistics(samples: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     return mu, sigma
 
 
-def compute_fid(x: torch.Tensor, y: torch.Tensor) -> float:
-    r"""Numpy implementation of the Frechet Distance.
-    Fits multivariate Gaussians: X ~ N(mu_1, sigm_1) and Y ~ N(mu_2, sigm_2) to image stacks.
-    Then computes FID as d^2 = ||mu_1 - mu_2||^2 + Tr(sigm_1 + sigm_2 - 2*sqrt(sigm_1*sigm_2)).
-
-    Args:
-        x: Samples from data distribution. Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1.
-        y: Samples from data distribution. Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1
-
-    Returns:
-    --   : The Frechet Distance.
-    """
-    m_pred, s_pred = _compute_statistics(x.numpy())
-    m_targ, s_targ = _compute_statistics(y.numpy())
-
-    score = __compute_fid(m_pred, s_pred, m_targ, s_targ)
-    return score
-
-
 class FID(BaseFeatureMetric):
     r"""Creates a criterion that measures Frechet Inception Distance score for two datasets of images
     See https://arxiv.org/abs/1706.08500 for reference.
     """
-    def __init__(self):
-        super(FID, self).__init__()
-        self.compute = compute_fid
-
-    def forward(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> float:
+    def forward(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
         r"""Interface of Frechet Inception Distance.
         It's computed for a whole set of data and uses features from encoder instead of images itself to decrease
         computation cost. FID can compare two data distributions with different number of samples.
@@ -108,6 +85,23 @@ class FID(BaseFeatureMetric):
         Returns:
             score: Scalar value of the distance between image sets features.
         """
-        # Check inputs
-        super(FID, self).forward(predicted_features, target_features)
-        return self.compute(predicted_features, target_features)
+        super().forward(predicted_features, target_features)
+
+    def compute_metric(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+        r"""
+        Fits multivariate Gaussians: X ~ N(mu_1, sigm_1) and Y ~ N(mu_2, sigm_2) to image stacks.
+        Then computes FID as d^2 = ||mu_1 - mu_2||^2 + Tr(sigm_1 + sigm_2 - 2*sqrt(sigm_1*sigm_2)).
+
+        Args:
+            predicted_features: Samples from data distribution. Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1.
+            target_features: Samples from data distribution. Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1
+
+        Returns:
+        --   : The Frechet Distance.
+        """
+        m_pred, s_pred = _compute_statistics(predicted_features.detach().cpu().numpy())
+        m_targ, s_targ = _compute_statistics(target_features.detach().cpu().numpy())
+
+        score = __compute_fid(m_pred, s_pred, m_targ, s_targ)
+
+        return torch.tensor(score, device=predicted_features.device)
