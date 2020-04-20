@@ -30,18 +30,20 @@ ssim_index = ssim(prediction, target, data_range=1.)
 <!-- MINIMAL EXAMPLES -->
 ### Minimal examples
 
+<!-- SSIM EXAMPLES -->
 <details>
-<summary>SSIM</summary>
+<summary>Structural Similarity (SSIM)</summary>
 <p>
 
 To compute SSIM index as measure, use lower case function from the library:
 ```python
 import torch
 from photosynthesis_metrics import ssim
+from typing import Union, Tuple
 
 prediction = torch.rand(3, 3, 256, 256)
 target = torch.rand(3, 3, 256, 256) 
-ssim_index = ssim(prediction, target, data_range=1.)
+ssim_index: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]] = ssim(prediction, target, data_range=1.)
 ```
 
 In order to use SSIM as a loss function, use corresponding PyTorch module:
@@ -52,14 +54,15 @@ from photosynthesis_metrics import SSIMLoss
 loss = SSIMLoss()
 prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
 target = torch.rand(3, 3, 256, 256)
-output = loss(prediction, target, data_range=1.)
+output: torch.Tensor = loss(prediction, target, data_range=1.)
 output.backward()
 ```
 </p>
 </details>
 
+<!-- MS-SSIM EXAMPLES -->
 <details>
-<summary>MS-SSIM</summary>
+<summary>Multi-Scale Structural Similarity (MS-SSIM)</summary>
 <p>
 
 To compute MS-SSIM index as measure, use lower case function from the library:
@@ -69,7 +72,7 @@ from photosynthesis_metrics import multi_scale_ssim
 
 prediction = torch.rand(3, 3, 256, 256)
 target = torch.rand(3, 3, 256, 256) 
-ssim_index = multi_scale_ssim(prediction, target, data_range=1.)
+ms_ssim_index: torch.Tensor = multi_scale_ssim(prediction, target, data_range=1.)
 ```
 
 In order to use MS-SSIM as a loss function, use corresponding PyTorch module:
@@ -80,10 +83,136 @@ from photosynthesis_metrics import MultiScaleSSIMLoss
 loss = MultiScaleSSIMLoss()
 prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
 target = torch.rand(3, 3, 256, 256)
-output = loss(prediction, target, data_range=1.)
+output: torch.Tensor = loss(prediction, target, data_range=1.)
 output.backward()
 ```
+</p>
+</details>
 
+<!-- TV EXAMPLES -->
+<details>
+<summary>Total Variation (TV)</summary>
+<p>
+
+To compute TV as measure, use lower case function from the library:
+```python
+import torch
+from photosynthesis_metrics import total_variation
+
+data = torch.rand(3, 3, 256, 256) 
+tv: torch.Tensor = total_variation(data)
+```
+
+In order to use TV as a loss function, use corresponding PyTorch module:
+```python
+import torch
+from photosynthesis_metrics import TVLoss
+
+loss = TVLoss()
+prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+target = torch.rand(3, 3, 256, 256)
+ouput: torch.Tensor = loss(prediction, target, data_range=1.)
+output.backward()
+```
+</p>
+</details>
+
+<!-- MSID EXAMPLES -->
+<details>
+<summary>Multi-Scale Intrinsic Distance (MSID)</summary>
+<p>
+
+Use `MSID` class to compute [MSID score](https://arxiv.org/abs/1905.11141) from image features, 
+pre-extracted from some feature extractor network: 
+```python
+import torch
+from photosynthesis_metrics import MSID
+
+msid_metric = MSID()
+prediction_feats = torch.rand(10000, 1024)
+target_feats = torch.rand(10000, 1024)
+msid: torch.Tensor = msid_metric(prediction_feats, target_feats)
+```
+
+If image features are not available, extract them using `_compute_feats` of `MSID` class. 
+Please note that `_compute_feats` consumes a data loader of predefined format. Refer to [docs](docs) for more details.
+```python
+import torch
+from  torch.utils.data import DataLoader
+from photosynthesis_metrics import MSID
+
+first_dl, second_dl = DataLoader(), DataLoader()
+msid_metric = MSID() 
+first_feats = msid_metric._compute_feats(first_dl)
+second_feats = msid_metric._compute_feats(second_dl)
+msid: torch.Tensor = msid_metric(first_feats, second_feats)
+```  
+</p>
+</details>
+
+<!-- FID EXAMPLES -->
+<details>
+<summary>Frechet Inception Distance(FID)</summary>
+<p>
+
+Use `FID` class to compute [FID score](https://arxiv.org/abs/1706.08500) from image features, 
+pre-extracted from some feature extractor network:
+```python
+import torch
+from photosynthesis_metrics import FID
+
+fid_metric = FID()
+prediction_feats = torch.rand(10000, 1024)
+target_feats = torch.rand(10000, 1024)
+msid: torch.Tensor = fid_metric(prediction_feats, target_feats)
+```
+ 
+If image features are not available, extract them using `_compute_feats` of `FID` class. 
+Please note that `_compute_feats` consumes a data loader of predefined format. Refer to [docs](docs) for more details.
+```python
+import torch
+from  torch.utils.data import DataLoader
+from photosynthesis_metrics import FID
+
+first_dl, second_dl = DataLoader(), DataLoader()
+fid_metric = FID() 
+first_feats = fid_metric._compute_feats(first_dl)
+second_feats = fid_metric._compute_feats(second_dl)
+msid: torch.Tensor = fid_metric(first_feats, second_feats)
+```  
+</p>
+</details>
+
+<!-- KID EXAMPLES -->
+<details>
+<summary></summary>
+<p>
+
+Use `KID` class to compute [KID score](https://arxiv.org/abs/1801.01401) from image features, 
+pre-extracted from some feature extractor network:
+```python
+import torch
+from photosynthesis_metrics import KID
+
+kid_metric = KID()
+prediction_feats = torch.rand(10000, 1024)
+target_feats = torch.rand(10000, 1024)
+msid: torch.Tensor = kid_metric(prediction_feats, target_feats)
+```
+ 
+If image features are not available, extract them using `_compute_feats` of `KID` class. 
+Please note that `_compute_feats` consumes a data loader of predefined format. Refer to [docs](docs) for more details.
+```python
+import torch
+from  torch.utils.data import DataLoader
+from photosynthesis_metrics import KID
+
+first_dl, second_dl = DataLoader(), DataLoader()
+kid_metric = KID() 
+first_feats = kid_metric._compute_feats(first_dl)
+second_feats = kid_metric._compute_feats(second_dl)
+msid: torch.Tensor = kid_metric(first_feats, second_feats)
+```  
 </p>
 </details>
 
@@ -126,8 +255,8 @@ features (and known issues).
 
 
 <!-- COMMUNITY -->
-###Community
-  
+### Community
+
 
 <!-- CONTRIBUTING -->
 #### Contributing
