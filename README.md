@@ -102,10 +102,10 @@ output.backward()
 
 ### Overview
 
-**PhotoSynthesis.Metrics** helps you to concentrate on your experiments without the boilerplate code.
+*PhotoSynthesis.Metrics* helps you to concentrate on your experiments without the boilerplate code.
 The library contains a set of measures and metrics that is constantly getting extended. 
 For measures/metrics that can be used as loss functions, corresponding PyTorch modules are implemented.
-Please refer to the [Minimal examples](##Minimal examples) for more usage details. 
+Please refer to the [Minimal examples](###Minimal examples) for more usage details. 
  
 
 
@@ -127,7 +127,7 @@ features (and known issues).
 
 <!-- COMMUNITY -->
 ###Community
-
+  
 
 <!-- CONTRIBUTING -->
 #### Contributing
@@ -162,6 +162,7 @@ PhotoSynthesis.Models: [https://github.com/photosynthesis-team/photosynthesis.mo
 
 * **Pavel Parunin** - [@PavelParunin](https://github.com/ParuninPavel) - idea proposal and development
 * **Djamil Zakirov** - [@zakajd](https://github.com/zakajd) - development
+* **Denis Prokopenko** - [@denproc](https://github.com/denproc) - development
 
 
 
