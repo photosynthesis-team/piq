@@ -6,33 +6,110 @@
 [![PyPI version][pypi-version-shield]][pypi-version-url]
 
 
-<!-- TABLE OF CONTENTS -->
-## Table of Contents
-
-* [About the Project](#about-the-project)
-  * [Prerequisites](#prerequisites)
-  * [Installation](#installation)
-* [Usage](#usage)
-* [Roadmap](#roadmap)
-* [Contributing](#contributing)
-* [License](#license)
-* [Contact](#contact)
-* [Acknowledgements](#acknowledgements)
-
-
-
 <!-- ABOUT THE PROJECT -->
-## About The Project
 
-The project is intended to become a easy to use yet extensive library with metrics for 
-various image-to-image tasks like denoising, super-resolution, image generation etc.
+PyTorch library with measures and metrics for various image-to-image tasks like denoising, super-resolution, 
+image generation etc. This easy to use yet flexible and extensive library is developed with focus on reliability 
+and reproducibility of results. Use your favourite measures as losses for training neural networks with ready-to-use 
+PyTorch modules.  
 
 
-### Prerequisites
+<!-- GETTING STARTED -->
+### Getting started  
 
-* [PyTorch 1.3+](https://pytorch.org) :white_check_mark:  
+```python
+import torch
+from photosynthesis_metrics import ssim
 
-### Installation
+prediction = torch.rand(3, 3, 256, 256)
+target = torch.rand(3, 3, 256, 256)
+ssim_index = ssim(prediction, target, data_range=1.)
+```
+
+
+<!-- MINIMAL EXAMPLES -->
+### Minimal examples
+
+<details>
+<summary>SSIM</summary>
+<p>
+
+To compute SSIM index as measure, use lower case function from the library:
+```python
+import torch
+from photosynthesis_metrics import ssim
+
+prediction = torch.rand(3, 3, 256, 256)
+target = torch.rand(3, 3, 256, 256) 
+ssim_index = ssim(prediction, target, data_range=1.)
+```
+
+In order to use SSIM as a loss function, use corresponding PyTorch module:
+```python
+import torch
+from photosynthesis_metrics import SSIMLoss
+
+loss = SSIMLoss()
+prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+target = torch.rand(3, 3, 256, 256)
+output = loss(prediction, target, data_range=1.)
+output.backward()
+```
+</p>
+</details>
+
+<details>
+<summary>MS-SSIM</summary>
+<p>
+
+To compute MS-SSIM index as measure, use lower case function from the library:
+```python
+import torch
+from photosynthesis_metrics import multi_scale_ssim
+
+prediction = torch.rand(3, 3, 256, 256)
+target = torch.rand(3, 3, 256, 256) 
+ssim_index = multi_scale_ssim(prediction, target, data_range=1.)
+```
+
+In order to use MS-SSIM as a loss function, use corresponding PyTorch module:
+```python
+import torch
+from photosynthesis_metrics import MultiScaleSSIMLoss
+
+loss = MultiScaleSSIMLoss()
+prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+target = torch.rand(3, 3, 256, 256)
+output = loss(prediction, target, data_range=1.)
+output.backward()
+```
+
+</p>
+</details>
+
+
+<!-- TABLE OF CONTENTS -->
+### Table of Contents
+
+* [Overview](###overview)
+    * [Installation](####installation)
+    * [Roadmap](####roadmap)
+* [Community](###community)
+    * [Contributing](####contributing)
+    * [Contact](####contact)
+    * [Acknowledgements](####acknowledgements)
+
+
+### Overview
+
+**PhotoSynthesis.Metrics** helps you to concentrate on your experiments without the boilerplate code.
+The library contains a set of measures and metrics that is constantly getting extended. 
+For measures/metrics that can be used as loss functions, corresponding PyTorch modules are implemented.
+Please refer to the [Minimal examples](##Minimal examples) for more usage details. 
+ 
+
+
+#### Installation
 
 `$ pip install photosynthesis-metrics`
  
@@ -41,48 +118,19 @@ If you want to use the latest features straight from the master, clone the repo:
 $ git clone https://github.com/photosynthesis-team/photosynthesis.metrics.git
 ```
 
-Wheel and pip installations will be added later.
-
-<!-- USAGE EXAMPLES -->
-## Usage
-
-To compute measure or metric, for instance SSIM index, use lower case function from the library:  
-
-```python
-import torch
-
-from photosynthesis_metrics import ssim
-
-
-prediction = torch.rand(3, 3, 256, 256)
-target = torch.rand(3, 3, 256, 256)
-ssim_index = ssim(prediction, target, data_range=1.)
-```
-
-In order to use SSIM as a loss function, use corresponding PyTorch module:
-
-```python
-import torch
-
-from photosynthesis_metrics import SSIMLoss
-
-
-loss = SSIMLoss()
-prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
-target = torch.rand(3, 3, 256, 256)
-output = loss(prediction, target, data_range=1.)
-output.backward()
-``` 
-
 <!-- ROADMAP -->
-## Roadmap
+#### Roadmap
 
 See the [open issues](https://github.com/photosynthesis-team/photosynthesis.metrics/issues) for a list of proposed 
 features (and known issues).
 
 
+<!-- COMMUNITY -->
+###Community
+
+
 <!-- CONTRIBUTING -->
-## Contributing
+#### Contributing
 
 Contributions are what make the open source community such an amazing place to be learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
@@ -98,14 +146,8 @@ Use [commitizen](https://github.com/commitizen/cz-cli) commit style where possib
 performed changes.    
 
 
-<!-- LICENSE -->
-## License
-
-Distributed under the MIT License. See `LICENSE` for more information.
-
-
 <!-- CONTACT -->
-## Contact
+#### Contact
 
 **Sergey Kastryulin** - [@snk4tr](https://twitter.com/snk4tr) - `snk4tr@gmail.com`
 
@@ -116,7 +158,7 @@ Other projects by PhotoSynthesis Team:
 PhotoSynthesis.Models: [https://github.com/photosynthesis-team/photosynthesis.models](https://github.com/photosynthesis-team/photosynthesis.models)
 
 <!-- ACKNOWLEDGEMENTS -->
-## Acknowledgements
+#### Acknowledgements
 
 * **Pavel Parunin** - [@PavelParunin](https://github.com/ParuninPavel) - idea proposal and development
 * **Djamil Zakirov** - [@zakajd](https://github.com/zakajd) - development
