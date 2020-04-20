@@ -1,30 +1,27 @@
-from typing import Optional, List, Tuple, Union
+from typing import Optional, Tuple, Union
 from functools import partial
 
-import numpy as np
 import torch
-from sklearn.metrics.pairwise import polynomial_kernel
 
 from photosynthesis_metrics.base import BaseFeatureMetric
 
+
 def compute_polynomial_mmd_averages(
-    x : np.ndarray,
-    y : np.ndarray,
+    x : torch.Tensor,
+    y : torch.Tensor,
     n_subsets : int = 50,
     subset_size : int = 1000,
     ret_var : bool = False,
     **kernel_args
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
-    m = min(x.shape[0], y.shape[0])
-    mmds = np.zeros(n_subsets)
+    ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+    m = min(x.size(0), y.size(0))
+    mmds = torch.zeros(n_subsets)
     if ret_var:
-        vars = np.zeros(n_subsets)
-
-    choice = np.random.choice
+        vars = torch.zeros(n_subsets)
 
     for i in range(n_subsets):
-        g = x[choice(len(x), subset_size, replace=False)]
-        r = y[choice(len(y), subset_size, replace=False)]
+        g = x[torch.randperm(len(x))[:subset_size]]
+        r = y[torch.randperm(len(y))[:subset_size]]
         o = compute_polynomial_mmd(g, r, **kernel_args, var_at_m=m, ret_var=ret_var)
         if ret_var:
             mmds[i], vars[i] = o
@@ -39,7 +36,7 @@ def compute_polynomial_mmd(
     y : torch.Tensor,
     degree : int = 3,
     gamma : Optional[float] = None,
-    coef0 : int = 1,
+    coef0 : float = 1.,
     var_at_m : Optional[int] = None,
     ret_var : bool = False
     ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
@@ -61,33 +58,78 @@ def compute_polynomial_mmd(
     # use  k(x, y) = (gamma <x, y> + coef0)^degree
     # default gamma is 1 / dim
 
-    K_XX = polynomial_kernel(x.numpy(), degree=degree, gamma=gamma, coef0=coef0)
-    K_YY = polynomial_kernel(y.numpy(), degree=degree, gamma=gamma, coef0=coef0)
-    K_XY = polynomial_kernel(x.numpy(), y.numpy(), degree=degree, gamma=gamma, coef0=coef0)
+    K_XX = _polynomial_kernel(x, degree=degree, gamma=gamma, coef0=coef0)
+    K_YY = _polynomial_kernel(y, degree=degree, gamma=gamma, coef0=coef0)
+    K_XY = _polynomial_kernel(x, y, degree=degree, gamma=gamma, coef0=coef0)
 
     result = _mmd2_and_variance(K_XX, K_XY, K_YY, var_at_m=var_at_m, ret_var=ret_var)
     if not ret_var:
-        return torch.from_numpy(np.array(result))
+        return result
     else:
-        return torch.from_numpy(np.array(result[0])), torch.from_numpy(np.array(result[1]))
+        return result[0], result[1]
+
+
+def _polynomial_kernel(
+    X : torch.Tensor,
+    Y : torch.Tensor = None,
+    degree : int = 3,
+    gamma : Optional[float] = None,
+    coef0 : float = 1.
+    ) -> torch.Tensor:
+    """
+        Compute the polynomial kernel between x and y::
+            K(X, Y) = (gamma <X, Y> + coef0)^degree
+        Source: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise.polynomial_kernel.html
+        Parameters
+        ----------
+        X : torch.Tensor of shape (n_samples_1, n_features)
+        Y : torch.Tensor of shape (n_samples_2, n_features)
+        degree : int, default 3
+        gamma : float, default None
+            if None, defaults to 1.0 / n_features
+        coef0 : float, default 1
+        Returns
+        -------
+        Gram matrix : array of shape (n_samples_1, n_samples_2)
+        """
+
+    if Y is None:
+        Y = X
+
+    if X.dim() != 2 or Y.dim() != 2:
+        raise ValueError('Incompatible dimension for X and Y matrices: '
+                         'X.dim() == {} while Y.dim() == {}'.format(X.dim(), Y.dim()))
+
+    if X.size(1) != Y.size(1):
+        raise ValueError('Incompatible dimension for X and Y matrices: '
+                         'X.size(1) == {} while Y.size(1) == {}'.format(X.size(1), Y.size(1)))
+
+    if gamma is None:
+        gamma = 1.0 / X.size(1)
+
+    K = torch.mm(X, Y.T)
+    K *= gamma
+    K += coef0
+    K.pow_(degree)
+    return K
 
 
 def _mmd2_and_variance(
-    K_XX : np.ndarray,
-    K_XY : np.ndarray,
-    K_YY : np.ndarray,
+    K_XX : torch.Tensor,
+    K_XY : torch.Tensor,
+    K_YY : torch.Tensor,
     unit_diagonal : bool = False,
     mmd_est : str = 'unbiased',
     var_at_m : Optional[int] = None,
     ret_var : bool = False
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
     # based on
     # https://github.com/dougalsutherland/opt-mmd/blob/master/two_sample/mmd.py
     # but changed to not compute the full kernel matrix at once
-    m = K_XX.shape[0]
-    assert K_XX.shape == (m, m)
-    assert K_XY.shape == (m, m)
-    assert K_YY.shape == (m, m)
+    m = K_XX.size(0)
+    assert K_XX.size() == (m, m)
+    assert K_XY.size() == (m, m)
+    assert K_YY.size() == (m, m)
     if var_at_m is None:
         var_at_m = m
 
@@ -98,8 +140,8 @@ def _mmd2_and_variance(
         sum_diag_X = sum_diag_Y = m
         sum_diag2_X = sum_diag2_Y = m
     else:
-        diag_X = np.diagonal(K_XX)
-        diag_Y = np.diagonal(K_YY)
+        diag_X = torch.diagonal(K_XX)
+        diag_Y = torch.diagonal(K_YY)
 
         sum_diag_X = diag_X.sum()
         sum_diag_Y = diag_Y.sum()
@@ -107,10 +149,10 @@ def _mmd2_and_variance(
         sum_diag2_X = _sqn(diag_X)
         sum_diag2_Y = _sqn(diag_Y)
 
-    Kt_XX_sums = K_XX.sum(axis=1) - diag_X
-    Kt_YY_sums = K_YY.sum(axis=1) - diag_Y
-    K_XY_sums_0 = K_XY.sum(axis=0)
-    K_XY_sums_1 = K_XY.sum(axis=1)
+    Kt_XX_sums = K_XX.sum(dim=1) - diag_X
+    Kt_YY_sums = K_YY.sum(dim=1) - diag_Y
+    K_XY_sums_0 = K_XY.sum(dim=0)
+    K_XY_sums_1 = K_XY.sum(dim=1)
 
     Kt_XX_sum = Kt_XX_sums.sum()
     Kt_YY_sum = Kt_YY_sums.sum()
@@ -126,7 +168,7 @@ def _mmd2_and_variance(
         if mmd_est == 'unbiased':
             mmd2 -= 2 * K_XY_sum / (m * m)
         else:
-            mmd2 -= 2 * (K_XY_sum - np.trace(K_XY)) / (m * (m - 1))
+            mmd2 -= 2 * (K_XY_sum - torch.trace(K_XY)) / (m * (m - 1))
 
     if not ret_var:
         return mmd2
@@ -164,9 +206,10 @@ def _mmd2_and_variance(
     return mmd2, var_est
 
 
-def _sqn(arr : np.ndarray) -> np.ndarray:
-    flat = np.ravel(arr)
+def _sqn(tensor : torch.Tensor) -> torch.Tensor:
+    flat = tensor.flatten()
     return flat.dot(flat)
+
 
 class KID(BaseFeatureMetric):
     r"""Creates a criterion that measures Kernel Inception Distance (polynomial MMD) for two datasets of images.
@@ -189,7 +232,7 @@ class KID(BaseFeatureMetric):
         coef0 : int = 1,
         var_at_m : Optional[int] = None,
         ret_var : bool = False
-        ) -> np.ndarray:
+        ) -> torch.Tensor:
         super(KID, self).__init__()
         self.compute = partial(
             compute_polynomial_mmd,
