@@ -185,7 +185,7 @@ msid: torch.Tensor = fid_metric(first_feats, second_feats)
 
 <!-- KID EXAMPLES -->
 <details>
-<summary></summary>
+<summary>Kernel Inception Distance(KID)</summary>
 <p>
 
 Use `KID` class to compute [KID score](https://arxiv.org/abs/1801.01401) from image features, 
@@ -220,13 +220,13 @@ msid: torch.Tensor = kid_metric(first_feats, second_feats)
 <!-- TABLE OF CONTENTS -->
 ### Table of Contents
 
-* [Overview](###overview)
-    * [Installation](####installation)
-    * [Roadmap](####roadmap)
-* [Community](###community)
-    * [Contributing](####contributing)
-    * [Contact](####contact)
-    * [Acknowledgements](####acknowledgements)
+* [Overview](#overview)
+    * [Installation](#installation)
+    * [Roadmap](#roadmap)
+* [Community](#community)
+    * [Contributing](#contributing)
+    * [Contact](#contact)
+    * [Acknowledgements](#acknowledgements)
 
 
 ### Overview
@@ -234,7 +234,6 @@ msid: torch.Tensor = kid_metric(first_feats, second_feats)
 *PhotoSynthesis.Metrics* helps you to concentrate on your experiments without the boilerplate code.
 The library contains a set of measures and metrics that is constantly getting extended. 
 For measures/metrics that can be used as loss functions, corresponding PyTorch modules are implemented.
-Please refer to the [Minimal examples](###Minimal examples) for more usage details. 
  
 
 
@@ -251,7 +250,7 @@ $ git clone https://github.com/photosynthesis-team/photosynthesis.metrics.git
 #### Roadmap
 
 See the [open issues](https://github.com/photosynthesis-team/photosynthesis.metrics/issues) for a list of proposed 
-features (and known issues).
+features and known issues.
 
 
 <!-- COMMUNITY -->
@@ -271,6 +270,7 @@ Contributions are what make the open source community such an amazing place to b
 
 Please follow [Google Python style guide](http://google.github.io/styleguide/pyguide.html) as a guidance on your code style 
 decisions. The code will be checked with [flake-8 linter](http://flake8.pycqa.org/en/latest/) during the CI pipeline. 
+Standard PyCharm formatter and style checker appears to be more than enough in practice. 
 Use [commitizen](https://github.com/commitizen/cz-cli) commit style where possible for simplification of understanding of 
 performed changes.    
 
@@ -284,7 +284,7 @@ Project Link: [https://github.com/photosynthesis-team/photosynthesis.metrics](ht
 PhotoSynthesis Team: [https://github.com/photosynthesis-team](https://github.com/photosynthesis-team)
 
 Other projects by PhotoSynthesis Team:  
-PhotoSynthesis.Models: [https://github.com/photosynthesis-team/photosynthesis.models](https://github.com/photosynthesis-team/photosynthesis.models)
+* [PhotoSynthesis.Models](https://github.com/photosynthesis-team/photosynthesis.models)
 
 <!-- ACKNOWLEDGEMENTS -->
 #### Acknowledgements
