@@ -135,7 +135,7 @@ msid: torch.Tensor = msid_metric(prediction_feats, target_feats)
 ```
 
 If image features are not available, extract them using `_compute_feats` of `MSID` class. 
-Please note that `_compute_feats` consumes a data loader of predefined format. Refer to [docs](docs) for more details.
+Please note that `_compute_feats` consumes a data loader of predefined format.
 ```python
 import torch
 from  torch.utils.data import DataLoader
@@ -168,7 +168,7 @@ msid: torch.Tensor = fid_metric(prediction_feats, target_feats)
 ```
  
 If image features are not available, extract them using `_compute_feats` of `FID` class. 
-Please note that `_compute_feats` consumes a data loader of predefined format. Refer to [docs](docs) for more details.
+Please note that `_compute_feats` consumes a data loader of predefined format.
 ```python
 import torch
 from  torch.utils.data import DataLoader
@@ -201,7 +201,7 @@ msid: torch.Tensor = kid_metric(prediction_feats, target_feats)
 ```
  
 If image features are not available, extract them using `_compute_feats` of `KID` class. 
-Please note that `_compute_feats` consumes a data loader of predefined format. Refer to [docs](docs) for more details.
+Please note that `_compute_feats` consumes a data loader of predefined format. 
 ```python
 import torch
 from  torch.utils.data import DataLoader
