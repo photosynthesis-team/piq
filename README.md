@@ -35,7 +35,7 @@ ssim_index = ssim(prediction, target, data_range=1.)
 <summary>Structural Similarity (SSIM)</summary>
 <p>
 
-To compute SSIM index as measure, use lower case function from the library:
+To compute SSIM index as a measure, use lower case function from the library:
 ```python
 import torch
 from photosynthesis_metrics import ssim
@@ -65,7 +65,7 @@ output.backward()
 <summary>Multi-Scale Structural Similarity (MS-SSIM)</summary>
 <p>
 
-To compute MS-SSIM index as measure, use lower case function from the library:
+To compute MS-SSIM index as a measure, use lower case function from the library:
 ```python
 import torch
 from photosynthesis_metrics import multi_scale_ssim
@@ -94,7 +94,7 @@ output.backward()
 <summary>Total Variation (TV)</summary>
 <p>
 
-To compute TV as measure, use lower case function from the library:
+To compute TV as a measure, use lower case function from the library:
 ```python
 import torch
 from photosynthesis_metrics import total_variation
