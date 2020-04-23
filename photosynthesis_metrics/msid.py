@@ -50,11 +50,11 @@ def _laplacian_sparse(A : np.ndarray, normalized : bool = True):
 
 
 def _lanczos_m(
-    A : np.ndarray,
-    m : int,
-    nv : int,
-    rademacher : bool,
-    SV : np.ndarray = None) -> Tuple[np.ndarray, np.ndarray]:
+    A: np.ndarray,
+    m: int,
+    nv: int,
+    rademacher: bool,
+    SV: np.ndarray = None) -> Tuple[np.ndarray, np.ndarray]:
     r"""Lanczos algorithm computes symmetric m x m tridiagonal matrix T and matrix V with orthogonal rows
         constituting the basis of the Krylov subspace K_m(A, x),
         where x is an arbitrary starting unit vector.
@@ -138,7 +138,7 @@ def _lanczos_m(
     return T, V
 
 
-def _slq(A : np.ndarray, m : int, niters : int, rademacher : bool) -> np.ndarray:
+def _slq(A: np.ndarray, m: int, niters: int, rademacher: bool) -> np.ndarray:
     r"""Compute the trace of matrix exponential
 
     Args:
@@ -158,7 +158,7 @@ def _slq(A : np.ndarray, m : int, niters : int, rademacher : bool) -> np.ndarray
     return trace
 
 
-def _slq_ts(A : np.ndarray, m : int, niters : int, ts : np.ndarray, rademacher : bool) -> np.ndarray:
+def _slq_ts(A: np.ndarray, m: int, niters: int, ts: np.ndarray, rademacher: bool) -> np.ndarray:
     r"""Compute the trace of matrix exponential
 
     Args:
@@ -179,7 +179,7 @@ def _slq_ts(A : np.ndarray, m : int, niters : int, ts : np.ndarray, rademacher :
     return traces
 
 
-def _slq_ts_fs(A : np.ndarray, m : int, niters : int, ts : np.ndarray, rademacher : bool, fs : List) -> np.ndarray:
+def _slq_ts_fs(A: np.ndarray, m: int, niters: int, ts: np.ndarray, rademacher: bool, fs: List) -> np.ndarray:
     r"""Compute the trace of matrix functions
 
     Args:
@@ -203,7 +203,7 @@ def _slq_ts_fs(A : np.ndarray, m : int, niters : int, ts : np.ndarray, rademache
     return traces
 
 
-def slq_red_var(A : np.ndarray, m : int, niters : int, ts : np.ndarray, rademacher : bool) -> np.ndarray:
+def _slq_red_var(A: np.ndarray, m: int, niters: int, ts: np.ndarray, rademacher: bool) -> np.ndarray:
     r"""Compute the trace of matrix exponential with reduced variance
 
     Args:
@@ -223,7 +223,7 @@ def slq_red_var(A : np.ndarray, m : int, niters : int, ts : np.ndarray, rademach
     return subee + sub
 
 
-def _build_graph(data : np.ndarray, k : int = 5, normalized : bool = True):
+def _build_graph(data: np.ndarray, k: int = 5, normalized: bool = True):
     r"""Return Laplacian from data or load preconstructed from path
 
     Args:
@@ -242,7 +242,7 @@ def _build_graph(data : np.ndarray, k : int = 5, normalized : bool = True):
     return L
 
 
-def _normalize_msid(msid : np.ndarray, normalization : str, n : int, k : int, ts : np.ndarray):
+def _normalize_msid(msid: np.ndarray, normalization: str, n: int, k: int, ts: np.ndarray):
     normed_msid = msid.copy()
     if normalization == 'empty':
         normed_msid /= n
@@ -261,14 +261,14 @@ def _normalize_msid(msid : np.ndarray, normalization : str, n : int, k : int, ts
 
 
 def _msid_descriptor(
-    x : np.ndarray,
-    ts : np.ndarray = np.logspace(-1, 1, 256),
-    k : int = 5,
-    m : int = 10,
-    niters : int = 100,
-    rademacher : bool = False,
-    normalized_laplacian : bool = True,
-    normalize : str = 'empty') -> np.ndarray:
+    x: np.ndarray,
+    ts: np.ndarray = np.logspace(-1, 1, 256),
+    k: int = 5,
+    m: int = 10,
+    niters: int = 100,
+    rademacher: bool = False,
+    normalized_laplacian: bool = True,
+    normalize: str = 'empty') -> np.ndarray:
     r"""Compute the msid descriptor for a single set of samples
 
     Args:
@@ -288,60 +288,11 @@ def _msid_descriptor(
     Lx = _build_graph(x, k, normalized_laplacian)
 
     nx = Lx.shape[0]
-    msidx = slq_red_var(Lx, m, niters, ts, rademacher)
+    msidx = _slq_red_var(Lx, m, niters, ts, rademacher)
 
     normed_msidx = _normalize_msid(msidx, normalize, nx, k, ts) * NORMALIZATION
 
     return normed_msidx
-
-
-def compute_msid(
-    x : torch.Tensor,
-    y : torch.Tensor,
-    ts : torch.Tensor = torch.logspace(-1, 1, 256),
-    k : int = 5,
-    m : int = 10,
-    niters : int = 100,
-    rademacher : bool = False,
-    msid_mode : str = 'max',
-    normalized_laplacian : bool = True,
-    normalize='empty'
-    ):
-
-    r"""Compute MSID score between two sets of samples.
-    Args:
-        x: Samples from data distribution. Shape (N_samples, data_dim).
-        y: Samples from data distribution. Shape (N_samples, data_dim).
-        ts: Temperature values.
-        k: Number of neighbours for graph construction.
-        m: Lanczos steps in SLQ.
-        niters: Number of starting random vectors for SLQ.
-        rademacher: True to use Rademacher distribution,
-            False - standard normal for random vectors in Hutchinson.
-        msid_mode: 'l2' to compute the l2 norm of the distance between `msid1` and `msid2`;
-                'max' to find the maximum abosulute difference between two descriptors over temperature
-        normalized_laplacian: if True, use normalized Laplacian.
-        normalize: 'empty' for average heat kernel (corresponds to the empty graph normalization of NetLSD),
-                'complete' for the complete, 'er' for erdos-renyi normalization, 'none' for no normalization
-
-    Returns:
-        score: Scalar value of the distance between distributions.
-    """
-    _validate_features(x, y)
-    ts = ts.numpy()
-    normed_msidx = _msid_descriptor(x.numpy(), ts, k, m, niters, rademacher, normalized_laplacian, normalize)
-    normed_msidy = _msid_descriptor(y.numpy(), ts, k, m, niters, rademacher, normalized_laplacian, normalize)
-
-    c = np.exp(-2 * (ts + 1 / ts))
-
-    if msid_mode == 'l2':
-        score = np.linalg.norm(normed_msidx - normed_msidy)
-    elif msid_mode == 'max':
-        score = np.amax(c * np.abs(normed_msidx - normed_msidy))
-    else:
-        raise ValueError('Mode must be in {`l2`, `max`}')
-
-    return score
 
 
 class MSID(BaseFeatureMetric):
@@ -376,16 +327,14 @@ class MSID(BaseFeatureMetric):
         """
         super(MSID, self).__init__()
 
-        self.compute = partial(
-            compute_msid,
-            ts=ts,
-            k=k,
-            m=m,
-            niters=niters,
-            rademacher=rademacher,
-            msid_mode=msid_mode,
-            normalized_laplacian=normalized_laplacian,
-            normalize=normalize)
+        self.ts = ts.numpy()  # MSID works only with Numpy tensors
+        self.k = k
+        self.m = m
+        self.niters = niters
+        self.rademacher = rademacher
+        self.msid_mode = msid_mode
+        self.normalized_laplacian = normalized_laplacian
+        self.normalize = normalize
 
     def forward(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
         r"""Interface of Intrinsic Multi-scale Distance score.
@@ -400,5 +349,60 @@ class MSID(BaseFeatureMetric):
         Returns:
             score: Scalar value of the distance between image sets features.
         """
-        super(MSID, self).forward(predicted_features, target_features)
-        return self.compute(predicted_features, target_features)
+        super().forward(predicted_features, target_features)
+
+    def compute_metric(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+
+        r"""Compute MSID score between two sets of samples.
+        Args:
+            x: Samples from data distribution. Shape (N_samples, data_dim).
+            y: Samples from data distribution. Shape (N_samples, data_dim).
+            ts: Temperature values.
+            k: Number of neighbours for graph construction.
+            m: Lanczos steps in SLQ.
+            niters: Number of starting random vectors for SLQ.
+            rademacher: True to use Rademacher distribution,
+                False - standard normal for random vectors in Hutchinson.
+            msid_mode: 'l2' to compute the l2 norm of the distance between `msid1` and `msid2`;
+                    'max' to find the maximum abosulute difference between two descriptors over temperature
+            normalized_laplacian: if True, use normalized Laplacian.
+            normalize: 'empty' for average heat kernel (corresponds to the empty graph normalization of NetLSD),
+                    'complete' for the complete, 'er' for erdos-renyi normalization, 'none' for no normalization
+
+        Returns:
+            score: Scalar value of the distance between distributions.
+        """
+        # Convert input to Numpy arrays
+        predicted_features = predicted_features.detach().cpu().numpy()
+        target_features = target_features.detach().cpu().numpy()
+
+        normed_msid_pred = _msid_descriptor(
+            predicted_features,
+            ts=self.ts,
+            k=self.k,
+            m=self.m,
+            niters=self.niters,
+            rademacher=self.rademacher,
+            normalized_laplacian=self.normalized_laplacian,
+            normalize=self.normalize
+        )
+        normed_msid_target = _msid_descriptor(
+            target_features,
+            ts=self.ts,
+            k=self.k,
+            m=self.m,
+            niters=self.niters,
+            rademacher=self.rademacher,
+            normalized_laplacian=self.normalized_laplacian,
+            normalize=self.normalize
+        )
+
+        c = np.exp(-2 * (self.ts + 1 / self.ts))
+        if self.msid_mode == 'l2':
+            score = np.linalg.norm(self.normed_msid_pred - self.normed_msid_target)
+        elif self.msid_mode == 'max':
+            score = np.amax(c * np.abs(self.normed_msid_pred - self.normed_msid_target))
+        else:
+            raise ValueError('Mode must be in {`l2`, `max`}')
+
+        return torch.tensor(score, device=predicted_features.device)

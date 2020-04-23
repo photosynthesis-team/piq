@@ -133,12 +133,20 @@ class SSIMLoss(_Loss):
         >>> target = torch.rand(3, 3, 256, 256)
         >>> output = loss(prediction, target, max_val=1.)
         >>> output.backward()
+
+    References:
+        .. [1] Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P.
+           (2004). Image quality assessment: From error visibility to
+           structural similarity. IEEE Transactions on Image Processing,
+           13, 600-612.
+           https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
+           :DOI:`10.1109/TIP.2003.819861`
     """
     __constants__ = ['filter_size', 'k1', 'k2', 'sigma', 'kernel', 'reduction']
 
     def __init__(self, kernel_size: int = 11, kernel_sigma: float = 1.5, k1: float = 0.01, k2: float = 0.03,
-                 size_average: Optional[bool] = None, reduce: Optional[bool] = None, reduction: str = 'mean',
-                 data_range: Union[int, float] = 1.) -> None:
+                 size_average: Optional[bool] = None, reduce: Optional[bool] = None,
+                 reduction: str = 'mean', data_range: Union[int, float] = 1.) -> None:
         super(SSIMLoss, self).__init__(size_average, reduce, reduction)
 
         # Generic loss parameters.
@@ -159,7 +167,9 @@ class SSIMLoss(_Loss):
         # Cash kernel between calls.
         self.kernel = _fspecial_gauss_1d(kernel_size, kernel_sigma)
 
-    def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def forward(self,
+                prediction: torch.Tensor,
+                target: torch.Tensor) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
         r"""Computation of Structural Similarity (SSIM) index as a loss function.
 
         Args:
@@ -170,22 +180,36 @@ class SSIMLoss(_Loss):
             Value of SSIM loss to be minimized. 0 <= SSIM loss <= 1.
         """
         prediction, target = _adjust_dimensions(x=prediction, y=target)
+        _validate_input(x=prediction, y=target, kernel_size=self.kernel_size, scale_weights=None)
+
+        score = self.compute_metric(prediction, target)
+        return score
+
+    def compute_metric(
+        self,
+        prediction: torch.Tensor,
+        target: torch.Tensor) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+
         kernel = self.kernel.repeat(prediction.shape[1], 1, 1, 1)
         kernel = kernel.to(device=prediction.device)
 
-        ret = _compute_ssim(x=prediction,
-                            y=target,
-                            kernel=kernel,
-                            data_range=self.data_range,
-                            size_average=False,
-                            full=False,
-                            k1=self.k1,
-                            k2=self.k2)
+        ssim_val = _compute_ssim(
+            x=prediction,
+            y=target,
+            kernel=kernel,
+            data_range=self.data_range,
+            size_average=False,
+            full=False,
+            k1=self.k1,
+            k2=self.k2
+        )
 
-        if self.reduction != 'none':
-            ret = torch.mean(ret) if self.reduction == 'mean' else torch.sum(ret)
+        if self.reduction == 'mean':
+            ssim_val = torch.mean(ssim_val)
+        elif self.reduction == 'sum':
+            ssim_val = torch.sum(ssim_val)
 
-        return ret
+        return ssim_val
 
 
 def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: float = 1.5,

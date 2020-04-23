@@ -24,7 +24,7 @@ def __compute_fid(mu1: np.ndarray, sigma1: np.ndarray, mu2: np.ndarray, sigma2: 
     The Frechet Inception Distance between two multivariate Gaussians X_predicted ~ N(mu_1, sigm_1)
     and X_target ~ N(mu_2, sigm_2) is
         d^2 = ||mu_1 - mu_2||^2 + Tr(sigm_1 + sigm_2 - 2*sqrt(sigm_1*sigm_2)).
-    
+
     Args:
         mu1: mean of activations calculated on predicted samples
         sigma1: covariance matrix over activations calculated on predicted samples
@@ -93,12 +93,15 @@ class FID(BaseFeatureMetric):
         Then computes FID as d^2 = ||mu_1 - mu_2||^2 + Tr(sigm_1 + sigm_2 - 2*sqrt(sigm_1*sigm_2)).
 
         Args:
-            predicted_features: Samples from data distribution. Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1.
-            target_features: Samples from data distribution. Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1
+            predicted_features: Samples from data distribution.
+                Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1.
+            target_features: Samples from data distribution.
+                Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1
 
         Returns:
         --   : The Frechet Distance.
         """
+        # GPU -> CPU -> Numpy
         m_pred, s_pred = _compute_statistics(predicted_features.detach().cpu().numpy())
         m_targ, s_targ = _compute_statistics(target_features.detach().cpu().numpy())
 
