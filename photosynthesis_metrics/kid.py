@@ -206,7 +206,8 @@ class KID(BaseFeatureMetric):
             score: Scalar value of the distance between image sets features.
             variance (optional): If `ret_var` is True, also returns variance
         """
-        super().forward(predicted_features, target_features)
+        result = super().forward(predicted_features, target_features)
+        return result
 
     def compute_metric(
         self,
@@ -260,10 +261,11 @@ class KID(BaseFeatureMetric):
             out = _mmd2_and_variance(K_XX, K_XY, K_YY, var_at_m=var_at_m, ret_var=self.ret_var)
             results.append(out)
 
-        if not self.ret_var:
-            score = torch.mean(torch.cat(results, dim=0))
-            return score
+        if self.ret_var:
+            score = torch.mean(torch.stack([p[0] for p in results], dim=0))
+            variance = torch.mean(torch.stack([p[1] for p in results], dim=0))
+            return (score, variance)
         else:
-            score = torch.mean(torch.cat([p[0] for p in results], dim=0))
-            variance = torch.mean(torch.cat([p[1] for p in results], dim=0))
-            return score, variance
+            score = torch.mean(torch.stack(results, dim=0))
+            return score
+

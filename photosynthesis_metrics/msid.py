@@ -372,12 +372,8 @@ class MSID(BaseFeatureMetric):
         Returns:
             score: Scalar value of the distance between distributions.
         """
-        # Convert input to Numpy arrays
-        predicted_features = predicted_features.detach().cpu().numpy()
-        target_features = target_features.detach().cpu().numpy()
-
         normed_msid_pred = _msid_descriptor(
-            predicted_features,
+            predicted_features.detach().cpu().numpy(),
             ts=self.ts,
             k=self.k,
             m=self.m,
@@ -387,7 +383,7 @@ class MSID(BaseFeatureMetric):
             normalize=self.normalize
         )
         normed_msid_target = _msid_descriptor(
-            target_features,
+            target_features.detach().cpu().numpy(),
             ts=self.ts,
             k=self.k,
             m=self.m,
@@ -399,9 +395,9 @@ class MSID(BaseFeatureMetric):
 
         c = np.exp(-2 * (self.ts + 1 / self.ts))
         if self.msid_mode == 'l2':
-            score = np.linalg.norm(self.normed_msid_pred - self.normed_msid_target)
+            score = np.linalg.norm(normed_msid_pred - normed_msid_target)
         elif self.msid_mode == 'max':
-            score = np.amax(c * np.abs(self.normed_msid_pred - self.normed_msid_target))
+            score = np.amax(c * np.abs(normed_msid_pred - normed_msid_target))
         else:
             raise ValueError('Mode must be in {`l2`, `max`}')
 

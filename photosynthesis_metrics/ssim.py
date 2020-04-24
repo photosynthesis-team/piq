@@ -15,8 +15,6 @@ from torch.nn.modules.loss import _Loss
 
 from photosynthesis_metrics.utils import _adjust_dimensions, _validate_input
 
-from .utils import _adjust_dimensions, _validate_input
-
 
 class SSIMLoss(_Loss):
     r"""Creates a criterion that measures the structural similarity index error between

@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from photosynthesis_metrics import FID, compute_fid
+from photosynthesis_metrics import FID
 from photosynthesis_metrics.feature_extractors.fid_inception import InceptionV3
 
 
@@ -39,27 +39,6 @@ def features_prediction_beta() -> torch.Tensor:
 @pytest.fixture(scope='module')
 def features_prediction_constant() -> torch.Tensor:
     return torch.ones(1000, 20)
-
-
-# ================== Test function: `compute_fid` ==================
-@pytest.mark.skip(reason="currently implementation in numpy is used, which will not work with Torch tensors. "
-                         "Remove this when implementation if fixed.")
-def test_frechet_inception_distance_fails_for_different_shapes_of_images() -> None:
-    n_items, shape1, shape2 = 10, (3, 64, 64), (3, 128, 128)
-    x, y = torch.rand(n_items, *shape1), torch.rand(n_items, *shape2)
-    with pytest.raises(AssertionError):
-        compute_fid(predicted_stack=x, target_stack=y)
-
-
-@pytest.mark.skip(reason="currently implementation in numpy is used, which will not work with Torch tensors. "
-                         "Remove this when implementation if fixed.")
-def test_frechet_inception_distance_works_for_different_number_of_images_in_stack() -> None:
-    n_items1, n_items2, shape = 2, 3, (3, 64, 64)
-    x, y = torch.rand(n_items1, *shape), torch.rand(n_items2, *shape)
-    try:
-        compute_fid(predicted_stack=x, target_stack=y)
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred: {e}")
 
 
 # ================== Test class: `FID` ==================
