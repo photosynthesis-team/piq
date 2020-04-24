@@ -19,7 +19,7 @@ from scipy import linalg
 from photosynthesis_metrics.base import BaseFeatureMetric
 
 
-def __compute_fid(mu1: np.ndarray, sigma1: np.ndarray, mu2: np.ndarray, sigma2: np.ndarray, eps=1e-6) -> float:
+def _compute_fid(mu1: np.ndarray, sigma1: np.ndarray, mu2: np.ndarray, sigma2: np.ndarray, eps=1e-6) -> float:
     r"""
     The Frechet Inception Distance between two multivariate Gaussians X_predicted ~ N(mu_1, sigm_1)
     and X_target ~ N(mu_2, sigm_2) is
@@ -105,6 +105,6 @@ class FID(BaseFeatureMetric):
         m_pred, s_pred = _compute_statistics(predicted_features.detach().cpu().numpy())
         m_targ, s_targ = _compute_statistics(target_features.detach().cpu().numpy())
 
-        score = __compute_fid(m_pred, s_pred, m_targ, s_targ)
+        score = _compute_fid(m_pred, s_pred, m_targ, s_targ)
 
         return torch.tensor(score, device=predicted_features.device)
