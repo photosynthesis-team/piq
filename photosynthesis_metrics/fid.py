@@ -14,27 +14,31 @@ import torch
 from photosynthesis_metrics.base import BaseFeatureMetric
 
 
-def compute_error(A: torch.Tensor, sA: torch.Tensor) -> torch.Tensor:
+def _approximation_error(A: torch.Tensor, sA: torch.Tensor) -> torch.Tensor:
     normA = torch.norm(A)
     error = A - torch.mm(sA, sA)
     error = torch.norm(error) / normA
     return error
 
 
-def _sqrtm_newton_schulz(A: torch.Tensor, numIters: int=100) -> Tuple[torch.Tensor, torch.Tensor]:
+def _sqrtm_newton_schulz(A: torch.Tensor, num_iters: int = 100) -> Tuple[torch.Tensor, torch.Tensor]:
     r"""
     Square root of matrix using Newton-Schulz Iterative method
     Source: https://github.com/msubhransu/matrix-sqrt/blob/master/matrix_sqrt.py
     Args:
         A: matrix or batch of matrices
-        numIters: Number of iteration of the method.
+        num_iters: Number of iteration of the method
 
     Returns:
-        Square root of matrix.
-        Error.
+        Square root of matrix
+        Error
     """
-    if A.dim() != 2:
-        raise ValueError('Input dimensions {}, expected {}'.format(A.dim(), 2))
+    expected_num_dims = 2
+    if A.dim() != expected_num_dims:
+        raise ValueError(f'Input dimension equals {A.dim()}, expected {expected_num_dims}')
+
+    if num_iters <= 0:
+        raise ValueError(f'Number of iteration equals {num_iters}, expected greater than 0')
     dtype = A.type()
     dim = A.size(0)
     normA = A.norm(p='fro')
@@ -42,13 +46,16 @@ def _sqrtm_newton_schulz(A: torch.Tensor, numIters: int=100) -> Tuple[torch.Tens
     I = torch.eye(dim, dim, requires_grad=False).type(dtype)
     Z = torch.eye(dim, dim, requires_grad=False).type(dtype)
 
-    for i in range(numIters):
+    sA = torch.empty_like(A)
+    error = torch.empty(1)
+
+    for i in range(num_iters):
         T = 0.5 * (3.0 * I - Z.mm(Y))
         Y = Y.mm(T)
         Z = T.mm(Z)
 
         sA = Y * torch.sqrt(normA)
-        error = compute_error(A, sA)
+        error = _approximation_error(A, sA)
         if torch.isclose(error, torch.tensor([0.]), atol=1e-5):
             break
     return sA, error
@@ -104,7 +111,8 @@ def _cov(m: torch.Tensor, rowvar: bool=True) -> torch.Tensor:
         The covariance matrix of the variables.
     """
     if m.dim() > 2:
-        raise ValueError('m has more than 2 dimensions')
+        raise ValueError('Tensor for covariance computations has more than 2 dimensions. '
+                         'Only 1 or 2 dimensional arrays are allowed')
     if m.dim() < 2:
         m = m.view(1, -1)
     if not rowvar and m.size(0) != 1:
