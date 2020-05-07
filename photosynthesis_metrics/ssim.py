@@ -16,6 +16,55 @@ from torch.nn.modules.loss import _Loss
 from photosynthesis_metrics.utils import _adjust_dimensions, _validate_input
 
 
+def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: float = 1.5,
+         data_range: Union[int, float] = 255, size_average: bool = True, full: bool = False,
+         k1: float = 0.01, k2: float = 0.03) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+    r"""Interface of Structural Similarity (SSIM) index.
+    Args:
+        x: Batch of images. Required to be 4D, channels first (N,C,H,W).
+        y: Batch of images. Required to be 4D, channels first (N,C,H,W).
+        kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
+        kernel_sigma: Sigma of normal distribution.
+        data_range: Value range of input images (usually 1.0 or 255).
+        size_average: If size_average=True, ssim of all images will be averaged as a scalar.
+        full: Return sc or not.
+        k1: Algorithm parameter, K1 (small constant, see [1]).
+        k2: Algorithm parameter, K2 (small constant, see [1]).
+            Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
+    Returns:
+        Value of Structural Similarity (SSIM) index.
+    References:
+        .. [1] Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P.
+           (2004). Image quality assessment: From error visibility to
+           structural similarity. IEEE Transactions on Image Processing,
+           13, 600-612.
+           https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
+           :DOI:`10.1109/TIP.2003.819861`
+    """
+    _validate_input(x=x, y=y, kernel_size=kernel_size, scale_weights=None)
+
+    kernel = _fspecial_gauss_1d(kernel_size, kernel_sigma)
+    kernel = kernel.repeat(x.shape[1], 1, 1, 1)
+
+    ssim_val, cs = _compute_ssim(x=x,
+                                 y=y,
+                                 kernel=kernel,
+                                 data_range=data_range,
+                                 size_average=False,
+                                 full=True,
+                                 k1=k1,
+                                 k2=k2)
+
+    if size_average:
+        ssim_val = ssim_val.mean()
+        cs = cs.mean()
+
+    if full:
+        return ssim_val, cs
+
+    return ssim_val
+
+
 class SSIMLoss(_Loss):
     r"""Creates a criterion that measures the structural similarity index error between
     each element in the input :math:`x` and target :math:`y`.
@@ -129,8 +178,7 @@ class SSIMLoss(_Loss):
         prediction, target = _adjust_dimensions(x=prediction, y=target)
         _validate_input(x=prediction, y=target, kernel_size=self.kernel_size, scale_weights=None)
 
-        score = self.compute_metric(prediction, target)
-        return score
+        return self.compute_metric(prediction, target)
 
     def compute_metric(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
 
@@ -154,6 +202,62 @@ class SSIMLoss(_Loss):
             ssim_val = torch.sum(ssim_val)
 
         return ssim_val
+
+
+def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: float = 1.5,
+                     data_range: Union[int, float] = 255, size_average: bool = True,
+                     scale_weights: Optional[Union[Tuple[float], List[float]]] = None, k1=0.01, k2=0.03) -> torch.Tensor:
+    r""" Interface of Multi-scale Structural Similarity (MS-SSIM) index.
+    Args:
+        x: Batch of images. Required to be 4D, channels first (N,C,H,W).
+        y: Batch of images. Required to be 4D, channels first (N,C,H,W).
+        kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
+        kernel_sigma: Sigma of normal distribution.
+        data_range: Value range of input images (usually 1.0 or 255).
+        size_average: If size_average=True, ssim of all images will be averaged as a scalar.
+        scale_weights: Weights for different scales. Must contain 4 floating point values.
+            If None, default weights from the paper [1] will be used.
+            Default weights: (0.0448, 0.2856, 0.3001, 0.2363, 0.1333).
+        k1: Algorithm parameter, K1 (small constant, see [2]).
+        k2: Algorithm parameter, K2 (small constant, see [2]).
+            Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
+    Returns:
+        Value of Multi-scale Structural Similarity (MS-SSIM) index.
+    References:
+        .. [1] Wang, Z., Simoncelli, E. P., Bovik, A. C. (2003).
+           Multi-scale Structural Similarity for Image Quality Assessment.
+           IEEE Asilomar Conference on Signals, Systems and Computers, 37,
+           https://ieeexplore.ieee.org/document/1292216
+           :DOI:`10.1109/ACSSC.2003.1292216`
+        .. [2] Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P.
+           (2004). Image quality assessment: From error visibility to
+           structural similarity. IEEE Transactions on Image Processing,
+           13, 600-612.
+           https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
+           :DOI:`10.1109/TIP.2003.819861`
+    """
+    _validate_input(x=x, y=y, kernel_size=kernel_size, scale_weights=scale_weights)
+
+    if scale_weights is None:
+        scale_weights_from_ms_ssim_paper = [0.0448, 0.2856, 0.3001, 0.2363, 0.1333]
+        scale_weights = scale_weights_from_ms_ssim_paper
+
+    scale_weights_tensor = torch.tensor(scale_weights).to(x.device, dtype=x.dtype)
+    kernel = _fspecial_gauss_1d(kernel_size, kernel_sigma)
+    kernel = kernel.repeat(x.shape[1], 1, 1, 1)
+
+    msssim_val = _compute_multi_scale_ssim(x=x,
+                                           y=y,
+                                           data_range=data_range,
+                                           kernel=kernel,
+                                           scale_weights_tensor=scale_weights_tensor,
+                                           k1=k1,
+                                           k2=k2)
+
+    if size_average:
+        msssim_val = msssim_val.mean()
+
+    return msssim_val
 
 
 class MultiScaleSSIMLoss(_Loss):
