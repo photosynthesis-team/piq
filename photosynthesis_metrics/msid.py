@@ -297,7 +297,19 @@ def _msid_descriptor(
 
 class MSID(BaseFeatureMetric):
     r"""Creates a criterion that measures MSID score for two batches of images
-    See https://arxiv.org/abs/1905.11141 for reference.
+    It's computed for a whole set of data and uses features from encoder instead of images itself
+    to decrease computation cost. MSID can compare two data distributions with different
+    number of samples or different dimensionalities.
+
+    Args:
+        predicted_features: Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
+        target_features: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
+
+    Returns:
+        score: Scalar value of the distance between image sets features.
+
+    Reference:
+        https://arxiv.org/abs/1905.11141
     """
 
     def __init__(
@@ -335,21 +347,6 @@ class MSID(BaseFeatureMetric):
         self.msid_mode = msid_mode
         self.normalized_laplacian = normalized_laplacian
         self.normalize = normalize
-
-    def forward(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
-        r"""Interface of Intrinsic Multi-scale Distance score.
-        It's computed for a whole set of data and uses features from encoder instead of images itself
-        to decrease computation cost. MSID can compare two data distributions with different
-        number of samples or different dimensionalities.
-
-        Args:
-            predicted_features: Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
-            target_features: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
-
-        Returns:
-            score: Scalar value of the distance between image sets features.
-        """
-        super().forward(predicted_features, target_features)
 
     def compute_metric(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
 

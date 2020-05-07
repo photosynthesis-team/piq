@@ -1,9 +1,6 @@
 from typing import Optional, Tuple, Union
-from functools import partial
-
 
 import torch
-
 
 from photosynthesis_metrics.base import BaseFeatureMetric
 
@@ -151,18 +148,18 @@ def _sqn(tensor : torch.Tensor) -> torch.Tensor:
 
 
 class KID(BaseFeatureMetric):
-    r"""Creates a criterion that measures Kernel Inception Distance (polynomial MMD) for two datasets of images.
+    r"""Interface of Kernel Inception Distance.
+    It's computed for a whole set of data and uses features from encoder instead of images itself to decrease
+    computation cost. KID can compare two data distributions with different number of samples.
+    But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
 
     Args:
-        degree: Degree of a polynomial functions used in kernels. Default: 3
-        gamma: Kernel parameter. See paper for details
-        coef0: Kernel parameter. See paper for details
-        var_at_m: Kernel variance. Default is `None`
-        average: If `True` recomputes metric `n_subsets` times using `subset_size` elements.
-        n_subsets: Number of repeats. Ignored if `average` is False
-        subset_size: Size of each subset for repeat. Ignored if `average` is False
-        ret_var: Whether to return variance after the distance is computed.
-                    This function will return Tuple[torch.Tensor, torch.Tensor] in this case. Default: False
+        predicted_features: Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
+        target_features: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
+
+    Returns:
+        score: Scalar value of the distance between image sets features.
+        variance (optional): If `ret_var` is True, also returns variance
 
     Reference:
         Demystifying MMD GANs https://arxiv.org/abs/1801.01401
@@ -178,6 +175,21 @@ class KID(BaseFeatureMetric):
         subset_size: int = 1000,
         ret_var: bool = False
         ) -> torch.Tensor:
+        r"""
+        Creates a criterion that measures Kernel Inception Distance (polynomial MMD) for two datasets of images.
+
+        Args:
+            degree: Degree of a polynomial functions used in kernels. Default: 3
+            gamma: Kernel parameter. See paper for details
+            coef0: Kernel parameter. See paper for details
+            var_at_m: Kernel variance. Default is `None`
+            average: If `True` recomputes metric `n_subsets` times using `subset_size` elements.
+            n_subsets: Number of repeats. Ignored if `average` is False
+            subset_size: Size of each subset for repeat. Ignored if `average` is False
+            ret_var: Whether to return variance after the distance is computed.
+                        This function will return Tuple[torch.Tensor, torch.Tensor] in this case. Default: False
+
+        """
         super().__init__()
 
         self.degree = degree
@@ -191,24 +203,6 @@ class KID(BaseFeatureMetric):
             self.n_subsets = 1
             self.subset_size = None
 
-    def forward(self, predicted_features: torch.Tensor, target_features: torch.Tensor
-    ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
-        r"""Interface of Kernel Inception Distance.
-        It's computed for a whole set of data and uses features from encoder instead of images itself to decrease
-        computation cost. KID can compare two data distributions with different number of samples.
-        But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
-
-        Args:
-            predicted_features: Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
-            target_features: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
-
-        Returns:
-            score: Scalar value of the distance between image sets features.
-            variance (optional): If `ret_var` is True, also returns variance
-        """
-        result = super().forward(predicted_features, target_features)
-        return result
-
     def compute_metric(
         self,
         predicted_features: torch.Tensor,
@@ -218,9 +212,9 @@ class KID(BaseFeatureMetric):
         or any other feature extractor.
 
         Args:
-            predicted_features: Samples from data distribution. 
+            predicted_features: Samples from data distribution.
                 Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1.
-            target_features: Samples from data distribution. 
+            target_features: Samples from data distribution.
                 Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1
 
         Returns:
@@ -268,4 +262,3 @@ class KID(BaseFeatureMetric):
         else:
             score = torch.mean(torch.stack(results, dim=0))
             return score
-

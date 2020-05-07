@@ -19,7 +19,7 @@ from scipy import linalg
 from photosynthesis_metrics.base import BaseFeatureMetric
 
 
-def __compute_fid(mu1: np.ndarray, sigma1: np.ndarray, mu2: np.ndarray, sigma2: np.ndarray, eps=1e-6) -> float:
+def _compute_fid(mu1: np.ndarray, sigma1: np.ndarray, mu2: np.ndarray, sigma2: np.ndarray, eps=1e-6) -> float:
     r"""
     The Frechet Inception Distance between two multivariate Gaussians X_predicted ~ N(mu_1, sigm_1)
     and X_target ~ N(mu_2, sigm_2) is
@@ -69,23 +69,25 @@ def _compute_statistics(samples: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
 
 class FID(BaseFeatureMetric):
-    r"""Creates a criterion that measures Frechet Inception Distance score for two datasets of images
-    See https://arxiv.org/abs/1706.08500 for reference.
+    r"""
+    Interface of Frechet Inception Distance.
+    It's computed for a whole set of data and uses features from encoder instead of images itself to decrease
+    computation cost. FID can compare two data distributions with different number of samples.
+    But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
+
+    Args:
+        predicted_features: Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
+        target_features: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
+
+    Returns:
+        score: Scalar value of the distance between image sets features.
+
+    References:
+        .. [1] Heusel M. et al. (2017).
+        Gans trained by a two time-scale update rule converge to a local nash equilibrium.
+        Advances in neural information processing systems,
+        https://arxiv.org/abs/1706.08500
     """
-    def forward(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
-        r"""Interface of Frechet Inception Distance.
-        It's computed for a whole set of data and uses features from encoder instead of images itself to decrease
-        computation cost. FID can compare two data distributions with different number of samples.
-        But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
-
-        Args:
-            predicted_features: Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
-            target_features: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
-
-        Returns:
-            score: Scalar value of the distance between image sets features.
-        """
-        super().forward(predicted_features, target_features)
 
     def compute_metric(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
         r"""
@@ -105,6 +107,6 @@ class FID(BaseFeatureMetric):
         m_pred, s_pred = _compute_statistics(predicted_features.detach().cpu().numpy())
         m_targ, s_targ = _compute_statistics(target_features.detach().cpu().numpy())
 
-        score = __compute_fid(m_pred, s_pred, m_targ, s_targ)
+        score = _compute_fid(m_pred, s_pred, m_targ, s_targ)
 
         return torch.tensor(score, device=predicted_features.device)

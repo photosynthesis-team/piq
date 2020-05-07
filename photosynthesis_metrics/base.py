@@ -59,5 +59,6 @@ class BaseFeatureMetric(torch.nn.Module):
 
         return torch.cat(total_feats, dim=0)
 
-    def compute_metric(self, predicted_features: torch.Tensor, target_features: torch.Tensor):
+    @staticmethod
+    def compute_metric(predicted_features: torch.Tensor, target_features: torch.Tensor):
         raise NotImplementedError("This function should be defined for each children class")
