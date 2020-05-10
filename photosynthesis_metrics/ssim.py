@@ -42,7 +42,6 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
            :DOI:`10.1109/TIP.2003.819861`
     """
     _validate_input(x=x, y=y, kernel_size=kernel_size, scale_weights=None)
-
     kernel = _fspecial_gauss_1d(kernel_size, kernel_sigma)
     kernel = kernel.repeat(x.shape[1], 1, 1, 1)
 
@@ -175,6 +174,7 @@ class SSIMLoss(_Loss):
         Returns:
             Value of SSIM loss to be minimized. 0 <= SSIM loss <= 1.
         """
+        _validate_input(x=prediction, y=target, kernel_size=self.kernel_size, scale_weights=None)
         prediction, target = _adjust_dimensions(x=prediction, y=target)
         _validate_input(x=prediction, y=target, kernel_size=self.kernel_size, scale_weights=None)
 
@@ -384,6 +384,7 @@ class MultiScaleSSIMLoss(_Loss):
         Returns:
             Value of MS-SSIM loss to be minimized. 0 <= MS-SSIM loss <= 1.
         """
+        _validate_input(x=prediction, y=target, kernel_size=self.kernel_size, scale_weights=None)
         prediction, target = _adjust_dimensions(x=prediction, y=target)
         _validate_input(x=prediction, y=target, kernel_size=self.kernel_size, scale_weights=self.scale_weights_tensor)
 
@@ -449,9 +450,6 @@ def _compute_ssim(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, data_r
     Returns:
         Value of Structural Similarity (SSIM) index.
     """
-
-    if x.size() != y.size():
-        raise ValueError('Input tensors must have the same dimensions.')
 
     if x.size(-1) < kernel.size(-1) or x.size(-2) < kernel.size(-1):
         raise ValueError(f'Kernel size can\'t be greater than actual input size. Input size: {x.size()}. '
