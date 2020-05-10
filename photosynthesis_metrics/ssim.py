@@ -449,6 +449,14 @@ def _compute_ssim(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, data_r
     Returns:
         Value of Structural Similarity (SSIM) index.
     """
+
+    if x.size() != y.size():
+        raise ValueError('Input tensors must have the same dimensions.')
+
+    if x.size(-1) < kernel.size(-1) or x.size(-2) < kernel.size(-1):
+        raise ValueError(f'Kernel size can\'t be greater than actual input size. Input size: {x.size()}. '
+                         f'Kernel size: {kernel.size()}')
+
     c1 = (k1 * data_range)**2
     c2 = (k2 * data_range)**2
 
@@ -486,7 +494,11 @@ def _compute_ssim(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, data_r
 
 def _compute_multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float], kernel: torch.Tensor,
                               scale_weights_tensor: torch.Tensor, k1: float, k2: float) -> torch.Tensor:
-    levels = scale_weights_tensor.shape[0]
+    levels = scale_weights_tensor.size(0)
+    min_size = (kernel.size(-1) - 1) * 2 ** (levels - 1) + 1
+    if x.size(-1) < min_size or x.size(-2) < min_size:
+        raise ValueError(f'Invalid size of the input images, expected at least {min_size}x{min_size}.')
+
     mcs = []
     ssim_val = None
     for _ in range(levels):
