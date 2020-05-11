@@ -215,9 +215,9 @@ def test_multi_scale_ssim_raise_if_wrong_value_is_estimated(prediction: torch.Te
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.).numpy())
-    assert torch.isclose(photosynthesis_ms_ssim,tf_ms_ssim, atol=1e-6).all(), \
+    assert torch.isclose(photosynthesis_ms_ssim,tf_ms_ssim, atol=1e-4).all(), \
         f'The estimated value must be equal to tensorflow provided one' \
-        f'(considering floating point operation error up to 1 * 10^-6), ' \
+        f'(considering floating point operation error up to 1 * 10^-4), ' \
         f'got difference {photosynthesis_ms_ssim - tf_ms_ssim}'
 
 
@@ -274,7 +274,7 @@ def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated(prediction: tor
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.).numpy()).mean()
-    assert torch.isclose(photosynthesis_ms_ssim_loss, tf_ms_ssim, atol=1e-6).all(), \
+    assert torch.isclose(photosynthesis_ms_ssim_loss, tf_ms_ssim, atol=1e-4).all(), \
         f'The estimated value must be equal to tensorflow provided one' \
-        f'(considering floating point operation error up to 1 * 10^-6), ' \
+        f'(considering floating point operation error up to 1 * 10^-4), ' \
         f'got difference {photosynthesis_ms_ssim_loss - tf_ms_ssim}'
