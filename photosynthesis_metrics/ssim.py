@@ -468,8 +468,8 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, da
     cs_map = (2 * sigma12 + c2) / (sigma1_sq + sigma2_sq + c2)
     ssim_map = ((2 * mu1_mu2 + c1) / (mu1_sq + mu2_sq + c1)) * cs_map
 
-    ssim_val = ssim_map.mean(dim=(-1,-2))
-    cs = cs_map.mean(dim=(-1,-2))
+    ssim_val = ssim_map.mean(dim=(-1, -2))
+    cs = cs_map.mean(dim=(-1, -2))
 
     return ssim_val, cs
 
@@ -522,7 +522,7 @@ def _compute_multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
         y = f.avg_pool2d(y, kernel_size=2, padding=padding)
 
     # mcs, (level, batch)
-    mcs_ssim = torch.stack(mcs[:-1] + [ssim_val], dim=0)
+    mcs_ssim = torch.relu(torch.stack(mcs[:-1] + [ssim_val], dim=0))
 
     # weights, (level)
     msssim_val = torch.prod((mcs_ssim ** scale_weights_tensor.view(-1, 1, 1)), dim=0).mean(-1)
