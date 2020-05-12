@@ -174,8 +174,8 @@ class SSIMLoss(_Loss):
         Returns:
             Value of SSIM loss to be minimized. 0 <= SSIM loss <= 1.
         """
-        prediction, target = _adjust_dimensions(x=prediction, y=target)
         _validate_input(x=prediction, y=target, kernel_size=self.kernel_size, scale_weights=None)
+        prediction, target = _adjust_dimensions(x=prediction, y=target)
 
         return self.compute_metric(prediction, target)
 
@@ -383,8 +383,8 @@ class MultiScaleSSIMLoss(_Loss):
         Returns:
             Value of MS-SSIM loss to be minimized. 0 <= MS-SSIM loss <= 1.
         """
-        prediction, target = _adjust_dimensions(x=prediction, y=target)
         _validate_input(x=prediction, y=target, kernel_size=self.kernel_size, scale_weights=self.scale_weights_tensor)
+        prediction, target = _adjust_dimensions(x=prediction, y=target)
 
         score = self.compute_metric(prediction, target)
         return score
