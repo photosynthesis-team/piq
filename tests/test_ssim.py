@@ -78,20 +78,6 @@ def test_ssim_raises_if_wrong_kernel_size_is_passed(prediction: torch.Tensor, ta
 
 
 # ================== Test class: `SSIMLoss` ==================
-def test_SSIM_measure_is_zero_for_equal_tensors(target: torch.Tensor) -> None:
-    prediction = target.clone()
-    measure = SSIMLoss()(prediction, target)
-    measure -= 1.
-    assert measure.sum() <= 1e-6, f'If equal tensors are passed SSIM must be equal to 0 ' \
-                                  f'(considering floating point operation error up to 1 * 10^-6), got {measure}'
-
-
-@pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
-def test_SSIM_measure_is_zero_for_equal_tensors_cuda(target: torch.Tensor) -> None:
-    target = target.cuda()
-    test_SSIM_measure_is_zero_for_equal_tensors(target=target)
-
-
 def test_SSIM_measure_is_less_or_equal_to_one() -> None:
     # Create two maximally different tensors.
     ones = torch.ones((3, 3, 256, 256))
