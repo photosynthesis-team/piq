@@ -7,12 +7,15 @@ See paper for details:
 https://arxiv.org/pdf/1802.02664.pdf
 """
 from typing import Optional
+from functools import partial
+from multiprocessing import Pool
 
 import torch
 import numpy as np
 import scipy
-# from scipy.spatial.distance import cdist
+from scipy.spatial.distance import cdist
 
+from photosynthesis_metrics.base import BaseFeatureMetric
 
 def relative(intervals: np.ndarray, alpha_max: float, i_max: int = 100) -> np.ndarray:
     r"""
@@ -78,7 +81,7 @@ def lmrk_table(W: np.ndarray, L: np.ndarray):
             in L, e.g., D[i, :, :] = [[0, 0.1], [1, 0.2], [3, 0.3], [2, 0.4]]
         max_dist: Maximal distance between W and L
     """
-    a = scipy.spatial.distance.cdist(W, L)
+    a = cdist(W, L)
     max_dist = np.max(a)
     idx = np.argsort(a)
     b = a[np.arange(np.shape(a)[0])[:, np.newaxis], idx]
@@ -128,10 +131,12 @@ def witness(X, sample_size: int = 64, gamma: Optional[float] = None):
     return intervals, alpha_max
 
 
-def rlt(X: np.ndarray, sample_size: int = 64, gamma: Optional[float] = None, i_max: int = 100) -> np.ndarray:
+def rlt(
+    idx: int, X: np.ndarray, sample_size: int = 64, gamma: Optional[float] = None, i_max: int = 100) -> np.ndarray:
     """Implements Algorithm 1 for one sample of landmarks.
  
     Args:
+        idx : Used for multiprocessing.Pool to work correctly
         X: Array of shape (N_samples, data_dim) representing the dataset.
         sample_size: Number of landmarks to use on each iteration.
         gamma: Parameter determining maximum persistence value. Default is `1.0 / 128 * N_imgs / 5000`
@@ -163,9 +168,34 @@ def rlts(X: np.ndarray,
     """
     rlts = np.zeros((num_iters, i_max))
     for i in range(num_iters):
-        rlts[i, :] = rlt(X, sample_size, gamma, i_max)
+        rlts[i, :] = rlt(idx=None, X=X, sample_size=sample_size, gamma=gamma, i_max=i_max)
     return rlts
 
+
+def parallel_rlts(X: np.ndarray, 
+    sample_size: int = 64, num_iters: int = 1000, gamma: Optional[float] = None, i_max: int = 100) -> np.ndarray:
+    r"""Implements Algorithm 1 from the paper.
+    Uses multiprocessing.Pool to make computations fastes. 
+
+    Args:
+        X: Array of shape (N_samples, data_dim) representing the dataset.
+        sample_size: Number of landmarks to use on each iteration.
+        num_iters: Number of iterations. 
+        gamma: Parameter determining maximum persistence value. Default is `1.0 / 128 * N_imgs / 5000`
+        i_max: Upper bound on the value of beta_1 to compute.
+
+    Returns:
+        rlts: Array of size (num_iters, i_max) containing RLT(i, 1, X, L) for
+            `num_iters` collection of randomly sampled landmarks.
+    """
+    partial_rlt = partial(rlt, X=X, sample_size=sample_size, gamma=gamma, i_max=i_max)
+
+    # Use 6 processes by default
+    p = Pool(6)
+    pool_result = p.map(partial_rlt, range(num_iters))
+    rlts = np.vstack(pool_result)
+    rlts = np.zeros((num_iters, i_max))
+    return rlts
 
 class GS(BaseFeatureMetric):
     r"""Interface of Geometry Score.
@@ -219,10 +249,22 @@ class GS(BaseFeatureMetric):
         """
 
         # GPU -> CPU -> Numpy (Currently only Numpy realization is supported)
-        rlts1
-        rlts1
-        mean_rlt_predicted = np.mean(predicted_features.detach().cpu().numpy(), axis=0)
-        mean_rlt_target = np.mean(target_features.detach().cpu().numpy(), axis=0)
+        rlt_predicted = rlts(
+            predicted_features.detach().cpu().numpy(), 
+            sample_size=self.sample_size, 
+            num_iters=self.num_iters,
+            gamma=None, 
+            i_max=self.i_max)
+        
+        rlt_target = rlts(
+            target_features.detach().cpu().numpy(), 
+            sample_size=self.sample_size, 
+            num_iters=self.num_iters,
+            gamma=None, 
+            i_max=self.i_max)
+
+        mean_rlt_predicted = np.mean(rlt_predicted, axis=0)
+        mean_rlt_target = np.mean(rlt_target, axis=0)
 
         score = np.sum((mean_rlt_predicted - mean_rlt_target) ** 2)
  
