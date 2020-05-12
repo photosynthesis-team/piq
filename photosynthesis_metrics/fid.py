@@ -55,7 +55,7 @@ def _sqrtm_newton_schulz(A: torch.Tensor, num_iters: int = 100) -> Tuple[torch.T
 
         sA = Y * torch.sqrt(normA)
         error = _approximation_error(A, sA)
-        if torch.isclose(error, torch.tensor([0.]), atol=1e-5):
+        if torch.isclose(error, torch.tensor([0.], device=error.device), atol=1e-5):
             break
     return sA, error
 
@@ -172,9 +172,9 @@ class FID(BaseFeatureMetric):
         Returns:
         --   : The Frechet Distance.
         """
-        # GPU -> CPU -> Numpy
-        m_pred, s_pred = _compute_statistics(predicted_features.detach().cpu().numpy())
-        m_targ, s_targ = _compute_statistics(target_features.detach().cpu().numpy())
+        # GPU -> CPU
+        m_pred, s_pred = _compute_statistics(predicted_features.detach())
+        m_targ, s_targ = _compute_statistics(target_features.detach())
 
         score = _compute_fid(m_pred, s_pred, m_targ, s_targ)
 
