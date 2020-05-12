@@ -78,22 +78,6 @@ def test_ssim_raises_if_wrong_kernel_size_is_passed(prediction: torch.Tensor, ta
 
 
 # ================== Test class: `SSIMLoss` ==================
-def test_SSIM_measure_is_less_or_equal_to_one() -> None:
-    # Create two maximally different tensors.
-    ones = torch.ones((3, 3, 256, 256))
-    zeros = torch.zeros((3, 3, 256, 256))
-    measure = SSIMLoss()(ones, zeros)
-    assert measure <= 1, f'SSIM must be <= 1, got {measure}'
-
-
-@pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
-def test_SSIM_measure_is_less_or_equal_to_one_cuda() -> None:
-    ones = torch.ones((3, 3, 256, 256)).cuda()
-    zeros = torch.zeros((3, 3, 256, 256)).cuda()
-    measure = SSIMLoss()(ones, zeros)
-    assert measure <= 1, f'SSIM must be <= 1, got {measure}'
-
-
 def test_ssim_loss_symmetry(prediction: torch.Tensor, target: torch.Tensor) -> None:
     loss = SSIMLoss()
     loss_value = loss(prediction, target)
@@ -203,7 +187,6 @@ def test_multi_scale_ssim_raises_if_wrong_kernel_size_is_passed(prediction: torc
 
 
 # ================== Test class: `MultiScaleSSIMLoss` ==================
-
 def test_multi_scale_ssim_loss_symmetry(prediction: torch.Tensor, target: torch.Tensor) -> None:
     loss = MultiScaleSSIMLoss()
     loss_value = loss(prediction, target)
