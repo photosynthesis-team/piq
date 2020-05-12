@@ -154,12 +154,12 @@ class KID(BaseFeatureMetric):
     But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
 
     Args:
-        predicted_features: Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
-        target_features: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
+        predicted_features(torch.Tensor): Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
+        target_features(torch.Tensor): Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
 
     Returns:
-        score: Scalar value of the distance between image sets features.
-        variance (optional): If `ret_var` is True, also returns variance
+        score(torch.Tensor): Scalar value of the distance between image sets features.
+        variance(Optional[torch.Tensor]): If `ret_var` is True, also returns variance
 
     Reference:
         Demystifying MMD GANs https://arxiv.org/abs/1801.01401
