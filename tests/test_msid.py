@@ -1,7 +1,7 @@
 import torch
 import pytest
 
-from photosynthesis_metrics import MSID, compute_msid
+from photosynthesis_metrics import MSID
 from photosynthesis_metrics.feature_extractors.fid_inception import InceptionV3
 
 
@@ -51,21 +51,22 @@ def features_prediction_constant() -> torch.Tensor:
     return torch.ones(1000, 20)
 
 
-# ================== Test function: `compute_msid` ==================
-def test_compute_msid_fails_for_different_dimensions(features_target_normal : torch.Tensor) -> None:
+# ================== Test class: `MSID` ==================
+def test_MSID_fails_for_different_dimensions(features_target_normal : torch.Tensor) -> None:
     features_prediction_normal = torch.rand(1000, 21)
+    metric = MSID()
     with pytest.raises(AssertionError):
-        compute_msid(features_target_normal, features_prediction_normal)
+        metric(features_target_normal, features_prediction_normal)
 
 def test_compute_msid_works_for_different_number_of_images_in_stack(features_target_normal : torch.Tensor) -> None:
     features_prediction_normal = torch.rand(1001, 20)
+    metric = MSID()
     try:
-        compute_msid(features_target_normal, features_prediction_normal)
+        metric(features_target_normal, features_prediction_normal)
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
-# ================== Test class: `MSID` ==================
 def test_MSID_init() -> None:
     try:
         metric = MSID()

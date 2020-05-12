@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from photosynthesis_metrics import KID, compute_polynomial_mmd
+from photosynthesis_metrics import KID
 
 
 @pytest.fixture(scope='module')
@@ -25,25 +25,6 @@ def features_prediction_constant() -> torch.Tensor:
     return torch.ones(1000, 20)
 
 
-# ================== Test function: `compute_polynomial_mmd` ==================
-def test_compute_polynomial_mmd_fails_for_different_dimensions(features_target_normal : torch.Tensor) -> None:
-    features_prediction_normal = torch.rand(1000, 21)
-    with pytest.raises(ValueError):
-        compute_polynomial_mmd(features_target_normal, features_prediction_normal)
-
-
-def test_compute_polynomial_mmd_fails_for_different_number_of_images_in_stack(features_target_normal : torch.Tensor) -> None:
-    features_prediction_normal = torch.rand(1001, 20)
-    with pytest.raises(AssertionError):
-        compute_polynomial_mmd(features_target_normal, features_prediction_normal)
-
-def test_compute_polynomial_mmd_returns_variance(features_target_normal : torch.Tensor, features_prediction_normal : torch.Tensor) -> None:
-    result = compute_polynomial_mmd(features_target_normal, features_prediction_normal, ret_var=True)
-    assert len(result) == 2, \
-        f'Expected to get score and variance, got {result}'
-
-
-
 def test_KID_init() -> None:
     try:
         metric = KID()
@@ -57,3 +38,23 @@ def test_KID_forward(features_target_normal : torch.Tensor, features_prediction_
         score = metric(features_target_normal, features_prediction_normal)
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
+
+
+def test_KID_fails_for_different_dimensions(features_target_normal : torch.Tensor) -> None:
+    features_prediction_normal = torch.rand(1000, 21)
+    metric = KID()
+    with pytest.raises(AssertionError):
+        metric(features_target_normal, features_prediction_normal)
+
+
+def test_KID_works_for_different_number_of_images_in_stack(features_target_normal : torch.Tensor) -> None:
+    features_prediction_normal = torch.rand(1010, 20)
+    metric = KID()
+    metric(features_target_normal, features_prediction_normal)
+
+def test_KID_returns_variance(features_target_normal : torch.Tensor, features_prediction_normal : torch.Tensor) -> None:
+    metric = KID(ret_var=True)
+    result = metric(features_target_normal, features_prediction_normal)
+    print(result)
+    assert len(result) == 2, \
+        f'Expected to get score and variance, got {result}'

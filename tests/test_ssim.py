@@ -1,7 +1,8 @@
 import torch
+import numpy as np
 import pytest
 
-from photosynthesis_metrics import ssim, SSIMLoss, MultiScaleSSIMLoss, multi_scale_ssim
+from photosynthesis_metrics import SSIMLoss, MultiScaleSSIMLoss, ssim, multi_scale_ssim
 
 
 @pytest.fixture(scope='module')
@@ -12,7 +13,6 @@ def prediction() -> torch.Tensor:
 @pytest.fixture(scope='module')
 def target() -> torch.Tensor:
     return torch.rand(3, 3, 256, 256)
-
 
 # ================== Test function: `ssim` ==================
 def test_ssim_symmetry(prediction: torch.Tensor, target: torch.Tensor) -> None:

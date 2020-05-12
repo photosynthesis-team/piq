@@ -28,7 +28,6 @@ def _sqrtm_newton_schulz(A: torch.Tensor, num_iters: int = 100) -> Tuple[torch.T
     Args:
         A: matrix or batch of matrices
         num_iters: Number of iteration of the method
-
     Returns:
         Square root of matrix
         Error
@@ -56,18 +55,18 @@ def _sqrtm_newton_schulz(A: torch.Tensor, num_iters: int = 100) -> Tuple[torch.T
 
         sA = Y * torch.sqrt(normA)
         error = _approximation_error(A, sA)
-        if torch.isclose(error, torch.tensor([0.]), atol=1e-5):
+        if torch.isclose(error, torch.tensor([0.], device=error.device), atol=1e-5):
             break
     return sA, error
 
 
-def __compute_fid(mu1: torch.Tensor, sigma1: torch.Tensor, mu2: torch.Tensor, sigma2: torch.Tensor,
+def _compute_fid(mu1: torch.Tensor, sigma1: torch.Tensor, mu2: torch.Tensor, sigma2: torch.Tensor,
                   eps=1e-6) -> torch.Tensor:
     r"""
     The Frechet Inception Distance between two multivariate Gaussians X_predicted ~ N(mu_1, sigm_1)
     and X_target ~ N(mu_2, sigm_2) is
         d^2 = ||mu_1 - mu_2||^2 + Tr(sigm_1 + sigm_2 - 2*sqrt(sigm_1*sigm_2)).
-    
+
     Args:
         mu1: mean of activations calculated on predicted samples
         sigma1: covariance matrix over activations calculated on predicted samples
@@ -137,47 +136,46 @@ def _compute_statistics(samples: torch.Tensor) -> Tuple[torch.Tensor, torch.Tens
     return mu, sigma
 
 
-def compute_fid(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    r"""Numpy implementation of the Frechet Distance.
-    Fits multivariate Gaussians: X ~ N(mu_1, sigm_1) and Y ~ N(mu_2, sigm_2) to image stacks.
-    Then computes FID as d^2 = ||mu_1 - mu_2||^2 + Tr(sigm_1 + sigm_2 - 2*sqrt(sigm_1*sigm_2)).
+class FID(BaseFeatureMetric):
+    r"""
+    Interface of Frechet Inception Distance.
+    It's computed for a whole set of data and uses features from encoder instead of images itself to decrease
+    computation cost. FID can compare two data distributions with different number of samples.
+    But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
 
     Args:
-        x: Samples from data distribution. Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1.
-        y: Samples from data distribution. Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1
+        predicted_features: Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
+        target_features: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
 
     Returns:
-    --   : The Frechet Distance.
-    """
-    m_pred, s_pred = _compute_statistics(x)
-    m_targ, s_targ = _compute_statistics(y)
-
-    score = __compute_fid(m_pred, s_pred, m_targ, s_targ)
-    return score
+        score: Scalar value of the distance between image sets features.
 
 
-class FID(BaseFeatureMetric):
-    r"""Creates a criterion that measures Frechet Inception Distance score for two datasets of images
-    See https://arxiv.org/abs/1706.08500 for reference.
+    References:
+        .. [1] Heusel M. et al. (2017).
+        Gans trained by a two time-scale update rule converge to a local nash equilibrium.
+        Advances in neural information processing systems,
+        https://arxiv.org/abs/1706.08500
     """
 
-    def __init__(self):
-        super(FID, self).__init__()
-        self.compute = compute_fid
-
-    def forward(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
-        r"""Interface of Frechet Inception Distance.
-        It's computed for a whole set of data and uses features from encoder instead of images itself to decrease
-        computation cost. FID can compare two data distributions with different number of samples.
-        But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
+    def compute_metric(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+        r"""
+        Fits multivariate Gaussians: X ~ N(mu_1, sigm_1) and Y ~ N(mu_2, sigm_2) to image stacks.
+        Then computes FID as d^2 = ||mu_1 - mu_2||^2 + Tr(sigm_1 + sigm_2 - 2*sqrt(sigm_1*sigm_2)).
 
         Args:
-            predicted_features: Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
-            target_features: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
+            predicted_features: Samples from data distribution.
+                Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1.
+            target_features: Samples from data distribution.
+                Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1
 
         Returns:
-            score: Scalar value of the distance between image sets features.
+        --   : The Frechet Distance.
         """
-        # Check inputs
-        super(FID, self).forward(predicted_features, target_features)
-        return self.compute(predicted_features, target_features)
+        # GPU -> CPU
+        m_pred, s_pred = _compute_statistics(predicted_features.detach())
+        m_targ, s_targ = _compute_statistics(target_features.detach())
+
+        score = _compute_fid(m_pred, s_pred, m_targ, s_targ)
+
+        return torch.tensor(score, device=predicted_features.device)

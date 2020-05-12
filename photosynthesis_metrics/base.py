@@ -19,6 +19,7 @@ class BaseFeatureMetric(torch.nn.Module):
     def forward(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
         # Sanity check for input
         _validate_features(predicted_features, target_features)
+        return self.compute_metric(predicted_features, target_features)
 
     def _compute_feats(
         self,
@@ -57,3 +58,7 @@ class BaseFeatureMetric(torch.nn.Module):
             total_feats.append(features[0].view(N, -1))
 
         return torch.cat(total_feats, dim=0)
+
+    @staticmethod
+    def compute_metric(predicted_features: torch.Tensor, target_features: torch.Tensor):
+        raise NotImplementedError("This function should be defined for each children class")
