@@ -1,5 +1,5 @@
 import torch
-import numpy as np
+import itertools
 import pytest
 
 from photosynthesis_metrics import SSIMLoss, MultiScaleSSIMLoss, ssim, multi_scale_ssim
@@ -59,14 +59,17 @@ def test_ssim_measure_is_less_or_equal_to_one_cuda() -> None:
 
 
 def test_ssim_raises_if_tensors_have_different_shapes(target: torch.Tensor) -> None:
-    for channel_size in [2, 3]:
-        for height in [255, 256]:
-            for width in [255, 256]:
-                wrong_shape_prediction = torch.rand(3, channel_size, height, width)
-                if wrong_shape_prediction.size() == target.size():
-                    continue
-                with pytest.raises(AssertionError):
-                    ssim(wrong_shape_prediction, target)
+    dims = [[3], [2,3], [255,256], [255,256]]
+    for b, c, h, w in list(itertools.product(*dims)):
+        wrong_shape_prediction = torch.rand(b, c, h, w)
+        if wrong_shape_prediction.size() == target.size():
+            try:
+                ssim(wrong_shape_prediction, target)
+            except Exception as e:
+                pytest.fail(f"Unexpected error occurred: {e}")
+        else:
+            with pytest.raises(AssertionError):
+                ssim(wrong_shape_prediction, target)
 
 
 def test_ssim_raises_if_tensors_have_different_types(target: torch.Tensor) -> None:
@@ -138,14 +141,17 @@ def test_ssim_loss_is_less_or_equal_to_one_cuda() -> None:
 
 
 def test_ssim_loss_raises_if_tensors_have_different_shapes(target: torch.Tensor) -> None:
-    for channel_size in [2, 3]:
-        for height in [255, 256]:
-            for width in [255, 256]:
-                wrong_shape_prediction = torch.rand(3, channel_size, height, width)
-                if wrong_shape_prediction.size() == target.size():
-                    continue
-                with pytest.raises(AssertionError):
-                    SSIMLoss()(wrong_shape_prediction, target)
+    dims = [[3], [2, 3], [255, 256], [255, 256]]
+    for b, c, h, w in list(itertools.product(*dims)):
+        wrong_shape_prediction = torch.rand(b, c, h, w)
+        if wrong_shape_prediction.size() == target.size():
+            try:
+                SSIMLoss()(wrong_shape_prediction, target)
+            except Exception as e:
+                pytest.fail(f"Unexpected error occurred: {e}")
+        else:
+            with pytest.raises(AssertionError):
+                SSIMLoss()(wrong_shape_prediction, target)
 
 
 def test_ssim_loss_raises_if_tensors_have_different_types(target: torch.Tensor) -> None:
@@ -215,14 +221,17 @@ def test_multi_scale_ssim_measure_is_less_or_equal_to_one_cuda() -> None:
 
 
 def test_multi_scale_ssim_raises_if_tensors_have_different_shapes(target: torch.Tensor) -> None:
-    for channel_size in [2, 3]:
-        for height in [255, 256]:
-            for width in [255, 256]:
-                wrong_shape_prediction = torch.rand(3, channel_size, height, width)
-                if wrong_shape_prediction.size() == target.size():
-                    continue
-                with pytest.raises(AssertionError):
-                    multi_scale_ssim(wrong_shape_prediction, target)
+    dims = [[3], [2, 3], [255, 256], [255, 256]]
+    for b, c, h, w in list(itertools.product(*dims)):
+        wrong_shape_prediction = torch.rand(b, c, h, w)
+        if wrong_shape_prediction.size() == target.size():
+            try:
+                multi_scale_ssim(wrong_shape_prediction, target)
+            except Exception as e:
+                pytest.fail(f"Unexpected error occurred: {e}")
+        else:
+            with pytest.raises(AssertionError):
+                multi_scale_ssim(wrong_shape_prediction, target)
 
 
 def test_multi_scale_ssim_raises_if_tensors_have_different_types(target: torch.Tensor) -> None:
@@ -294,14 +303,17 @@ def test_multi_scale_ssim_loss_is_less_or_equal_to_one_cuda() -> None:
 
 
 def test_multi_scale_ssim_loss_raises_if_tensors_have_different_shapes(target: torch.Tensor) -> None:
-    for channel_size in [2, 3]:
-        for height in [255, 256]:
-            for width in [255, 256]:
-                wrong_shape_prediction = torch.rand(3, channel_size, height, width)
-                if wrong_shape_prediction.size() == target.size():
-                    continue
-                with pytest.raises(AssertionError):
-                    MultiScaleSSIMLoss()(wrong_shape_prediction, target)
+    dims = [[3], [2, 3], [255, 256], [255, 256]]
+    for b, c, h, w in list(itertools.product(*dims)):
+        wrong_shape_prediction = torch.rand(b, c, h, w)
+        if wrong_shape_prediction.size() == target.size():
+            try:
+                MultiScaleSSIMLoss()(wrong_shape_prediction, target)
+            except Exception as e:
+                pytest.fail(f"Unexpected error occurred: {e}")
+        else:
+            with pytest.raises(AssertionError):
+                MultiScaleSSIMLoss()(wrong_shape_prediction, target)
 
 
 def test_multi_scale_ssim_loss_raises_if_tensors_have_different_types(target: torch.Tensor) -> None:
