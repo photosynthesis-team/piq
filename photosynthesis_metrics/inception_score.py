@@ -11,15 +11,18 @@ Credits:
     https://github.com/tsc2017/Inception-Score
     https://github.com/openai/improved-gan/issues/29
 """
+from typing import Optional
+
 import torch
 import torch.nn.functional as F
 
 from photosynthesis_metrics.base import BaseFeatureMetric
+from photosynthesis_metrics.utils import _validate_features
 
 class IS(BaseFeatureMetric):
     r"""Creates a criterion that measures Inception Score.
     IS is computed separatly for predicted and target features and expects raw InceptionV3 model logits as inputs.
-    
+
     Args:
         predicted_features (torch.Tensor): Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
         target_features (torch.Tensor): Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
@@ -45,14 +48,20 @@ class IS(BaseFeatureMetric):
         self.ret_target = ret_target
         self.ret_var = ret_var
 
-    def compute_metric(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, predicted_features: torch.Tensor, target_features: Optional[torch.Tensor] = None) -> torch.Tensor:
+        # Sanity check for input.
+        _validate_features(predicted_features, predicted_features if target_features is None else target_features)
+        return self.compute_metric(predicted_features, target_features)
+
+    def compute_metric(
+        self, predicted_features: torch.Tensor, target_features: Optional[torch.Tensor] = None) -> torch.Tensor:
         r"""Compute IS
 
         Returns:
             predicted_score: Scalar value of IS for predicted images features.
             target_score: Scalar value of IS for target images features if `ret_target` is True.
         """
-
         predicted_is = self.logits_to_score(predicted_features)
         if self.ret_target:
             target_is = self.logits_to_score(target_features)
