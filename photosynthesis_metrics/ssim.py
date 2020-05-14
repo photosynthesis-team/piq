@@ -175,8 +175,8 @@ class SSIMLoss(_Loss):
         Returns:
             Value of SSIM loss to be minimized. 0 <= SSIM loss <= 1.
         """
-        prediction, target = _adjust_dimensions(x=prediction, y=target)
         _validate_input(x=prediction, y=target, kernel_size=self.kernel_size, scale_weights=None)
+        prediction, target = _adjust_dimensions(x=prediction, y=target)
 
         return self.compute_metric(prediction, target)
 
@@ -206,7 +206,8 @@ class SSIMLoss(_Loss):
 
 def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: float = 1.5,
                      data_range: Union[int, float] = 255, size_average: bool = True,
-                     scale_weights: Optional[Union[Tuple[float], List[float]]] = None, k1=0.01, k2=0.03) -> torch.Tensor:
+                     scale_weights: Optional[Union[Tuple[float], List[float]]] = None, k1=0.01,
+                     k2=0.03) -> torch.Tensor:
     r""" Interface of Multi-scale Structural Similarity (MS-SSIM) index.
     Args:
         x: Batch of images. Required to be 4D, channels first (N,C,H,W).
@@ -384,8 +385,8 @@ class MultiScaleSSIMLoss(_Loss):
         Returns:
             Value of MS-SSIM loss to be minimized. 0 <= MS-SSIM loss <= 1.
         """
-        prediction, target = _adjust_dimensions(x=prediction, y=target)
         _validate_input(x=prediction, y=target, kernel_size=self.kernel_size, scale_weights=self.scale_weights_tensor)
+        prediction, target = _adjust_dimensions(x=prediction, y=target)
 
         score = self.compute_metric(prediction, target)
         return score
@@ -422,12 +423,13 @@ def _fspecial_gauss_1d(size: int, sigma: float) -> torch.Tensor:
         1D Gauss kernel.
     """
     coords = torch.arange(size).to(dtype=torch.float)
-    coords -= size//2
+    coords -= size // 2
 
-    g = torch.exp(-(coords**2) / (2 * sigma**2))
+    g = torch.exp(-(coords ** 2) / (2 * sigma ** 2))
     g /= g.sum()
 
     return g.unsqueeze(0).unsqueeze(0)
+
 
 def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, data_range: Union[float, int] = 255,
                       k1: float = 0.01, k2: float = 0.03) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
@@ -472,6 +474,7 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, da
     cs = cs_map.mean(dim=(-1, -2))
 
     return ssim_val, cs
+
 
 def _compute_ssim(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, data_range: Union[float, int] = 255,
                   size_average: bool = True, full: bool = False, k1: float = 0.01, k2: float = 0.03) \
