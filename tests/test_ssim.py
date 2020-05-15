@@ -1,5 +1,5 @@
 import torch
-import numpy as np
+import itertools
 import pytest
 import tensorflow as tf
 
@@ -60,9 +60,17 @@ def test_ssim_measure_is_less_or_equal_to_one_cuda() -> None:
 
 
 def test_ssim_raises_if_tensors_have_different_shapes(target: torch.Tensor) -> None:
-    wrong_shape_prediction = torch.rand(3, 2, 64, 64)
-    with pytest.raises(AssertionError):
-        ssim(wrong_shape_prediction, target)
+    dims = [[3], [2,3], [255,256], [255,256]]
+    for b, c, h, w in list(itertools.product(*dims)):
+        wrong_shape_prediction = torch.rand(b, c, h, w)
+        if wrong_shape_prediction.size() == target.size():
+            try:
+                ssim(wrong_shape_prediction, target)
+            except Exception as e:
+                pytest.fail(f"Unexpected error occurred: {e}")
+        else:
+            with pytest.raises(AssertionError):
+                ssim(wrong_shape_prediction, target)
 
 
 def test_ssim_raises_if_tensors_have_different_types(target: torch.Tensor) -> None:
@@ -76,6 +84,16 @@ def test_ssim_raises_if_wrong_kernel_size_is_passed(prediction: torch.Tensor, ta
     for kernel_size in wrong_kernel_sizes:
         with pytest.raises(AssertionError):
             ssim(prediction, target, kernel_size=kernel_size)
+
+
+
+def test_ssim_raises_if_kernel_size_greater_than_image() -> None:
+    right_kernel_sizes = list(range(1, 52, 2))
+    for kernel_size in right_kernel_sizes:
+        wrong_size_prediction = torch.rand(3, 3, kernel_size-1, kernel_size-1)
+        wrong_size_target = torch.rand(3, 3, kernel_size-1, kernel_size-1)
+        with pytest.raises(ValueError):
+            ssim(wrong_size_prediction, wrong_size_target, kernel_size=kernel_size)
 
 
 def test_ssim_raise_if_wrong_value_is_estimated(prediction: torch.Tensor, target: torch.Tensor) -> None:
@@ -135,6 +153,42 @@ def test_ssim_loss_is_less_or_equal_to_one_cuda() -> None:
     assert loss <= 1, f'SSIM loss must be <= 1, got {loss}'
 
 
+def test_ssim_loss_raises_if_tensors_have_different_shapes(target: torch.Tensor) -> None:
+    dims = [[3], [2, 3], [255, 256], [255, 256]]
+    for b, c, h, w in list(itertools.product(*dims)):
+        wrong_shape_prediction = torch.rand(b, c, h, w)
+        if wrong_shape_prediction.size() == target.size():
+            try:
+                SSIMLoss()(wrong_shape_prediction, target)
+            except Exception as e:
+                pytest.fail(f"Unexpected error occurred: {e}")
+        else:
+            with pytest.raises(AssertionError):
+                SSIMLoss()(wrong_shape_prediction, target)
+
+
+def test_ssim_loss_raises_if_tensors_have_different_types(target: torch.Tensor) -> None:
+    wrong_type_prediction = list(range(10))
+    with pytest.raises(AssertionError):
+        SSIMLoss()(wrong_type_prediction, target)
+
+
+def test_ssim_loss_raises_if_wrong_kernel_size_is_passed(prediction: torch.Tensor, target: torch.Tensor) -> None:
+    wrong_kernel_sizes = list(range(0, 50, 2))
+    for kernel_size in wrong_kernel_sizes:
+        with pytest.raises(AssertionError):
+            SSIMLoss(kernel_size=kernel_size)(prediction, target)
+
+
+def test_ssim_loss_raises_if_kernel_size_greater_than_image() -> None:
+    right_kernel_sizes = list(range(1, 52, 2))
+    for kernel_size in right_kernel_sizes:
+        wrong_size_prediction = torch.rand(3, 3, kernel_size-1, kernel_size-1)
+        wrong_size_target = torch.rand(3, 3, kernel_size-1, kernel_size-1)
+        with pytest.raises(ValueError):
+            SSIMLoss(kernel_size=kernel_size)(wrong_size_prediction, wrong_size_target)
+
+
 def test_ssim_loss_raise_if_wrong_value_is_estimated(prediction: torch.Tensor, target: torch.Tensor) -> None:
     ssim_loss = SSIMLoss(kernel_size=11, kernel_sigma=1.5, data_range=1.)(prediction, target)
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
@@ -191,9 +245,17 @@ def test_multi_scale_ssim_measure_is_less_or_equal_to_one_cuda() -> None:
 
 
 def test_multi_scale_ssim_raises_if_tensors_have_different_shapes(target: torch.Tensor) -> None:
-    wrong_shape_prediction = torch.rand(3, 2, 64, 64)
-    with pytest.raises(AssertionError):
-        multi_scale_ssim(wrong_shape_prediction, target)
+    dims = [[3], [2, 3], [255, 256], [255, 256]]
+    for b, c, h, w in list(itertools.product(*dims)):
+        wrong_shape_prediction = torch.rand(b, c, h, w)
+        if wrong_shape_prediction.size() == target.size():
+            try:
+                multi_scale_ssim(wrong_shape_prediction, target)
+            except Exception as e:
+                pytest.fail(f"Unexpected error occurred: {e}")
+        else:
+            with pytest.raises(AssertionError):
+                multi_scale_ssim(wrong_shape_prediction, target)
 
 
 def test_multi_scale_ssim_raises_if_tensors_have_different_types(target: torch.Tensor) -> None:
@@ -207,6 +269,15 @@ def test_multi_scale_ssim_raises_if_wrong_kernel_size_is_passed(prediction: torc
     for kernel_size in wrong_kernel_sizes:
         with pytest.raises(AssertionError):
             multi_scale_ssim(prediction, target, kernel_size=kernel_size)
+
+
+def test_multi_scale_ssim_raises_if_kernel_size_greater_than_image() -> None:
+    right_kernel_sizes = list(range(1, 52, 2))
+    for kernel_size in right_kernel_sizes:
+        wrong_size_prediction = torch.rand(3, 3, kernel_size-1, kernel_size-1)
+        wrong_size_target = torch.rand(3, 3, kernel_size-1, kernel_size-1)
+        with pytest.raises(ValueError):
+            multi_scale_ssim(wrong_size_prediction, wrong_size_target, kernel_size=kernel_size)
 
 
 def test_multi_scale_ssim_raise_if_wrong_value_is_estimated(prediction: torch.Tensor, target: torch.Tensor) -> None:
@@ -265,6 +336,43 @@ def test_multi_scale_ssim_loss_is_less_or_equal_to_one_cuda() -> None:
     zeros = torch.zeros((3, 3, 256, 256)).cuda()
     loss = MultiScaleSSIMLoss()(ones, zeros)
     assert loss <= 1, f'SSIM loss must be <= 1, got {loss}'
+
+
+def test_multi_scale_ssim_loss_raises_if_tensors_have_different_shapes(target: torch.Tensor) -> None:
+    dims = [[3], [2, 3], [255, 256], [255, 256]]
+    for b, c, h, w in list(itertools.product(*dims)):
+        wrong_shape_prediction = torch.rand(b, c, h, w)
+        if wrong_shape_prediction.size() == target.size():
+            try:
+                MultiScaleSSIMLoss()(wrong_shape_prediction, target)
+            except Exception as e:
+                pytest.fail(f"Unexpected error occurred: {e}")
+        else:
+            with pytest.raises(AssertionError):
+                MultiScaleSSIMLoss()(wrong_shape_prediction, target)
+
+
+def test_multi_scale_ssim_loss_raises_if_tensors_have_different_types(target: torch.Tensor) -> None:
+    wrong_type_prediction = list(range(10))
+    with pytest.raises(AssertionError):
+        MultiScaleSSIMLoss()(wrong_type_prediction, target)
+
+
+def test_multi_scale_ssim_loss_raises_if_wrong_kernel_size_is_passed(prediction: torch.Tensor,
+                                                                     target: torch.Tensor) -> None:
+    wrong_kernel_sizes = list(range(0, 50, 2))
+    for kernel_size in wrong_kernel_sizes:
+        with pytest.raises(AssertionError):
+            MultiScaleSSIMLoss(kernel_size=kernel_size)(prediction, target)
+
+
+def test_multi_scale_ssim_loss_raises_if_kernel_size_greater_than_image() -> None:
+    right_kernel_sizes = list(range(1, 52, 2))
+    for kernel_size in right_kernel_sizes:
+        wrong_size_prediction = torch.rand(3, 3, kernel_size-1, kernel_size-1)
+        wrong_size_target = torch.rand(3, 3, kernel_size-1, kernel_size-1)
+        with pytest.raises(ValueError):
+            MultiScaleSSIMLoss(kernel_size=kernel_size)(wrong_size_prediction, wrong_size_target)
 
 
 def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated(prediction: torch.Tensor,

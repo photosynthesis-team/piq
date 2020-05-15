@@ -42,7 +42,6 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
            :DOI:`10.1109/TIP.2003.819861`
     """
     _validate_input(x=x, y=y, kernel_size=kernel_size, scale_weights=None)
-
     kernel = _fspecial_gauss_1d(kernel_size, kernel_sigma)
     kernel = kernel.repeat(x.shape[1], 1, 1, 1)
 
@@ -446,11 +445,17 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, da
             k2: Algorithm parameter, K2 (small constant, see [1]).
                 Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
 
-        Returns:
-            Full Value of Structural Similarity (SSIM) index.
-        """
-    c1 = (k1 * data_range) ** 2
-    c2 = (k2 * data_range) ** 2
+
+    Returns:
+        Full Value of Structural Similarity (SSIM) index.
+    """
+
+    if x.size(-1) < kernel.size(-1) or x.size(-2) < kernel.size(-1):
+        raise ValueError(f'Kernel size can\'t be greater than actual input size. Input size: {x.size()}. '
+                         f'Kernel size: {kernel.size()}')
+
+    c1 = (k1 * data_range)**2
+    c2 = (k2 * data_range)**2
 
     kernel = kernel.to(x.device, dtype=x.dtype)
 
@@ -513,7 +518,11 @@ def _compute_ssim(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, data_r
 
 def _compute_multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float], kernel: torch.Tensor,
                               scale_weights_tensor: torch.Tensor, k1: float, k2: float) -> torch.Tensor:
-    levels = scale_weights_tensor.shape[0]
+    levels = scale_weights_tensor.size(0)
+    min_size = (kernel.size(-1) - 1) * 2 ** (levels - 1) + 1
+    if x.size(-1) < min_size or x.size(-2) < min_size:
+        raise ValueError(f'Invalid size of the input images, expected at least {min_size}x{min_size}.')
+
     mcs = []
     ssim_val = None
     for _ in range(levels):
