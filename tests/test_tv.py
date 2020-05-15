@@ -23,7 +23,7 @@ def test_tv_works(prediction: torch.Tensor) -> None:
 
 
 def test_tvloss_init(prediction: torch.Tensor, target: torch.Tensor) -> None:
-    loss = TVLoss()
+    TVLoss()
 
 
 def test_tvloss(prediction: torch.Tensor, target: torch.Tensor) -> None:
@@ -31,12 +31,13 @@ def test_tvloss(prediction: torch.Tensor, target: torch.Tensor) -> None:
     res = loss(prediction, target)
     assert res > 0
 
+
 def test_tv_zero_for_equal_tensors(prediction: torch.Tensor):
     loss = TVLoss()
     target = prediction.clone()
     measure = loss(prediction, target)
     assert measure <= 1e-6, f'TV for equal tensors must be 0, got {measure}'
-    
+
 
 def test_tv_for_known_answer():
     # Tensor with `l1` TV = (10 - 1) * 2  * 2 = 36
@@ -45,5 +46,4 @@ def test_tv_for_known_answer():
     target = torch.zeros((1, 1, 10, 10))
     loss = TVLoss(reduction_type='l1')
     measure = loss(prediction, target)
-    assert measure == 36. , f'TV for this tensors must be 36., got {measure}'
-    
+    assert measure == 36., f'TV for this tensors must be 36., got {measure}'

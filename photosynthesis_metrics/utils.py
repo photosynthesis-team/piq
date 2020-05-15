@@ -25,7 +25,6 @@ def _validate_input(
         y: torch.Tensor,
         kernel_size: Optional[int] = None,
         scale_weights: Union[Optional[Tuple[float]], Optional[List[float]], Optional[torch.Tensor]] = None) -> None:
-
     assert isinstance(x, torch.Tensor) and isinstance(y, torch.Tensor), \
         f'Both images must be torch.Tensors, got {type(x)} and {type(y)}.'
     assert len(x.shape) == 4, f'Input images must be 4D tensors, got images of shape {x.shape}.'

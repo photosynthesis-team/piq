@@ -44,15 +44,15 @@ def features_prediction_constant() -> torch.Tensor:
 # ================== Test class: `FID` ==================
 def test_FID_init() -> None:
     try:
-        fid = FID()
+        FID()
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
-def test_FID_forward(features_target_normal : torch.Tensor, features_prediction_normal : torch.Tensor,) -> None:
+def test_FID_forward(features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor, ) -> None:
     try:
         fid = FID()
-        score_fid = fid(features_target_normal, features_prediction_normal)
+        fid(features_target_normal, features_prediction_normal)
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
@@ -67,7 +67,7 @@ def test_FID_compute_feats_cpu() -> None:
         )
         fid = FID()
         model = InceptionV3()
-        features = fid._compute_feats(loader, model, device='cpu')
+        fid._compute_feats(loader, model, device='cpu')
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
@@ -83,6 +83,6 @@ def test_FID_compute_feats_cuda() -> None:
         )
         fid = FID()
         model = InceptionV3()
-        features = fid._compute_feats(loader, model, device='cuda')
+        fid._compute_feats(loader, model, device='cuda')
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")

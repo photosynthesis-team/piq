@@ -94,9 +94,7 @@ def _mmd2_and_variance(
     K_XY_sum = K_XY_sums_0.sum()
 
     if mmd_est == 'biased':
-        mmd2 = ((Kt_XX_sum + sum_diag_X) / (m * m)
-                + (Kt_YY_sum + sum_diag_Y) / (m * m)
-                - 2 * K_XY_sum / (m * m))
+        mmd2 = ((Kt_XX_sum + sum_diag_X) / (m * m) + (Kt_YY_sum + sum_diag_Y) / (m * m) - 2 * K_XY_sum / (m * m))
     else:
         assert mmd_est in {'unbiased', 'u-statistic'}
         mmd2 = (Kt_XX_sum + Kt_YY_sum) / (m * (m - 1))

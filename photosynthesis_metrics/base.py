@@ -1,12 +1,8 @@
-from typing import Callable, Optional, Union, Tuple, List
-
-
 import torch
-import numpy as np
-
 
 from photosynthesis_metrics.feature_extractors.fid_inception import InceptionV3
 from photosynthesis_metrics.utils import _validate_features
+
 
 class BaseFeatureMetric(torch.nn.Module):
     r"""Base class for all metrics, which require computation of per image features.
@@ -22,10 +18,10 @@ class BaseFeatureMetric(torch.nn.Module):
         return self.compute_metric(predicted_features, target_features)
 
     def _compute_feats(
-        self,
-        loader: torch.utils.data.DataLoader,
-        feature_extractor : torch.nn.Module = None,
-        device : str = 'cuda') -> torch.Tensor:
+            self,
+            loader: torch.utils.data.DataLoader,
+            feature_extractor: torch.nn.Module = None,
+            device: str = 'cuda') -> torch.Tensor:
         r"""Generate low-dimensional image desciptors to be used for computing MSID score.
         Args:
             loader: Should return dict with key `images` in it
