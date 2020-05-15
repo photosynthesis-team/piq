@@ -153,7 +153,8 @@ class KID(BaseFeatureMetric):
     But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
 
     Args:
-        predicted_features(torch.Tensor): Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
+        predicted_features(torch.Tensor): Low-dimension representation of predicted image set.
+            Shape (N_pred, encoder_dim)
         target_features(torch.Tensor): Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
 
     Returns:

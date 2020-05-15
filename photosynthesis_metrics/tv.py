@@ -18,7 +18,7 @@ def total_variation(x: torch.Tensor, size_average: bool = True, reduction_type: 
 
     Returns:
         tv : Total variation of a given tensor
-    
+
     References:
         https://www.wikiwand.com/en/Total_variation_denoising
         https://remi.flamary.com/demos/proxtv.html
