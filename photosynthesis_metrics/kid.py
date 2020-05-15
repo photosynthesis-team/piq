@@ -6,12 +6,11 @@ from photosynthesis_metrics.base import BaseFeatureMetric
 
 
 def _polynomial_kernel(
-    X: torch.Tensor,
-    Y: torch.Tensor = None,
-    degree: int = 3,
-    gamma: Optional[float] = None,
-    coef0: float = 1.
-    ) -> torch.Tensor:
+        X: torch.Tensor,
+        Y: torch.Tensor = None,
+        degree: int = 3,
+        gamma: Optional[float] = None,
+        coef0: float = 1.) -> torch.Tensor:
     """
         Compute the polynomial kernel between x and y::
             K(X, Y) = (gamma <X, Y> + coef0)^degree
@@ -51,14 +50,14 @@ def _polynomial_kernel(
 
 
 def _mmd2_and_variance(
-    K_XX: torch.Tensor,
-    K_XY: torch.Tensor,
-    K_YY: torch.Tensor,
-    unit_diagonal: bool = False,
-    mmd_est: str = 'unbiased',
-    var_at_m : Optional[int] = None,
-    ret_var : bool = False
-    ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+        K_XX: torch.Tensor,
+        K_XY: torch.Tensor,
+        K_YY: torch.Tensor,
+        unit_diagonal: bool = False,
+        mmd_est: str = 'unbiased',
+        var_at_m: Optional[int] = None,
+        ret_var: bool = False
+) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
     # based on
     # https://github.com/dougalsutherland/opt-mmd/blob/master/two_sample/mmd.py
     # but changed to not compute the full kernel matrix at once
@@ -119,22 +118,22 @@ def _mmd2_and_variance(
     m1 = m - 1
     m2 = m - 2
     zeta1_est = (
-        1 / (m * m1 * m2) *
-        (_sqn(Kt_XX_sums) - Kt_XX_2_sum + _sqn(Kt_YY_sums) - Kt_YY_2_sum)
-        - 1 / (m * m1) ** 2 * (Kt_XX_sum ** 2 + Kt_YY_sum ** 2)
-        + 1 / (m * m * m1) * (
-            _sqn(K_XY_sums_1) + _sqn(K_XY_sums_0) - 2 * K_XY_2_sum)
-        - 2 / m ** 4 * K_XY_sum ** 2
-        - 2 / (m * m * m1) * (dot_XX_XY + dot_YY_YX)
-        + 2 / (m ** 3 * m1) * (Kt_XX_sum + Kt_YY_sum) * K_XY_sum
+            1 / (m * m1 * m2) *
+            (_sqn(Kt_XX_sums) - Kt_XX_2_sum + _sqn(Kt_YY_sums) - Kt_YY_2_sum)
+            - 1 / (m * m1) ** 2 * (Kt_XX_sum ** 2 + Kt_YY_sum ** 2)
+            + 1 / (m * m * m1) * (
+                    _sqn(K_XY_sums_1) + _sqn(K_XY_sums_0) - 2 * K_XY_2_sum)
+            - 2 / m ** 4 * K_XY_sum ** 2
+            - 2 / (m * m * m1) * (dot_XX_XY + dot_YY_YX)
+            + 2 / (m ** 3 * m1) * (Kt_XX_sum + Kt_YY_sum) * K_XY_sum
     )
     zeta2_est = (
-        1 / (m * m1) * (Kt_XX_2_sum + Kt_YY_2_sum)
-        - 1 / (m * m1) ** 2 * (Kt_XX_sum ** 2 + Kt_YY_sum ** 2)
-        + 2 / (m * m) * K_XY_2_sum
-        - 2 / m ** 4 * K_XY_sum ** 2
-        - 4 / (m * m * m1) * (dot_XX_XY + dot_YY_YX)
-        + 4 / (m ** 3 * m1) * (Kt_XX_sum + Kt_YY_sum) * K_XY_sum
+            1 / (m * m1) * (Kt_XX_2_sum + Kt_YY_2_sum)
+            - 1 / (m * m1) ** 2 * (Kt_XX_sum ** 2 + Kt_YY_sum ** 2)
+            + 2 / (m * m) * K_XY_2_sum
+            - 2 / m ** 4 * K_XY_sum ** 2
+            - 4 / (m * m * m1) * (dot_XX_XY + dot_YY_YX)
+            + 4 / (m ** 3 * m1) * (Kt_XX_sum + Kt_YY_sum) * K_XY_sum
     )
     var_est = (4 * (var_at_m - 2) / (var_at_m * (var_at_m - 1)) * zeta1_est
                + 2 / (var_at_m * (var_at_m - 1)) * zeta2_est)
@@ -142,7 +141,7 @@ def _mmd2_and_variance(
     return mmd2, var_est
 
 
-def _sqn(tensor : torch.Tensor) -> torch.Tensor:
+def _sqn(tensor: torch.Tensor) -> torch.Tensor:
     flat = tensor.flatten()
     return flat.dot(flat)
 
@@ -164,17 +163,18 @@ class KID(BaseFeatureMetric):
     Reference:
         Demystifying MMD GANs https://arxiv.org/abs/1801.01401
     """
+
     def __init__(
-        self,
-        degree: int = 3,
-        gamma: Optional[float] = None,
-        coef0: int = 1,
-        var_at_m: Optional[int] = None,
-        average: bool = False,
-        n_subsets: int = 50,
-        subset_size: int = 1000,
-        ret_var: bool = False
-        ) -> torch.Tensor:
+            self,
+            degree: int = 3,
+            gamma: Optional[float] = None,
+            coef0: int = 1,
+            var_at_m: Optional[int] = None,
+            average: bool = False,
+            n_subsets: int = 50,
+            subset_size: int = 1000,
+            ret_var: bool = False
+    ) -> torch.Tensor:
         r"""
         Creates a criterion that measures Kernel Inception Distance (polynomial MMD) for two datasets of images.
 
@@ -204,10 +204,10 @@ class KID(BaseFeatureMetric):
             self.subset_size = None
 
     def compute_metric(
-        self,
-        predicted_features: torch.Tensor,
-        target_features: torch.Tensor,
-        ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+            self,
+            predicted_features: torch.Tensor,
+            target_features: torch.Tensor,
+    ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
         """Computes KID (polynomial MMD) for given sets of features, obtained from Inception net
         or any other feature extractor.
 
