@@ -114,7 +114,7 @@ class SSIMLoss(_Loss):
             and :attr:`reduce` are in the process of being deprecated, and in the meantime,
             specifying either of those two args will override :attr:`reduction`. Default: ``'mean'``
         data_range: The difference between the maximum and minimum of the pixel value,
-            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then max_val = 1.
+            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
             The pixel value interval of both input and output should remain the same.
 
     Shape:
@@ -126,7 +126,7 @@ class SSIMLoss(_Loss):
         >>> loss = SSIMLoss()
         >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
         >>> target = torch.rand(3, 3, 256, 256)
-        >>> output = loss(prediction, target, max_val=1.)
+        >>> output = loss(prediction, target)
         >>> output.backward()
 
     References:
@@ -314,7 +314,7 @@ class MultiScaleSSIMLoss(_Loss):
             and :attr:`reduce` are in the process of being deprecated, and in the meantime,
             specifying either of those two args will override :attr:`reduction`. Default: ``'mean'``
         data_range: The difference between the maximum and minimum of the pixel value,
-            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then max_val = 1.
+            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
             The pixel value interval of both input and output should remain the same.
 
 
@@ -327,7 +327,7 @@ class MultiScaleSSIMLoss(_Loss):
         >>> loss = MultiScaleSSIMLoss()
         >>> input = torch.rand(3, 3, 256, 256, requires_grad=True)
         >>> target = torch.rand(3, 3, 256, 256)
-        >>> output = loss(input, target, max_val=1.)
+        >>> output = loss(input, target)
         >>> output.backward()
 
     References:
