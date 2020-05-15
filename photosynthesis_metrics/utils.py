@@ -1,6 +1,5 @@
 from typing import Optional, Union, Tuple, List
 
-
 import torch
 
 
@@ -21,9 +20,13 @@ def _adjust_dimensions(x: torch.Tensor, y: torch.Tensor):
     return x, y
 
 
-def _validate_input(x: torch.Tensor, y: torch.Tensor, kernel_size: Optional[int] = None,
-                    scale_weights: Union[Optional[Tuple[float]], Optional[List[float]]] = None) -> None:
-    assert isinstance(x, torch.Tensor) and isinstance(y, torch.Tensor),\
+def _validate_input(
+        x: torch.Tensor,
+        y: torch.Tensor,
+        kernel_size: Optional[int] = None,
+        scale_weights: Union[Optional[Tuple[float]], Optional[List[float]], Optional[torch.Tensor]] = None) -> None:
+
+    assert isinstance(x, torch.Tensor) and isinstance(y, torch.Tensor), \
         f'Both images must be torch.Tensors, got {type(x)} and {type(y)}.'
     assert len(x.shape) == 4, f'Input images must be 4D tensors, got images of shape {x.shape}.'
     assert x.shape == y.shape, f'Input images must have the same dimensions, got {x.shape} and {y.shape}.'
@@ -31,7 +34,7 @@ def _validate_input(x: torch.Tensor, y: torch.Tensor, kernel_size: Optional[int]
         assert kernel_size % 2 == 1, f'Kernel size must be odd, got {kernel_size}.'
     if scale_weights is not None:
         assert isinstance(scale_weights, (list, tuple, torch.Tensor)), \
-            f'Scale weights must be of type list or tuple, got {type(scale_weights)}.'
+            f'Scale weights must be of type list, tuple or torch.Tensor, got {type(scale_weights)}.'
         assert len(scale_weights) == 5, f'Scale weights collection must contain 5 values, got {len(scale_weights)}.'
     return
 

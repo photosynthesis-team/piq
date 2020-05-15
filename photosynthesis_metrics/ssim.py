@@ -205,7 +205,8 @@ class SSIMLoss(_Loss):
 
 def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: float = 1.5,
                      data_range: Union[int, float] = 255, size_average: bool = True,
-                     scale_weights: Optional[Union[Tuple[float], List[float]]] = None, k1=0.01, k2=0.03) -> torch.Tensor:
+                     scale_weights: Optional[Union[Tuple[float], List[float]]] = None, k1=0.01,
+                     k2=0.03) -> torch.Tensor:
     r""" Interface of Multi-scale Structural Similarity (MS-SSIM) index.
     Args:
         x: Batch of images. Required to be 4D, channels first (N,C,H,W).
@@ -421,32 +422,32 @@ def _fspecial_gauss_1d(size: int, sigma: float) -> torch.Tensor:
         1D Gauss kernel.
     """
     coords = torch.arange(size).to(dtype=torch.float)
-    coords -= size//2
+    coords -= size // 2
 
-    g = torch.exp(-(coords**2) / (2 * sigma**2))
+    g = torch.exp(-(coords ** 2) / (2 * sigma ** 2))
     g /= g.sum()
 
     return g.unsqueeze(0).unsqueeze(0)
 
 
-def _compute_ssim(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, data_range: Union[float, int] = 255,
-                  size_average: bool = True, full: bool = False, k1: float = 0.01, k2: float = 0.03) \
-        -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
-    r"""Calculate Structural Similarity (SSIM) index for X and Y.
+def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, data_range: Union[float, int] = 255,
+                      k1: float = 0.01, k2: float = 0.03) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+    r"""Calculate Structural Similarity (SSIM) index for X and Y per channel.
 
-    Args:
-        x: Batch of images, (N,C,H,W).
-        y: Batch of images, (N,C,H,W).
-        kernel: 1-D gauss kernel.
-        data_range: Value range of input images (usually 1.0 or 255).
-        size_average: If size_average=True, ssim of all images will be averaged as a scalar.
-        full: Return sc or not.
-        k1: Algorithm parameter, K1 (small constant, see [1]).
-        k2: Algorithm parameter, K2 (small constant, see [1]).
-            Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
+        Args:
+            x: Batch of images, (N,C,H,W).
+            y: Batch of images, (N,C,H,W).
+            kernel: 1-D gauss kernel.
+            data_range: Value range of input images (usually 1.0 or 255).
+            size_average: If size_average=True, ssim of all images will be averaged as a scalar.
+            full: Return sc or not.
+            k1: Algorithm parameter, K1 (small constant, see [1]).
+            k2: Algorithm parameter, K2 (small constant, see [1]).
+                Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
+
 
     Returns:
-        Value of Structural Similarity (SSIM) index.
+        Full Value of Structural Similarity (SSIM) index.
     """
 
     if x.size(-1) < kernel.size(-1) or x.size(-2) < kernel.size(-1):
@@ -474,13 +475,40 @@ def _compute_ssim(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, data_r
     cs_map = (2 * sigma12 + c2) / (sigma1_sq + sigma2_sq + c2)
     ssim_map = ((2 * mu1_mu2 + c1) / (mu1_sq + mu2_sq + c1)) * cs_map
 
+    ssim_val = ssim_map.mean(dim=(-1, -2))
+    cs = cs_map.mean(dim=(-1, -2))
+
+    return ssim_val, cs
+
+
+def _compute_ssim(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, data_range: Union[float, int] = 255,
+                  size_average: bool = True, full: bool = False, k1: float = 0.01, k2: float = 0.03) \
+        -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+    r"""Calculate Structural Similarity (SSIM) index for X and Y.
+
+    Args:
+        x: Batch of images, (N,C,H,W).
+        y: Batch of images, (N,C,H,W).
+        kernel: 1-D gauss kernel.
+        data_range: Value range of input images (usually 1.0 or 255).
+        size_average: If size_average=True, ssim of all images will be averaged as a scalar.
+        full: Return sc or not.
+        k1: Algorithm parameter, K1 (small constant, see [1]).
+        k2: Algorithm parameter, K2 (small constant, see [1]).
+            Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
+
+    Returns:
+        Value of Structural Similarity (SSIM) index.
+    """
+
+    ssim_map, cs_map = _ssim_per_channel(x=x, y=y, kernel=kernel, data_range=data_range, k1=k1, k2=k2)
+
     if size_average:
         ssim_val = ssim_map.mean()
         cs = cs_map.mean()
     else:
-        # Reduce along CHW.
-        ssim_val = ssim_map.mean(-1).mean(-1).mean(-1)
-        cs = cs_map.mean(-1).mean(-1).mean(-1)
+        ssim_val = ssim_map.mean(-1)
+        cs = cs_map.mean(-1)
 
     if full:
         return ssim_val, cs
@@ -498,13 +526,7 @@ def _compute_multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
     mcs = []
     ssim_val = None
     for _ in range(levels):
-        ssim_val, cs = _compute_ssim(x, y,
-                                     kernel=kernel,
-                                     data_range=data_range,
-                                     size_average=False,
-                                     full=True,
-                                     k1=k1,
-                                     k2=k2)
+        ssim_val, cs = _ssim_per_channel(x, y, kernel=kernel, data_range=data_range, k1=k1, k2=k2)
         mcs.append(cs)
 
         padding = (x.shape[2] % 2, x.shape[3] % 2)
@@ -512,11 +534,10 @@ def _compute_multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
         y = f.avg_pool2d(y, kernel_size=2, padding=padding)
 
     # mcs, (level, batch)
-    mcs = torch.stack(mcs, dim=0)
+    mcs_ssim = torch.relu(torch.stack(mcs[:-1] + [ssim_val], dim=0))
 
     # weights, (level)
-    msssim_val = torch.prod((mcs[:-1] ** scale_weights_tensor[:-1].unsqueeze(1)) *
-                            (ssim_val ** scale_weights_tensor[-1]), dim=0)
+    msssim_val = torch.prod((mcs_ssim ** scale_weights_tensor.view(-1, 1, 1)), dim=0).mean(-1)
 
     return msssim_val
 
