@@ -15,6 +15,7 @@ def prediction() -> torch.Tensor:
 def target() -> torch.Tensor:
     return torch.rand(3, 3, 256, 256)
 
+
 # ================== Test function: `ssim` ==================
 def test_ssim_symmetry(prediction: torch.Tensor, target: torch.Tensor) -> None:
     measure = ssim(prediction, target, data_range=1.)
@@ -60,7 +61,7 @@ def test_ssim_measure_is_less_or_equal_to_one_cuda() -> None:
 
 
 def test_ssim_raises_if_tensors_have_different_shapes(target: torch.Tensor) -> None:
-    dims = [[3], [2,3], [255,256], [255,256]]
+    dims = [[3], [2, 3], [255, 256], [255, 256]]
     for b, c, h, w in list(itertools.product(*dims)):
         wrong_shape_prediction = torch.rand(b, c, h, w)
         if wrong_shape_prediction.size() == target.size():
@@ -86,12 +87,11 @@ def test_ssim_raises_if_wrong_kernel_size_is_passed(prediction: torch.Tensor, ta
             ssim(prediction, target, kernel_size=kernel_size)
 
 
-
 def test_ssim_raises_if_kernel_size_greater_than_image() -> None:
     right_kernel_sizes = list(range(1, 52, 2))
     for kernel_size in right_kernel_sizes:
-        wrong_size_prediction = torch.rand(3, 3, kernel_size-1, kernel_size-1)
-        wrong_size_target = torch.rand(3, 3, kernel_size-1, kernel_size-1)
+        wrong_size_prediction = torch.rand(3, 3, kernel_size - 1, kernel_size - 1)
+        wrong_size_target = torch.rand(3, 3, kernel_size - 1, kernel_size - 1)
         with pytest.raises(ValueError):
             ssim(wrong_size_prediction, wrong_size_target, kernel_size=kernel_size)
 
@@ -104,7 +104,7 @@ def test_ssim_raise_if_wrong_value_is_estimated(prediction: torch.Tensor, target
     assert torch.isclose(photosynthesis_ssim, tf_ssim, atol=1e-6).all(), \
         f'The estimated value must be equal to tensorflow provided one' \
         f'(considering floating point operation error up to 1 * 10^-6), ' \
-        f'got difference {photosynthesis_ssim-tf_ssim}'
+        f'got difference {photosynthesis_ssim - tf_ssim}'
 
 
 # ================== Test class: `SSIMLoss` ==================
@@ -183,8 +183,8 @@ def test_ssim_loss_raises_if_wrong_kernel_size_is_passed(prediction: torch.Tenso
 def test_ssim_loss_raises_if_kernel_size_greater_than_image() -> None:
     right_kernel_sizes = list(range(1, 52, 2))
     for kernel_size in right_kernel_sizes:
-        wrong_size_prediction = torch.rand(3, 3, kernel_size-1, kernel_size-1)
-        wrong_size_target = torch.rand(3, 3, kernel_size-1, kernel_size-1)
+        wrong_size_prediction = torch.rand(3, 3, kernel_size - 1, kernel_size - 1)
+        wrong_size_target = torch.rand(3, 3, kernel_size - 1, kernel_size - 1)
         with pytest.raises(ValueError):
             SSIMLoss(kernel_size=kernel_size)(wrong_size_prediction, wrong_size_target)
 
@@ -197,7 +197,7 @@ def test_ssim_loss_raise_if_wrong_value_is_estimated(prediction: torch.Tensor, t
     assert torch.isclose(ssim_loss, tf_ssim, atol=1e-6).all(), \
         f'The estimated value must be equal to tensorflow provided one' \
         f'(considering floating point operation error up to 1 * 10^-6), ' \
-        f'got difference {ssim_loss-tf_ssim}'
+        f'got difference {ssim_loss - tf_ssim}'
 
 
 # ================== Test function: `multi_scale_ssim` ==================
@@ -274,8 +274,8 @@ def test_multi_scale_ssim_raises_if_wrong_kernel_size_is_passed(prediction: torc
 def test_multi_scale_ssim_raises_if_kernel_size_greater_than_image() -> None:
     right_kernel_sizes = list(range(1, 52, 2))
     for kernel_size in right_kernel_sizes:
-        wrong_size_prediction = torch.rand(3, 3, kernel_size-1, kernel_size-1)
-        wrong_size_target = torch.rand(3, 3, kernel_size-1, kernel_size-1)
+        wrong_size_prediction = torch.rand(3, 3, kernel_size - 1, kernel_size - 1)
+        wrong_size_target = torch.rand(3, 3, kernel_size - 1, kernel_size - 1)
         with pytest.raises(ValueError):
             multi_scale_ssim(wrong_size_prediction, wrong_size_target, kernel_size=kernel_size)
 
@@ -286,7 +286,7 @@ def test_multi_scale_ssim_raise_if_wrong_value_is_estimated(prediction: torch.Te
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.).numpy())
-    assert torch.isclose(photosynthesis_ms_ssim,tf_ms_ssim, atol=1e-4).all(), \
+    assert torch.isclose(photosynthesis_ms_ssim, tf_ms_ssim, atol=1e-4).all(), \
         f'The estimated value must be equal to tensorflow provided one' \
         f'(considering floating point operation error up to 1 * 10^-4), ' \
         f'got difference {photosynthesis_ms_ssim - tf_ms_ssim}'
@@ -369,8 +369,8 @@ def test_multi_scale_ssim_loss_raises_if_wrong_kernel_size_is_passed(prediction:
 def test_multi_scale_ssim_loss_raises_if_kernel_size_greater_than_image() -> None:
     right_kernel_sizes = list(range(1, 52, 2))
     for kernel_size in right_kernel_sizes:
-        wrong_size_prediction = torch.rand(3, 3, kernel_size-1, kernel_size-1)
-        wrong_size_target = torch.rand(3, 3, kernel_size-1, kernel_size-1)
+        wrong_size_prediction = torch.rand(3, 3, kernel_size - 1, kernel_size - 1)
+        wrong_size_target = torch.rand(3, 3, kernel_size - 1, kernel_size - 1)
         with pytest.raises(ValueError):
             MultiScaleSSIMLoss(kernel_size=kernel_size)(wrong_size_prediction, wrong_size_target)
 

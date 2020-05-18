@@ -61,7 +61,7 @@ def _sqrtm_newton_schulz(A: torch.Tensor, num_iters: int = 100) -> Tuple[torch.T
 
 
 def _compute_fid(mu1: torch.Tensor, sigma1: torch.Tensor, mu2: torch.Tensor, sigma2: torch.Tensor,
-                  eps=1e-6) -> torch.Tensor:
+                 eps=1e-6) -> torch.Tensor:
     r"""
     The Frechet Inception Distance between two multivariate Gaussians X_predicted ~ N(mu_1, sigm_1)
     and X_target ~ N(mu_2, sigm_2) is
@@ -89,7 +89,7 @@ def _compute_fid(mu1: torch.Tensor, sigma1: torch.Tensor, mu2: torch.Tensor, sig
     return diff.dot(diff) + torch.trace(sigma1) + torch.trace(sigma2) - 2 * tr_covmean
 
 
-def _cov(m: torch.Tensor, rowvar: bool=True) -> torch.Tensor:
+def _cov(m: torch.Tensor, rowvar: bool = True) -> torch.Tensor:
     r"""Estimate a covariance matrix given data.
 
     Covariance indicates the level to which two variables vary together.

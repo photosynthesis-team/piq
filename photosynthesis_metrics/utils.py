@@ -25,7 +25,6 @@ def _validate_input(
         y: torch.Tensor,
         kernel_size: Optional[int] = None,
         scale_weights: Union[Optional[Tuple[float]], Optional[List[float]], Optional[torch.Tensor]] = None) -> None:
-
     assert isinstance(x, torch.Tensor) and isinstance(y, torch.Tensor), \
         f'Both images must be torch.Tensors, got {type(x)} and {type(y)}.'
     assert len(x.shape) == 4, f'Input images must be 4D tensors, got images of shape {x.shape}.'
@@ -55,5 +54,4 @@ def _validate_features(x: torch.Tensor, y: torch.Tensor, ) -> None:
     assert x.shape[1] == y.shape[1], \
         f"Features dimensionalities should match, otherwise it won't be possible to correctly compute statistics. \
             Got {x.shape[1]} and {y.shape[1]}"
-    assert x.device == y.device, \
-        f"Both tensors should be on the same device"
+    assert x.device == y.device, "Both tensors should be on the same device"

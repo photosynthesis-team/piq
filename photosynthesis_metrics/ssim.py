@@ -454,8 +454,8 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, da
         raise ValueError(f'Kernel size can\'t be greater than actual input size. Input size: {x.size()}. '
                          f'Kernel size: {kernel.size()}')
 
-    c1 = (k1 * data_range)**2
-    c2 = (k2 * data_range)**2
+    c1 = (k1 * data_range) ** 2
+    c2 = (k2 * data_range) ** 2
 
     kernel = kernel.to(x.device, dtype=x.dtype)
 

@@ -52,13 +52,14 @@ def features_prediction_constant() -> torch.Tensor:
 
 
 # ================== Test class: `MSID` ==================
-def test_MSID_fails_for_different_dimensions(features_target_normal : torch.Tensor) -> None:
+def test_MSID_fails_for_different_dimensions(features_target_normal: torch.Tensor) -> None:
     features_prediction_normal = torch.rand(1000, 21)
     metric = MSID()
     with pytest.raises(AssertionError):
         metric(features_target_normal, features_prediction_normal)
 
-def test_compute_msid_works_for_different_number_of_images_in_stack(features_target_normal : torch.Tensor) -> None:
+
+def test_compute_msid_works_for_different_number_of_images_in_stack(features_target_normal: torch.Tensor) -> None:
     features_prediction_normal = torch.rand(1001, 20)
     metric = MSID()
     try:
@@ -69,26 +70,28 @@ def test_compute_msid_works_for_different_number_of_images_in_stack(features_tar
 
 def test_MSID_init() -> None:
     try:
-        metric = MSID()
+        MSID()
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
+
 @pytest.mark.skip(reason="Sometimes it doesn't work.")
 def test_msid_is_smaller_for_equal_tensors(
-    features_target_normal: torch.Tensor,
-    features_prediction_normal : torch.Tensor,
-    features_prediction_constant : torch.Tensor
-    ) -> None:
+        features_target_normal: torch.Tensor,
+        features_prediction_normal: torch.Tensor,
+        features_prediction_constant: torch.Tensor
+) -> None:
     metric = MSID()
     measure = metric(features_target_normal, features_prediction_normal)
     measure_constant = metric(features_target_normal, features_prediction_normal)
     assert measure <= measure_constant, \
         f'MSID should be smaller for samples from the same distribution, got {measure} and {measure_constant}'
 
-def test_MSID_forward(features_target_normal : torch.Tensor, features_prediction_normal : torch.Tensor,) -> None:
+
+def test_MSID_forward(features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor, ) -> None:
     try:
         metric = MSID()
-        score = metric(features_target_normal, features_prediction_normal)
+        metric(features_target_normal, features_prediction_normal)
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
@@ -103,7 +106,7 @@ def test_MSID_compute_feats_cpu() -> None:
         )
         metric = MSID()
         model = InceptionV3()
-        features = metric._compute_feats(loader, model, device='cpu')
+        metric._compute_feats(loader, model, device='cpu')
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
@@ -119,6 +122,6 @@ def test_MSID_compute_feats_cuda() -> None:
         )
         metric = MSID()
         model = InceptionV3()
-        features = metric._compute_feats(loader, model, device='cuda')
+        metric._compute_feats(loader, model, device='cuda')
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")

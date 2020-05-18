@@ -8,9 +8,7 @@ from torch.nn.modules.loss import _Loss
 from photosynthesis_metrics.utils import _adjust_dimensions, _validate_input
 
 
-def total_variation(
-    x: torch.Tensor, size_average: bool = True, reduction_type: str = 'l2'
-    ) -> torch.Tensor:
+def total_variation(x: torch.Tensor, size_average: bool = True, reduction_type: str = 'l2') -> torch.Tensor:
     r"""Compute Total Variation metric
 
     Args:
@@ -20,7 +18,7 @@ def total_variation(
 
     Returns:
         tv : Total variation of a given tensor
-    
+
     References:
         https://www.wikiwand.com/en/Total_variation_denoising
         https://remi.flamary.com/demos/proxtv.html

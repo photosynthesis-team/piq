@@ -1,7 +1,6 @@
 r"""Implemetation of Multi-scale Evaluation metric, based on paper
  https://arxiv.org/abs/1905.11141 and author's repository https://github.com/xgfs/msid
 """
-from functools import partial
 from typing import List, Tuple
 
 import torch
@@ -9,14 +8,13 @@ import numpy as np
 
 from scipy.sparse import lil_matrix, diags, eye
 
-from photosynthesis_metrics.utils import _validate_features
 from photosynthesis_metrics.base import BaseFeatureMetric
 
 EPSILON = 1e-6
 NORMALIZATION = 1e6
 
 
-def _np_euc_cdist(data : np.ndarray) -> np.ndarray:
+def _np_euc_cdist(data: np.ndarray) -> np.ndarray:
     dd = np.sum(data * data, axis=1)
     dist = -2 * np.dot(data, data.T)
     dist += dd + dd[:, np.newaxis]
@@ -25,7 +23,7 @@ def _np_euc_cdist(data : np.ndarray) -> np.ndarray:
     return dist
 
 
-def _construct_graph_sparse(data : np.ndarray, k: int) -> np.ndarray:
+def _construct_graph_sparse(data: np.ndarray, k: int) -> np.ndarray:
     n = len(data)
     spmat = lil_matrix((n, n))
     dd = np.sum(data * data, axis=1)
@@ -39,7 +37,7 @@ def _construct_graph_sparse(data : np.ndarray, k: int) -> np.ndarray:
     return spmat.tocsr()
 
 
-def _laplacian_sparse(A : np.ndarray, normalized : bool = True):
+def _laplacian_sparse(A: np.ndarray, normalized: bool = True):
     D = A.sum(1).A1
     if normalized:
         Dsqrt = diags(1 / np.sqrt(D))
@@ -50,11 +48,11 @@ def _laplacian_sparse(A : np.ndarray, normalized : bool = True):
 
 
 def _lanczos_m(
-    A: np.ndarray,
-    m: int,
-    nv: int,
-    rademacher: bool,
-    SV: np.ndarray = None) -> Tuple[np.ndarray, np.ndarray]:
+        A: np.ndarray,
+        m: int,
+        nv: int,
+        rademacher: bool,
+        SV: np.ndarray = None) -> Tuple[np.ndarray, np.ndarray]:
     r"""Lanczos algorithm computes symmetric m x m tridiagonal matrix T and matrix V with orthogonal rows
         constituting the basis of the Krylov subspace K_m(A, x),
         where x is an arbitrary starting unit vector.
@@ -261,14 +259,14 @@ def _normalize_msid(msid: np.ndarray, normalization: str, n: int, k: int, ts: np
 
 
 def _msid_descriptor(
-    x: np.ndarray,
-    ts: np.ndarray = np.logspace(-1, 1, 256),
-    k: int = 5,
-    m: int = 10,
-    niters: int = 100,
-    rademacher: bool = False,
-    normalized_laplacian: bool = True,
-    normalize: str = 'empty') -> np.ndarray:
+        x: np.ndarray,
+        ts: np.ndarray = np.logspace(-1, 1, 256),
+        k: int = 5,
+        m: int = 10,
+        niters: int = 100,
+        rademacher: bool = False,
+        normalized_laplacian: bool = True,
+        normalize: str = 'empty') -> np.ndarray:
     r"""Compute the msid descriptor for a single set of samples
 
     Args:
@@ -313,16 +311,16 @@ class MSID(BaseFeatureMetric):
     """
 
     def __init__(
-        self,
-        ts: torch.Tensor = torch.logspace(-1, 1, 256),
-        k: int = 5,
-        m: int = 10,
-        niters: int = 100,
-        rademacher: bool = False,
-        normalized_laplacian: bool = True,
-        normalize: str = 'empty',
-        msid_mode: str = "max",
-        ) -> None:
+            self,
+            ts: torch.Tensor = torch.logspace(-1, 1, 256),
+            k: int = 5,
+            m: int = 10,
+            niters: int = 100,
+            rademacher: bool = False,
+            normalized_laplacian: bool = True,
+            normalize: str = 'empty',
+            msid_mode: str = "max",
+    ) -> None:
         r"""
         Args:
             ts: Temperature values.
