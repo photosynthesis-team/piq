@@ -1,5 +1,3 @@
-from typing import Optional
-
 import torch
 import pytest
 import torchvision
@@ -16,7 +14,7 @@ def logits_to_score_scipy(logits, num_splits=10):
     probas = torch.nn.functional.softmax(logits).cpu().numpy()
     split_scores = []
     for i in range(num_splits):
-        part = probas[i * (N // num_splits): (i+1) * (N // num_splits), :]
+        part = probas[i * (N // num_splits): (i + 1) * (N // num_splits), :]
         p_y = np.mean(part, axis=0)
         scores = []
         for k in range(part.shape[0]):
@@ -43,16 +41,18 @@ def features_prediction_beta() -> torch.Tensor:
     m = torch.distributions.Beta(2, 2)
     return m.sample((1000, 20))
 
+
 # ================== Test function: `inception_score` ==================
 def test_inception_score_returns_two_values(features_target_normal: torch.Tensor) -> None:
     result = inception_score(features_target_normal)
     assert len(result) == 2, \
         f'Expected to get score and variance, got {result}'
 
+
 def test_inception_score_equal_to_scipy_version(features_target_normal: torch.Tensor) -> None:
     score, var = inception_score(features_target_normal)
     score_scipy, var_scipy = torch.tensor(logits_to_score_scipy(features_target_normal))
-    mean_diff = abs(score - score_scipy) 
+    mean_diff = abs(score - score_scipy)
     var_diff = abs(var - var_scipy)
     assert (mean_diff <= 1e-4) and (var_diff <= 0.5), \
         f'PyTorch and Scipy implementation should match, got mean diff {mean_diff}'\
@@ -62,13 +62,13 @@ def test_inception_score_equal_to_scipy_version(features_target_normal: torch.Te
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='CPU inference takes ~30 minutes.')
 def test_IS_on_CIFAR10_train_equals_to_paper_value() -> None:
     cifar10 = torchvision.datasets.CIFAR10(
-        root="downloads/", 
+        root="downloads/",
         download=True,
-        train=True, 
+        train=True,
         transform=torchvision.transforms.Compose([
             torchvision.transforms.ToTensor(),
             torchvision.transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
-    ]))
+        ]))
 
     loader = torch.utils.data.DataLoader(cifar10, batch_size=100, num_workers=6)
 
@@ -104,7 +104,7 @@ def test_IS_init() -> None:
 
 
 def test_IS_forward(
-    features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor,) -> None:
+        features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor,) -> None:
     try:
         metric = IS()
         metric(features_target_normal, features_prediction_normal)
@@ -113,7 +113,7 @@ def test_IS_forward(
 
 
 def test_IS_similar_for_same_distribution(
-    features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor) -> None:
+        features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor) -> None:
     metric = IS(distance='l1')
     diff = metric(features_prediction_normal, features_target_normal)
     assert diff <= 1.0, \
@@ -121,7 +121,7 @@ def test_IS_similar_for_same_distribution(
 
 
 def test_IS_differs_for_notsimular_distributions(
-    features_prediction_beta: torch.Tensor, features_target_normal: torch.Tensor) -> None:
+        features_prediction_beta: torch.Tensor, features_target_normal: torch.Tensor) -> None:
     metric = IS(distance='l1')
     diff = metric(features_prediction_beta, features_target_normal)
     assert diff >= 5.0, \

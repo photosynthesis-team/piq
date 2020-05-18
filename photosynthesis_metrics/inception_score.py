@@ -11,17 +11,15 @@ Credits:
     https://github.com/tsc2017/Inception-Score
     https://github.com/openai/improved-gan/issues/29
 """
-from typing import Optional
-
 import torch
 import torch.nn.functional as F
 
 from photosynthesis_metrics.base import BaseFeatureMetric
-from photosynthesis_metrics.utils import _validate_features
+
 
 def inception_score(features: torch.Tensor, num_splits: int = 10):
     r"""Compute Inception Score for a list of image features.
-    Expects raw logits from Inception-V3 as input. 
+    Expects raw logits from Inception-V3 as input.
 
     Args:
         features (torch.Tensor): Low-dimension representation of image set. Shape (N, encoder_dim).
@@ -39,7 +37,7 @@ def inception_score(features: torch.Tensor, num_splits: int = 10):
     # In paper score computed for 10 splits of dataset and then averaged.
     partial_scores = []
     for i in range(num_splits):
-        subset = probas[i * (N // num_splits): (i+1) * (N // num_splits), :]
+        subset = probas[i * (N // num_splits): (i + 1) * (N // num_splits), :]
         # Compute KL divergence
         p_y = torch.mean(subset, dim=0)
         scores = []
@@ -58,11 +56,13 @@ class IS(BaseFeatureMetric):
     IS is computed separatly for predicted and target features and expects raw InceptionV3 model logits as inputs.
 
     Args:
-        predicted_features (torch.Tensor): Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
-        target_features (torch.Tensor): Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
+        predicted_features (torch.Tensor): Low-dimension representation of predicted image set.
+            Required to have shape (N_pred, encoder_dim)
+        target_features (torch.Tensor): Low-dimension representation of target image set.
+            Required to have shape (N_targ, encoder_dim)
 
     Returns:
-        distance(predicted_score, target_score): L1 or L2 distance between scores. 
+        distance(predicted_score, target_score): L1 or L2 distance between scores.
 
     Reference:
         https://arxiv.org/pdf/1801.01973.pdf
@@ -70,16 +70,16 @@ class IS(BaseFeatureMetric):
     def __init__(self, num_splits: int = 10, distance: str = 'l1') -> None:
         r"""
         Args:
-            num_splits: Number of parts to devide features. IS is computed for them separatly and results are then averaged.
+            num_splits: Number of parts to devide features.
+                IS is computed for them separatly and results are then averaged.
             distance: How to measure distance between scores. One of {`l1`, `l2`}. Default: `l1`.
         """
         super(IS, self).__init__()
         self.num_splits = num_splits
         self.distance = distance
 
-
     def compute_metric(
-        self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+            self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
         r"""Compute IS
 
         Returns:
