@@ -42,7 +42,7 @@ class IS(BaseFeatureMetric):
             ret_target: If True, also return IS for target features. Default: False, to be compatible with other metrics
             ret_var: If True, returns mean and variance for each feature. Default: False.
         """
-        super(IS, self).__init__()
+        super().__init__()
 
         self.num_splits = num_splits
         self.ret_target = ret_target
@@ -70,8 +70,7 @@ class IS(BaseFeatureMetric):
         return predicted_is
 
     def logits_to_score(self, logits):
-        r"""Computes mean KL divergence.
-        """
+        r"""Computes mean KL divergence."""
         N = logits.size(0)
         probas = F.softmax(logits)
         split_scores = []
@@ -89,5 +88,4 @@ class IS(BaseFeatureMetric):
             # Move to the same device as input
             return torch.mean(split_scores).to(logits), torch.std(split_scores).to(logits)
         return torch.mean(split_scores).to(logits)
-
 
