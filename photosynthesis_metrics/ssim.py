@@ -21,8 +21,8 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
          k1: float = 0.01, k2: float = 0.03) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
     r"""Interface of Structural Similarity (SSIM) index.
     Args:
-        x: Batch of images. Required to be 4D, channels first (N,C,H,W).
-        y: Batch of images. Required to be 4D, channels first (N,C,H,W).
+        x: Batch of images. Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
+        y: Batch of images. Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
         kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
         kernel_sigma: Sigma of normal distribution.
         data_range: Value range of input images (usually 1.0 or 255).
@@ -42,6 +42,7 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
            :DOI:`10.1109/TIP.2003.819861`
     """
     _validate_input(x=x, y=y, kernel_size=kernel_size, scale_weights=None)
+    x, y = _adjust_dimensions(x=x, y=y)
     kernel = _fspecial_gauss_1d(kernel_size, kernel_sigma)
     kernel = kernel.repeat(x.shape[1], 1, 1, 1)
 
@@ -118,8 +119,8 @@ class SSIMLoss(_Loss):
             The pixel value interval of both input and output should remain the same.
 
     Shape:
-        - Input: :math:`(N, *)` where :math:`*` means, any number of additional dimensions
-        - Target: :math:`(N, *)`, same shape as the input
+        - Input: Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
+        - Target: Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
 
     Examples::
 
@@ -142,7 +143,7 @@ class SSIMLoss(_Loss):
     def __init__(self, kernel_size: int = 11, kernel_sigma: float = 1.5, k1: float = 0.01, k2: float = 0.03,
                  size_average: Optional[bool] = None, reduce: Optional[bool] = None,
                  reduction: str = 'mean', data_range: Union[int, float] = 1.) -> None:
-        super(SSIMLoss, self).__init__(size_average, reduce, reduction)
+        super().__init__()
 
         # Generic loss parameters.
         self.size_average = size_average
@@ -209,8 +210,8 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
                      k2=0.03) -> torch.Tensor:
     r""" Interface of Multi-scale Structural Similarity (MS-SSIM) index.
     Args:
-        x: Batch of images. Required to be 4D, channels first (N,C,H,W).
-        y: Batch of images. Required to be 4D, channels first (N,C,H,W).
+        x: Batch of images. Required to be Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first..
+        y: Batch of images. Required to be Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first..
         kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
         kernel_sigma: Sigma of normal distribution.
         data_range: Value range of input images (usually 1.0 or 255).
@@ -237,6 +238,7 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
            :DOI:`10.1109/TIP.2003.819861`
     """
     _validate_input(x=x, y=y, kernel_size=kernel_size, scale_weights=scale_weights)
+    x, y = _adjust_dimensions(x=x, y=y)
 
     if scale_weights is None:
         scale_weights_from_ms_ssim_paper = [0.0448, 0.2856, 0.3001, 0.2363, 0.1333]
@@ -319,8 +321,8 @@ class MultiScaleSSIMLoss(_Loss):
 
 
     Shape:
-        - Input: :math:`(N, *)` where :math:`*` means, any number of additional dimensions
-        - Target: :math:`(N, *)`, same shape as the input
+        - Input: Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
+        - Target: Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
 
     Examples::
 
@@ -349,7 +351,7 @@ class MultiScaleSSIMLoss(_Loss):
                  scale_weights: Optional[Union[Tuple[float], List[float], torch.Tensor]] = None,
                  size_average: Optional[bool] = None, reduce: Optional[bool] = None,
                  reduction: str = 'mean', data_range: Union[int, float] = 1.) -> None:
-        super().__init__(size_average, reduce, reduction)
+        super().__init__()
 
         # Generic loss parameters.
         self.size_average = size_average

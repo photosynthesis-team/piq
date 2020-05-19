@@ -27,8 +27,8 @@ def _validate_input(
         scale_weights: Union[Optional[Tuple[float]], Optional[List[float]], Optional[torch.Tensor]] = None) -> None:
     assert isinstance(x, torch.Tensor) and isinstance(y, torch.Tensor), \
         f'Both images must be torch.Tensors, got {type(x)} and {type(y)}.'
-    assert len(x.shape) == 4, f'Input images must be 4D tensors, got images of shape {x.shape}.'
-    assert x.shape == y.shape, f'Input images must have the same dimensions, got {x.shape} and {y.shape}.'
+    assert 1 < x.dim() < 5, f'Input images must be 2D, 3D or 4D tensors, got images of shape {x.size()}.'
+    assert x.size() == y.size(), f'Input images must have the same dimensions, got {x.size()} and {y.size()}.'
     if kernel_size is not None:
         assert kernel_size % 2 == 1, f'Kernel size must be odd, got {kernel_size}.'
     if scale_weights is not None:

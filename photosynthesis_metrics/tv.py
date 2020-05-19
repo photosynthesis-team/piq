@@ -23,6 +23,7 @@ def total_variation(x: torch.Tensor, size_average: bool = True, reduction_type: 
         https://www.wikiwand.com/en/Total_variation_denoising
         https://remi.flamary.com/demos/proxtv.html
     """
+    assert x.dim() == 4, f'Expected 4D tensor, got {x.size()}'
     if reduction_type == 'l1':
         w_variance = torch.sum(torch.abs(x[:, :, :, 1:] - x[:, :, :, :-1]), dim=[1, 2, 3])
         h_variance = torch.sum(torch.abs(x[:, :, 1:, :] - x[:, :, :-1, :]), dim=[1, 2, 3])
@@ -78,12 +79,15 @@ class TVLoss(_Loss):
             elements in the output, ``'sum'``: the output will be summed. Note: :attr:`size_average`
             and :attr:`reduce` are in the process of being deprecated, and in the meantime,
             specifying either of those two args will override :attr:`reduction`. Default: ``'mean'``
+    Shape:
+        - Input: Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
+        - Target: Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
     Examples::
 
         >>> loss = TVLoss()
         >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
         >>> target = torch.rand(3, 3, 256, 256)
-        >>> output = loss(prediction, target, max_val=1.)
+        >>> output = loss(prediction, target)
         >>> output.backward()
 
     References:
@@ -108,8 +112,8 @@ class TVLoss(_Loss):
         Returns:
             Value of TV loss to be minimized.
         """
-        prediction, target = _adjust_dimensions(x=prediction, y=target)
         _validate_input(x=prediction, y=target)
+        prediction, target = _adjust_dimensions(x=prediction, y=target)
 
         return self.compute_metric(prediction, target)
 
