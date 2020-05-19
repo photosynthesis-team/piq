@@ -244,7 +244,8 @@ def test_multi_scale_ssim_measure_is_less_or_equal_to_one_cuda() -> None:
     assert measure <= 1, f'SSIM must be <= 1, got {measure}'
 
 
-def test_multi_scale_ssim_raises_if_tensors_have_different_shapes(target: torch.Tensor) -> None:
+def test_multi_scale_ssim_raises_if_tensors_have_different_shapes(prediction: torch.Tensor,
+                                                                  target: torch.Tensor) -> None:
     dims = [[3], [2, 3], [255, 256], [255, 256]]
     for b, c, h, w in list(itertools.product(*dims)):
         wrong_shape_prediction = torch.rand(b, c, h, w)
@@ -256,12 +257,19 @@ def test_multi_scale_ssim_raises_if_tensors_have_different_shapes(target: torch.
         else:
             with pytest.raises(AssertionError):
                 multi_scale_ssim(wrong_shape_prediction, target)
+    scale_weights = torch.rand(2, 2)
+    with pytest.raises(AssertionError):
+        multi_scale_ssim(prediction, target, scale_weights=scale_weights)
 
 
-def test_multi_scale_ssim_raises_if_tensors_have_different_types(target: torch.Tensor) -> None:
+def test_multi_scale_ssim_raises_if_tensors_have_different_types(prediction: torch.Tensor,
+                                                                 target: torch.Tensor) -> None:
     wrong_type_prediction = list(range(10))
     with pytest.raises(AssertionError):
         multi_scale_ssim(wrong_type_prediction, target)
+    wrong_type_scale_weights = True
+    with pytest.raises(AssertionError):
+        multi_scale_ssim(prediction, target, scale_weights=wrong_type_scale_weights)
 
 
 def test_multi_scale_ssim_raises_if_wrong_kernel_size_is_passed(prediction: torch.Tensor, target: torch.Tensor) -> None:
@@ -286,6 +294,21 @@ def test_multi_scale_ssim_raise_if_wrong_value_is_estimated(prediction: torch.Te
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.).numpy())
+    assert torch.isclose(photosynthesis_ms_ssim, tf_ms_ssim, atol=1e-4).all(), \
+        f'The estimated value must be equal to tensorflow provided one' \
+        f'(considering floating point operation error up to 1 * 10^-4), ' \
+        f'got difference {photosynthesis_ms_ssim - tf_ms_ssim}'
+
+
+def test_multi_scale_ssim_raise_if_wrong_value_is_estimated_custom_weights(prediction: torch.Tensor,
+                                                                           target: torch.Tensor) -> None:
+    scale_weights = [0.0448, 0.2856, 0.3001]
+    photosynthesis_ms_ssim = multi_scale_ssim(prediction, target, kernel_size=11, kernel_sigma=1.5,
+                                              data_range=1., size_average=False, scale_weights=scale_weights)
+    tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
+    tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
+    tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.,
+                                                       power_factors=scale_weights).numpy())
     assert torch.isclose(photosynthesis_ms_ssim, tf_ms_ssim, atol=1e-4).all(), \
         f'The estimated value must be equal to tensorflow provided one' \
         f'(considering floating point operation error up to 1 * 10^-4), ' \
@@ -338,7 +361,8 @@ def test_multi_scale_ssim_loss_is_less_or_equal_to_one_cuda() -> None:
     assert loss <= 1, f'SSIM loss must be <= 1, got {loss}'
 
 
-def test_multi_scale_ssim_loss_raises_if_tensors_have_different_shapes(target: torch.Tensor) -> None:
+def test_multi_scale_ssim_loss_raises_if_tensors_have_different_shapes(prediction: torch.Tensor,
+                                                                       target: torch.Tensor) -> None:
     dims = [[3], [2, 3], [255, 256], [255, 256]]
     for b, c, h, w in list(itertools.product(*dims)):
         wrong_shape_prediction = torch.rand(b, c, h, w)
@@ -350,12 +374,19 @@ def test_multi_scale_ssim_loss_raises_if_tensors_have_different_shapes(target: t
         else:
             with pytest.raises(AssertionError):
                 MultiScaleSSIMLoss()(wrong_shape_prediction, target)
+    scale_weights = torch.rand(2, 2)
+    with pytest.raises(AssertionError):
+        MultiScaleSSIMLoss(scale_weights=scale_weights)(prediction, target)
 
 
-def test_multi_scale_ssim_loss_raises_if_tensors_have_different_types(target: torch.Tensor) -> None:
+def test_multi_scale_ssim_loss_raises_if_tensors_have_different_types(prediction: torch.Tensor,
+                                                                      target: torch.Tensor) -> None:
     wrong_type_prediction = list(range(10))
     with pytest.raises(AssertionError):
         MultiScaleSSIMLoss()(wrong_type_prediction, target)
+    wrong_type_scale_weights = True
+    with pytest.raises(AssertionError):
+        MultiScaleSSIMLoss(scale_weights=wrong_type_scale_weights)(prediction, target)
 
 
 def test_multi_scale_ssim_loss_raises_if_wrong_kernel_size_is_passed(prediction: torch.Tensor,
@@ -382,6 +413,21 @@ def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated(prediction: tor
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.).numpy()).mean()
+    assert torch.isclose(photosynthesis_ms_ssim_loss, tf_ms_ssim, atol=1e-4).all(), \
+        f'The estimated value must be equal to tensorflow provided one' \
+        f'(considering floating point operation error up to 1 * 10^-4), ' \
+        f'got difference {photosynthesis_ms_ssim_loss - tf_ms_ssim}'
+
+
+def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated_custom_weights(prediction: torch.Tensor,
+                                                                                target: torch.Tensor) -> None:
+    scale_weights = [0.0448, 0.2856, 0.3001]
+    photosynthesis_ms_ssim_loss = MultiScaleSSIMLoss(kernel_size=11, kernel_sigma=1.5,
+                                                     data_range=1., scale_weights=scale_weights)(prediction, target)
+    tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
+    tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
+    tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.,
+                                                       power_factors=scale_weights).numpy()).mean()
     assert torch.isclose(photosynthesis_ms_ssim_loss, tf_ms_ssim, atol=1e-4).all(), \
         f'The estimated value must be equal to tensorflow provided one' \
         f'(considering floating point operation error up to 1 * 10^-4), ' \

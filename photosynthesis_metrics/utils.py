@@ -34,7 +34,8 @@ def _validate_input(
     if scale_weights is not None:
         assert isinstance(scale_weights, (list, tuple, torch.Tensor)), \
             f'Scale weights must be of type list, tuple or torch.Tensor, got {type(scale_weights)}.'
-        assert len(scale_weights) == 5, f'Scale weights collection must contain 5 values, got {len(scale_weights)}.'
+        assert (torch.Tensor(scale_weights).dim() == 1), \
+            f'Scale weights must be one dimensional, got {torch.Tensor(scale_weights).dim()}.'
     return
 
 

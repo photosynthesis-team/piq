@@ -205,7 +205,7 @@ class SSIMLoss(_Loss):
 
 def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: float = 1.5,
                      data_range: Union[int, float] = 255, size_average: bool = True,
-                     scale_weights: Optional[Union[Tuple[float], List[float]]] = None, k1=0.01,
+                     scale_weights: Optional[Union[Tuple[float], List[float], torch.Tensor]] = None, k1=0.01,
                      k2=0.03) -> torch.Tensor:
     r""" Interface of Multi-scale Structural Similarity (MS-SSIM) index.
     Args:
@@ -215,7 +215,7 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
         kernel_sigma: Sigma of normal distribution.
         data_range: Value range of input images (usually 1.0 or 255).
         size_average: If size_average=True, ssim of all images will be averaged as a scalar.
-        scale_weights: Weights for different scales. Must contain 4 floating point values.
+        scale_weights: Weights for different scales.
             If None, default weights from the paper [1] will be used.
             Default weights: (0.0448, 0.2856, 0.3001, 0.2363, 0.1333).
         k1: Algorithm parameter, K1 (small constant, see [2]).
@@ -295,7 +295,7 @@ class MultiScaleSSIMLoss(_Loss):
         kernel_sigma: Standard deviation for Gaussian kernel.
         k1: Coefficient related to c1 in the above equation.
         k2: Coefficient related to c2 in the above equation.
-        scale_weights:  Weights for different scales. Must contain 4 floating point values.
+        scale_weights:  Weights for different scales.
             If None, default weights from the paper [1] will be used.
             Default weights: (0.0448, 0.2856, 0.3001, 0.2363, 0.1333).
         size_average: Deprecated (see :attr:`reduction`). By default,
@@ -346,9 +346,10 @@ class MultiScaleSSIMLoss(_Loss):
     __constants__ = ['filter_size', 'k1', 'k2', 'sigma', 'kernel', 'reduction']
 
     def __init__(self, kernel_size: int = 11, kernel_sigma: float = 1.5, k1: float = 0.01, k2: float = 0.03,
-                 scale_weights: Optional[Union[Tuple[float], List[float]]] = None, size_average: Optional[bool] = None,
-                 reduce: Optional[bool] = None, reduction: str = 'mean', data_range: Union[int, float] = 1.) -> None:
-        super(MultiScaleSSIMLoss, self).__init__(size_average, reduce, reduction)
+                 scale_weights: Optional[Union[Tuple[float], List[float], torch.Tensor]] = None,
+                 size_average: Optional[bool] = None, reduce: Optional[bool] = None,
+                 reduction: str = 'mean', data_range: Union[int, float] = 1.) -> None:
+        super().__init__(size_average, reduce, reduction)
 
         # Generic loss parameters.
         self.size_average = size_average
@@ -362,7 +363,7 @@ class MultiScaleSSIMLoss(_Loss):
         if scale_weights is None:
             scale_weights_from_ms_ssim_paper = [0.0448, 0.2856, 0.3001, 0.2363, 0.1333]
             scale_weights = scale_weights_from_ms_ssim_paper
-
+        self.scale_weights = scale_weights
         self.scale_weights_tensor = torch.tensor(scale_weights)
         self.kernel_size = kernel_size
         self.kernel_sigma = kernel_sigma
@@ -384,7 +385,7 @@ class MultiScaleSSIMLoss(_Loss):
         Returns:
             Value of MS-SSIM loss to be minimized. 0 <= MS-SSIM loss <= 1.
         """
-        _validate_input(x=prediction, y=target, kernel_size=self.kernel_size, scale_weights=self.scale_weights_tensor)
+        _validate_input(x=prediction, y=target, kernel_size=self.kernel_size, scale_weights=self.scale_weights)
         prediction, target = _adjust_dimensions(x=prediction, y=target)
 
         score = self.compute_metric(prediction, target)
