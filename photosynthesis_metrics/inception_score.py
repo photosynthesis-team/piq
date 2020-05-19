@@ -22,7 +22,7 @@ def inception_score(features: torch.Tensor, num_splits: int = 10):
     Expects raw logits from Inception-V3 as input.
 
     Args:
-        features (torch.Tensor): Low-dimension representation of image set. Shape (N, encoder_dim).
+        features (torch.Tensor): Low-dimension representation of image set. Shape (N_samples, encoder_dim).
         num_splits: Number of parts to devide features. IS is computed for them separatly and results are then averaged.
 
     Returns:
@@ -31,6 +31,8 @@ def inception_score(features: torch.Tensor, num_splits: int = 10):
     Reference:
         https://arxiv.org/pdf/1801.01973.pdf
     """
+    assert len(features.shape) == 2, \
+        f"Features must have shape (N_samples, encoder_dim), got {features.shape}"
     N = features.size(0)
     # Convert logits to probabilities
     probas = F.softmax(features)
@@ -81,10 +83,14 @@ class IS(BaseFeatureMetric):
     def compute_metric(
             self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
         r"""Compute IS
+        Both features should have shape (N_samples, encoder_dim).
+
+        Args:
+            predicted_features: Low-dimension representation of predicted image set.
+            target_features: Low-dimension representation of target image set.
 
         Returns:
-            predicted_score: Scalar value of IS for predicted images features.
-            target_score: Scalar value of IS for target images features if `ret_target` is True.
+            diff: L1 or L2 distance between scores for predicted and feature datasets.
         """
         predicted_is, _ = inception_score(predicted_features, num_splits=self.num_splits)
         target_is, _ = inception_score(target_features, num_splits=self.num_splits)
@@ -92,3 +98,5 @@ class IS(BaseFeatureMetric):
             return torch.dist(predicted_is, target_is, 1)
         elif self.distance == 'l2':
             return torch.dist(predicted_is, target_is, 2)
+        else:
+            raise ValueError("Distance should be one of {`l1`, `l2`}")
