@@ -12,10 +12,10 @@ from multiprocessing import Pool
 
 import torch
 import numpy as np
-import scipy
 from scipy.spatial.distance import cdist
 
 from photosynthesis_metrics.base import BaseFeatureMetric
+
 
 def relative(intervals: np.ndarray, alpha_max: float, i_max: int = 100) -> np.ndarray:
     r"""
@@ -76,7 +76,7 @@ def lmrk_table(W: np.ndarray, L: np.ndarray):
 
     Returns:
         distances: 3D array of size w x l x 2. It satisfies the property that
-            distances[i, :, :] is [idx_i, dists_i], where dists_i are the sorted distances 
+            distances[i, :, :] is [idx_i, dists_i], where dists_i are the sorted distances
             from the i-th witness to each point in L and idx_i are the indices of the corresponding points
             in L, e.g., D[i, :, :] = [[0, 0.1], [1, 0.2], [3, 0.3], [2, 0.4]]
         max_dist: Maximal distance between W and L
@@ -114,7 +114,7 @@ def witness(X, sample_size: int = 64, gamma: Optional[float] = None):
 
     N = X.shape[0]
     if gamma is None:
-        gamma= 1.0 / 128 * N / 5000
+        gamma = 1.0 / 128 * N / 5000
 
     # Randomly sample `sample_size` points from X
     idx = np.random.choice(N, sample_size)
@@ -132,7 +132,7 @@ def witness(X, sample_size: int = 64, gamma: Optional[float] = None):
 
 
 def rlt(
-    idx: int, X: np.ndarray, sample_size: int = 64, gamma: Optional[float] = None, i_max: int = 100) -> np.ndarray:
+        idx: int, X: np.ndarray, sample_size: int = 64, gamma: Optional[float] = None, i_max: int = 100) -> np.ndarray:
     """Implements Algorithm 1 for one sample of landmarks.
  
     Args:
@@ -151,36 +151,15 @@ def rlt(
     return result
 
 
-def rlts(X: np.ndarray, 
-    sample_size: int = 64, num_iters: int = 200, gamma: Optional[float] = None, i_max: int = 100) -> np.ndarray:
-    r"""Implements Algorithm 1 from the paper.
+def rlts(X: np.ndarray, sample_size: int = 64, num_iters: int = 200,
+         gamma: Optional[float] = None, i_max: int = 100) -> np.ndarray:
+    r"""Parallel implements Algorithm 1 from the paper.
+    Uses multiprocessing.Pool to make computations faster.
 
     Args:
         X: Array of shape (N_samples, data_dim) representing the dataset.
         sample_size: Number of landmarks to use on each iteration.
-        num_iters: Number of iterations. 
-        gamma: Parameter determining maximum persistence value. Default is `1.0 / 128 * N_imgs / 5000`
-        i_max: Upper bound on the value of beta_1 to compute.
-
-    Returns:
-        rlts: Array of size (num_iters, i_max) containing RLT(i, 1, X, L) for
-            `num_iters` collection of randomly sampled landmarks.
-    """
-    rlts = np.zeros((num_iters, i_max))
-    for i in range(num_iters):
-        rlts[i, :] = rlt(idx=None, X=X, sample_size=sample_size, gamma=gamma, i_max=i_max)
-    return rlts
-
-
-def parallel_rlts(X: np.ndarray, 
-    sample_size: int = 64, num_iters: int = 200, gamma: Optional[float] = None, i_max: int = 100) -> np.ndarray:
-    r"""Implements Algorithm 1 from the paper.
-    Uses multiprocessing.Pool to make computations fastes. 
-
-    Args:
-        X: Array of shape (N_samples, data_dim) representing the dataset.
-        sample_size: Number of landmarks to use on each iteration.
-        num_iters: Number of iterations. 
+        num_iters: Number of iterations.
         gamma: Parameter determining maximum persistence value. Default is `1.0 / 128 * N_imgs / 5000`
         i_max: Upper bound on the value of beta_1 to compute.
 
@@ -196,6 +175,7 @@ def parallel_rlts(X: np.ndarray,
     rlts = np.vstack(pool_result)
     return rlts
 
+
 class GS(BaseFeatureMetric):
     r"""Interface of Geometry Score.
     It's computed for a whole set of data and can use features from encoder instead of images itself to decrease
@@ -203,8 +183,10 @@ class GS(BaseFeatureMetric):
     But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
 
     Args:
-        predicted_features (torch.Tensor): Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
-        target_features (torch.Tensor): Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
+        predicted_features (torch.Tensor): Low-dimension representation of predicted image set.
+            Shape (N_pred, encoder_dim)
+        target_features (torch.Tensor): Low-dimension representation of target image set.
+            Shape (N_targ, encoder_dim)
 
     Returns:
         score (torch.Tensor): Scalar value of the distance between image sets.
@@ -215,13 +197,13 @@ class GS(BaseFeatureMetric):
         arXiv preprint, 2018.
         https://arxiv.org/abs/1802.02664
     """
-    def __init__(self, sample_size: int = 64, num_iters: int = 10000, gamma: Optional[float] = None, 
-                i_max: int = 100, num_workers: int = 4) -> None:
+    def __init__(self, sample_size: int = 64, num_iters: int = 10000, gamma: Optional[float] = None,
+                 i_max: int = 100, num_workers: int = 4) -> None:
         r"""
         Args:
-            sample_size: Number of landmarks to use on each iteration. 
+            sample_size: Number of landmarks to use on each iteration.
                 Higher values can give better accuracy, but increase computation cost.
-            num_iters: Number of iterations.  
+            num_iters: Number of iterations.
                 Higher values can reduce variance, but increase computation cost.
             gamma: Parameter determining maximum persistence value. Default is `1.0 / 128 * N_imgs / 5000`
             i_max: Upper bound on i in RLT(i, 1, X, L)
@@ -234,6 +216,7 @@ class GS(BaseFeatureMetric):
         self.num_iters = num_iters
         self.gamma = gamma
         self.i_max = i_max
+        self.num_workers = num_workers
 
     def compute_metric(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
         r"""Implements Algorithm 2 from the paper.
@@ -249,23 +232,24 @@ class GS(BaseFeatureMetric):
         """
 
         # GPU -> CPU -> Numpy (Currently only Numpy realization is supported)
-        rlt_predicted = parallel_rlts(
-            predicted_features.detach().cpu().numpy(), 
-            sample_size=self.sample_size, 
+        rlt_predicted = rlts(
+            predicted_features.detach().cpu().numpy(),
+            sample_size=self.sample_size,
             num_iters=self.num_iters,
-            gamma=None, 
-            i_max=self.i_max)
+            gamma=None,
+            i_max=self.i_max,
+            num_workers=self.num_workers)
         
-        rlt_target = parallel_rlts(
-            target_features.detach().cpu().numpy(), 
-            sample_size=self.sample_size, 
+        rlt_target = rlts(
+            target_features.detach().cpu().numpy(),
+            sample_size=self.sample_size,
             num_iters=self.num_iters,
-            gamma=None, 
-            i_max=self.i_max)
+            gamma=None,
+            i_max=self.i_max,
+            num_workers=self.num_workers)
 
         mean_rlt_predicted = np.mean(rlt_predicted, axis=0)
         mean_rlt_target = np.mean(rlt_target, axis=0)
 
         score = np.sum((mean_rlt_predicted - mean_rlt_target) ** 2)
- 
         return torch.tensor(score, device=predicted_features.device)
