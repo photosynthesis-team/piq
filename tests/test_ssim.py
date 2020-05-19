@@ -80,6 +80,22 @@ def test_ssim_raises_if_tensors_have_different_types(target: torch.Tensor) -> No
         ssim(wrong_type_prediction, target)
 
 
+def test_ssim_check_available_dimensions() -> None:
+    custom_prediction = torch.rand(256, 256)
+    custom_target = torch.rand(256, 256)
+    for _ in range(10):
+        if custom_prediction.dim() < 5:
+            try:
+                ssim(custom_prediction, custom_target)
+            except Exception as e:
+                pytest.fail(f"Unexpected error occurred: {e}")
+        else:
+            with pytest.raises(AssertionError):
+                ssim(custom_prediction, custom_target)
+        custom_prediction.unsqueeze_(0)
+        custom_target.unsqueeze_(0)
+
+
 def test_ssim_raises_if_wrong_kernel_size_is_passed(prediction: torch.Tensor, target: torch.Tensor) -> None:
     wrong_kernel_sizes = list(range(0, 50, 2))
     for kernel_size in wrong_kernel_sizes:
@@ -165,6 +181,22 @@ def test_ssim_loss_raises_if_tensors_have_different_shapes(target: torch.Tensor)
         else:
             with pytest.raises(AssertionError):
                 SSIMLoss()(wrong_shape_prediction, target)
+
+
+def test_ssim_loss_check_available_dimensions() -> None:
+    custom_prediction = torch.rand(256, 256)
+    custom_target = torch.rand(256, 256)
+    for _ in range(10):
+        if custom_prediction.dim() < 5:
+            try:
+                SSIMLoss()(custom_prediction, custom_target)
+            except Exception as e:
+                pytest.fail(f"Unexpected error occurred: {e}")
+        else:
+            with pytest.raises(AssertionError):
+                SSIMLoss()(custom_prediction, custom_target)
+        custom_prediction.unsqueeze_(0)
+        custom_target.unsqueeze_(0)
 
 
 def test_ssim_loss_raises_if_tensors_have_different_types(target: torch.Tensor) -> None:
@@ -260,6 +292,22 @@ def test_multi_scale_ssim_raises_if_tensors_have_different_shapes(prediction: to
     scale_weights = torch.rand(2, 2)
     with pytest.raises(AssertionError):
         multi_scale_ssim(prediction, target, scale_weights=scale_weights)
+
+
+def test_multi_scale_ssim_check_available_dimensions() -> None:
+    custom_prediction = torch.rand(256, 256)
+    custom_target = torch.rand(256, 256)
+    for _ in range(10):
+        if custom_prediction.dim() < 5:
+            try:
+                multi_scale_ssim(custom_prediction, custom_target)
+            except Exception as e:
+                pytest.fail(f"Unexpected error occurred: {e}")
+        else:
+            with pytest.raises(AssertionError):
+                multi_scale_ssim(custom_prediction, custom_target)
+        custom_prediction.unsqueeze_(0)
+        custom_target.unsqueeze_(0)
 
 
 def test_multi_scale_ssim_raises_if_tensors_have_different_types(prediction: torch.Tensor,
@@ -377,6 +425,22 @@ def test_multi_scale_ssim_loss_raises_if_tensors_have_different_shapes(predictio
     scale_weights = torch.rand(2, 2)
     with pytest.raises(AssertionError):
         MultiScaleSSIMLoss(scale_weights=scale_weights)(prediction, target)
+
+
+def test_multi_scale_ssim_loss_check_available_dimensions() -> None:
+    custom_prediction = torch.rand(256, 256)
+    custom_target = torch.rand(256, 256)
+    for _ in range(10):
+        if custom_prediction.dim() < 5:
+            try:
+                MultiScaleSSIMLoss()(custom_prediction, custom_target)
+            except Exception as e:
+                pytest.fail(f"Unexpected error occurred: {e}")
+        else:
+            with pytest.raises(AssertionError):
+                MultiScaleSSIMLoss()(custom_prediction, custom_target)
+        custom_prediction.unsqueeze_(0)
+        custom_target.unsqueeze_(0)
 
 
 def test_multi_scale_ssim_loss_raises_if_tensors_have_different_types(prediction: torch.Tensor,
