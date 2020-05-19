@@ -152,7 +152,7 @@ def rlt(
 
 
 def rlts(X: np.ndarray, 
-    sample_size: int = 64, num_iters: int = 1000, gamma: Optional[float] = None, i_max: int = 100) -> np.ndarray:
+    sample_size: int = 64, num_iters: int = 200, gamma: Optional[float] = None, i_max: int = 100) -> np.ndarray:
     r"""Implements Algorithm 1 from the paper.
 
     Args:
@@ -173,7 +173,7 @@ def rlts(X: np.ndarray,
 
 
 def parallel_rlts(X: np.ndarray, 
-    sample_size: int = 64, num_iters: int = 1000, gamma: Optional[float] = None, i_max: int = 100) -> np.ndarray:
+    sample_size: int = 64, num_iters: int = 200, gamma: Optional[float] = None, i_max: int = 100) -> np.ndarray:
     r"""Implements Algorithm 1 from the paper.
     Uses multiprocessing.Pool to make computations fastes. 
 
@@ -194,7 +194,6 @@ def parallel_rlts(X: np.ndarray,
     p = Pool(6)
     pool_result = p.map(partial_rlt, range(num_iters))
     rlts = np.vstack(pool_result)
-    rlts = np.zeros((num_iters, i_max))
     return rlts
 
 class GS(BaseFeatureMetric):
@@ -216,20 +215,21 @@ class GS(BaseFeatureMetric):
         arXiv preprint, 2018.
         https://arxiv.org/abs/1802.02664
     """
-    def __init__(
-        self, sample_size: int = 64, num_iters: int = 10000, gamma: Optional[float] = None, i_max: int = 100) -> None:
+    def __init__(self, sample_size: int = 64, num_iters: int = 10000, gamma: Optional[float] = None, 
+                i_max: int = 100, num_workers: int = 4) -> None:
         r"""
         Args:
-            sample_size: Number of landmarks to use on each iteration. Higher values can give better accuracy,
-                but increase computation cost.
-            num_iters: Number of iterations.  Higher values can reduce variance,
-                but increase computation cost.
+            sample_size: Number of landmarks to use on each iteration. 
+                Higher values can give better accuracy, but increase computation cost.
+            num_iters: Number of iterations.  
+                Higher values can reduce variance, but increase computation cost.
             gamma: Parameter determining maximum persistence value. Default is `1.0 / 128 * N_imgs / 5000`
             i_max: Upper bound on i in RLT(i, 1, X, L)
+            num_workers: Number of proccess used for GS computation.
+
 
         """
-        super(GS, self).__init__()
-
+        super().__init__()
         self.sample_size = sample_size
         self.num_iters = num_iters
         self.gamma = gamma
@@ -249,14 +249,14 @@ class GS(BaseFeatureMetric):
         """
 
         # GPU -> CPU -> Numpy (Currently only Numpy realization is supported)
-        rlt_predicted = rlts(
+        rlt_predicted = parallel_rlts(
             predicted_features.detach().cpu().numpy(), 
             sample_size=self.sample_size, 
             num_iters=self.num_iters,
             gamma=None, 
             i_max=self.i_max)
         
-        rlt_target = rlts(
+        rlt_target = parallel_rlts(
             target_features.detach().cpu().numpy(), 
             sample_size=self.sample_size, 
             num_iters=self.num_iters,
