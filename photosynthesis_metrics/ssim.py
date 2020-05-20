@@ -50,7 +50,6 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
                                  y=y,
                                  kernel=kernel,
                                  data_range=data_range,
-                                 size_average=False,
                                  full=True,
                                  k1=k1,
                                  k2=k2)
@@ -190,7 +189,6 @@ class SSIMLoss(_Loss):
             y=target,
             kernel=kernel,
             data_range=self.data_range,
-            size_average=False,
             full=False,
             k1=self.k1,
             k2=self.k2
@@ -442,8 +440,6 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, da
             y: Batch of images, (N,C,H,W).
             kernel: 1-D gauss kernel.
             data_range: Value range of input images (usually 1.0 or 255).
-            size_average: If size_average=True, ssim of all images will be averaged as a scalar.
-            full: Return sc or not.
             k1: Algorithm parameter, K1 (small constant, see [1]).
             k2: Algorithm parameter, K2 (small constant, see [1]).
                 Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
@@ -494,7 +490,6 @@ def _compute_ssim(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, data_r
         y: Batch of images, (N,C,H,W).
         kernel: 1-D gauss kernel.
         data_range: Value range of input images (usually 1.0 or 255).
-        size_average: If size_average=True, ssim of all images will be averaged as a scalar.
         full: Return sc or not.
         k1: Algorithm parameter, K1 (small constant, see [1]).
         k2: Algorithm parameter, K2 (small constant, see [1]).
@@ -506,12 +501,8 @@ def _compute_ssim(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, data_r
 
     ssim_map, cs_map = _ssim_per_channel(x=x, y=y, kernel=kernel, data_range=data_range, k1=k1, k2=k2)
 
-    if size_average:
-        ssim_val = ssim_map.mean()
-        cs = cs_map.mean()
-    else:
-        ssim_val = ssim_map.mean(-1)
-        cs = cs_map.mean(-1)
+    ssim_val = ssim_map.mean(-1)
+    cs = cs_map.mean(-1)
 
     if full:
         return ssim_val, cs
