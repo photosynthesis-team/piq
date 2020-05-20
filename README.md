@@ -216,6 +216,34 @@ msid: torch.Tensor = kid_metric(first_feats, second_feats)
 </p>
 </details>
 
+<!-- IS EXAMPLES -->
+<details>
+<summary>Inception Score(IS)</summary>
+<p>
+
+Use `inception_score` function to compute [IS](https://arxiv.org/abs/1606.03498) from image features, 
+pre-extracted from some feature extractor network. Note, that we follow recomendations from paper [A Note on the Inception Score](https://arxiv.org/pdf/1801.01973.pdf), which proposed small modification to original algorithm:
+```python
+import torch
+from photosynthesis_metrics import inception_score
+
+prediction_feats = torch.rand(10000, 1024)
+mean: torch.Tensor, variance: torch.Tensor = inception_score(prediction_feats, num_splits=10)
+```
+ 
+To compute difference between IS for 2 sets of image features, use `IS` class.
+```python
+import torch
+from photosynthesis_metrics import IS
+
+
+is_metric = IS(distance='l1') 
+prediction_feats = torch.rand(10000, 1024)
+target_feats = torch.rand(10000, 1024)
+distance: torch.Tensor = is_metric(prediction_feats, target_feats)
+```  
+</p>
+</details>
 
 <!-- TABLE OF CONTENTS -->
 ### Table of Contents
