@@ -16,11 +16,21 @@ def target() -> torch.Tensor:
     return torch.rand(3, 3, 256, 256)
 
 
+@pytest.fixture(scope='module')
+def prediction_5d() -> torch.Tensor:
+    return torch.rand(3, 3, 256, 256, 2)
+
+
+@pytest.fixture(scope='module')
+def target_5d() -> torch.Tensor:
+    return torch.rand(3, 3, 256, 256, 2)
+
+
 # ================== Test function: `ssim` ==================
 def test_ssim_symmetry(prediction: torch.Tensor, target: torch.Tensor) -> None:
     measure = ssim(prediction, target, data_range=1.)
     reverse_measure = ssim(target, prediction, data_range=1.)
-    assert measure == reverse_measure, f'Expect: SSIM(a, b) == SSIM(b, a), got {measure} != {reverse_measure}'
+    assert (measure == reverse_measure).all(), f'Expect: SSIM(a, b) == SSIM(b, a), got {measure} != {reverse_measure}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
@@ -30,18 +40,26 @@ def test_ssim_symmetry_cuda(prediction: torch.Tensor, target: torch.Tensor) -> N
     test_ssim_symmetry(prediction=prediction, target=target)
 
 
-def test_ssim_measure_is_zero_for_equal_tensors(target: torch.Tensor) -> None:
+def test_ssim_symmetry_5d(prediction_5d: torch.Tensor, target_5d: torch.Tensor) -> None:
+    test_ssim_symmetry(prediction_5d, target_5d)
+
+
+def test_ssim_measure_is_one_for_equal_tensors(target: torch.Tensor) -> None:
     prediction = target.clone()
     measure = ssim(prediction, target, data_range=1.)
     measure -= 1.
-    assert measure.sum() <= 1e-6, f'If equal tensors are passed SSIM must be equal to 0 ' \
-                                  f'(considering floating point operation error up to 1 * 10^-6), got {measure}'
+    assert (measure <= 1e-6).all(), f'If equal tensors are passed SSIM must be equal to 1 ' \
+                                    f'(considering floating point operation error up to 1 * 10^-6), got {measure + 1}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
-def test_ssim_measure_is_zero_for_equal_tensors_cuda(target: torch.Tensor) -> None:
+def test_ssim_measure_is_one_for_equal_tensors_cuda(target: torch.Tensor) -> None:
     target = target.cuda()
-    test_ssim_measure_is_zero_for_equal_tensors(target=target)
+    test_ssim_measure_is_one_for_equal_tensors(target=target)
+
+
+def test_ssim_measure_is_one_for_equal_tensors_5d(target_5d: torch.Tensor) -> None:
+    test_ssim_measure_is_one_for_equal_tensors(target=target_5d)
 
 
 def test_ssim_measure_is_less_or_equal_to_one() -> None:
@@ -60,6 +78,13 @@ def test_ssim_measure_is_less_or_equal_to_one_cuda() -> None:
     assert measure <= 1, f'SSIM must be <= 1, got {measure}'
 
 
+def test_ssim_measure_is_less_or_equal_to_one_5d() -> None:
+    ones = torch.ones((3, 3, 256, 256, 2))
+    zeros = torch.zeros((3, 3, 256, 256, 2))
+    measure = ssim(ones, zeros, data_range=1.)
+    assert (measure <= 1).all(), f'SSIM must be <= 1, got {measure}'
+
+
 def test_ssim_raises_if_tensors_have_different_shapes(target: torch.Tensor) -> None:
     dims = [[3], [2, 3], [255, 256], [255, 256]]
     for b, c, h, w in list(itertools.product(*dims)):
@@ -72,6 +97,20 @@ def test_ssim_raises_if_tensors_have_different_shapes(target: torch.Tensor) -> N
         else:
             with pytest.raises(AssertionError):
                 ssim(wrong_shape_prediction, target)
+
+
+def test_ssim_raises_if_tensors_have_different_shapes_5d(target_5d: torch.Tensor) -> None:
+    dims = [[3], [2, 3], [255, 256], [255, 256], [2, 3]]
+    for b, c, h, w, d in list(itertools.product(*dims)):
+        wrong_shape_prediction = torch.rand(b, c, h, w, d)
+        if wrong_shape_prediction.size() == target_5d.size():
+            try:
+                ssim(wrong_shape_prediction, target_5d)
+            except Exception as e:
+                pytest.fail(f"Unexpected error occurred: {e}")
+        else:
+            with pytest.raises(AssertionError):
+                ssim(wrong_shape_prediction, target_5d)
 
 
 def test_ssim_raises_if_tensors_have_different_types(target: torch.Tensor) -> None:
@@ -128,7 +167,7 @@ def test_ssim_loss_symmetry(prediction: torch.Tensor, target: torch.Tensor) -> N
     loss = SSIMLoss()
     loss_value = loss(prediction, target)
     reverse_loss_value = loss(target, prediction)
-    assert loss_value == reverse_loss_value, \
+    assert (loss_value == reverse_loss_value).all(), \
         f'Expect: SSIM(a, b) == SSIM(b, a), got {loss_value} != {reverse_loss_value}'
 
 
@@ -139,18 +178,26 @@ def test_ssim_loss_symmetry_cuda(prediction: torch.Tensor, target: torch.Tensor)
     test_ssim_loss_symmetry(prediction=prediction, target=target)
 
 
+def test_ssim_loss_symmetry_5d(prediction_5d: torch.Tensor, target_5d: torch.Tensor) -> None:
+    test_ssim_loss_symmetry(prediction_5d, target_5d)
+
+
 def test_ssim_loss_equality(target: torch.Tensor) -> None:
     prediction = target.clone()
     loss = SSIMLoss()(prediction, target)
     loss -= 1.
-    assert loss.sum() <= 1e-6, f'If equal tensors are passed SSIM loss must be equal to 0 ' \
-                               f'(considering floating point operation error up to 1 * 10^-6), got {loss}'
+    assert (loss <= 1e-6).all(), f'If equal tensors are passed SSIM loss must be equal to 1 ' \
+                                 f'(considering floating point operation error up to 1 * 10^-6), got {loss + 1}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
 def test_ssim_loss_equality_cuda(target: torch.Tensor) -> None:
     target = target.cuda()
     test_ssim_loss_equality(target=target)
+
+
+def test_ssim_loss_equality_5d(target_5d: torch.Tensor) -> None:
+    test_ssim_loss_equality(target=target_5d)
 
 
 def test_ssim_loss_is_less_or_equal_to_one() -> None:
@@ -169,6 +216,14 @@ def test_ssim_loss_is_less_or_equal_to_one_cuda() -> None:
     assert loss <= 1, f'SSIM loss must be <= 1, got {loss}'
 
 
+def test_ssim_loss_is_less_or_equal_to_one_5d() -> None:
+    # Create two maximally different tensors.
+    ones = torch.ones((3, 3, 256, 256, 2))
+    zeros = torch.zeros((3, 3, 256, 256, 2))
+    loss = SSIMLoss()(ones, zeros)
+    assert (loss <= 1).all(), f'SSIM loss must be <= 1, got {loss}'
+
+
 def test_ssim_loss_raises_if_tensors_have_different_shapes(target: torch.Tensor) -> None:
     dims = [[3], [2, 3], [255, 256], [255, 256]]
     for b, c, h, w in list(itertools.product(*dims)):
@@ -181,6 +236,20 @@ def test_ssim_loss_raises_if_tensors_have_different_shapes(target: torch.Tensor)
         else:
             with pytest.raises(AssertionError):
                 SSIMLoss()(wrong_shape_prediction, target)
+
+
+def test_ssim_loss_raises_if_tensors_have_different_shapes_5d(target_5d: torch.Tensor) -> None:
+    dims = [[3], [2, 3], [255, 256], [255, 256], [2, 3]]
+    for b, c, h, w, d in list(itertools.product(*dims)):
+        wrong_shape_prediction = torch.rand(b, c, h, w, d)
+        if wrong_shape_prediction.size() == target_5d.size():
+            try:
+                SSIMLoss()(wrong_shape_prediction, target_5d)
+            except Exception as e:
+                pytest.fail(f"Unexpected error occurred: {e}")
+        else:
+            with pytest.raises(AssertionError):
+                SSIMLoss()(wrong_shape_prediction, target_5d)
 
 
 def test_ssim_loss_check_available_dimensions() -> None:
@@ -236,7 +305,7 @@ def test_ssim_loss_raise_if_wrong_value_is_estimated(prediction: torch.Tensor, t
 def test_multi_scale_ssim_symmetry(prediction: torch.Tensor, target: torch.Tensor) -> None:
     measure = multi_scale_ssim(prediction, target, data_range=1.)
     reverse_measure = multi_scale_ssim(target, prediction, data_range=1.)
-    assert measure == reverse_measure, f'Expect: SSIM(a, b) == SSIM(b, a), got {measure} != {reverse_measure}'
+    assert (measure == reverse_measure).all(), f'Expect: SSIM(a, b) == SSIM(b, a), got {measure} != {reverse_measure}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
@@ -246,18 +315,32 @@ def test_multi_scale_ssim_symmetry_cuda(prediction: torch.Tensor, target: torch.
     test_multi_scale_ssim_loss_symmetry(prediction=prediction, target=target)
 
 
-def test_multi_scale_ssim_measure_is_zero_for_equal_tensors(target: torch.Tensor) -> None:
+def test_multi_scale_ssim_symmetry_5d(prediction_5d: torch.Tensor, target_5d: torch.Tensor) -> None:
+    measure = multi_scale_ssim(prediction_5d, target_5d, data_range=1., k2=.4)
+    reverse_measure = multi_scale_ssim(target_5d, prediction_5d, data_range=1., k2=.4)
+    assert (measure == reverse_measure).all(), f'Expect: SSIM(a, b) == SSIM(b, a), got {measure} != {reverse_measure}'
+
+
+def test_multi_scale_ssim_measure_is_one_for_equal_tensors(target: torch.Tensor) -> None:
     prediction = target.clone()
     measure = multi_scale_ssim(prediction, target, data_range=1.)
     measure -= 1.
-    assert measure.sum() <= 1e-6, f'If equal tensors are passed SSIM must be equal to 0 ' \
-                                  f'(considering floating point operation error up to 1 * 10^-6), got {measure}'
+    assert (measure <= 1e-6).all(), f'If equal tensors are passed SSIM must be equal to 1 ' \
+                                    f'(considering floating point operation error up to 1 * 10^-6), got {measure + 1}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
-def test_multi_scale_ssim_measure_is_zero_for_equal_tensors_cuda(target: torch.Tensor) -> None:
+def test_multi_scale_ssim_measure_is_one_for_equal_tensors_cuda(target: torch.Tensor) -> None:
     target = target.cuda()
-    test_multi_scale_ssim_measure_is_zero_for_equal_tensors(target=target)
+    test_multi_scale_ssim_measure_is_one_for_equal_tensors(target=target)
+
+
+def test_multi_scale_ssim_measure_is_one_for_equal_tensors_5d(target_5d: torch.Tensor) -> None:
+    prediction_5d = target_5d.clone()
+    measure = multi_scale_ssim(prediction_5d, target_5d, data_range=1., k2=0.4)
+    measure -= 1.
+    assert (measure <= 1e-6).all(), f'If equal tensors are passed SSIM must be equal to 1 ' \
+                                    f'(considering floating point operation error up to 1 * 10^-6), got {measure + 1}'
 
 
 def test_multi_scale_ssim_measure_is_less_or_equal_to_one() -> None:
@@ -276,6 +359,14 @@ def test_multi_scale_ssim_measure_is_less_or_equal_to_one_cuda() -> None:
     assert measure <= 1, f'SSIM must be <= 1, got {measure}'
 
 
+def test_multi_scale_ssim_measure_is_less_or_equal_to_one_5d() -> None:
+    # Create two maximally different tensors.
+    ones = torch.ones((3, 3, 256, 256, 2))
+    zeros = torch.zeros((3, 3, 256, 256, 2))
+    measure = multi_scale_ssim(ones, zeros, data_range=1.)
+    assert (measure <= 1).all(), f'SSIM must be <= 1, got {measure}'
+
+
 def test_multi_scale_ssim_raises_if_tensors_have_different_shapes(prediction: torch.Tensor,
                                                                   target: torch.Tensor) -> None:
     dims = [[3], [2, 3], [255, 256], [255, 256]]
@@ -292,6 +383,24 @@ def test_multi_scale_ssim_raises_if_tensors_have_different_shapes(prediction: to
     scale_weights = torch.rand(2, 2)
     with pytest.raises(AssertionError):
         multi_scale_ssim(prediction, target, scale_weights=scale_weights)
+
+
+def test_multi_scale_ssim_raises_if_tensors_have_different_shapes_5d(prediction_5d: torch.Tensor,
+                                                                     target_5d: torch.Tensor) -> None:
+    dims = [[3], [2, 3], [255, 256], [255, 256], [2, 3]]
+    for b, c, h, w, d in list(itertools.product(*dims)):
+        wrong_shape_prediction = torch.rand(b, c, h, w, d)
+        if wrong_shape_prediction.size() == target_5d.size():
+            try:
+                multi_scale_ssim(wrong_shape_prediction, target_5d)
+            except Exception as e:
+                pytest.fail(f"Unexpected error occurred: {e}")
+        else:
+            with pytest.raises(AssertionError):
+                multi_scale_ssim(wrong_shape_prediction, target_5d)
+    scale_weights = torch.rand(2, 2)
+    with pytest.raises(AssertionError):
+        multi_scale_ssim(prediction_5d, target_5d, scale_weights=scale_weights)
 
 
 def test_multi_scale_ssim_check_available_dimensions() -> None:
@@ -368,7 +477,7 @@ def test_multi_scale_ssim_loss_symmetry(prediction: torch.Tensor, target: torch.
     loss = MultiScaleSSIMLoss()
     loss_value = loss(prediction, target)
     reverse_loss_value = loss(target, prediction)
-    assert loss_value == reverse_loss_value, \
+    assert (loss_value == reverse_loss_value).all(), \
         f'Expect: SSIM(a, b) == SSIM(b, a), got {loss_value} != {reverse_loss_value}'
 
 
@@ -379,18 +488,34 @@ def test_multi_scale_ssim_loss_symmetry_cuda(prediction: torch.Tensor, target: t
     test_multi_scale_ssim_loss_symmetry(prediction=prediction, target=target)
 
 
+def test_multi_scale_ssim_loss_symmetry_5d(prediction_5d: torch.Tensor, target_5d: torch.Tensor) -> None:
+    loss = MultiScaleSSIMLoss(k2=.4)
+    loss_value = loss(prediction_5d, target_5d)
+    reverse_loss_value = loss(target_5d, prediction_5d)
+    assert (loss_value == reverse_loss_value).all(), \
+        f'Expect: SSIM(a, b) == SSIM(b, a), got {loss_value} != {reverse_loss_value}'
+
+
 def test_multi_scale_ssim_loss_equality(target: torch.Tensor) -> None:
     prediction = target.clone()
     loss = MultiScaleSSIMLoss()(prediction, target)
     loss -= 1.
-    assert loss.sum() <= 1e-6, f'If equal tensors are passed SSIM loss must be equal to 0 ' \
-                               f'(considering floating point operation error up to 1 * 10^-6), got {loss}'
+    assert (loss <= 1e-6).all(), f'If equal tensors are passed SSIM loss must be equal to 1 ' \
+                                 f'(considering floating point operation error up to 1 * 10^-6), got {loss + 1}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
 def test_multi_scale_ssim_loss_equality_cuda(target: torch.Tensor) -> None:
     target = target.cuda()
     test_multi_scale_ssim_loss_equality(target=target)
+
+
+def test_multi_scale_ssim_loss_equality_5d(target_5d: torch.Tensor) -> None:
+    prediction_5d = target_5d.clone()
+    loss = MultiScaleSSIMLoss(k2=0.4)(prediction_5d, target_5d)
+    loss -= 1.
+    assert (loss <= 1e-6).all(), f'If equal tensors are passed SSIM loss must be equal to 1 ' \
+                                 f'(considering floating point operation error up to 1 * 10^-6), got {loss + 1}'
 
 
 def test_multi_scale_ssim_loss_is_less_or_equal_to_one() -> None:
@@ -409,6 +534,14 @@ def test_multi_scale_ssim_loss_is_less_or_equal_to_one_cuda() -> None:
     assert loss <= 1, f'SSIM loss must be <= 1, got {loss}'
 
 
+def test_multi_scale_ssim_loss_is_less_or_equal_to_one_5d() -> None:
+    # Create two maximally different tensors.
+    ones = torch.ones((3, 3, 256, 256, 2))
+    zeros = torch.zeros((3, 3, 256, 256, 2))
+    loss = MultiScaleSSIMLoss()(ones, zeros)
+    assert (loss <= 1).all(), f'SSIM loss must be <= 1, got {loss}'
+
+
 def test_multi_scale_ssim_loss_raises_if_tensors_have_different_shapes(prediction: torch.Tensor,
                                                                        target: torch.Tensor) -> None:
     dims = [[3], [2, 3], [255, 256], [255, 256]]
@@ -425,6 +558,24 @@ def test_multi_scale_ssim_loss_raises_if_tensors_have_different_shapes(predictio
     scale_weights = torch.rand(2, 2)
     with pytest.raises(AssertionError):
         MultiScaleSSIMLoss(scale_weights=scale_weights)(prediction, target)
+
+
+def test_multi_scale_ssim_loss_raises_if_tensors_have_different_shapes_5d(prediction_5d: torch.Tensor,
+                                                                          target_5d: torch.Tensor) -> None:
+    dims = [[3], [2, 3], [255, 256], [255, 256], [2, 3]]
+    for b, c, h, w, d in list(itertools.product(*dims)):
+        wrong_shape_prediction = torch.rand(b, c, h, w, d)
+        if wrong_shape_prediction.size() == target_5d.size():
+            try:
+                MultiScaleSSIMLoss()(wrong_shape_prediction, target_5d)
+            except Exception as e:
+                pytest.fail(f"Unexpected error occurred: {e}")
+        else:
+            with pytest.raises(AssertionError):
+                MultiScaleSSIMLoss()(wrong_shape_prediction, target_5d)
+    scale_weights = torch.rand(2, 2)
+    with pytest.raises(AssertionError):
+        MultiScaleSSIMLoss(scale_weights=scale_weights)(prediction_5d, target_5d)
 
 
 def test_multi_scale_ssim_loss_check_available_dimensions() -> None:
