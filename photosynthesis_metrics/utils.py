@@ -14,8 +14,8 @@ def _adjust_dimensions(x: torch.Tensor, y: torch.Tensor):
     elif num_dimentions == 3:
         x = x.expand(1, *x.shape)
         y = y.expand(1, *y.shape)
-    elif num_dimentions != 4:
-        raise ValueError('Expected 2, 3, or 4 dimensions (got {})'.format(num_dimentions))
+    elif num_dimentions != 4 and num_dimentions != 5:
+        raise ValueError(f'Expected 2, 3, 4 or 5 dimensions (got {num_dimentions})')
 
     return x, y
 
@@ -27,8 +27,10 @@ def _validate_input(
         scale_weights: Union[Optional[Tuple[float]], Optional[List[float]], Optional[torch.Tensor]] = None) -> None:
     assert isinstance(x, torch.Tensor) and isinstance(y, torch.Tensor), \
         f'Both images must be torch.Tensors, got {type(x)} and {type(y)}.'
-    assert 1 < x.dim() < 5, f'Input images must be 2D, 3D or 4D tensors, got images of shape {x.size()}.'
+    assert 1 < x.dim() < 6, f'Input images must be 2D, 3D or 4D tensors, got images of shape {x.size()}.'
     assert x.size() == y.size(), f'Input images must have the same dimensions, got {x.size()} and {y.size()}.'
+    if x.dim() == 5:
+        assert x.size(-1) == 2, f'Expected Complex 5D tensor with (N,C,H,W,2) size, got {x.size()}'
     if kernel_size is not None:
         assert kernel_size % 2 == 1, f'Kernel size must be odd, got {kernel_size}.'
     if scale_weights is not None:
