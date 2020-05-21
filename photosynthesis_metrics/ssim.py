@@ -369,8 +369,7 @@ class MultiScaleSSIMLoss(_Loss):
         if scale_weights is None:
             scale_weights_from_ms_ssim_paper = [0.0448, 0.2856, 0.3001, 0.2363, 0.1333]
             scale_weights = scale_weights_from_ms_ssim_paper
-        self.scale_weights = scale_weights
-        self.scale_weights_tensor = torch.tensor(scale_weights)
+        self.scale_weights = torch.tensor(scale_weights)
         self.kernel_size = kernel_size
         self.kernel_sigma = kernel_sigma
         self.k1 = k1
@@ -400,7 +399,7 @@ class MultiScaleSSIMLoss(_Loss):
 
     def compute_metric(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         kernel = self.kernel.repeat(prediction.shape[1], 1, 1, 1)
-        scale_weights_tensor = self.scale_weights_tensor.to(device=prediction.device)
+        scale_weights_tensor = self.scale_weights.to(device=prediction.device, dtype=prediction.dtype)
 
         _run_msssim = _compute_multi_scale_ssim_complex if prediction.dim() == 5 else _compute_multi_scale_ssim
         msssim_val = _run_msssim(

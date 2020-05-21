@@ -6,7 +6,6 @@ import torch
 def _adjust_dimensions(x: torch.Tensor, y: torch.Tensor):
     r"""Expands input tensors dimensions to 4D
     """
-    # TODO: add support of 5D tensors here or in the __compute_ssim function.
     num_dimentions = x.dim()
     if num_dimentions == 2:
         x = x.expand(1, 1, *x.shape)
@@ -36,8 +35,8 @@ def _validate_input(
     if scale_weights is not None:
         assert isinstance(scale_weights, (list, tuple, torch.Tensor)), \
             f'Scale weights must be of type list, tuple or torch.Tensor, got {type(scale_weights)}.'
-        assert (torch.Tensor(scale_weights).dim() == 1), \
-            f'Scale weights must be one dimensional, got {torch.Tensor(scale_weights).dim()}.'
+        assert (torch.tensor(scale_weights).dim() == 1), \
+            f'Scale weights must be one dimensional, got {torch.tensor(scale_weights).dim()}.'
     return
 
 

@@ -40,9 +40,9 @@ def total_variation(x: torch.Tensor, size_average: bool = True, reduction_type: 
         raise ValueError("Incorrect reduction type, should be one of {'l1', 'l2', 'l2_squared'}")
 
     if size_average:
-        return tv_val.mean()
-    else:
-        return tv_val
+        return tv_val.mean(dim=0)
+
+    return tv_val
 
 
 class TVLoss(_Loss):
