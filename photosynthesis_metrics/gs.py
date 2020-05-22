@@ -1,18 +1,16 @@
 r""" This module implements Geometry Score (GS) in PyTorch.
-
 Implementation is inspired by Valentin Khrulkov's (@KhrulkovV) implementation:
 https://github.com/KhrulkovV/geometry-score
-
 See paper for details:
 https://arxiv.org/pdf/1802.02664.pdf
 """
-from typing import Optional
-from functools import partial
+from typing import Optional, Tuple
 from multiprocessing import Pool
+
+from scipy.spatial.distance import cdist
 
 import torch
 import numpy as np
-from scipy.spatial.distance import cdist
 
 from photosynthesis_metrics.base import BaseFeatureMetric
 
@@ -22,12 +20,10 @@ def relative(intervals: np.ndarray, alpha_max: float, i_max: int = 100) -> np.nd
     For a collection of intervals this functions computes
     RLT by formulas (2) and (3) from the paper. This function will be typically called
     on the output of the gudhi persistence_intervals_in_dimension function.
-
     Args:
       intervals: list of intervals e.g. [[0, 1], [0, 2], [0, np.inf]].
       alpha_max: The maximal persistence value
       i_max: Upper bound on the value of beta_1 to compute.
-
     Returns:
         rlt: Array of size (i_max, ) containing desired RLT.
     """
@@ -36,10 +32,10 @@ def relative(intervals: np.ndarray, alpha_max: float, i_max: int = 100) -> np.nd
     # If for some interval we have that it persisted up to np.inf
     # we replace this point with alpha_max.
     for interval in intervals:
-        if not np.isinf(interval[1]):
-            persistence_intervals.append(list(interval))
-        elif np.isinf(interval[1]):
+        if np.isinf(interval[1]):
             persistence_intervals.append([interval[0], alpha_max])
+        else:
+            persistence_intervals.append(list(interval))
 
     # If there are no intervals in H1 then we always observed 0 holes.
     if len(persistence_intervals) == 0:
@@ -68,12 +64,11 @@ def relative(intervals: np.ndarray, alpha_max: float, i_max: int = 100) -> np.nd
     return rlt / alpha_max
 
 
-def lmrk_table(W: np.ndarray, L: np.ndarray):
+def lmrk_table(W: np.ndarray, L: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     r"""Construct an input for the gudhi.WitnessComplex function.
     Args:
         W: Array of size w x d, containing witnesses
         L: Array of size l x d, containing landmarks
-
     Returns:
         distances: 3D array of size w x l x 2. It satisfies the property that
             distances[i, :, :] is [idx_i, dists_i], where dists_i are the sorted distances
@@ -89,11 +84,13 @@ def lmrk_table(W: np.ndarray, L: np.ndarray):
     return distances, max_dist
 
 
-def witness(X, sample_size: int = 64, gamma: Optional[float] = None):
-    """Compute the persistence intervals for the dataset X using the witness complex.
+def witness(
+        features: np.ndarray, sample_size: int = 64, gamma: Optional[float] = None) \
+        -> Tuple[np.ndarray, np.ndarray]:
+    """Compute the persistence intervals for the dataset of features using the witness complex.
 
     Args:
-        X: Array of shape (N_samples, data_dim) representing the dataset.
+        features: Array of shape (N_samples, data_dim) representing the dataset.
         sample_size: Number of landmarks to use on each iteration.
         gamma: Parameter determining maximum persistence value. Default is `1.0 / 128 * N_imgs / 5000`
 
@@ -112,15 +109,16 @@ def witness(X, sample_size: int = 64, gamma: Optional[float] = None):
         )
         six.raise_from(error, e)
 
-    N = X.shape[0]
+    N = features.shape[0]
     if gamma is None:
         gamma = 1.0 / 128 * N / 5000
 
     # Randomly sample `sample_size` points from X
+    np.random.seed()
     idx = np.random.choice(N, sample_size)
-    landmarks = X[idx]
+    landmarks = features[idx]
 
-    distances, max_dist = lmrk_table(W=X, L=landmarks)
+    distances, max_dist = lmrk_table(W=features, L=landmarks)
     wc = gudhi.WitnessComplex(distances)
     alpha_max = max_dist * gamma
     st = wc.create_simplex_tree(max_alpha_square=alpha_max, limit_dimension=2)
@@ -129,51 +127,6 @@ def witness(X, sample_size: int = 64, gamma: Optional[float] = None):
     st.persistence(homology_coeff_field=2)
     intervals = st.persistence_intervals_in_dimension(1)
     return intervals, alpha_max
-
-
-def rlt(
-        idx: int, X: np.ndarray, sample_size: int = 64, gamma: Optional[float] = None, i_max: int = 100) -> np.ndarray:
-    """Implements Algorithm 1 for one sample of landmarks.
- 
-    Args:
-        idx : Used for multiprocessing.Pool to work correctly
-        X: Array of shape (N_samples, data_dim) representing the dataset.
-        sample_size: Number of landmarks to use on each iteration.
-        gamma: Parameter determining maximum persistence value. Default is `1.0 / 128 * N_imgs / 5000`
-        i_max: Upper bound on the value of beta_1 to compute.
-    
-    Returns:
-      An array of size (i_max, ) containing RLT(i, 1, X, L)
-        for randomly sampled landmarks.
-    """
-    intervals, alpha_max = witness(X, sample_size=sample_size, gamma=gamma)
-    result = relative(intervals, alpha_max, i_max=i_max)
-    return result
-
-
-def rlts(X: np.ndarray, sample_size: int = 64, num_iters: int = 200,
-         gamma: Optional[float] = None, i_max: int = 100) -> np.ndarray:
-    r"""Parallel implements Algorithm 1 from the paper.
-    Uses multiprocessing.Pool to make computations faster.
-
-    Args:
-        X: Array of shape (N_samples, data_dim) representing the dataset.
-        sample_size: Number of landmarks to use on each iteration.
-        num_iters: Number of iterations.
-        gamma: Parameter determining maximum persistence value. Default is `1.0 / 128 * N_imgs / 5000`
-        i_max: Upper bound on the value of beta_1 to compute.
-
-    Returns:
-        rlts: Array of size (num_iters, i_max) containing RLT(i, 1, X, L) for
-            `num_iters` collection of randomly sampled landmarks.
-    """
-    partial_rlt = partial(rlt, X=X, sample_size=sample_size, gamma=gamma, i_max=i_max)
-
-    # Use 6 processes by default
-    p = Pool(6)
-    pool_result = p.map(partial_rlt, range(num_iters))
-    rlts = np.vstack(pool_result)
-    return rlts
 
 
 class GS(BaseFeatureMetric):
@@ -197,7 +150,7 @@ class GS(BaseFeatureMetric):
         arXiv preprint, 2018.
         https://arxiv.org/abs/1802.02664
     """
-    def __init__(self, sample_size: int = 64, num_iters: int = 10000, gamma: Optional[float] = None,
+    def __init__(self, sample_size: int = 64, num_iters: int = 1000, gamma: Optional[float] = None,
                  i_max: int = 100, num_workers: int = 4) -> None:
         r"""
         Args:
@@ -220,36 +173,84 @@ class GS(BaseFeatureMetric):
 
     def compute_metric(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
         r"""Implements Algorithm 2 from the paper.
-
         Args:
             predicted_features: Samples from data distribution.
                 Shape (N_samples, data_dim).
             target_features: Samples from data distribution.
                 Shape (N_samples, data_dim).
-
         Returns:
             score: Scalar value of the distance between distributions.
         """
+        p = Pool(self.num_workers)
 
-        # GPU -> CPU -> Numpy (Currently only Numpy realization is supported)
-        rlt_predicted = rlts(
-            predicted_features.detach().cpu().numpy(),
-            sample_size=self.sample_size,
-            num_iters=self.num_iters,
-            gamma=None,
-            i_max=self.i_max,
-            num_workers=self.num_workers)
-        
-        rlt_target = rlts(
-            target_features.detach().cpu().numpy(),
-            sample_size=self.sample_size,
-            num_iters=self.num_iters,
-            gamma=None,
-            i_max=self.i_max,
-            num_workers=self.num_workers)
+        self.features = predicted_features.detach().cpu().numpy()
+        pool_results = p.map(self._relative_living_times, range(self.num_iters))
+        mean_rlt_predicted = np.vstack(pool_results).mean(axis=0)
 
-        mean_rlt_predicted = np.mean(rlt_predicted, axis=0)
-        mean_rlt_target = np.mean(rlt_target, axis=0)
+        self.features = target_features.detach().cpu().numpy()
+        pool_results = p.map(self._relative_living_times, range(self.num_iters))
+        mean_rlt_target = np.vstack(pool_results).mean(axis=0)
 
         score = np.sum((mean_rlt_predicted - mean_rlt_target) ** 2)
-        return torch.tensor(score, device=predicted_features.device)
+
+        return torch.tensor(score, device=predicted_features.device) * 1000
+
+    def _relative_living_times(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
+        r"""Implements Algorithm 1 for two samples of landmarks.
+    
+        Args:
+            idx : Dummy argument. Used for multiprocessing.Pool to work correctly
+        
+        Returns:
+            An array of size (i_max, ) containing RLT(i, 1, X, L)
+            for randomly sampled landmarks.
+        """
+        intervals, alpha_max = witness(
+            self.features, sample_size=self.sample_size, gamma=self.gamma)
+        rlt = relative(intervals, alpha_max, i_max=self.i_max)
+
+        return rlt
+
+    # def compute_metric(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+    #     r"""Implements Algorithm 2 from the paper.
+    #     Args:
+    #         predicted_features: Samples from data distribution.
+    #             Shape (N_samples, data_dim).
+    #         target_features: Samples from data distribution.
+    #             Shape (N_samples, data_dim).
+    #     Returns:
+    #         score: Scalar value of the distance between distributions.
+    #     """
+    #     # Save inputs for future use in class method
+    #     self.predicted_features = predicted_features.detach().cpu().numpy()
+    #     self.target_features = target_features.detach().cpu().numpy()
+
+    #     p = Pool(self.num_workers)
+    #     pool_results = p.map(self._relative_living_times, range(self.num_iters))
+
+    #     mean_rlt_predicted = np.vstack([result[0] for result in pool_results]).mean(axis=0)
+    #     mean_rlt_target = np.vstack([result[1] for result in pool_results]).mean(axis=0)
+
+    #     score = np.sum((mean_rlt_predicted - mean_rlt_target) ** 2)
+
+    #     return torch.tensor(score, device=predicted_features.device) * 1000
+
+    # def _relative_living_times(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
+    #     r"""Implements Algorithm 1 for two samples of landmarks.
+    
+    #     Args:
+    #         idx : Dummy argument. Used for multiprocessing.Pool to work correctly
+        
+    #     Returns:
+    #         An array of size (i_max, ) containing RLT(i, 1, X, L)
+    #         for randomly sampled landmarks.
+    #     """
+    #     pred_intervals, pred_alpha_max = witness(
+    #         self.predicted_features, sample_size=self.sample_size, gamma=self.gamma)
+    #     pred_rlt = relative(pred_intervals, pred_alpha_max, i_max=self.i_max)
+
+    #     target_intervals, target_alpha_max = witness(
+    #         self.predicted_features, sample_size=self.sample_size, gamma=self.gamma)
+    #     target_rlt = relative(target_intervals, target_alpha_max, i_max=self.i_max)
+       
+    #     return pred_rlt, target_rlt
