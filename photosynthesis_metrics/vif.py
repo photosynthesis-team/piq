@@ -6,7 +6,6 @@ References:
     https://ieeexplore.ieee.org/abstract/document/1576816/
 """
 import torch
-import numpy as np
 from torch.nn.modules.loss import _Loss
 import torch.nn.functional as F
 
@@ -51,6 +50,7 @@ def vif_p(prediction: torch.Tensor, target: torch.Tensor,
         See https://live.ece.utexas.edu/research/Quality/VIF.htm for details.
         
     """
+    assert prediction.dim() == 4, f'Expected 4D tensor, got {prediction.size()}'
     if data_range == 255:
         prediction = prediction / 255.
         target = target / 255.
@@ -88,15 +88,15 @@ def vif_p(prediction: torch.Tensor, target: torch.Tensor,
         sigma_trgt_pred = F.conv2d(target * prediction, kernel) - mu_trgt_pred
         
         # Zero small negative values
-        sigma_trgt_sq[sigma_trgt_sq < 0] = 0
-        sigma_pred_sq[sigma_pred_sq < 0] = 0
+        torch.relu_(sigma_trgt_sq)
+        torch.relu_(sigma_pred_sq)
         
         g = sigma_trgt_pred / (sigma_trgt_sq + EPS)
         sigma_v_sq = sigma_pred_sq - g * sigma_trgt_pred
 
         pred_vif_scale = torch.log10(1.0 + (g ** 2.) * sigma_trgt_sq / (sigma_v_sq + sigma_n_sq))
         prediction_vif += torch.sum(pred_vif_scale, dim=[1, 2, 3])
-        target_vif += torch.sum(np.log10(1.0 + sigma_trgt_sq / sigma_n_sq), dim=[1, 2, 3])
+        target_vif += torch.sum(torch.log10(1.0 + sigma_trgt_sq / sigma_n_sq), dim=[1, 2, 3])
 
     return prediction_vif / target_vif
 
@@ -125,8 +125,8 @@ class VIFLoss(_Loss):
         Returns:
             Value of VIF loss to be minimized. 0 <= VIFLoss <= 1.
         """
-        prediction, target = _adjust_dimensions(x=prediction, y=target)
         _validate_input(x=prediction, y=target)
+        prediction, target = _adjust_dimensions(x=prediction, y=target)
 
         return self.compute_metric(prediction, target)
 
