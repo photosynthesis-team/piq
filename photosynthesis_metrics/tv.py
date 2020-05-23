@@ -5,7 +5,25 @@ r"""Implemetation of Total Variation metric, based on article
 import torch
 from torch.nn.modules.loss import _Loss
 
-from photosynthesis_metrics.utils import _adjust_dimensions, _validate_input
+
+def _adjust_tensor_dimensions(x: torch.Tensor):
+    r"""Expands input tensor dimensions to 4D
+        """
+    num_dimensions = x.dim()
+    if num_dimensions == 2:
+        x = x.expand(1, 1, *x.shape)
+    elif num_dimensions == 3:
+        x = x.expand(1, *x.shape)
+    elif num_dimensions != 4:
+        raise ValueError('Expected 2, 3, or 4 dimensions (got {})'.format(num_dimensions))
+
+    return x
+
+
+def _validate_input(x: torch.Tensor) -> None:
+    """Validates input tensor"""
+    assert isinstance(x, torch.Tensor), f'Input must be a torch.Tensor, got {type(x)}.'
+    assert len(x.shape) == 4, f'Input image must be 4D tensor, got image of shape {x.shape}.'
 
 
 def total_variation(x: torch.Tensor, size_average: bool = True, reduction_type: str = 'l2') -> torch.Tensor:
