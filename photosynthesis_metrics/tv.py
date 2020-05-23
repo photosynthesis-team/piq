@@ -63,16 +63,16 @@ def total_variation(x: torch.Tensor, size_average: bool = True, reduction_type: 
 
 
 class TVLoss(_Loss):
-    r"""Creates a criterion that measures the total variation error between
-    each element in the input :math:`x` and target :math:`y`.
+    r"""Creates a criterion that measures the total variation of the
+    the given input :math:`x`.
 
 
-    If :attr:`reduction_type` set to ``'l2'`` loss can be described as:
+    If :attr:`reduction_type` set to ``'l2'`` the loss can be described as:
 
     .. math::
         TV(x) = \sum_{N}\sqrt{\sum_{H, W, C}(|x_{:, :, i+1, j} - x_{:, :, i, j}|^2 +
         |x_{:, :, i, j+1} - x_{:, :, i, j}|^2)}
-                                    
+
     Else if :attr:`reduction_type` set to ``'l1'``:
 
     .. math::
@@ -80,12 +80,6 @@ class TVLoss(_Loss):
         |x_{:, :, i, j+1} - x_{:, :, i, j}|) $$
 
     where :math:`N` is the batch size, `C` is the channel size.
-
-    .. math::
-        TVLoss(x, y) = |TV(x) - TV(y)|
-
-    :math:`x` and :math:`y` are tensors of arbitrary shapes with a total
-    of :math:`n` elements each.
 
     Args:
         size_average: If size_average=True, total_variation of all images will be averaged as a scalar.
@@ -100,8 +94,7 @@ class TVLoss(_Loss):
 
         >>> loss = TVLoss()
         >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
-        >>> target = torch.rand(3, 3, 256, 256)
-        >>> output = loss(prediction, target, max_val=1.)
+        >>> output = loss(prediction)
         >>> output.backward()
 
     References:
@@ -116,33 +109,26 @@ class TVLoss(_Loss):
         self.reduction_type = reduction_type
         self.reduction = reduction
 
-    def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def forward(self, prediction: torch.Tensor) -> torch.Tensor:
         r"""Computation of Total Variation (TV) index as a loss function.
 
         Args:
             prediction: Tensor of prediction of the network.
-            target: Reference tensor.
 
         Returns:
             Value of TV loss to be minimized.
         """
-        prediction, target = _adjust_dimensions(x=prediction, y=target)
-        _validate_input(x=prediction, y=target)
+        prediction = _adjust_tensor_dimensions(prediction)
+        _validate_input(prediction)
 
-        return self.compute_metric(prediction, target)
+        return self.compute_metric(prediction)
 
-    def compute_metric(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        prediction_tv = total_variation(
+    def compute_metric(self, prediction: torch.Tensor) -> torch.Tensor:
+        score = total_variation(
             prediction,
             size_average=self.size_average,
             reduction_type=self.reduction_type
         )
-        target_tv = total_variation(
-            target,
-            size_average=self.size_average,
-            reduction_type=self.reduction_type
-        )
-        score = torch.abs(prediction_tv - target_tv)
 
         if self.reduction == 'mean':
             score = torch.mean(score)
