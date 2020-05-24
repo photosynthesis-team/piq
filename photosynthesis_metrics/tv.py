@@ -23,7 +23,7 @@ def _adjust_tensor_dimensions(x: torch.Tensor):
 def _validate_input(x: torch.Tensor) -> None:
     """Validates input tensor"""
     assert isinstance(x, torch.Tensor), f'Input must be a torch.Tensor, got {type(x)}.'
-    assert len(x.shape) == 4, f'Input image must be 4D tensor, got image of shape {x.shape}.'
+    assert x.dim() == 4, f'Input image must be 4D tensor, got image of shape {x.shape}.'
 
 
 def total_variation(x: torch.Tensor, size_average: bool = True, reduction_type: str = 'l2') -> torch.Tensor:
