@@ -118,8 +118,8 @@ class TVLoss(_Loss):
         Returns:
             Value of TV loss to be minimized.
         """
-        prediction = _adjust_tensor_dimensions(prediction)
         _validate_input(prediction)
+        prediction = _adjust_tensor_dimensions(prediction)
 
         return self.compute_metric(prediction)
 
