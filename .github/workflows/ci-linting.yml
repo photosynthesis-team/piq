@@ -1,6 +1,6 @@
 name: flake-8 style check
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
