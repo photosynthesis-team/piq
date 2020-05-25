@@ -50,7 +50,6 @@ def test_tv_loss_raises_if_tensors_have_different_types() -> None:
 
 def test_tv_loss_check_available_dimensions() -> None:
     custom_prediction = torch.rand(256, 256)
-    custom_target = torch.rand(256, 256)
     for _ in range(10):
         if custom_prediction.dim() < 5:
             try:
@@ -61,7 +60,6 @@ def test_tv_loss_check_available_dimensions() -> None:
             with pytest.raises(AssertionError):
                 TVLoss()(custom_prediction)
         custom_prediction.unsqueeze_(0)
-        custom_target.unsqueeze_(0)
 
 
 def test_tv_loss_for_known_answer():

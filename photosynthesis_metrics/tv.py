@@ -23,7 +23,7 @@ def _adjust_tensor_dimensions(x: torch.Tensor):
 def _validate_input(x: torch.Tensor) -> None:
     """Validates input tensor"""
     assert isinstance(x, torch.Tensor), f'Input must be a torch.Tensor, got {type(x)}.'
-    assert x.dim() == 4, f'Input image must be 4D tensor, got image of shape {x.shape}.'
+    assert 1 < x.dim() < 5, f'Input image must be 4D tensor, got image of shape {x.size()}.'
 
 
 def total_variation(x: torch.Tensor, size_average: bool = True, reduction_type: str = 'l2') -> torch.Tensor:
@@ -123,7 +123,6 @@ class TVLoss(_Loss):
         """
         _validate_input(prediction)
         prediction = _adjust_tensor_dimensions(prediction)
-
         return self.compute_metric(prediction)
 
     def compute_metric(self, prediction: torch.Tensor) -> torch.Tensor:
