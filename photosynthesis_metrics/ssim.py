@@ -47,8 +47,8 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
     kernel = _fspecial_gauss_1d(kernel_size, kernel_sigma)
     kernel = kernel.repeat(x.shape[1], 1, 1, 1)
 
-    _run_ssim = _compute_ssim_complex if x.dim() == 5 else _compute_ssim
-    ssim_val, cs = _run_ssim(x=x, y=y, kernel=kernel, data_range=data_range, full=True, k1=k1, k2=k2)
+    _compute_ssim = _ssim_complex if x.dim() == 5 else _ssim
+    ssim_val, cs = _compute_ssim(x=x, y=y, kernel=kernel, data_range=data_range, full=True, k1=k1, k2=k2)
 
     if size_average:
         ssim_val = ssim_val.mean(0)
@@ -183,8 +183,8 @@ class SSIMLoss(_Loss):
         kernel = self.kernel.repeat(prediction.shape[1], 1, 1, 1)
         kernel = kernel.to(device=prediction.device)
 
-        _run_ssim = _compute_ssim_complex if prediction.dim() == 5 else _compute_ssim
-        ssim_val = _run_ssim(
+        _compute_ssim = _ssim_complex if prediction.dim() == 5 else _ssim
+        ssim_val = _compute_ssim(
             x=prediction,
             y=target,
             kernel=kernel,
@@ -247,8 +247,8 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
     kernel = _fspecial_gauss_1d(kernel_size, kernel_sigma)
     kernel = kernel.repeat(x.shape[1], 1, 1, 1)
 
-    _run_msssim = _compute_multi_scale_ssim_complex if x.dim() == 5 else _compute_multi_scale_ssim
-    msssim_val = _run_msssim(
+    _compute_msssim = _multi_scale_ssim_complex if x.dim() == 5 else _multi_scale_ssim
+    msssim_val = _compute_msssim(
         x=x,
         y=y,
         data_range=data_range,
@@ -401,8 +401,8 @@ class MultiScaleSSIMLoss(_Loss):
         kernel = self.kernel.repeat(prediction.shape[1], 1, 1, 1)
         scale_weights_tensor = self.scale_weights.to(device=prediction.device, dtype=prediction.dtype)
 
-        _run_msssim = _compute_multi_scale_ssim_complex if prediction.dim() == 5 else _compute_multi_scale_ssim
-        msssim_val = _run_msssim(
+        _compute_msssim = _multi_scale_ssim_complex if prediction.dim() == 5 else _multi_scale_ssim
+        msssim_val = _compute_msssim(
             x=prediction,
             y=target,
             data_range=self.data_range,
@@ -487,8 +487,8 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, da
     return ssim_val, cs
 
 
-def _compute_ssim(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, data_range: Union[float, int] = 255,
-                  full: bool = False, k1: float = 0.01, k2: float = 0.03) \
+def _ssim(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, data_range: Union[float, int] = 255,
+          full: bool = False, k1: float = 0.01, k2: float = 0.03) \
         -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
     r"""Calculate Structural Similarity (SSIM) index for X and Y.
 
@@ -517,8 +517,8 @@ def _compute_ssim(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, data_r
     return ssim_val
 
 
-def _compute_multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float], kernel: torch.Tensor,
-                              scale_weights_tensor: torch.Tensor, k1: float, k2: float) -> torch.Tensor:
+def _multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float], kernel: torch.Tensor,
+                      scale_weights_tensor: torch.Tensor, k1: float, k2: float) -> torch.Tensor:
     levels = scale_weights_tensor.size(0)
     min_size = (kernel.size(-1) - 1) * 2 ** (levels - 1) + 1
     if x.size(-1) < min_size or x.size(-2) < min_size:
@@ -625,8 +625,8 @@ def _ssim_per_channel_complex(x: torch.Tensor, y: torch.Tensor, kernel: torch.Te
     return ssim_val, cs
 
 
-def _compute_ssim_complex(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, data_range: Union[float, int] = 255,
-                          full: bool = False, k1: float = 0.01, k2: float = 0.03) \
+def _ssim_complex(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, data_range: Union[float, int] = 255,
+                  full: bool = False, k1: float = 0.01, k2: float = 0.03) \
         -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
     r"""Calculate Structural Similarity (SSIM) index for Complex X and Y.
 
@@ -654,9 +654,9 @@ def _compute_ssim_complex(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor
     return ssim_val
 
 
-def _compute_multi_scale_ssim_complex(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float],
-                                      kernel: torch.Tensor, scale_weights_tensor: torch.Tensor, k1: float,
-                                      k2: float) -> torch.Tensor:
+def _multi_scale_ssim_complex(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float],
+                              kernel: torch.Tensor, scale_weights_tensor: torch.Tensor, k1: float,
+                              k2: float) -> torch.Tensor:
     levels = scale_weights_tensor.size(0)
     min_size = (kernel.size(-1) - 1) * 2 ** (levels - 1) + 1
     if x.size(-2) < min_size or x.size(-3) < min_size:
