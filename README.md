@@ -110,10 +110,40 @@ from photosynthesis_metrics import TVLoss
 
 loss = TVLoss()
 prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
-target = torch.rand(3, 3, 256, 256)
-ouput: torch.Tensor = loss(prediction, target, data_range=1.)
+output: torch.Tensor = loss(prediction)
 output.backward()
 ```
+</p>
+</details>
+
+<!-- VIF EXAMPLES -->
+<details>
+<summary>Visual Information Fidelity (VIF)</summary>
+<p>
+
+To compute VIF as a measure, use lower case function from the library:
+```python
+import torch
+from photosynthesis_metrics import vif_p
+
+predicted = torch.rand(3, 3, 256, 256)
+target = torch.rand(3, 3, 256, 256)
+vif: torch.Tensor = vif_p(predicted, target, data_range=1.)
+```
+
+In order to use VIF as a loss function, use corresponding PyTorch class:
+```python
+import torch
+from photosynthesis_metrics import VIFLoss
+
+loss = VIFLoss(sigma_n_sq=2.0, data_range=1.)
+prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+target = torch.rand(3, 3, 256, 256)
+ouput: torch.Tensor = loss(prediction, target)
+output.backward()
+```
+
+Note, that VIFLoss returns `1 - VIF` value.
 </p>
 </details>
 
