@@ -110,8 +110,7 @@ from photosynthesis_metrics import TVLoss
 
 loss = TVLoss()
 prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
-target = torch.rand(3, 3, 256, 256)
-ouput: torch.Tensor = loss(prediction, target, data_range=1.)
+output: torch.Tensor = loss(prediction)
 output.backward()
 ```
 </p>
