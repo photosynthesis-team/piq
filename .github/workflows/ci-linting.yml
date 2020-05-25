@@ -1,6 +1,11 @@
 name: flake-8 style check
 
-on: [pull_request]
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: master
+    
 
 jobs:
   build:
