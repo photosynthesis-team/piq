@@ -57,9 +57,9 @@ def total_variation(x: torch.Tensor, size_average: bool = True, reduction_type: 
         raise ValueError("Incorrect reduction type, should be one of {'l1', 'l2', 'l2_squared'}")
 
     if size_average:
-        return tv_val.mean()
-    else:
-        return tv_val
+        return tv_val.mean(dim=0)
+    
+    return tv_val
 
 
 class TVLoss(_Loss):
@@ -102,10 +102,9 @@ class TVLoss(_Loss):
         https://remi.flamary.com/demos/proxtv.html
     """
 
-    def __init__(self, size_average: bool = True, reduction_type: str = 'l2', reduction: str = 'mean'):
+    def __init__(self, reduction_type: str = 'l2', reduction: str = 'mean'):
         super().__init__()
 
-        self.size_average = size_average
         self.reduction_type = reduction_type
         self.reduction = reduction
 
@@ -126,12 +125,14 @@ class TVLoss(_Loss):
     def compute_metric(self, prediction: torch.Tensor) -> torch.Tensor:
         score = total_variation(
             prediction,
-            size_average=self.size_average,
+            size_average=False,
             reduction_type=self.reduction_type
         )
 
         if self.reduction == 'mean':
-            score = torch.mean(score)
+            score = torch.mean(score, dim=0)
         elif self.reduction == 'sum':
-            score = torch.sum(score)
+            score = torch.sum(score, dim=0)
+        elif self.reduction != 'none':
+            raise ValueError(f'Expected "none"|"mean"|"sum" reduction, got {self.reduction}')
         return score
