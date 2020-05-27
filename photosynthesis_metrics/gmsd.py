@@ -8,6 +8,7 @@ Reference:
     http://www.cse.ust.hk/~psander/docs/gradsim.pdf
 
 """
+import torch
 from typing import Optional, Union, Tuple, List
 
 import torch.nn.functional as F
@@ -23,8 +24,8 @@ def _prewitt_filter() -> torch.Tensor:
     return kernel
 
 
-def _compute_gmsd(prediction: torch.Tensor, target: torch.Tensor, 
-         reduction: Optional[str] = 'mean') -> torch.Tensor:
+def _gmsd(prediction: torch.Tensor, target: torch.Tensor,
+          reduction: Optional[str] = 'mean') -> torch.Tensor:
     r"""Compute Gradient Magnitude Similarity Deviation
     Both inputs supposed to be in range [0, 1] with RGB order.
     Args:
@@ -42,7 +43,7 @@ def _compute_gmsd(prediction: torch.Tensor, target: torch.Tensor,
         https://arxiv.org/pdf/1308.3052.pdf
     """
     # Constant for numerical stability
-    EPS : float = 1e-4
+    EPS: float = 1e-4
 
     # Convert RGB image to YCbCr and take luminance: Y = 0.299 R + 0.587 G + 0.114 B
     num_channels = prediction.size(1)
@@ -81,9 +82,10 @@ def _compute_gmsd(prediction: torch.Tensor, target: torch.Tensor,
         return gmsd.sum()
     else:
         return gmsd
-    
+
+
 class GMSDLoss(_Loss):
-    r"""Creates a criterion that measures Gradient Magnitude Similarity Deviation 
+    r"""Creates a criterion that measures Gradient Magnitude Similarity Deviation
     between each element in the input and target.
 
     Args:
@@ -136,7 +138,7 @@ class GMSDLoss(_Loss):
         prediction = F.avg_pool2d(prediction, kernel_size=2, stride=2, padding=padding)
         target = F.avg_pool2d(target, kernel_size=2, stride=2, padding=padding)
         
-        score = _compute_gmsd(
+        score = _gmsd(
             prediction, target, reduction=self.reduction)
 
         return score
@@ -156,7 +158,7 @@ class MultiScaleGMSDLoss(_Loss):
             i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
             The pixel value interval of both input and output should remain the same.
         scale_weights: Weights for different scales. Must contain 4 floating point values.
-        chromatic: Flag to use MS-GMSDc algorithm from paper. 
+        chromatic: Flag to use MS-GMSDc algorithm from paper.
             It also evaluates chromatic components of the image. Default: True
         beta1: Algorithm parameter. Weight of chromatic component in the loss.
         beta2: Algorithm parameter. Small constant, see [1].
@@ -167,9 +169,9 @@ class MultiScaleGMSDLoss(_Loss):
             http://www.cse.ust.hk/~psander/docs/gradsim.pdf
     """
 
-    def __init__(self, reduction: str = 'mean', data_range: Union[int, float] = 1., 
+    def __init__(self, reduction: str = 'mean', data_range: Union[int, float] = 1.,
                  scale_weights: Optional[Union[Tuple[float], List[float]]] = None,
-                 chromatic: bool = True, beta1: float = 0.01, beta2: float = 0.32,
+                 chromatic: bool = False, beta1: float = 0.01, beta2: float = 0.32,
                  beta3: float = 15.) -> None:
         super().__init__()
 
@@ -219,7 +221,7 @@ class MultiScaleGMSDLoss(_Loss):
                 prediction = F.avg_pool2d(prediction, kernel_size=2, padding=padding)
                 target = F.avg_pool2d(target, kernel_size=2, padding=padding)
         
-            score = _compute_gmsd(prediction, target, reduction=None)
+            score = _gmsd(prediction, target, reduction=None)
             ms_gmds.append(score)
         
         # Concat results in different scales and multiply by weight
@@ -233,9 +235,9 @@ class MultiScaleGMSDLoss(_Loss):
             assert prediction.size(1) == 3, f"Chromatic component can be computed only for RGB images!"
             
             # Convert to YIQ color space https://en.wikipedia.org/wiki/YIQ
-            weights = torch.tensor([[0.5959, -0.2746, -0.3213],[0.2115, -0.5227, 0.3112]]).t()
-            prediction_iq = torch.matmul(prediction.permute(0, 2, 3, 1), weights).permute(0, 3, 1, 2)
-            target_iq = torch.matmul(target.permute(0, 2, 3, 1), weights).permute(0, 3, 1, 2)
+            iq_weights = torch.tensor([[0.5959, -0.2746, -0.3213], [0.2115, -0.5227, 0.3112]]).t()
+            prediction_iq = torch.matmul(prediction.permute(0, 2, 3, 1), iq_weights).permute(0, 3, 1, 2)
+            target_iq = torch.matmul(target.permute(0, 2, 3, 1), iq_weights).permute(0, 3, 1, 2)
             
             rmse_iq = torch.sqrt(torch.mean((prediction_iq - target_iq) ** 2, dim=[-1, -2]))
             rmse_chrome = torch.sqrt(torch.sum(rmse_iq ** 2, dim=1))
