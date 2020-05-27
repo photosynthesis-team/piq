@@ -5,3 +5,6 @@ from .kid import KID
 from .tv import TVLoss, total_variation
 from .inception_score import IS, inception_score
 from .gmsd import GMSDLoss, MultiScaleGMSDLoss
+from .gs import GS
+from .inception_score import IS, inception_score
+from .vif import VIFLoss, vif_p
