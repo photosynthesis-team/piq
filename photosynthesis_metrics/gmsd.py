@@ -77,11 +77,12 @@ def _gmsd(prediction: torch.Tensor, target: torch.Tensor,
     gmsd = torch.pow(gms - mean_gms, 2).mean(dim=[1, 2, 3], keepdims=True).sqrt()
     
     if reduction == 'mean':
-        return gmsd.mean()
+        return gmsd.mean(dim=0)
     elif reduction == 'sum':
-        return gmsd.sum()
-    else:
-        return gmsd
+        return gmsd.sum(dim=0)
+    elif reduction != 'none':
+        raise ValueError(f'Expected reduction modes are "mean"|"sum"|"none", got {reduction}')
+    return gmsd
 
 
 class GMSDLoss(_Loss):
@@ -202,7 +203,7 @@ class MultiScaleGMSDLoss(_Loss):
         Returns:
             Value of GMSD loss to be minimized. 0 <= GMSD loss <= 1.
         """
-        _validate_input(x=prediction, y=target, scale_weights=None)
+        _validate_input(x=prediction, y=target, scale_weights=self.scale_weights)
         prediction, target = _adjust_dimensions(x=prediction, y=target)
 
         return self.compute_metric(prediction, target)
@@ -221,13 +222,13 @@ class MultiScaleGMSDLoss(_Loss):
                 prediction = F.avg_pool2d(prediction, kernel_size=2, padding=padding)
                 target = F.avg_pool2d(target, kernel_size=2, padding=padding)
         
-            score = _gmsd(prediction, target, reduction=None)
+            score = _gmsd(prediction, target, reduction='none')
             ms_gmds.append(score)
         
         # Concat results in different scales and multiply by weight
         ms_gmds_val = scale_weights.view(1, 4, 1, 1) * (torch.cat(ms_gmds, dim=1) ** 2)
         # Sum and take sqrt per-image
-        ms_gmds_val = torch.sqrt(torch.sum(ms_gmds_val, dim=-1))
+        ms_gmds_val = torch.sqrt(torch.sum(ms_gmds_val, dim=(1, 2, 3)))
         
         score = ms_gmds_val
         
@@ -246,8 +247,10 @@ class MultiScaleGMSDLoss(_Loss):
             score = gamma * ms_gmds_val + (1 - gamma) * self.beta1 * rmse_chrome
             
         if self.reduction == 'mean':
-            score = torch.mean(score)
+            score = torch.mean(score, dim=0)
         elif self.reduction == 'sum':
-            score = torch.sum(score)
+            score = torch.sum(score, dim=0)
+        elif self.reduction != 'none':
+            raise ValueError(f'Expected reduction modes are "mean"|"sum"|"none", got {self.reduction}')
 
         return score
