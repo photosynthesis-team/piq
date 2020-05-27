@@ -48,18 +48,15 @@ def test_ssim_measure_is_one_for_equal_tensors(target: torch.Tensor) -> None:
     prediction = target.clone()
     measure = ssim(prediction, target, data_range=1.)
     measure -= 1.
-    assert (measure <= 1e-6).all(), f'If equal tensors are passed SSIM must be equal to 1 ' \
-                                    f'(considering floating point operation error up to 1 * 10^-6), got {measure + 1}'
+    assert (measure.abs() <= 1e-6).all(), f'If equal tensors are passed SSIM must be equal to 1 ' \
+                                          f'(considering floating point operation error up to 1 * 10^-6), ' \
+                                          f'got {measure + 1}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
 def test_ssim_measure_is_one_for_equal_tensors_cuda(target: torch.Tensor) -> None:
     target = target.cuda()
     test_ssim_measure_is_one_for_equal_tensors(target=target)
-
-
-def test_ssim_measure_is_one_for_equal_tensors_5d(target_5d: torch.Tensor) -> None:
-    test_ssim_measure_is_one_for_equal_tensors(target=target_5d)
 
 
 def test_ssim_measure_is_less_or_equal_to_one() -> None:
@@ -165,7 +162,7 @@ def test_ssim_raise_if_wrong_value_is_estimated(prediction: torch.Tensor, target
     assert torch.isclose(photosynthesis_ssim, tf_ssim, atol=1e-6).all(), \
         f'The estimated value must be equal to tensorflow provided one' \
         f'(considering floating point operation error up to 1 * 10^-6), ' \
-        f'got difference {photosynthesis_ssim - tf_ssim}'
+        f'got difference {(photosynthesis_ssim - tf_ssim).abs()}'
 
 
 # ================== Test class: `SSIMLoss` ==================
@@ -191,19 +188,14 @@ def test_ssim_loss_symmetry_5d(prediction_5d: torch.Tensor, target_5d: torch.Ten
 def test_ssim_loss_equality(target: torch.Tensor) -> None:
     prediction = target.clone()
     loss = SSIMLoss()(prediction, target)
-    loss -= 1.
-    assert (loss <= 1e-6).all(), f'If equal tensors are passed SSIM loss must be equal to 1 ' \
-                                 f'(considering floating point operation error up to 1 * 10^-6), got {loss + 1}'
+    assert (loss.abs() <= 1e-6).all(), f'If equal tensors are passed SSIM loss must be equal to 0 ' \
+                                       f'(considering floating point operation error up to 1 * 10^-6), got {loss}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
 def test_ssim_loss_equality_cuda(target: torch.Tensor) -> None:
     target = target.cuda()
     test_ssim_loss_equality(target=target)
-
-
-def test_ssim_loss_equality_5d(target_5d: torch.Tensor) -> None:
-    test_ssim_loss_equality(target=target_5d)
 
 
 def test_ssim_loss_is_less_or_equal_to_one() -> None:
@@ -307,10 +299,10 @@ def test_ssim_loss_raise_if_wrong_value_is_estimated(prediction: torch.Tensor, t
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ssim = torch.tensor(tf.image.ssim(tf_prediction, tf_target, max_val=1.).numpy()).mean()
-    assert torch.isclose(ssim_loss, tf_ssim, atol=1e-6).all(), \
+    assert torch.isclose(ssim_loss, 1 - tf_ssim, atol=1e-6).all(), \
         f'The estimated value must be equal to tensorflow provided one' \
         f'(considering floating point operation error up to 1 * 10^-6), ' \
-        f'got difference {ssim_loss - tf_ssim}'
+        f'got difference {(ssim_loss - 1 + tf_ssim).abs()}'
 
 
 # ================== Test function: `multi_scale_ssim` ==================
@@ -337,22 +329,15 @@ def test_multi_scale_ssim_measure_is_one_for_equal_tensors(target: torch.Tensor)
     prediction = target.clone()
     measure = multi_scale_ssim(prediction, target, data_range=1.)
     measure -= 1.
-    assert (measure <= 1e-6).all(), f'If equal tensors are passed SSIM must be equal to 1 ' \
-                                    f'(considering floating point operation error up to 1 * 10^-6), got {measure + 1}'
+    assert (measure.abs() <= 1e-6).all(), f'If equal tensors are passed SSIM must be equal to 1 ' \
+                                          f'(considering floating point operation error up to 1 * 10^-6), ' \
+                                          f'got {measure + 1}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
 def test_multi_scale_ssim_measure_is_one_for_equal_tensors_cuda(target: torch.Tensor) -> None:
     target = target.cuda()
     test_multi_scale_ssim_measure_is_one_for_equal_tensors(target=target)
-
-
-def test_multi_scale_ssim_measure_is_one_for_equal_tensors_5d(target_5d: torch.Tensor) -> None:
-    prediction_5d = target_5d.clone()
-    measure = multi_scale_ssim(prediction_5d, target_5d, data_range=1., k2=0.4)
-    measure -= 1.
-    assert (measure <= 1e-6).all(), f'If equal tensors are passed SSIM must be equal to 1 ' \
-                                    f'(considering floating point operation error up to 1 * 10^-6), got {measure + 1}'
 
 
 def test_multi_scale_ssim_measure_is_less_or_equal_to_one() -> None:
@@ -472,7 +457,7 @@ def test_multi_scale_ssim_raise_if_wrong_value_is_estimated(prediction: torch.Te
     assert torch.isclose(photosynthesis_ms_ssim, tf_ms_ssim, atol=1e-4).all(), \
         f'The estimated value must be equal to tensorflow provided one' \
         f'(considering floating point operation error up to 1 * 10^-4), ' \
-        f'got difference {photosynthesis_ms_ssim - tf_ms_ssim}'
+        f'got difference {(photosynthesis_ms_ssim - tf_ms_ssim).abs()}'
 
 
 def test_multi_scale_ssim_raise_if_wrong_value_is_estimated_custom_weights(prediction: torch.Tensor,
@@ -487,7 +472,7 @@ def test_multi_scale_ssim_raise_if_wrong_value_is_estimated_custom_weights(predi
     assert torch.isclose(photosynthesis_ms_ssim, tf_ms_ssim, atol=1e-4).all(), \
         f'The estimated value must be equal to tensorflow provided one' \
         f'(considering floating point operation error up to 1 * 10^-4), ' \
-        f'got difference {photosynthesis_ms_ssim - tf_ms_ssim}'
+        f'got difference {(photosynthesis_ms_ssim - tf_ms_ssim).abs()}'
 
 
 # ================== Test class: `MultiScaleSSIMLoss` ==================
@@ -517,23 +502,14 @@ def test_multi_scale_ssim_loss_symmetry_5d(prediction_5d: torch.Tensor, target_5
 def test_multi_scale_ssim_loss_equality(target: torch.Tensor) -> None:
     prediction = target.clone()
     loss = MultiScaleSSIMLoss()(prediction, target)
-    loss -= 1.
-    assert (loss <= 1e-6).all(), f'If equal tensors are passed SSIM loss must be equal to 1 ' \
-                                 f'(considering floating point operation error up to 1 * 10^-6), got {loss + 1}'
+    assert (loss.abs() <= 1e-6).all(), f'If equal tensors are passed SSIM loss must be equal to 0 ' \
+                                       f'(considering floating point operation error up to 1 * 10^-6), got {loss}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
 def test_multi_scale_ssim_loss_equality_cuda(target: torch.Tensor) -> None:
     target = target.cuda()
     test_multi_scale_ssim_loss_equality(target=target)
-
-
-def test_multi_scale_ssim_loss_equality_5d(target_5d: torch.Tensor) -> None:
-    prediction_5d = target_5d.clone()
-    loss = MultiScaleSSIMLoss(k2=0.4)(prediction_5d, target_5d)
-    loss -= 1.
-    assert (loss <= 1e-6).all(), f'If equal tensors are passed SSIM loss must be equal to 1 ' \
-                                 f'(considering floating point operation error up to 1 * 10^-6), got {loss + 1}'
 
 
 def test_multi_scale_ssim_loss_is_less_or_equal_to_one() -> None:
@@ -652,10 +628,10 @@ def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated(prediction: tor
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.).numpy()).mean()
-    assert torch.isclose(photosynthesis_ms_ssim_loss, tf_ms_ssim, atol=1e-4).all(), \
+    assert torch.isclose(photosynthesis_ms_ssim_loss, 1 - tf_ms_ssim, atol=1e-4).all(), \
         f'The estimated value must be equal to tensorflow provided one' \
         f'(considering floating point operation error up to 1 * 10^-4), ' \
-        f'got difference {photosynthesis_ms_ssim_loss - tf_ms_ssim}'
+        f'got difference {(photosynthesis_ms_ssim_loss - 1 + tf_ms_ssim).abs()}'
 
 
 def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated_custom_weights(prediction: torch.Tensor,
@@ -667,7 +643,7 @@ def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated_custom_weights(
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.,
                                                        power_factors=scale_weights).numpy()).mean()
-    assert torch.isclose(photosynthesis_ms_ssim_loss, tf_ms_ssim, atol=1e-4).all(), \
+    assert torch.isclose(photosynthesis_ms_ssim_loss, 1 - tf_ms_ssim, atol=1e-4).all(), \
         f'The estimated value must be equal to tensorflow provided one' \
         f'(considering floating point operation error up to 1 * 10^-4), ' \
-        f'got difference {photosynthesis_ms_ssim_loss - tf_ms_ssim}'
+        f'got difference {(photosynthesis_ms_ssim_loss - 1 + tf_ms_ssim).abs()}'

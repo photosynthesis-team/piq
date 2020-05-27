@@ -77,8 +77,8 @@ class SSIMLoss(_Loss):
     .. math::
         SSIMLoss(x, y) =
         \begin{cases}
-            \operatorname{mean}(SSIM), &  \text{if reduction} = \text{'mean';}\\
-            \operatorname{sum}(SSIM),  &  \text{if reduction} = \text{'sum'.}
+            \operatorname{mean}(1 - SSIM), &  \text{if reduction} = \text{'mean';}\\
+            \operatorname{sum}(1 - SSIM),  &  \text{if reduction} = \text{'sum'.}
         \end{cases}
 
     :math:`x` and :math:`y` are tensors of arbitrary shapes with a total
@@ -193,13 +193,15 @@ class SSIMLoss(_Loss):
             k1=self.k1,
             k2=self.k2
         )
-
+        ssim_loss = torch.ones_like(ssim_val) - ssim_val
         if self.reduction == 'mean':
-            ssim_val = torch.mean(ssim_val, dim=0)
+            ssim_loss = torch.mean(ssim_loss, dim=0)
         elif self.reduction == 'sum':
-            ssim_val = torch.sum(ssim_val, dim=0)
+            ssim_loss = torch.sum(ssim_loss, dim=0)
+        elif self.reduction != 'none':
+            raise ValueError(f'Expected reduction modes "mean"|"sum"|"none", got{self.reduction}')
 
-        return ssim_val
+        return ssim_loss
 
 
 def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: float = 1.5,
@@ -282,8 +284,8 @@ class MultiScaleSSIMLoss(_Loss):
     .. math::
         MultiscaleSSIMLoss(x, y) =
         \begin{cases}
-            \operatorname{mean}(MSSIM), &  \text{if reduction} = \text{'mean';}\\
-            \operatorname{sum}(MSSIM),  &  \text{if reduction} = \text{'sum'.}
+            \operatorname{mean}(1 - MSSIM), &  \text{if reduction} = \text{'mean';}\\
+            \operatorname{sum}(1 - MSSIM),  &  \text{if reduction} = \text{'sum'.}
         \end{cases}
 
     :math:`x` and :math:`y` are tensors of arbitrary shapes with a total
@@ -411,12 +413,15 @@ class MultiScaleSSIMLoss(_Loss):
             k1=self.k1,
             k2=self.k2)
 
+        msssim_loss = torch.ones_like(msssim_val) - msssim_val
         if self.reduction == 'mean':
-            msssim_val = torch.mean(msssim_val, dim=0)
+            msssim_loss = torch.mean(msssim_loss, dim=0)
         elif self.reduction == 'sum':
-            msssim_val = torch.sum(msssim_val, dim=0)
+            msssim_loss = torch.sum(msssim_loss, dim=0)
+        elif self.reduction != 'none':
+            raise ValueError(f'Expected reduction modes "mean"|"sum"|"none", got{self.reduction}')
 
-        return msssim_val
+        return msssim_loss
 
 
 def _fspecial_gauss_1d(size: int, sigma: float) -> torch.Tensor:
