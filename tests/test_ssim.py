@@ -85,6 +85,12 @@ def test_ssim_measure_is_less_or_equal_to_one_5d() -> None:
     assert (measure <= 1).all(), f'SSIM must be <= 1, got {measure}'
 
 
+def test_ssim_raises_if_tensors_have_different_dimensions() -> None:
+    custom_prediction = torch.rand(256, 256)
+    with pytest.raises(AssertionError):
+        ssim(custom_prediction, custom_prediction.unsqueeze(0))
+
+
 def test_ssim_raises_if_tensors_have_different_shapes(target: torch.Tensor) -> None:
     dims = [[3], [2, 3], [255, 256], [255, 256]]
     for b, c, h, w in list(itertools.product(*dims)):
@@ -222,6 +228,12 @@ def test_ssim_loss_is_less_or_equal_to_one_5d() -> None:
     zeros = torch.zeros((3, 3, 256, 256, 2))
     loss = SSIMLoss()(ones, zeros)
     assert (loss <= 1).all(), f'SSIM loss must be <= 1, got {loss}'
+
+
+def test_ssim_loss_raises_if_tensors_have_different_dimensions() -> None:
+    custom_prediction = torch.rand(256, 256)
+    with pytest.raises(AssertionError):
+        SSIMLoss()(custom_prediction, custom_prediction.unsqueeze(0))
 
 
 def test_ssim_loss_raises_if_tensors_have_different_shapes(target: torch.Tensor) -> None:
@@ -365,6 +377,12 @@ def test_multi_scale_ssim_measure_is_less_or_equal_to_one_5d() -> None:
     zeros = torch.zeros((3, 3, 256, 256, 2))
     measure = multi_scale_ssim(ones, zeros, data_range=1.)
     assert (measure <= 1).all(), f'SSIM must be <= 1, got {measure}'
+
+
+def test_multi_scale_ssim_raises_if_tensors_have_different_dimensions() -> None:
+    custom_prediction = torch.rand(256, 256)
+    with pytest.raises(AssertionError):
+        multi_scale_ssim(custom_prediction, custom_prediction.unsqueeze(0))
 
 
 def test_multi_scale_ssim_raises_if_tensors_have_different_shapes(prediction: torch.Tensor,
@@ -540,6 +558,12 @@ def test_multi_scale_ssim_loss_is_less_or_equal_to_one_5d() -> None:
     zeros = torch.zeros((3, 3, 256, 256, 2))
     loss = MultiScaleSSIMLoss()(ones, zeros)
     assert (loss <= 1).all(), f'SSIM loss must be <= 1, got {loss}'
+
+
+def test_multi_scale_ssim_loss_raises_if_tensors_have_different_dimensions() -> None:
+    custom_prediction = torch.rand(256, 256)
+    with pytest.raises(AssertionError):
+        MultiScaleSSIMLoss()(custom_prediction, custom_prediction.unsqueeze(0))
 
 
 def test_multi_scale_ssim_loss_raises_if_tensors_have_different_shapes(prediction: torch.Tensor,
