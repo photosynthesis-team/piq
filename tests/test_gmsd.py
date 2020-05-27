@@ -44,7 +44,7 @@ def test_gmsd_loss_supports_different_data_ranges(prediction: torch.Tensor, targ
     loss_255 = GMSDLoss(data_range=255)
     measure_255 = loss_255(prediction_255, target_255)
     diff = torch.abs(measure_255 - measure)
-    assert diff <= 1e-4, f'Result for same tensor with different data_range should be the same'
+    assert diff <= 1e-4, f'Result for same tensor with different data_range should be the same, got {diff}'
 
 
 def test_gmsd_supports_greyscale_tensors():
@@ -81,7 +81,7 @@ def test_multi_scale_gmsd_loss_supports_different_data_ranges(
     loss_255 = MultiScaleGMSDLoss(data_range=255)
     measure_255 = loss_255(prediction_255, target_255)
     diff = torch.abs(measure_255 - measure)
-    assert diff <= 1e-4, f'Result for same tensor with different data_range should be the same'
+    assert diff <= 1e-4, f'Result for same tensor with different data_range should be the same, got {diff}'
 
 
 def test_multi_scale_gmsd_supports_greyscale_tensors():
