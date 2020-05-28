@@ -9,7 +9,6 @@ https://github.com/pytorch/pytorch/pull/22289/files
 from typing import List, Optional, Tuple, Union
 
 import torch
-import torch.nn._reduction as _Reduction
 import torch.nn.functional as f
 from torch.nn.modules.loss import _Loss
 
@@ -96,15 +95,6 @@ class SSIMLoss(_Loss):
         kernel_sigma: Standard deviation for Gaussian kernel.
         k1: Coefficient related to c1 in the above equation.
         k2: Coefficient related to c2 in the above equation.
-        size_average: Deprecated (see :attr:`reduction`). By default,
-            the losses are averaged over each loss element in the batch. Note that for
-            some losses, there are multiple elements per sample. If the field :attr:`size_average`
-            is set to ``False``, the losses are instead summed for each minibatch. Ignored
-            when reduce is ``False``. Default: ``True``
-        reduce: Deprecated (see :attr:`reduction`). By default, the
-            losses are averaged or summed over observations for each minibatch depending
-            on :attr:`size_average`. When :attr:`reduce` is ``False``, returns a loss per
-            batch element instead and ignores :attr:`size_average`. Default: ``True``
         reduction: Specifies the reduction to apply to the output:
             ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
             ``'mean'``: the sum of the output will be divided by the number of
@@ -138,16 +128,10 @@ class SSIMLoss(_Loss):
     __constants__ = ['filter_size', 'k1', 'k2', 'sigma', 'kernel', 'reduction']
 
     def __init__(self, kernel_size: int = 11, kernel_sigma: float = 1.5, k1: float = 0.01, k2: float = 0.03,
-                 size_average: Optional[bool] = None, reduce: Optional[bool] = None,
                  reduction: str = 'mean', data_range: Union[int, float] = 1.) -> None:
         super().__init__()
 
         # Generic loss parameters.
-        self.size_average = size_average
-        self.reduce = reduce
-        if size_average is not None or reduce is not None:
-            reduction = _Reduction.legacy_get_string(size_average, reduce)
-
         self.reduction = reduction
 
         # Loss-specific parameters.
@@ -306,15 +290,6 @@ class MultiScaleSSIMLoss(_Loss):
         scale_weights:  Weights for different scales.
             If None, default weights from the paper [1] will be used.
             Default weights: (0.0448, 0.2856, 0.3001, 0.2363, 0.1333).
-        size_average: Deprecated (see :attr:`reduction`). By default,
-            the losses are averaged over each loss element in the batch. Note that for
-            some losses, there are multiple elements per sample. If the field :attr:`size_average`
-            is set to ``False``, the losses are instead summed for each minibatch. Ignored
-            when reduce is ``False``. Default: ``True``
-        reduce: Deprecated (see :attr:`reduction`). By default, the
-            losses are averaged or summed over observations for each minibatch depending
-            on :attr:`size_average`. When :attr:`reduce` is ``False``, returns a loss per
-            batch element instead and ignores :attr:`size_average`. Default: ``True``
         reduction: Specifies the reduction to apply to the output:
             ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
             ``'mean'``: the sum of the output will be divided by the number of
@@ -355,16 +330,10 @@ class MultiScaleSSIMLoss(_Loss):
 
     def __init__(self, kernel_size: int = 11, kernel_sigma: float = 1.5, k1: float = 0.01, k2: float = 0.03,
                  scale_weights: Optional[Union[Tuple[float], List[float], torch.Tensor]] = None,
-                 size_average: Optional[bool] = None, reduce: Optional[bool] = None,
                  reduction: str = 'mean', data_range: Union[int, float] = 1.) -> None:
         super().__init__()
 
         # Generic loss parameters.
-        self.size_average = size_average
-        self.reduce = reduce
-        if size_average is not None or reduce is not None:
-            reduction = _Reduction.legacy_get_string(size_average, reduce)
-
         self.reduction = reduction
 
         # Loss-specific parameters.
