@@ -104,7 +104,15 @@ def test_multi_scale_gmsd_fails_for_greyscale_tensors_chromatic_flag():
 
 def test_multi_scale_gmsd_supports_custom_scale_weights(prediction: torch.Tensor, target: torch.Tensor):
     try:
-        loss = MultiScaleGMSDLoss(scale_weights=[3., 4., 2., 1.])
+        loss = MultiScaleGMSDLoss(scale_weights=[3., 4., 2., 1., 2.])
         loss(prediction, target)
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
+
+
+def test_multi_scale_gmsd_raise_exception_for_small_images():
+    target = torch.ones(3, 1, 32, 32)
+    prediction = torch.zeros(3, 1, 32, 32)
+    loss = MultiScaleGMSDLoss(scale_weights=[3., 4., 2., 1., 1.])
+    with pytest.raises(ValueError):
+        loss(prediction, target)

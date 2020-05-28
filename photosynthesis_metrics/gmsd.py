@@ -158,7 +158,7 @@ class MultiScaleGMSDLoss(_Loss):
         data_range: The difference between the maximum and minimum of the pixel value,
             i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
             The pixel value interval of both input and output should remain the same.
-        scale_weights: Weights for different scales. Must contain 4 floating point values.
+        scale_weights: Weights for different scales. Can contain any number of floating point values.
         chromatic: Flag to use MS-GMSDc algorithm from paper.
             It also evaluates chromatic components of the image. Default: True
         beta1: Algorithm parameter. Weight of chromatic component in the loss.
@@ -210,13 +210,20 @@ class MultiScaleGMSDLoss(_Loss):
         return self.compute_metric(prediction, target)
     
     def compute_metric(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        # Check that input is big enough
+        num_scales = self.scale_weights.size(0)
+        min_size = 2 ** num_scales + 1
+
+        if prediction.size(-1) < min_size or prediction.size(-2) < min_size:
+            raise ValueError(f'Invalid size of the input images, expected at least {min_size}x{min_size}.')
+        
         if self.data_range == 255:
             prediction = prediction / 255.
             target = target / 255.
-            
+        
         scale_weights = self.scale_weights.to(prediction)
         ms_gmds = []
-        for scale in range(4):
+        for scale in range(num_scales):
             if scale > 0:
                 # Average by 2x2 filter and downsample
                 padding = (prediction.shape[2] % 2, prediction.shape[3] % 2)
@@ -227,7 +234,7 @@ class MultiScaleGMSDLoss(_Loss):
             ms_gmds.append(score)
         
         # Stack results in different scales and multiply by weight
-        ms_gmds_val = scale_weights.view(1, 4) * (torch.stack(ms_gmds, dim=1) ** 2)
+        ms_gmds_val = scale_weights.view(1, num_scales) * (torch.stack(ms_gmds, dim=1) ** 2)
   
         # Sum and take sqrt per-image
         ms_gmds_val = torch.sqrt(torch.sum(ms_gmds_val, dim=1))
