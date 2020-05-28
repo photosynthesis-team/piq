@@ -8,6 +8,7 @@ References:
 import torch
 from torch.nn.modules.loss import _Loss
 import torch.nn.functional as F
+from typing import Union
 
 from photosynthesis_metrics.utils import _adjust_dimensions, _validate_input
 
@@ -30,7 +31,7 @@ def _gaussian_kernel2d(kernel_size: int = 5, sigma: float = 2.0) -> torch.Tensor
 
 
 def vif_p(prediction: torch.Tensor, target: torch.Tensor,
-          sigma_n_sq: float = 2.0, data_range: int = 1.0) -> torch.Tensor:
+          sigma_n_sq: float = 2.0, data_range: Union[int, float] = 1.0) -> torch.Tensor:
     r"""Compute Visiual Information Fidelity in **pixel** domain for a batch of images.
     This metric isn't symmetric, so make sure to place arguments in correct order.
 
@@ -107,7 +108,7 @@ class VIFLoss(_Loss):
     value `1 - clip(VIF, min=0, max=1)` is returned.
     """
 
-    def __init__(self, sigma_n_sq: float = 2.0, data_range=1.0):
+    def __init__(self, sigma_n_sq: float = 2.0, data_range: Union[int, float] = 1.0):
         r"""
         Args:
             sigma_n_sq: HVS model parameter (variance of the visual noise).
@@ -134,5 +135,5 @@ class VIFLoss(_Loss):
 
         score = vif_p(prediction, target, sigma_n_sq=self.sigma_n_sq, data_range=self.data_range)
         # Make sure value to be in [0, 1] range and convert to loss
-        loss = 1 - torch.clamp(torch.mean(score), 0, 1)
+        loss = 1 - torch.clamp(torch.mean(score, dim=0), 0, 1)
         return loss

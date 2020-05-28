@@ -23,7 +23,7 @@ def _adjust_tensor_dimensions(x: torch.Tensor):
 def _validate_input(x: torch.Tensor) -> None:
     """Validates input tensor"""
     assert isinstance(x, torch.Tensor), f'Input must be a torch.Tensor, got {type(x)}.'
-    assert 1 < x.dim() < 5, f'Input image must be 4D tensor, got image of shape {x.size()}.'
+    assert 1 < x.dim() < 5, f'Input image must be 2D, 3D or 4D tensor, got image of shape {x.size()}.'
 
 
 def total_variation(x: torch.Tensor, size_average: bool = True, reduction_type: str = 'l2') -> torch.Tensor:
@@ -105,10 +105,9 @@ class TVLoss(_Loss):
         https://remi.flamary.com/demos/proxtv.html
     """
 
-    def __init__(self, size_average: bool = True, reduction_type: str = 'l2', reduction: str = 'mean'):
+    def __init__(self, reduction_type: str = 'l2', reduction: str = 'mean'):
         super().__init__()
 
-        self.size_average = size_average
         self.reduction_type = reduction_type
         self.reduction = reduction
 
@@ -128,12 +127,14 @@ class TVLoss(_Loss):
     def compute_metric(self, prediction: torch.Tensor) -> torch.Tensor:
         score = total_variation(
             prediction,
-            size_average=self.size_average,
+            size_average=False,
             reduction_type=self.reduction_type
         )
 
         if self.reduction == 'mean':
-            score = torch.mean(score)
+            score = torch.mean(score, dim=0)
         elif self.reduction == 'sum':
-            score = torch.sum(score)
+            score = torch.sum(score, dim=0)
+        elif self.reduction != 'none':
+            raise ValueError(f'Expected "none"|"mean"|"sum" reduction, got {self.reduction}')
         return score
