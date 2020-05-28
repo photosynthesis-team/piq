@@ -96,16 +96,7 @@ def test_multi_scale_gmsd_supports_greyscale_tensors():
 
 def test_multi_scale_gmsd_supports_custom_scale_weights(prediction: torch.Tensor, target: torch.Tensor):
     try:
-        loss = MultiScaleGMSDLoss(scale_weights=[0.3, 0.4, 0.2, 0.1])
+        loss = MultiScaleGMSDLoss(scale_weights=[3., 4., 2., 1.])
         loss(prediction, target)
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
-
-
-def test_multi_scale_gmsd_small_for_tensors_with_contrast_difference():
-    loss = MultiScaleGMSDLoss(chromatic=True)
-    target = torch.ones(3, 3, 256, 256)
-    prediction = torch.zeros(3, 3, 256, 256)
-    measure = loss(prediction, target)
-    assert measure <= 1e-6, \
-        f'MultiScaleGMSD for tensors with no simular gradients must be small, got {measure}'

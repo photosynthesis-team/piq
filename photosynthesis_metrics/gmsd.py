@@ -43,7 +43,7 @@ def _gmsd(prediction: torch.Tensor, target: torch.Tensor,
         https://arxiv.org/pdf/1308.3052.pdf
     """
     # Constant for numerical stability
-    EPS: float = 1e-4
+    EPS: float = 0.0026
 
     # Convert RGB image to YCbCr and take luminance: Y = 0.299 R + 0.587 G + 0.114 B
     num_channels = prediction.size(1)
@@ -73,8 +73,8 @@ def _gmsd(prediction: torch.Tensor, target: torch.Tensor,
     gms = (2.0 * pred_grad * trgt_grad + EPS) / (pred_grad ** 2 + trgt_grad ** 2 + EPS)
     mean_gms = torch.mean(gms, dim=[1, 2, 3], keepdims=True)
 
-    # Compute GMSD
-    gmsd = torch.pow(gms - mean_gms, 2).mean(dim=[1, 2, 3], keepdims=True).sqrt()
+    # Compute GMSD along spatial dimensions. Shape (batch_size )
+    gmsd = torch.pow(gms - mean_gms, 2).mean(dim=[1, 2, 3]).sqrt()
     
     if reduction == 'mean':
         return gmsd.mean(dim=0)
@@ -186,7 +186,8 @@ class MultiScaleGMSDLoss(_Loss):
         if scale_weights is None:
             self.scale_weights = torch.tensor([0.096, 0.596, 0.289, 0.019])
         else:
-            self.scale_weights = torch.tensor(scale_weights)
+            # Normalize scale weights
+            self.scale_weights = torch.tensor(scale_weights) / torch.tensor(scale_weights).sum()
 
         self.chromatic = chromatic
         self.beta1 = beta1
@@ -225,11 +226,13 @@ class MultiScaleGMSDLoss(_Loss):
             score = _gmsd(prediction, target, reduction='none')
             ms_gmds.append(score)
         
-        # Concat results in different scales and multiply by weight
-        ms_gmds_val = scale_weights.view(1, 4, 1, 1) * (torch.cat(ms_gmds, dim=1) ** 2)
+        # Stack results in different scales and multiply by weight
+        ms_gmds_val = scale_weights.view(1, 4) * (torch.stack(ms_gmds, dim=1) ** 2)
+  
         # Sum and take sqrt per-image
-        ms_gmds_val = torch.sqrt(torch.sum(ms_gmds_val, dim=(1, 2, 3)))
+        ms_gmds_val = torch.sqrt(torch.sum(ms_gmds_val, dim=1))
         
+        # Shape: (batch_size, )
         score = ms_gmds_val
         
         if self.chromatic:
@@ -240,7 +243,7 @@ class MultiScaleGMSDLoss(_Loss):
             prediction_iq = torch.matmul(prediction.permute(0, 2, 3, 1), iq_weights).permute(0, 3, 1, 2)
             target_iq = torch.matmul(target.permute(0, 2, 3, 1), iq_weights).permute(0, 3, 1, 2)
             
-            rmse_iq = torch.sqrt(torch.mean((prediction_iq - target_iq) ** 2, dim=[-1, -2]))
+            rmse_iq = torch.sqrt(torch.mean((prediction_iq - target_iq) ** 2, dim=[2, 3]))
             rmse_chrome = torch.sqrt(torch.sum(rmse_iq ** 2, dim=1))
             gamma = 2 / (1 + self.beta2 * torch.exp(-self.beta3 * ms_gmds_val)) - 1
             
