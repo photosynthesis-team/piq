@@ -147,6 +147,47 @@ Note, that VIFLoss returns `1 - VIF` value.
 </p>
 </details>
 
+<!-- GMSD EXAMPLES -->
+<details>
+<summary>Gradient Magnitude Similarity Deviation (GMSD)</summary>
+<p>
+
+This is port of MATLAB version from the authors of original paper.
+It can be used both as a measure and as a loss function. In any case it should me minimized.
+Usually values of GMSD lie in [0, 0.35] interval.
+```python
+import torch
+from photosynthesis_metrics import GMSDLoss
+
+loss = GMSDLoss(data_range=1.)
+prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+target = torch.rand(3, 3, 256, 256)
+ouput: torch.Tensor = loss(prediction, target)
+output.backward()
+```
+</p>
+</details>
+
+<!-- MultiScale GMSD EXAMPLES -->
+<details>
+<summary>MultiScale GMSD (MS-GMSD)</summary>
+<p>
+
+It can be used both as a measure and as a loss function. In any case it should me minimized.
+By defualt scale weights are initialized with values from the paper. You can change them by passing a list of 4 variables to `scale_weights` argument during initialization. Both GMSD and MS-GMSD computed for greyscale images, but to take contrast changes into account authors propoced to also add chromatic component. Use flag `chromatic` to use MS-GMSDc version of the loss
+```python
+import torch
+from photosynthesis_metrics import MultiScaleGMSDLoss
+
+loss = MultiScaleGMSDLoss(chromatic=True, data_range=1.)
+prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+target = torch.rand(3, 3, 256, 256)
+ouput: torch.Tensor = loss(prediction, target)
+output.backward()
+```
+</p>
+</details>
+
 <!-- MSID EXAMPLES -->
 <details>
 <summary>Multi-Scale Intrinsic Distance (MSID)</summary>
