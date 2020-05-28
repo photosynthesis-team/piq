@@ -26,7 +26,7 @@ def test_gmsd_zero_for_equal_tensors(prediction: torch.Tensor):
     loss = GMSDLoss()
     target = prediction.clone()
     measure = loss(prediction, target)
-    assert measure <= 1e-6, f'GMSD for equal tensors must be 0, got {measure}'
+    assert measure.abs() <= 1e-6, f'GMSD for equal tensors must be 0, got {measure}'
 
 
 def test_gmsd_loss_raises_if_tensors_have_different_types(target: torch.Tensor) -> None:
@@ -69,7 +69,7 @@ def test_multi_scale_gmsd_zero_for_equal_tensors(prediction: torch.Tensor):
     loss = MultiScaleGMSDLoss()
     target = prediction.clone()
     measure = loss(prediction, target)
-    assert measure <= 1e-6, f'MultiScaleGMSD for equal tensors must be 0, got {measure}'
+    assert measure.abs() <= 1e-6, f'MultiScaleGMSD for equal tensors must be 0, got {measure}'
 
 
 def test_multi_scale_gmsd_loss_supports_different_data_ranges(
