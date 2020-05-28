@@ -146,8 +146,8 @@ class GMSDLoss(_Loss):
     
 
 class MultiScaleGMSDLoss(_Loss):
-    r"""Creates a criterion that measures the structural similarity index error between
-    each element in the input :math:`x` and target :math:`y`.
+    r"""Creates a criterion that measures multi scale Gradient Magnitude Similarity Deviation
+    between each element in the input :math:`x` and target :math:`y`.
 
 
     Args:
@@ -195,7 +195,7 @@ class MultiScaleGMSDLoss(_Loss):
         self.beta3 = beta3
             
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        r"""Computation of Gradient Magnitude Similarity Deviation (GMSD) as a loss function.
+        r"""Computation of Multi scale GMSD as a loss function.
 
         Args:
             prediction: Tensor of prediction of the network.
