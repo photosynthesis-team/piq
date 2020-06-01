@@ -51,10 +51,10 @@ In order to use SSIM as a loss function, use corresponding PyTorch module:
 import torch
 from photosynthesis_metrics import SSIMLoss
 
-loss = SSIMLoss()
+loss = SSIMLoss(data_range=1.)
 prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
 target = torch.rand(3, 3, 256, 256)
-output: torch.Tensor = loss(prediction, target, data_range=1.)
+output: torch.Tensor = loss(prediction, target)
 output.backward()
 ```
 </p>
@@ -80,10 +80,10 @@ In order to use MS-SSIM as a loss function, use corresponding PyTorch module:
 import torch
 from photosynthesis_metrics import MultiScaleSSIMLoss
 
-loss = MultiScaleSSIMLoss()
+loss = MultiScaleSSIMLoss(data_range=1.)
 prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
 target = torch.rand(3, 3, 256, 256)
-output: torch.Tensor = loss(prediction, target, data_range=1.)
+output: torch.Tensor = loss(prediction, target)
 output.backward()
 ```
 </p>
@@ -268,7 +268,7 @@ from photosynthesis_metrics import KID
 kid_metric = KID()
 prediction_feats = torch.rand(10000, 1024)
 target_feats = torch.rand(10000, 1024)
-msid: torch.Tensor = kid_metric(prediction_feats, target_feats)
+kid: torch.Tensor = kid_metric(prediction_feats, target_feats)
 ```
  
 If image features are not available, extract them using `_compute_feats` of `KID` class. 
@@ -282,8 +282,30 @@ first_dl, second_dl = DataLoader(), DataLoader()
 kid_metric = KID() 
 first_feats = kid_metric._compute_feats(first_dl)
 second_feats = kid_metric._compute_feats(second_dl)
-msid: torch.Tensor = kid_metric(first_feats, second_feats)
+kid: torch.Tensor = kid_metric(first_feats, second_feats)
 ```  
+</p>
+</details>
+
+<!-- GS EXAMPLES -->
+<details>
+<summary>Geometry Score (GS)</summary>
+<p>
+
+Use `GS` class to compute [Geometry Score](https://arxiv.org/abs/1802.02664) from image features, 
+pre-extracted from some feature extractor network. Computation is heavily CPU dependent, adjust `num_workers` parameter according to your system configuration:
+```python
+import torch
+from photosynthesis_metrics import KID
+
+gs_metric = GS(sample_size=64, num_iters=100, i_max=100, num_workers=4)
+prediction_feats = torch.rand(10000, 1024)
+target_feats = torch.rand(10000, 1024)
+gs: torch.Tensor = gs_metric(prediction_feats, target_feats)
+```
+
+GS metric requiers `gudhi` library which is not installed by default. 
+If you use conda, write: `conda install -c conda-forge gudhi`, otherwise follow [installation guide](http://gudhi.gforge.inria.fr/python/latest/installation.html)
 </p>
 </details>
 
