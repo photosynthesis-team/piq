@@ -296,7 +296,7 @@ Use `GS` class to compute [Geometry Score](https://arxiv.org/abs/1802.02664) fro
 pre-extracted from some feature extractor network. Computation is heavily CPU dependent, adjust `num_workers` parameter according to your system configuration:
 ```python
 import torch
-from photosynthesis_metrics import KID
+from photosynthesis_metrics import GS
 
 gs_metric = GS(sample_size=64, num_iters=100, i_max=100, num_workers=4)
 prediction_feats = torch.rand(10000, 1024)
@@ -305,7 +305,7 @@ gs: torch.Tensor = gs_metric(prediction_feats, target_feats)
 ```
 
 GS metric requiers `gudhi` library which is not installed by default. 
-If you use conda, write: `conda install -c conda-forge gudhi`, otherwise follow [installation guide](http://gudhi.gforge.inria.fr/python/latest/installation.html)
+If you use conda, write: `conda install -c conda-forge gudhi`, otherwise follow [installation guide](http://gudhi.gforge.inria.fr/python/latest/installation.html).
 </p>
 </details>
 
