@@ -3,33 +3,46 @@ from typing import Optional, Union, Tuple, List
 import torch
 
 
-def _adjust_dimensions(x: torch.Tensor, y: torch.Tensor):
+def _adjust_dimensions(input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]):
     r"""Expands input tensors dimensions to 4D
     """
-    num_dimentions = x.dim()
-    if num_dimentions == 2:
-        x = x.expand(1, 1, *x.shape)
-        y = y.expand(1, 1, *y.shape)
-    elif num_dimentions == 3:
-        x = x.expand(1, *x.shape)
-        y = y.expand(1, *y.shape)
-    elif num_dimentions != 4 and num_dimentions != 5:
-        raise ValueError(f'Expected 2, 3, 4 or 5 dimensions (got {num_dimentions})')
+    if isinstance(input_tensors, torch.Tensor):
+        input_tensors = (input_tensors,)
 
-    return x, y
+    for tensor in input_tensors:
+        if tensor.dim() == 2:
+            tensor.unsqueeze_(0)
+        if tensor.dim() == 3:
+            tensor.unsqueeze_(0)
+        if tensor.dim() != 4 and tensor.dim() != 5:
+            raise ValueError(f'Expected 2, 3, 4 or 5 dimensions (got {tensor.dim()})')
+
+    if len(input_tensors) == 1:
+        return input_tensors[0]
+    return input_tensors
 
 
 def _validate_input(
-        x: torch.Tensor,
-        y: torch.Tensor,
+        input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]],
         kernel_size: Optional[int] = None,
         scale_weights: Union[Optional[Tuple[float]], Optional[List[float]], Optional[torch.Tensor]] = None) -> None:
-    assert isinstance(x, torch.Tensor) and isinstance(y, torch.Tensor), \
-        f'Both images must be torch.Tensors, got {type(x)} and {type(y)}.'
-    assert 1 < x.dim() < 6, f'Input images must be 2D, 3D or 4D tensors, got images of shape {x.size()}.'
-    assert x.size() == y.size(), f'Input images must have the same dimensions, got {x.size()} and {y.size()}.'
-    if x.dim() == 5:
-        assert x.size(-1) == 2, f'Expected Complex 5D tensor with (N,C,H,W,2) size, got {x.size()}'
+
+    if isinstance(input_tensors, torch.Tensor):
+        input_tensors = (input_tensors,)
+
+    assert isinstance(input_tensors, tuple)
+    assert 0 < len(input_tensors) < 3, f'Expected one or two input tensors, got {len(input_tensors)}'
+
+    for tensor in input_tensors:
+        assert isinstance(tensor, torch.Tensor), f'Expected input to be torch.Tensor, got {type(tensor)}.'
+        assert 1 < tensor.dim() < 6, f'Input images must be 2D, 3D or 4D tensors, got images of shape {tensor.size()}.'
+        if tensor.dim() == 5:
+            assert tensor.size(-1) == 2, f'Expected Complex 5D tensor with (N,C,H,W,2) size, got {tensor.size()}'
+
+    if len(input_tensors) == 2:
+        assert input_tensors[0].size() == input_tensors[1].size(), \
+            f'Input images must have the same dimensions, got {input_tensors[0].size()} and {input_tensors[1].size()}.'
+
     if kernel_size is not None:
         assert kernel_size % 2 == 1, f'Kernel size must be odd, got {kernel_size}.'
     if scale_weights is not None:
