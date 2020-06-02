@@ -123,8 +123,8 @@ class GMSDLoss(_Loss):
         Returns:
             Value of GMSD loss to be minimized. 0 <= GMSD loss <= 1.
         """
-        _validate_input(x=prediction, y=target, scale_weights=None)
-        prediction, target = _adjust_dimensions(x=prediction, y=target)
+        _validate_input(input_tensors=(prediction, target), scale_weights=None)
+        prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
 
         return self.compute_metric(prediction, target)
     
@@ -204,8 +204,8 @@ class MultiScaleGMSDLoss(_Loss):
         Returns:
             Value of GMSD loss to be minimized. 0 <= GMSD loss <= 1.
         """
-        _validate_input(x=prediction, y=target, scale_weights=self.scale_weights)
-        prediction, target = _adjust_dimensions(x=prediction, y=target)
+        _validate_input(input_tensors=(prediction, target), scale_weights=self.scale_weights)
+        prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
 
         return self.compute_metric(prediction, target)
     

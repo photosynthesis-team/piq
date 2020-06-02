@@ -4,26 +4,7 @@ r"""Implemetation of Total Variation metric, based on article
 
 import torch
 from torch.nn.modules.loss import _Loss
-
-
-def _adjust_tensor_dimensions(x: torch.Tensor):
-    r"""Expands input tensor dimensions to 4D
-        """
-    num_dimensions = x.dim()
-    if num_dimensions == 2:
-        x = x.expand(1, 1, *x.shape)
-    elif num_dimensions == 3:
-        x = x.expand(1, *x.shape)
-    elif num_dimensions != 4:
-        raise ValueError('Expected 2, 3, or 4 dimensions (got {})'.format(num_dimensions))
-
-    return x
-
-
-def _validate_input(x: torch.Tensor) -> None:
-    """Validates input tensor"""
-    assert isinstance(x, torch.Tensor), f'Input must be a torch.Tensor, got {type(x)}.'
-    assert 1 < x.dim() < 5, f'Input image must be 2D, 3D or 4D tensor, got image of shape {x.size()}.'
+from photosynthesis_metrics.utils import _validate_input, _adjust_dimensions
 
 
 def total_variation(x: torch.Tensor, size_average: bool = True, reduction_type: str = 'l2') -> torch.Tensor:
@@ -121,7 +102,7 @@ class TVLoss(_Loss):
             Value of TV loss to be minimized.
         """
         _validate_input(prediction)
-        prediction = _adjust_tensor_dimensions(prediction)
+        prediction = _adjust_dimensions(prediction)
         return self.compute_metric(prediction)
 
     def compute_metric(self, prediction: torch.Tensor) -> torch.Tensor:
