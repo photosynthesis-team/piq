@@ -34,7 +34,7 @@ def _validate_input(
     assert 0 < len(input_tensors) < 3, f'Expected one or two input tensors, got {len(input_tensors)}'
 
     for tensor in input_tensors:
-        assert isinstance(tensor, torch.Tensor), f'Both images must be torch.Tensors, got {type(tensor)}.'
+        assert isinstance(tensor, torch.Tensor), f'Expected input to be torch.Tensor, got {type(tensor)}.'
         assert 1 < tensor.dim() < 6, f'Input images must be 2D, 3D or 4D tensors, got images of shape {tensor.size()}.'
         if tensor.dim() == 5:
             assert tensor.size(-1) == 2, f'Expected Complex 5D tensor with (N,C,H,W,2) size, got {tensor.size()}'
