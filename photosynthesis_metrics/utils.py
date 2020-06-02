@@ -27,7 +27,7 @@ def _validate_input(
         kernel_size: Optional[int] = None,
         scale_weights: Union[Optional[Tuple[float]], Optional[List[float]], Optional[torch.Tensor]] = None) -> None:
 
-    if isinstance(input_tensors, torch.Tensor) or isinstance(input_tensors, list):
+    if not isinstance(input_tensors, tuple):
         input_tensors = (input_tensors,)
 
     assert 0 < len(input_tensors) < 3, f'Expected one or two input tensors, got {len(input_tensors)}'

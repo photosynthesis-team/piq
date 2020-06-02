@@ -362,7 +362,8 @@ class MultiScaleSSIMLoss(_Loss):
             Value of MS-SSIM loss to be minimized. 0 <= MS-SSIM loss <= 1. In case of 5D tensor,
             complex value is returned as a tensor of size 2.
         """
-        _validate_input(input_tensors=(prediction, target), kernel_size=self.kernel_size, scale_weights=self.scale_weights)
+        _validate_input(input_tensors=(prediction, target),
+                        kernel_size=self.kernel_size, scale_weights=self.scale_weights)
         prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
 
         score = self.compute_metric(prediction, target)
