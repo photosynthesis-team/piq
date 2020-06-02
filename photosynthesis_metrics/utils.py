@@ -3,10 +3,10 @@ from typing import Optional, Union, Tuple, List
 import torch
 
 
-def _adjust_dimensions(input_tensors: Union[torch.Tensor, List[torch.Tensor], Tuple[torch.Tensor, torch.Tensor]]):
+def _adjust_dimensions(input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]):
     r"""Expands input tensors dimensions to 4D
     """
-    if isinstance(input_tensors, torch.Tensor) or isinstance(input_tensors, list):
+    if isinstance(input_tensors, torch.Tensor):
         input_tensors = (input_tensors,)
 
     for tensor in input_tensors:
@@ -23,13 +23,14 @@ def _adjust_dimensions(input_tensors: Union[torch.Tensor, List[torch.Tensor], Tu
 
 
 def _validate_input(
-        input_tensors: Union[torch.Tensor, List[torch.Tensor], Tuple[torch.Tensor, torch.Tensor]],
+        input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]],
         kernel_size: Optional[int] = None,
         scale_weights: Union[Optional[Tuple[float]], Optional[List[float]], Optional[torch.Tensor]] = None) -> None:
 
-    if not isinstance(input_tensors, tuple):
+    if isinstance(input_tensors, torch.Tensor):
         input_tensors = (input_tensors,)
 
+    assert isinstance(input_tensors, tuple)
     assert 0 < len(input_tensors) < 3, f'Expected one or two input tensors, got {len(input_tensors)}'
 
     for tensor in input_tensors:
