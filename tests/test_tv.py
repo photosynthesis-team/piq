@@ -19,12 +19,6 @@ def test_tv_works(prediction: torch.Tensor) -> None:
         assert measure > 0
 
 
-def test_tv_raise_if_wrong_shape() -> None:
-    wrong_shape_tensor = torch.rand(3, 256, 256)
-    with pytest.raises(AssertionError):
-        total_variation(wrong_shape_tensor)
-
-
 # ================== Test class: `TVLoss` ==================
 def test_tv_loss_init() -> None:
     try:
