@@ -27,8 +27,8 @@ ssim_index = ssim(prediction, target, data_range=1.)
 ```
 
 
-<!-- MINIMAL EXAMPLES -->
-### Minimal examples
+<!-- EXAMPLES -->
+### Examples
 
 <!-- SSIM EXAMPLES -->
 <details>
