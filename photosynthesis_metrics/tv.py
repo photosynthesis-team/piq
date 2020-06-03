@@ -22,7 +22,9 @@ def total_variation(x: torch.Tensor, size_average: bool = True, reduction_type: 
         https://www.wikiwand.com/en/Total_variation_denoising
         https://remi.flamary.com/demos/proxtv.html
     """
-    assert x.dim() == 4, f'Expected 4D tensor, got {x.size()}'
+    _validate_input(x)
+    x = _adjust_dimensions(x)
+
     if reduction_type == 'l1':
         w_variance = torch.sum(torch.abs(x[:, :, :, 1:] - x[:, :, :, :-1]), dim=[1, 2, 3])
         h_variance = torch.sum(torch.abs(x[:, :, 1:, :] - x[:, :, :-1, :]), dim=[1, 2, 3])
@@ -101,8 +103,6 @@ class TVLoss(_Loss):
         Returns:
             Value of TV loss to be minimized.
         """
-        _validate_input(prediction)
-        prediction = _adjust_dimensions(prediction)
         return self.compute_metric(prediction)
 
     def compute_metric(self, prediction: torch.Tensor) -> torch.Tensor:
