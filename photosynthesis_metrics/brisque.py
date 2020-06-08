@@ -234,15 +234,6 @@ class BRISQUELoss(_Loss):
                 Returns:
                     Value of BRISQUE loss to be minimized.
                 """
-        score = brisque(prediction,
-                        reduction='none',
-                        kernel_size=self.kernel_size,
-                        kernel_sigma=self.kernel_sigma,
-                        data_range=self.data_range)
-        if self.reduction == 'mean':
-            return score.mean(dim=0)
-        if self.reduction == 'sum':
-            return score.sum(dim=0)
-        if self.reduction != 'none':
-            raise ValueError(f'Expected reduction modes are "mean"|"sum"|"none", got {self.reduction}')
-        return score
+
+        return brisque(prediction, reduction=self.reduction, kernel_size=self.kernel_size,
+                       kernel_sigma=self.kernel_sigma, data_range=self.data_range)
