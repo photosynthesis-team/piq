@@ -38,4 +38,6 @@ jobs:
         run: |
           pip install pytest
           pip install tensorflow
+          pip install libsvm
+          pip install pybrisque
           pytest

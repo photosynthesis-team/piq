@@ -25,7 +25,8 @@ def _adjust_dimensions(input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, to
 def _validate_input(
         input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]],
         kernel_size: Optional[int] = None,
-        scale_weights: Union[Optional[Tuple[float]], Optional[List[float]], Optional[torch.Tensor]] = None) -> None:
+        scale_weights: Union[Optional[Tuple[float]], Optional[List[float]], Optional[torch.Tensor]] = None,
+        enable_5d: Optional[bool] = False) -> None:
 
     if isinstance(input_tensors, torch.Tensor):
         input_tensors = (input_tensors,)
@@ -33,10 +34,13 @@ def _validate_input(
     assert isinstance(input_tensors, tuple)
     assert 0 < len(input_tensors) < 3, f'Expected one or two input tensors, got {len(input_tensors)}'
 
+    max_size = 5 if enable_5d else 4
+
     for tensor in input_tensors:
         assert isinstance(tensor, torch.Tensor), f'Expected input to be torch.Tensor, got {type(tensor)}.'
-        assert 1 < tensor.dim() < 6, f'Input images must be 2D, 3D or 4D tensors, got images of shape {tensor.size()}.'
-        if tensor.dim() == 5:
+        assert 1 < tensor.dim() <= max_size, f'Input images must be 2D, 3D or 4D tensors, ' \
+                                             f'got images of shape {tensor.size()}.'
+        if tensor.dim() == 5 and enable_5d:
             assert tensor.size(-1) == 2, f'Expected Complex 5D tensor with (N,C,H,W,2) size, got {tensor.size()}'
 
     if len(input_tensors) == 2:

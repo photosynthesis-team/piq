@@ -188,6 +188,34 @@ output.backward()
 </p>
 </details>
 
+<!-- BRISQUE EXAMPLES -->
+<details>
+<summary>Blind/Referenceless Image Spatial Quality Evaluator (BRISQUE)</summary>
+<p>
+
+To compute [BRISQUE score](https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf) as a measure, use lower case function from the library:
+```python
+import torch
+from photosynthesis_metrics import brisque
+from typing import Union, Tuple
+
+prediction = torch.rand(3, 3, 256, 256)
+brisque_index: torch.Tensor = brisque(prediction, data_range=1.)
+```
+
+In order to use BRISQUE as a loss function, use corresponding PyTorch module:
+```python
+import torch
+from photosynthesis_metrics import BRISQUELoss
+
+loss = BRISQUELoss(data_range=1.)
+prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+output: torch.Tensor = loss(prediction)
+output.backward()
+```
+</p>
+</details>
+
 <!-- MSID EXAMPLES -->
 <details>
 <summary>Multi-Scale Intrinsic Distance (MSID)</summary>
