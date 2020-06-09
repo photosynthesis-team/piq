@@ -126,7 +126,7 @@ class VIFLoss(_Loss):
         Returns:
             Value of VIF loss to be minimized. 0 <= VIFLoss <= 1.
         """
-        _validate_input(input_tensors=(prediction, target))
+        _validate_input(input_tensors=(prediction, target), allow_5d=False)
         prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
 
         return self.compute_metric(prediction, target)

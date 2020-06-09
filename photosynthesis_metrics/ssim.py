@@ -41,7 +41,7 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
            https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
            :DOI:`10.1109/TIP.2003.819861`
     """
-    _validate_input(input_tensors=(x, y), kernel_size=kernel_size, scale_weights=None, enable_5d=True)
+    _validate_input(input_tensors=(x, y), allow_5d=True, kernel_size=kernel_size, scale_weights=None)
     x, y = _adjust_dimensions(input_tensors=(x, y))
     kernel = _fspecial_gauss_1d(kernel_size, kernel_sigma)
     kernel = kernel.repeat(x.shape[1], 1, 1, 1)
@@ -157,8 +157,8 @@ class SSIMLoss(_Loss):
             Value of SSIM loss to be minimized. 0 <= SSIM loss <= 1. In case of 5D input tensors,
             complex value is returned as a tensor of size 2.
         """
-        _validate_input(input_tensors=(prediction, target), kernel_size=self.kernel_size, scale_weights=None,
-                        enable_5d=True)
+        _validate_input(input_tensors=(prediction, target), allow_5d=True,
+                        kernel_size=self.kernel_size, scale_weights=None)
         prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
 
         return self.compute_metric(prediction, target)
@@ -223,7 +223,7 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
            https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
            :DOI:`10.1109/TIP.2003.819861`
     """
-    _validate_input(input_tensors=(x, y), kernel_size=kernel_size, scale_weights=scale_weights, enable_5d=True)
+    _validate_input(input_tensors=(x, y), allow_5d=True, kernel_size=kernel_size, scale_weights=scale_weights)
     x, y = _adjust_dimensions(input_tensors=(x, y))
 
     if scale_weights is None:
@@ -363,8 +363,8 @@ class MultiScaleSSIMLoss(_Loss):
             Value of MS-SSIM loss to be minimized. 0 <= MS-SSIM loss <= 1. In case of 5D tensor,
             complex value is returned as a tensor of size 2.
         """
-        _validate_input(input_tensors=(prediction, target),
-                        kernel_size=self.kernel_size, scale_weights=self.scale_weights, enable_5d=True)
+        _validate_input(input_tensors=(prediction, target), allow_5d=True,
+                        kernel_size=self.kernel_size, scale_weights=self.scale_weights)
         prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
 
         score = self.compute_metric(prediction, target)
