@@ -71,8 +71,8 @@ def test_breaks_if_5d_tensor_has_wrong_format(tensor_5d_broken: torch.Tensor) ->
         _validate_input(tensor_5d_broken, allow_5d=True)
 
 
-def test_works_on_two_not_5d_tensors(tensor_2d: torch.Tensor) -> None:
-    tensor = tensor_2d.clone()
+def test_works_on_two_not_5d_tensors(tensor_1d: torch.Tensor) -> None:
+    tensor = tensor_1d.clone()
     max_num_dims = 10
     for _ in range(max_num_dims):
         another_tensor = tensor.clone()
