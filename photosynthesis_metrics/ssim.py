@@ -157,7 +157,8 @@ class SSIMLoss(_Loss):
             Value of SSIM loss to be minimized. 0 <= SSIM loss <= 1. In case of 5D input tensors,
             complex value is returned as a tensor of size 2.
         """
-        _validate_input(input_tensors=(prediction, target), supports_5d=True, kernel_size=self.kernel_size, scale_weights=None)
+        _validate_input(input_tensors=(prediction, target), supports_5d=True,
+                        kernel_size=self.kernel_size, scale_weights=None)
         prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
 
         return self.compute_metric(prediction, target)
