@@ -161,7 +161,7 @@ def brisque(x: torch.Tensor,
     _validate_input(input_tensors=x, allow_5d=False)
     x = _adjust_dimensions(input_tensors=x)
 
-    x /= data_range
+    x = x / data_range
 
     if x.size(1) == 3:
         rgb_to_grey = torch.tensor([0.299, 0.587, 0.114]).view(1, -1, 1, 1)
