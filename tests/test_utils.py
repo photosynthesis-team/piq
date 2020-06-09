@@ -104,15 +104,15 @@ def test_works_on_two_5d_tensors(tensor_5d: torch.Tensor) -> None:
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
-def test_breaks_if_tensors_have_different_n_dims(tensor_4d: torch.Tensor, tensor_5d: torch.Tensor) -> None:
+def test_breaks_if_tensors_have_different_n_dims(tensor_2d: torch.Tensor, tensor_5d: torch.Tensor) -> None:
     with pytest.raises(AssertionError):
-        _validate_input((tensor_4d, tensor_5d), supports_5d=True)
+        _validate_input((tensor_2d, tensor_5d), supports_5d=True)
 
 
-def test_works_if_kernel_size_is_odd(tensor_4d: torch.Tensor) -> None:
+def test_works_if_kernel_size_is_odd(tensor_2d: torch.Tensor) -> None:
     for kernel_size in [i * 2 + 1 for i in range(2, 42)]:
         try:
-            _validate_input(tensor_4d, supports_5d=False, kernel_size=kernel_size)
+            _validate_input(tensor_2d, supports_5d=False, kernel_size=kernel_size)
         except Exception as e:
             pytest.fail(f"Unexpected error occurred: {e}")
 
