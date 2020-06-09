@@ -126,7 +126,8 @@ def _RBF_kernel(features: torch.Tensor, sv: torch.Tensor, gamma: float = 0.05) -
 
 
 def _score_svr(features: torch.Tensor) -> torch.Tensor:
-    url = 'https://drive.google.com/uc?export=download&id=1e1F4jLh2-P3mqZ20GYr9ItgLma6999CX'
+    url = 'https://github.com/photosynthesis-team/photosynthesis.metrics/releases/download/' \
+          'latest/brisque_svm_weights.pt'
     sv_coef, sv = load_url(url, map_location=features.device)
 
     # gamma and tho are SVM model parameters taken from official implementation of BRISQUE on MATLAB
@@ -157,7 +158,7 @@ def brisque(x: torch.Tensor,
             .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
             https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
         """
-    _validate_input(input_tensors=x)
+    _validate_input(input_tensors=x, allow_5d=False)
     x = _adjust_dimensions(input_tensors=x)
 
     x /= data_range

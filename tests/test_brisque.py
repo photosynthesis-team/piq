@@ -30,20 +30,6 @@ def test_brisque_if_works_with_RGB(prediction_RGB: torch.Tensor) -> None:
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
-def test_brisque_check_available_dimensions() -> None:
-    custom_prediction = torch.rand(256, 256)
-    for _ in range(10):
-        if custom_prediction.dim() < 5:
-            try:
-                brisque(custom_prediction)
-            except Exception as e:
-                pytest.fail(f"Unexpected error occurred: {e}")
-        else:
-            with pytest.raises(AssertionError):
-                brisque(custom_prediction)
-        custom_prediction.unsqueeze_(0)
-
-
 def test_brisque_raises_if_wrong_reduction(prediction_grey: torch.Tensor) -> None:
     for mode in ['mean', 'sum', 'none']:
         try:
