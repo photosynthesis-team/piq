@@ -44,18 +44,10 @@ def test_breaks_if_too_many_tensors_provided(tensor_2d: torch.Tensor) -> None:
 
 def test_works_on_single_not_5d_tensor(tensor_1d: torch.Tensor) -> None:
     tensor = tensor_1d.clone()
-
-    # Should fail on 1D
-    with pytest.raises(AssertionError):
-        _validate_input(tensor, allow_5d=False)
-
-    # 1D -> 2D
-    tensor.unsqueeze_(0)
-
-    # 2D -> max_num_dims
+    # 1D -> max_num_dims
     max_num_dims = 10
     for _ in range(max_num_dims):
-        if tensor.dim() < 5:
+        if 1 < tensor.dim() < 5:
             try:
                 _validate_input(tensor, allow_5d=False)
             except Exception as e:
@@ -64,7 +56,7 @@ def test_works_on_single_not_5d_tensor(tensor_1d: torch.Tensor) -> None:
             with pytest.raises(AssertionError):
                 _validate_input(tensor, allow_5d=False)
 
-    tensor.unsqueeze_(0)
+        tensor.unsqueeze_(0)
 
 
 def test_works_on_single_5d_tensor(tensor_5d: torch.Tensor) -> None:
