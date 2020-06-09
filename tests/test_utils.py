@@ -31,7 +31,7 @@ def test_breaks_if_not_supported_data_types_provided() -> None:
     inputs_of_wrong_types = [[], (), {}, 42, '42', True, 42., np.array([42]), None]
     for inp in inputs_of_wrong_types:
         with pytest.raises(AssertionError):
-            _validate_input(inp, supports_5d=False)
+            _validate_input(inp, allow_5d=False)
 
 
 def test_breaks_if_too_many_tensors_provided(tensor_2d: torch.Tensor) -> None:
@@ -39,7 +39,7 @@ def test_breaks_if_too_many_tensors_provided(tensor_2d: torch.Tensor) -> None:
     for n_tensors in range(max_number_of_tensors + 1, (max_number_of_tensors + 1) * 10):
         inp = tuple(tensor_2d.clone() for _ in range(n_tensors))
         with pytest.raises(AssertionError):
-            _validate_input(inp, supports_5d=False)
+            _validate_input(inp, allow_5d=False)
 
 
 def test_works_on_single_not_5d_tensor(tensor_1d: torch.Tensor) -> None:
@@ -47,7 +47,7 @@ def test_works_on_single_not_5d_tensor(tensor_1d: torch.Tensor) -> None:
 
     # Should fail on 1D
     with pytest.raises(AssertionError):
-        _validate_input(tensor, supports_5d=False)
+        _validate_input(tensor, allow_5d=False)
 
     # 1D -> 2D
     tensor.unsqueeze_(0)
@@ -57,26 +57,26 @@ def test_works_on_single_not_5d_tensor(tensor_1d: torch.Tensor) -> None:
     for _ in range(max_num_dims):
         if tensor.dim() < 5:
             try:
-                _validate_input(tensor, supports_5d=False)
+                _validate_input(tensor, allow_5d=False)
             except Exception as e:
                 pytest.fail(f"Unexpected error occurred: {e}")
         else:
             with pytest.raises(AssertionError):
-                _validate_input(tensor, supports_5d=False)
+                _validate_input(tensor, allow_5d=False)
 
     tensor.unsqueeze_(0)
 
 
 def test_works_on_single_5d_tensor(tensor_5d: torch.Tensor) -> None:
     try:
-        _validate_input(tensor_5d, supports_5d=True)
+        _validate_input(tensor_5d, allow_5d=True)
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
 def test_breaks_if_5d_tensor_has_wrong_format(tensor_5d_broken: torch.Tensor) -> None:
     with pytest.raises(Exception):
-        _validate_input(tensor_5d_broken, supports_5d=True)
+        _validate_input(tensor_5d_broken, allow_5d=True)
 
 
 def test_works_on_two_not_5d_tensors(tensor_2d: torch.Tensor) -> None:
@@ -86,12 +86,12 @@ def test_works_on_two_not_5d_tensors(tensor_2d: torch.Tensor) -> None:
         another_tensor = tensor.clone()
         if tensor.dim() < 5:
             try:
-                _validate_input((tensor, another_tensor), supports_5d=True)
+                _validate_input((tensor, another_tensor), allow_5d=True)
             except Exception as e:
                 pytest.fail(f"Unexpected error occurred: {e}")
         else:
             with pytest.raises(AssertionError):
-                _validate_input(tensor, supports_5d=False)
+                _validate_input(tensor, allow_5d=False)
 
         tensor.unsqueeze_(0)
 
@@ -99,20 +99,20 @@ def test_works_on_two_not_5d_tensors(tensor_2d: torch.Tensor) -> None:
 def test_works_on_two_5d_tensors(tensor_5d: torch.Tensor) -> None:
     another_tensor_5d = tensor_5d.clone()
     try:
-        _validate_input((tensor_5d, another_tensor_5d), supports_5d=True)
+        _validate_input((tensor_5d, another_tensor_5d), allow_5d=True)
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
 def test_breaks_if_tensors_have_different_n_dims(tensor_2d: torch.Tensor, tensor_5d: torch.Tensor) -> None:
     with pytest.raises(AssertionError):
-        _validate_input((tensor_2d, tensor_5d), supports_5d=True)
+        _validate_input((tensor_2d, tensor_5d), allow_5d=True)
 
 
 def test_works_if_kernel_size_is_odd(tensor_2d: torch.Tensor) -> None:
     for kernel_size in [i * 2 + 1 for i in range(2, 42)]:
         try:
-            _validate_input(tensor_2d, supports_5d=False, kernel_size=kernel_size)
+            _validate_input(tensor_2d, allow_5d=False, kernel_size=kernel_size)
         except Exception as e:
             pytest.fail(f"Unexpected error occurred: {e}")
 
@@ -120,7 +120,7 @@ def test_works_if_kernel_size_is_odd(tensor_2d: torch.Tensor) -> None:
 def test_breaks_if_kernel_size_is_even(tensor_2d: torch.Tensor) -> None:
     for kernel_size in [i * 2 for i in range(2, 42)]:
         with pytest.raises(AssertionError):
-            _validate_input(tensor_2d, supports_5d=False, kernel_size=kernel_size)
+            _validate_input(tensor_2d, allow_5d=False, kernel_size=kernel_size)
 
 
 def test_breaks_if_scale_weights_of_not_supported_data_types_provided(tensor_2d: torch.Tensor) -> None:
@@ -130,10 +130,10 @@ def test_breaks_if_scale_weights_of_not_supported_data_types_provided(tensor_2d:
     ]
     for weights in wrong_scale_weights:
         with pytest.raises(Exception):
-            _validate_input(tensor_2d, supports_5d=False, scale_weights=weights)
+            _validate_input(tensor_2d, allow_5d=False, scale_weights=weights)
 
 
 def test_breaks_if_scale_weight_wrong_n_dims_provided(tensor_2d: torch.Tensor) -> None:
     wrong_scale_weights = tensor_2d.clone()
     with pytest.raises(AssertionError):
-        _validate_input(tensor_2d, supports_5d=False, scale_weights=wrong_scale_weights)
+        _validate_input(tensor_2d, allow_5d=False, scale_weights=wrong_scale_weights)

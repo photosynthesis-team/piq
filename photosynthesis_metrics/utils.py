@@ -24,7 +24,7 @@ def _adjust_dimensions(input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, to
 
 def _validate_input(
         input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]],
-        supports_5d: bool,
+        allow_5d: bool,
         kernel_size: Optional[int] = None,
         scale_weights: Union[Optional[Tuple[float]], Optional[List[float]], Optional[torch.Tensor]] = None) -> None:
 
@@ -37,7 +37,7 @@ def _validate_input(
     for tensor in input_tensors:
         assert isinstance(tensor, torch.Tensor), f'Expected input to be torch.Tensor, got {type(tensor)}.'
         min_n_dim = 2
-        max_n_dim = 5 if supports_5d else 4
+        max_n_dim = 5 if allow_5d else 4
         assert min_n_dim <= tensor.dim() <= max_n_dim, \
             f'Input images must be 2D - {max_n_dim}D tensors, got images of shape {tensor.size()}.'
         if tensor.dim() == 5:
