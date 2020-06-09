@@ -13,6 +13,11 @@ def tensor_4d() -> torch.Tensor:
 
 @pytest.fixture(scope='module')
 def tensor_5d() -> torch.Tensor:
+    return torch.rand((5, 5, 5, 5, 2))
+
+
+@pytest.fixture(scope='module')
+def tensor_5d_broken() -> torch.Tensor:
     return torch.rand((5, 5, 5, 5, 5))
 
 
@@ -46,6 +51,11 @@ def test_works_on_single_5d_tensor(tensor_5d: torch.Tensor) -> None:
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
+def test_breaks_if_5d_tensor_has_wrong_format(tensor_5d_broken: torch.Tensor) -> None:
+    with pytest.raises(Exception):
+        _validate_input(tensor_5d_broken, supports_5d=True)
+
+
 def test_works_on_two_4d_tensors(tensor_4d: torch.Tensor) -> None:
     another_tensor_4d = tensor_4d.clone()
     try:
@@ -69,8 +79,7 @@ def test_breaks_if_tensors_have_different_n_dims(tensor_4d: torch.Tensor, tensor
 
 def test_works_if_kernel_size_is_odd(tensor_4d: torch.Tensor) -> None:
     for kernel_size in [i * 2 + 1 for i in range(2, 42)]:
-        with pytest.raises(AssertionError):
-            _validate_input(tensor_4d, supports_5d=False, kernel_size=kernel_size)
+        _validate_input(tensor_4d, supports_5d=False, kernel_size=kernel_size)
 
 
 def test_breaks_if_kernel_size_is_even(tensor_4d: torch.Tensor) -> None:
@@ -85,7 +94,7 @@ def test_breaks_if_scale_weights_of_not_supported_data_types_provided(tensor_4d:
         np.array([1, 2, 3])
     ]
     for weights in wrong_scale_weights:
-        with pytest.raises(AssertionError):
+        with pytest.raises(Exception):
             _validate_input(tensor_4d, supports_5d=False, scale_weights=weights)
 
 
