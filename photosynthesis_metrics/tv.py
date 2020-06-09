@@ -22,7 +22,7 @@ def total_variation(x: torch.Tensor, size_average: bool = True, reduction_type: 
         https://www.wikiwand.com/en/Total_variation_denoising
         https://remi.flamary.com/demos/proxtv.html
     """
-    _validate_input(x)
+    _validate_input(x, supports_5d=False)
     x = _adjust_dimensions(x)
 
     if reduction_type == 'l1':
