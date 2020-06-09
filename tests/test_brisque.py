@@ -16,19 +16,14 @@ def prediction_RGB() -> torch.Tensor:
 
 
 # ================== Test function: `brisque` ==================
-def test_brisque_raises_if_wrong_type_input() -> None:
-    with pytest.raises(AssertionError):
-        brisque(None)
-
-
-def test_brisque_if_works_with_1d(prediction_grey: torch.Tensor) -> None:
+def test_brisque_if_works_with_grey(prediction_grey: torch.Tensor) -> None:
     try:
         brisque(prediction_grey)
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
-def test_brisque_if_works_with_3d(prediction_RGB: torch.Tensor) -> None:
+def test_brisque_if_works_with_RGB(prediction_RGB: torch.Tensor) -> None:
     try:
         brisque(prediction_RGB)
     except Exception as e:
@@ -56,11 +51,11 @@ def test_brisque_raises_if_wrong_reduction(prediction_grey: torch.Tensor) -> Non
         except Exception as e:
             pytest.fail(f"Unexpected error occurred: {e}")
     for mode in [None, 'n', 2]:
-        with pytest.raises(ValueError):
+        with pytest.raises(KeyError):
             brisque(prediction_grey, reduction=mode)
 
 
-def test_brisque_values_1d(prediction_grey: torch.Tensor) -> None:
+def test_brisque_values_grey(prediction_grey: torch.Tensor) -> None:
     score = brisque(prediction_grey, reduction='none')
     score_baseline = torch.tensor([BRISQUE().get_score(img.squeeze().numpy()) for img in prediction_grey])
     assert torch.isclose(score, score_baseline, rtol=2e-4, atol=1e-6).all(), f'Expected values to be equal to ' \
@@ -68,7 +63,7 @@ def test_brisque_values_1d(prediction_grey: torch.Tensor) -> None:
                                                                              f'got {score} and {score_baseline}'
 
 
-def test_brisque_values_3d(prediction_RGB: torch.Tensor) -> None:
+def test_brisque_values_RGB(prediction_RGB: torch.Tensor) -> None:
     score = brisque(prediction_RGB, reduction='none')
     score_baseline = torch.tensor([BRISQUE().get_score(img.squeeze().permute(1, 2, 0).numpy()[..., ::-1])
                                    for img in prediction_RGB])
@@ -78,14 +73,14 @@ def test_brisque_values_3d(prediction_RGB: torch.Tensor) -> None:
 
 
 # ================== Test class: `BRISQUELoss` ==================
-def test_brisque_loss_if_works_with_1d(prediction_grey: torch.Tensor) -> None:
+def test_brisque_loss_if_works_with_grey(prediction_grey: torch.Tensor) -> None:
     try:
         BRISQUELoss()(prediction_grey)
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
-def test_brisque_loss_if_works_with_3d(prediction_RGB: torch.Tensor) -> None:
+def test_brisque_loss_if_works_with_RGB(prediction_RGB: torch.Tensor) -> None:
     try:
         BRISQUELoss()(prediction_RGB)
     except Exception as e:
@@ -99,5 +94,5 @@ def test_brisque_loss_raises_if_wrong_reduction(prediction_grey: torch.Tensor) -
         except Exception as e:
             pytest.fail(f"Unexpected error occurred: {e}")
     for mode in [None, 'n', 2]:
-        with pytest.raises(ValueError):
+        with pytest.raises(KeyError):
             BRISQUELoss(reduction=mode)(prediction_grey)

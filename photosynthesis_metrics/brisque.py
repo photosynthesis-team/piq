@@ -7,7 +7,7 @@ Credits:
     https://live.ece.utexas.edu/research/Quality/index_algorithms.htm BRISQUE
     https://github.com/bukalapak/pybrisque
 """
-from typing import Union
+from typing import Union, Tuple
 import torch
 from torch.nn.modules.loss import _Loss
 from torch.utils.model_zoo import load_url
@@ -15,8 +15,7 @@ import torch.nn.functional as F
 from photosynthesis_metrics.utils import _adjust_dimensions, _validate_input
 
 
-def _ggd(x: torch.Tensor) -> tuple:
-    # It works
+def _ggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
     gamma = torch.arange(0.2, 10 + 0.001, 0.001)
     r_table = (torch.lgamma(1. / gamma) + torch.lgamma(3. / gamma) - 2 * torch.lgamma(2. / gamma)).exp()
     r_table = r_table.repeat(x.size(0), 1)
@@ -32,8 +31,7 @@ def _ggd(x: torch.Tensor) -> tuple:
     return solution, sigma
 
 
-def _aggd(x: torch.Tensor) -> tuple:
-    # It works
+def _aggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     gamma = torch.arange(start=0.2, end=10.001, step=0.001)
     r_table = torch.exp(2 * torch.lgamma(2. / gamma) - torch.lgamma(1. / gamma) - torch.lgamma(3. / gamma)).repeat(
         x.size(0), 1)
@@ -70,7 +68,7 @@ def _gaussian_kernel2d(kernel_size: int = 7, sigma: float = 7 / 6) -> torch.Tens
     return kernel
 
 
-def _nss(luma: torch.Tensor, kernel_size: int = 7, sigma: float = 7. / 6) -> torch.Tensor:
+def _natural_scene_statistics(luma: torch.Tensor, kernel_size: int = 7, sigma: float = 7. / 6) -> torch.Tensor:
     kernel = _gaussian_kernel2d(kernel_size=kernel_size, sigma=sigma).view(1, 1, kernel_size, kernel_size)
     C = 1
     mu = F.conv2d(luma, kernel, padding=kernel_size // 2)
@@ -80,14 +78,14 @@ def _nss(luma: torch.Tensor, kernel_size: int = 7, sigma: float = 7. / 6) -> tor
 
     luma_nrmlzd = (luma - mu) / (std + C)
     features = []
-    alpha, sigma = _ggd(luma_nrmlzd)
+    alpha, sigma = _ggd_parameters(luma_nrmlzd)
     features.extend((alpha, sigma.pow(2)))
 
     shifts = [(0, 1), (1, 0), (1, 1), (-1, 1)]
 
     for shift in shifts:
         shifted_luma_nrmlzd = torch.roll(luma_nrmlzd, shifts=shift, dims=(-2, -1))
-        alpha, sigma_l, sigma_r = _aggd(luma_nrmlzd * shifted_luma_nrmlzd)
+        alpha, sigma_l, sigma_r = _aggd_parameters(luma_nrmlzd * shifted_luma_nrmlzd)
         eta = (sigma_r - sigma_l) * torch.exp(
             torch.lgamma(2. / alpha) - (torch.lgamma(1. / alpha) + torch.lgamma(3. / alpha)) / 2)
         features.extend((alpha, eta, sigma_l.pow(2), sigma_r.pow(2)))
@@ -98,6 +96,8 @@ def _nss(luma: torch.Tensor, kernel_size: int = 7, sigma: float = 7. / 6) -> tor
 def _scale_features(features: torch.Tensor) -> torch.Tensor:
     lower_bound = -1
     upper_bound = 1
+    # Feature range is taken from official implementation of BRISQUE on MATLAB.
+    # Source: https://live.ece.utexas.edu/research/Quality/index_algorithms.htm
     feature_ranges = torch.tensor([[0.338, 10], [0.017204, 0.806612], [0.236, 1.642],
                                    [-0.123884, 0.20293], [0.000155, 0.712298], [0.001122, 0.470257],
                                    [0.244, 1.641], [-0.123586, 0.179083], [0.000152, 0.710456],
@@ -118,7 +118,7 @@ def _scale_features(features: torch.Tensor) -> torch.Tensor:
     return scaled_features
 
 
-def _RBF_kernel(features: torch.Tensor, sv: torch.Tensor, gamma: float = 0.05):
+def _RBF_kernel(features: torch.Tensor, sv: torch.Tensor, gamma: float = 0.05) -> torch.Tensor:
     features.unsqueeze_(dim=-1)
     sv.unsqueeze_(dim=0)
     dist = (features - sv).pow(2).sum(dim=1)
@@ -126,9 +126,11 @@ def _RBF_kernel(features: torch.Tensor, sv: torch.Tensor, gamma: float = 0.05):
 
 
 def _score_svr(features: torch.Tensor) -> torch.Tensor:
-
     url = 'https://drive.google.com/uc?export=download&id=1e1F4jLh2-P3mqZ20GYr9ItgLma6999CX'
     sv_coef, sv = load_url(url, map_location=features.device)
+
+    # gamma and tho are SVM model parameters taken from official implementation of BRISQUE on MATLAB
+    # Source: https://live.ece.utexas.edu/research/Quality/index_algorithms.htm
     gamma = 0.05
     rho = -153.591
     sv.t_()
@@ -139,14 +141,16 @@ def _score_svr(features: torch.Tensor) -> torch.Tensor:
 
 def brisque(x: torch.Tensor,
             kernel_size: int = 7, kernel_sigma: float = 7 / 6,
-            data_range: Union[int, float] = 1., reduction: str = 'mean') -> torch.Tensor:
+            data_range: Union[int, float] = 1., reduction: str = 'mean',
+            interpolation: str = 'nearest') -> torch.Tensor:
     r"""Interface of SBRISQUE index.
         Args:
             x: Batch of images. Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
             kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
             kernel_sigma: Sigma of normal distribution.
             data_range: Value range of input images (usually 1.0 or 255).
-            reduction: Reduction over samples in batch: "mean"|"sum"|"none"
+            reduction: Reduction over samples in batch: "mean"|"sum"|"none".
+            interpolation: Interpolation to be used for scaling.
         Returns:
             Value of BRISQUE index.
         References:
@@ -155,27 +159,27 @@ def brisque(x: torch.Tensor,
         """
     _validate_input(input_tensors=x)
     x = _adjust_dimensions(input_tensors=x)
-    if data_range == 255:
-        x = x / 255
+
+    x /= data_range
 
     if x.size(1) == 3:
-        x = torch.sum(x * torch.tensor([0.299, 0.587, 0.114]).view(1, -1, 1, 1), dim=1, keepdim=True)
+        rgb_to_grey = torch.tensor([0.299, 0.587, 0.114]).view(1, -1, 1, 1)
+        x = torch.sum(x * rgb_to_grey, dim=1, keepdim=True)
     features = []
     num_of_scales = 2
     for iteration in range(num_of_scales):
-        features.append(_nss(x, kernel_size, kernel_sigma))
-        x = F.interpolate(x, scale_factor=0.5, mode='nearest')
+        features.append(_natural_scene_statistics(x, kernel_size, kernel_sigma))
+        x = F.interpolate(x, scale_factor=0.5, mode=interpolation)
 
     features = torch.cat(features, dim=-1)
     scaled_features = _scale_features(features)
     score = _score_svr(scaled_features)
-    if reduction == 'mean':
-        return score.mean(dim=0)
-    if reduction == 'sum':
-        return score.sum(dim=0)
-    if reduction != 'none':
-        raise ValueError(f'Expected reduction modes are "mean"|"sum"|"none", got {reduction}')
-    return score
+    if reduction == 'none':
+        return score
+
+    return {'mean': score.mean(dim=0),
+            'sum': score.sum(dim=0)
+            }[reduction]
 
 
 class BRISQUELoss(_Loss):
@@ -185,7 +189,7 @@ class BRISQUELoss(_Loss):
 
         The sum operation still operates over all the elements, and divides by :math:`n`.
 
-        The division by :math:`n` can be avoided if one sets ``reduction = 'sum'``.
+        The division by :math:`n` can be avoided by setting ``reduction = 'sum'``.
 
 
         Args:
@@ -201,6 +205,7 @@ class BRISQUELoss(_Loss):
                 elements in the output, ``'sum'``: the output will be summed. Note: :attr:`size_average`
                 and :attr:`reduce` are in the process of being deprecated, and in the meantime,
                 specifying either of those two args will override :attr:`reduction`. Default: ``'mean'``.
+            interpolation: Interpolation to be used for scaling.
 
         Shape:
             - Input: Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
@@ -218,12 +223,14 @@ class BRISQUELoss(_Loss):
             https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
         """
     def __init__(self, kernel_size: int = 7, kernel_sigma: float = 7 / 6,
-                 data_range: Union[int, float] = 1., reduction: str = 'mean') -> None:
+                 data_range: Union[int, float] = 1., reduction: str = 'mean',
+                 interpolation: str = 'nearest') -> None:
         super().__init__()
         self.reduction = reduction
         self.kernel_size = kernel_size
         self.kernel_sigma = kernel_sigma
         self.data_range = data_range
+        self.interpolation = interpolation
 
     def forward(self, prediction: torch.Tensor) -> torch.Tensor:
         r"""Computation of BRISQUE score as a loss function.
@@ -236,4 +243,4 @@ class BRISQUELoss(_Loss):
                 """
 
         return brisque(prediction, reduction=self.reduction, kernel_size=self.kernel_size,
-                       kernel_sigma=self.kernel_sigma, data_range=self.data_range)
+                       kernel_sigma=self.kernel_sigma, data_range=self.data_range, interpolation=self.interpolation)
