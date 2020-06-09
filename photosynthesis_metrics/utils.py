@@ -24,6 +24,7 @@ def _adjust_dimensions(input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, to
 
 def _validate_input(
         input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]],
+        allow_5d: bool,
         kernel_size: Optional[int] = None,
         scale_weights: Union[Optional[Tuple[float]], Optional[List[float]], Optional[torch.Tensor]] = None) -> None:
 
@@ -35,7 +36,10 @@ def _validate_input(
 
     for tensor in input_tensors:
         assert isinstance(tensor, torch.Tensor), f'Expected input to be torch.Tensor, got {type(tensor)}.'
-        assert 1 < tensor.dim() < 6, f'Input images must be 2D, 3D or 4D tensors, got images of shape {tensor.size()}.'
+        min_n_dim = 2
+        max_n_dim = 5 if allow_5d else 4
+        assert min_n_dim <= tensor.dim() <= max_n_dim, \
+            f'Input images must be 2D - {max_n_dim}D tensors, got images of shape {tensor.size()}.'
         if tensor.dim() == 5:
             assert tensor.size(-1) == 2, f'Expected Complex 5D tensor with (N,C,H,W,2) size, got {tensor.size()}'
 
@@ -50,7 +54,6 @@ def _validate_input(
             f'Scale weights must be of type list, tuple or torch.Tensor, got {type(scale_weights)}.'
         assert (torch.tensor(scale_weights).dim() == 1), \
             f'Scale weights must be one dimensional, got {torch.tensor(scale_weights).dim()}.'
-    return
 
 
 def _validate_features(x: torch.Tensor, y: torch.Tensor) -> None:
