@@ -65,6 +65,7 @@ def test_brisque_loss_if_works_with_grey(prediction_grey: torch.Tensor) -> None:
     try:
         loss_value = BRISQUELoss()(prediction_grey_grad)
         loss_value.backward()
+        assert prediction_grey_grad.grad is not None, 'Expected non None gradient of leaf variable'
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
@@ -75,6 +76,7 @@ def test_brisque_loss_if_works_with_RGB(prediction_RGB: torch.Tensor) -> None:
     try:
         loss_value = BRISQUELoss()(prediction_RGB_grad)
         loss_value.backward()
+        assert prediction_RGB_grad.grad is not None, 'Expected non None gradient of leaf variable'
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
