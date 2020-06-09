@@ -60,15 +60,21 @@ def test_brisque_values_RGB(prediction_RGB: torch.Tensor) -> None:
 
 # ================== Test class: `BRISQUELoss` ==================
 def test_brisque_loss_if_works_with_grey(prediction_grey: torch.Tensor) -> None:
+    prediction_grey_grad = prediction_grey.clone()
+    prediction_grey_grad.requires_grad_()
     try:
-        BRISQUELoss()(prediction_grey)
+        loss_value = BRISQUELoss()(prediction_grey_grad)
+        loss_value.backward()
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
 def test_brisque_loss_if_works_with_RGB(prediction_RGB: torch.Tensor) -> None:
+    prediction_RGB_grad = prediction_RGB.clone()
+    prediction_RGB_grad.requires_grad_()
     try:
-        BRISQUELoss()(prediction_RGB)
+        loss_value = BRISQUELoss()(prediction_RGB_grad)
+        loss_value.backward()
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
