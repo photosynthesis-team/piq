@@ -76,7 +76,7 @@ def test_works_on_two_not_5d_tensors(tensor_2d: torch.Tensor) -> None:
     max_num_dims = 10
     for _ in range(max_num_dims):
         another_tensor = tensor.clone()
-        if tensor.dim() < 5:
+        if 1 < tensor.dim() < 5:
             try:
                 _validate_input((tensor, another_tensor), allow_5d=True)
             except Exception as e:
