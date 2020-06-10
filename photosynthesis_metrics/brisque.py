@@ -130,7 +130,7 @@ def _score_svr(features: torch.Tensor) -> torch.Tensor:
           'latest/download/brisque_svm_weights.pt'
     sv_coef, sv = load_url(url, map_location=features.device)
 
-    # gamma and tho are SVM model parameters taken from official implementation of BRISQUE on MATLAB
+    # gamma and rho are SVM model parameters taken from official implementation of BRISQUE on MATLAB
     # Source: https://live.ece.utexas.edu/research/Quality/index_algorithms.htm
     gamma = 0.05
     rho = -153.591
@@ -164,6 +164,7 @@ def brisque(x: torch.Tensor,
     x = x / data_range
 
     if x.size(1) == 3:
+        # rgb_to_grey - weights to transform RGB image to grey
         rgb_to_grey = torch.tensor([0.299, 0.587, 0.114]).view(1, -1, 1, 1)
         x = torch.sum(x * rgb_to_grey, dim=1, keepdim=True)
     features = []
@@ -178,9 +179,9 @@ def brisque(x: torch.Tensor,
     if reduction == 'none':
         return score
 
-    return {'mean': score.mean(dim=0),
-            'sum': score.sum(dim=0)
-            }[reduction]
+    return {'mean': score.mean,
+            'sum': score.sum
+            }[reduction](dim=0)
 
 
 class BRISQUELoss(_Loss):
