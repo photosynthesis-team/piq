@@ -9,17 +9,20 @@ def _adjust_dimensions(input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, to
     if isinstance(input_tensors, torch.Tensor):
         input_tensors = (input_tensors,)
 
+    resized_tensors = []
     for tensor in input_tensors:
-        if tensor.dim() == 2:
-            tensor.unsqueeze_(0)
-        if tensor.dim() == 3:
-            tensor.unsqueeze_(0)
-        if tensor.dim() != 4 and tensor.dim() != 5:
+        tmp = tensor.clone()
+        if tmp.dim() == 2:
+            tmp = tmp.unsqueeze(0)
+        if tmp.dim() == 3:
+            tmp = tmp.unsqueeze(0)
+        if tmp.dim() != 4 and tmp.dim() != 5:
             raise ValueError(f'Expected 2, 3, 4 or 5 dimensions (got {tensor.dim()})')
+        resized_tensors.append(tmp)
 
-    if len(input_tensors) == 1:
-        return input_tensors[0]
-    return input_tensors
+    if len(resized_tensors) == 1:
+        return resized_tensors[0]
+    return tuple(resized_tensors)
 
 
 def _validate_input(
@@ -34,12 +37,12 @@ def _validate_input(
     assert isinstance(input_tensors, tuple)
     assert 0 < len(input_tensors) < 3, f'Expected one or two input tensors, got {len(input_tensors)}'
 
+    min_n_dim = 2
+    max_n_dim = 5 if allow_5d else 4
     for tensor in input_tensors:
         assert isinstance(tensor, torch.Tensor), f'Expected input to be torch.Tensor, got {type(tensor)}.'
-        min_n_dim = 2
-        max_n_dim = 5 if allow_5d else 4
         assert min_n_dim <= tensor.dim() <= max_n_dim, \
-            f'Input images must be 2D - {max_n_dim}D tensors, got images of shape {tensor.size()}.'
+            f'Input images must be {min_n_dim}D - {max_n_dim}D tensors, got images of shape {tensor.size()}.'
         if tensor.dim() == 5:
             assert tensor.size(-1) == 2, f'Expected Complex 5D tensor with (N,C,H,W,2) size, got {tensor.size()}'
 
