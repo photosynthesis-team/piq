@@ -23,8 +23,26 @@ def test_brisque_if_works_with_grey(prediction_grey: torch.Tensor) -> None:
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
+@pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test if there is no GPU.')
+def test_brisque_if_works_with_grey_on_gpu(prediction_grey: torch.Tensor) -> None:
+    try:
+        prediction_grey = prediction_grey.cuda()
+        brisque(prediction_grey)
+    except Exception as e:
+        pytest.fail(f"Unexpected error occurred: {e}")
+
+
 def test_brisque_if_works_with_RGB(prediction_RGB: torch.Tensor) -> None:
     try:
+        brisque(prediction_RGB)
+    except Exception as e:
+        pytest.fail(f"Unexpected error occurred: {e}")
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test if there is no GPU.')
+def test_brisque_if_works_with_RGB_on_gpu(prediction_RGB: torch.Tensor) -> None:
+    try:
+        prediction_RGB = prediction_RGB.cuda()
         brisque(prediction_RGB)
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
