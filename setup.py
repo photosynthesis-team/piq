@@ -1,18 +1,17 @@
 import os
-import codecs
 import setuptools
 
+from typing import List
 
-def read(rel_path):
+
+def read_version_file(rel_path: str) -> List[str]:
     here = os.path.abspath(os.path.dirname(__file__))
-    # intentionally *not* adding an encoding option to open, See:
-    #   https://github.com/pypa/virtualenv/issues/201#issuecomment-3145690
-    with codecs.open(os.path.join(here, rel_path), 'r') as fp:
-        return fp.read()
+    with open(os.path.join(here, rel_path), 'r') as fp:
+        return fp.read().splitlines()
 
 
-def get_version(rel_path):
-    for line in read(rel_path).splitlines():
+def get_version(rel_path: str) -> str:
+    for line in read_version_file(rel_path):
         if line.startswith('__version__'):
             # __version__ = "0.9"
             delim = '"' if '"' in line else "'"
