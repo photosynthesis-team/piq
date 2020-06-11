@@ -16,7 +16,7 @@ from photosynthesis_metrics.utils import _adjust_dimensions, _validate_input
 
 
 def _ggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-    gamma = torch.arange(0.2, 10 + 0.001, 0.001)
+    gamma = torch.arange(0.2, 10 + 0.001, 0.001).to(x)
     r_table = (torch.lgamma(1. / gamma) + torch.lgamma(3. / gamma) - 2 * torch.lgamma(2. / gamma)).exp()
     r_table = r_table.repeat(x.size(0), 1)
 
@@ -27,12 +27,11 @@ def _ggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
 
     indexes = (rho - r_table).abs().argmin(dim=-1)
     solution = gamma[indexes]
-
     return solution, sigma
 
 
 def _aggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    gamma = torch.arange(start=0.2, end=10.001, step=0.001)
+    gamma = torch.arange(start=0.2, end=10.001, step=0.001).to(x)
     r_table = torch.exp(2 * torch.lgamma(2. / gamma) - torch.lgamma(1. / gamma) - torch.lgamma(3. / gamma)).repeat(
         x.size(0), 1)
 
@@ -69,7 +68,7 @@ def _gaussian_kernel2d(kernel_size: int = 7, sigma: float = 7 / 6) -> torch.Tens
 
 
 def _natural_scene_statistics(luma: torch.Tensor, kernel_size: int = 7, sigma: float = 7. / 6) -> torch.Tensor:
-    kernel = _gaussian_kernel2d(kernel_size=kernel_size, sigma=sigma).view(1, 1, kernel_size, kernel_size)
+    kernel = _gaussian_kernel2d(kernel_size=kernel_size, sigma=sigma).view(1, 1, kernel_size, kernel_size).to(luma)
     C = 1
     mu = F.conv2d(luma, kernel, padding=kernel_size // 2)
     mu_sq = mu ** 2
@@ -110,7 +109,7 @@ def _scale_features(features: torch.Tensor) -> torch.Tensor:
                                    [0.001374, 0.40243], [0.227, 0.996],
                                    [-0.117188, 0.09832299999999999], [3e-005, 0.531903],
                                    [0.001122, 0.369589], [0.228, 0.99], [-0.12243, 0.098658],
-                                   [2.8e-005, 0.530092], [0.001118, 0.370399]])
+                                   [2.8e-005, 0.530092], [0.001118, 0.370399]]).to(features)
 
     scaled_features = lower_bound + (upper_bound - lower_bound) * (features - feature_ranges[..., 0]) / (
             feature_ranges[..., 1] - feature_ranges[..., 0])
@@ -165,7 +164,7 @@ def brisque(x: torch.Tensor,
 
     if x.size(1) == 3:
         # rgb_to_grey - weights to transform RGB image to grey
-        rgb_to_grey = torch.tensor([0.299, 0.587, 0.114]).view(1, -1, 1, 1)
+        rgb_to_grey = torch.tensor([0.299, 0.587, 0.114]).view(1, -1, 1, 1).to(x)
         x = torch.sum(x * rgb_to_grey, dim=1, keepdim=True)
     features = []
     num_of_scales = 2
