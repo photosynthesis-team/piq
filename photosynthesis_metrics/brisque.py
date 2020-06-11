@@ -23,28 +23,30 @@ def _ggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
     sigma_sq = x.pow(2).mean(dim=(-1, -2))
     sigma = sigma_sq.sqrt().squeeze(dim=-1)
     E = x.abs().mean(dim=(-1, -2))
-    rho = sigma_sq / E ** 2
+    EPS = torch.finfo(torch.float32).eps
+    rho = sigma_sq / (E ** 2 + EPS)
 
     indexes = (rho - r_table).abs().argmin(dim=-1)
     solution = gamma[indexes]
-
     return solution, sigma
 
 
 def _aggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     gamma = torch.arange(start=0.2, end=10.001, step=0.001)
-    r_table = torch.exp(2 * torch.lgamma(2. / gamma) - torch.lgamma(1. / gamma) - torch.lgamma(3. / gamma)).repeat(
-        x.size(0), 1)
+    r_table = torch.exp(2 * torch.lgamma(2. / gamma) - torch.lgamma(1. / gamma) - torch.lgamma(3. / gamma))
+    r_table = r_table.repeat(x.size(0), 1)
 
     mask_left = x < 0
     mask_right = x > 0
-    count_left = mask_left.sum(dim=(-1, -2))
-    count_right = mask_right.sum(dim=(-1, -2))
+    count_left = mask_left.sum(dim=(-1, -2), dtype=torch.float32)
+    count_right = mask_right.sum(dim=(-1, -2), dtype=torch.float32)
 
-    left_sigma = ((x * mask_left).pow(2).sum(dim=(-1, -2)) / count_left).sqrt()
-    right_sigma = ((x * mask_right).pow(2).sum(dim=(-1, -2)) / count_right).sqrt()
-    gamma_hat = left_sigma / right_sigma
-    ro_hat = x.abs().mean(dim=(-1, -2)).pow(2) / x.pow(2).mean(dim=(-1, -2))
+    EPS = torch.finfo(torch.float32).eps
+
+    left_sigma = ((x * mask_left).pow(2).sum(dim=(-1, -2)) / (count_left + EPS)).sqrt()
+    right_sigma = ((x * mask_right).pow(2).sum(dim=(-1, -2)) / (count_right + EPS)).sqrt()
+    gamma_hat = left_sigma / (right_sigma + EPS)
+    ro_hat = x.abs().mean(dim=(-1, -2)).pow(2) / (x.pow(2).mean(dim=(-1, -2)) + EPS)
     ro_hat_norm = (ro_hat * (gamma_hat.pow(3) + 1) * (gamma_hat + 1)) / (gamma_hat.pow(2) + 1).pow(2)
 
     indexes = (ro_hat_norm - r_table).abs().argmin(dim=-1)
