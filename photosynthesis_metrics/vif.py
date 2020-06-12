@@ -30,17 +30,18 @@ def _gaussian_kernel2d(kernel_size: int = 5, sigma: float = 2.0) -> torch.Tensor
     return kernel
 
 
-def vif_p(prediction: torch.Tensor, target: torch.Tensor,
-          sigma_n_sq: float = 2.0, data_range: Union[int, float] = 1.0) -> torch.Tensor:
+def vif_p(prediction: torch.Tensor, target: torch.Tensor, sigma_n_sq: float = 2.0,
+          data_range: Union[int, float] = 1.0, reduction: str = 'mean') -> torch.Tensor:
     r"""Compute Visiual Information Fidelity in **pixel** domain for a batch of images.
     This metric isn't symmetric, so make sure to place arguments in correct order.
 
-    Both inputs supposed to be in range [0, 1] with RGB order.
+    Both inputs supposed to have RGB order.
     Args:
         prediction: Batch of predicted images with shape (batch_size x channels x H x W)
         target: Batch of target images with shape  (batch_size x channels x H x W)
         sigma_n_sq: HVS model parameter (variance of the visual noise).
         data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
+        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
         
     Returns:
         VIF: Index of similarity betwen two images. Usually in [0, 1] interval.
@@ -67,7 +68,7 @@ def vif_p(prediction: torch.Tensor, target: torch.Tensor,
         target = target[:, None, :, :]
     
     # Constant for numerical stability
-    EPS = 1e-10
+    EPS = 1e-8
     
     # Progressively downsample images and compute VIF on different scales
     prediction_vif, target_vif = 0, 0
@@ -91,15 +92,35 @@ def vif_p(prediction: torch.Tensor, target: torch.Tensor,
         # Zero small negative values
         torch.relu_(sigma_trgt_sq)
         torch.relu_(sigma_pred_sq)
-        
+
         g = sigma_trgt_pred / (sigma_trgt_sq + EPS)
         sigma_v_sq = sigma_pred_sq - g * sigma_trgt_pred
 
+        g[sigma_trgt_sq < EPS] = 0
+        sigma_v_sq[sigma_trgt_sq < EPS] = sigma_pred_sq[sigma_trgt_sq < EPS]
+        sigma_trgt_sq[sigma_trgt_sq < EPS] = 0
+
+        g[sigma_pred_sq < EPS] = 0
+        sigma_v_sq[sigma_pred_sq < EPS] = 0
+
+        sigma_v_sq[g < 0] = sigma_pred_sq[g < 0]
+        torch.relu_(g)
+        sigma_v_sq[sigma_v_sq <= EPS] = EPS
+    
         pred_vif_scale = torch.log10(1.0 + (g ** 2.) * sigma_trgt_sq / (sigma_v_sq + sigma_n_sq))
         prediction_vif += torch.sum(pred_vif_scale, dim=[1, 2, 3])
         target_vif += torch.sum(torch.log10(1.0 + sigma_trgt_sq / sigma_n_sq), dim=[1, 2, 3])
 
-    return prediction_vif / target_vif
+    vif = (prediction_vif + EPS) / (target_vif + EPS)
+
+    # Reduce if needed
+    if reduction == 'mean':
+        return vif.mean(dim=0)
+    elif reduction == 'sum':
+        return vif.sum(dim=0)
+    elif reduction != 'none':
+        raise ValueError(f'Expected reduction modes are "mean"|"sum"|"none", got {reduction}')
+    return vif
 
 
 class VIFLoss(_Loss):
@@ -108,15 +129,17 @@ class VIFLoss(_Loss):
     value `1 - clip(VIF, min=0, max=1)` is returned.
     """
 
-    def __init__(self, sigma_n_sq: float = 2.0, data_range: Union[int, float] = 1.0):
+    def __init__(self, sigma_n_sq: float = 2.0, data_range: Union[int, float] = 1.0, reduction: str = 'mean'):
         r"""
         Args:
             sigma_n_sq: HVS model parameter (variance of the visual noise).
             data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
+            reduction: Reduction over samples in batch: "mean"|"sum"|"none"
         """
         super().__init__()
         self.sigma_n_sq = sigma_n_sq
         self.data_range = data_range
+        self.reduction = reduction
 
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         r"""Computation of Visual Information Fidelity (VIF) index as a loss function.
@@ -133,7 +156,8 @@ class VIFLoss(_Loss):
 
     def compute_metric(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
 
-        score = vif_p(prediction, target, sigma_n_sq=self.sigma_n_sq, data_range=self.data_range)
+        score = vif_p(
+            prediction, target, sigma_n_sq=self.sigma_n_sq, data_range=self.data_range, reduction=self.reduction)
         # Make sure value to be in [0, 1] range and convert to loss
         loss = 1 - torch.clamp(torch.mean(score, dim=0), 0, 1)
         return loss
