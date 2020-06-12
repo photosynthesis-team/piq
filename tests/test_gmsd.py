@@ -74,6 +74,7 @@ def test_multi_scale_gmsd_loss(prediction: torch.Tensor, target: torch.Tensor) -
     loss(prediction, target)
 
 
+@pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test if there is no GPU.')
 def test_multi_scale_gmsd_loss_on_gpu(prediction: torch.Tensor, target: torch.Tensor) -> None:
     prediction = prediction.cuda()
     target = target.cuda()
