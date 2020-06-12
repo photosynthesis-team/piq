@@ -41,8 +41,8 @@ def test_psnr_works_for_greyscale_images_on_gpu() -> None:
 
 
 def test_psnr_works_for_zero_tensors() -> None:
-    prediction = torch.zeros(4, 3, 256, 256).cuda()
-    target = torch.zeros(4, 3, 256, 256).cuda()
+    prediction = torch.zeros(4, 3, 256, 256)
+    target = torch.zeros(4, 3, 256, 256)
     measure = psnr(prediction, target, data_range=1.0)
     assert torch.isclose(measure, torch.tensor(80.))
 
