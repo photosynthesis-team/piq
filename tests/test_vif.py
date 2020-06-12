@@ -70,3 +70,18 @@ def test_vif_loss_zero_for_equal_tensors(prediction: torch.Tensor):
     target = prediction.clone()
     measure = loss(prediction, target)
     assert torch.isclose(measure, torch.tensor(0.), atol=1e-6), f'VIF for equal tensors must be 0, got {measure}'
+
+
+def test_vif_loss_reduction(prediction: torch.Tensor, target: torch.Tensor):
+    loss = VIFLoss(reduction='mean')
+    measure = loss(prediction, target)
+    assert measure.dim() == 0, f'VIF with `mean` reduction must return 1 number, got {len(measure)}'
+
+    loss = VIFLoss(reduction='sum')
+    measure = loss(prediction, target)
+    assert measure.dim() == 0, f'VIF with `mean` reduction must return 1 number, got {len(measure)}'
+
+    loss = VIFLoss(reduction='none')
+    measure = loss(prediction, target)
+    assert len(measure) == prediction.size(0), \
+        f'VIF with `none` reduction must have length equal to number of images, got {len(measure)}'

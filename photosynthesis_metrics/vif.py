@@ -159,5 +159,5 @@ class VIFLoss(_Loss):
         score = vif_p(
             prediction, target, sigma_n_sq=self.sigma_n_sq, data_range=self.data_range, reduction=self.reduction)
         # Make sure value to be in [0, 1] range and convert to loss
-        loss = 1 - torch.clamp(torch.mean(score, dim=0), 0, 1)
+        loss = 1 - torch.clamp(score, 0, 1)
         return loss
