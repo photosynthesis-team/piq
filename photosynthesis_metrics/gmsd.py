@@ -246,7 +246,7 @@ class MultiScaleGMSDLoss(_Loss):
             assert prediction.size(1) == 3, "Chromatic component can be computed only for RGB images!"
             
             # Convert to YIQ color space https://en.wikipedia.org/wiki/YIQ
-            iq_weights = torch.tensor([[0.5959, -0.2746, -0.3213], [0.2115, -0.5227, 0.3112]]).t()
+            iq_weights = torch.tensor([[0.5959, -0.2746, -0.3213], [0.2115, -0.5227, 0.3112]]).t().to(prediction)
             prediction_iq = torch.matmul(prediction.permute(0, 2, 3, 1), iq_weights).permute(0, 3, 1, 2)
             target_iq = torch.matmul(target.permute(0, 2, 3, 1), iq_weights).permute(0, 3, 1, 2)
             
