@@ -21,7 +21,7 @@ def psnr(prediction: torch.Tensor, target: torch.Tensor,
         PSNR: Index of similarity betwen two images.
     Note:
         Implementaition is based on Wikepedia https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio
-        Colour images a first converted to YCbCr format and only luminance component is considered.
+        Colour images are first converted to YCbCr format and only luminance component is considered.
     """
     _validate_input((prediction, target), allow_5d=False)
 
