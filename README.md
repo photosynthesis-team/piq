@@ -30,6 +30,30 @@ ssim_index = ssim(prediction, target, data_range=1.)
 <!-- EXAMPLES -->
 ### Examples
 
+<!-- PSNR EXAMPLES -->
+<details>
+<summary>Peak Signal-to-Noise Ration (PSNR)</summary>
+<p>
+
+To compute PSNR as a measure, use lower case function from the library.
+By default it computes average of PSNR if more than 1 image is included in batch.
+You can specify other reduction methods by `reduction` flag.
+
+```python
+import torch
+from photosynthesis_metrics import psnr
+from typing import Union, Tuple
+
+prediction = torch.rand(3, 3, 256, 256)
+target = torch.rand(3, 3, 256, 256) 
+psnr_mean = psnr(prediction, target, data_range=1., reduction='mean')
+psnr_per_image = psnr(prediction, target, data_range=1., reduction='none')
+```
+
+Note: Colour images are first converted to YCbCr format and only luminance component is considered.
+</p>
+</details>
+
 <!-- SSIM EXAMPLES -->
 <details>
 <summary>Structural Similarity (SSIM)</summary>
