@@ -79,11 +79,8 @@ def test_brisque_values_RGB(prediction_RGB: torch.Tensor) -> None:
 def test_brisque_all_zeros_or_ones() -> None:
     size = (1, 1, 256, 256)
     for tensor in [torch.zeros(size), torch.ones(size)]:
-        try:
-            score = brisque(tensor, reduction='mean')
-        except Exception as e:
-            pytest.fail(f"Unexpected error occurred: {e}")
-        assert not torch.isnan(score), f'Unexpected output value {score}'
+        with pytest.raises(AssertionError):
+            brisque(tensor, reduction='mean')
 
 
 # ================== Test class: `BRISQUELoss` ==================

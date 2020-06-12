@@ -22,9 +22,12 @@ def _ggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
 
     sigma_sq = x.pow(2).mean(dim=(-1, -2))
     sigma = sigma_sq.sqrt().squeeze(dim=-1)
+
+    assert not torch.isclose(sigma, torch.zeros_like(sigma)).all(), \
+        'Expected image with non zero variance of pixel values'
+
     E = x.abs().mean(dim=(-1, -2))
-    EPS = torch.finfo(torch.float32).eps
-    rho = sigma_sq / (E ** 2 + EPS)
+    rho = sigma_sq / E ** 2
 
     indexes = (rho - r_table).abs().argmin(dim=-1)
     solution = gamma[indexes]
@@ -41,12 +44,19 @@ def _aggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch
     count_left = mask_left.sum(dim=(-1, -2), dtype=torch.float32)
     count_right = mask_right.sum(dim=(-1, -2), dtype=torch.float32)
 
-    EPS = torch.finfo(torch.float32).eps
+    assert (count_left > 0).all(), 'Expected input tensor (pairwise products of neighboring MSCN coefficients)' \
+                                   '  with values below zero to compute parameters of AGGD'
+    assert (count_right > 0).all(), 'Expected input tensor (pairwise products of neighboring MSCN coefficients)' \
+                                    ' with values above zero to compute parameters of AGGD'
 
-    left_sigma = ((x * mask_left).pow(2).sum(dim=(-1, -2)) / (count_left + EPS)).sqrt()
-    right_sigma = ((x * mask_right).pow(2).sum(dim=(-1, -2)) / (count_right + EPS)).sqrt()
-    gamma_hat = left_sigma / (right_sigma + EPS)
-    ro_hat = x.abs().mean(dim=(-1, -2)).pow(2) / (x.pow(2).mean(dim=(-1, -2)) + EPS)
+    left_sigma = ((x * mask_left).pow(2).sum(dim=(-1, -2)) / count_left).sqrt()
+    right_sigma = ((x * mask_right).pow(2).sum(dim=(-1, -2)) / count_right).sqrt()
+
+    assert (left_sigma > 0).all() and (right_sigma > 0).all(), f'Expected non-zero left and right variances, ' \
+                                                               f'got {left_sigma} and {right_sigma}'
+
+    gamma_hat = left_sigma / right_sigma
+    ro_hat = x.abs().mean(dim=(-1, -2)).pow(2) / x.pow(2).mean(dim=(-1, -2))
     ro_hat_norm = (ro_hat * (gamma_hat.pow(3) + 1) * (gamma_hat + 1)) / (gamma_hat.pow(2) + 1).pow(2)
 
     indexes = (ro_hat_norm - r_table).abs().argmin(dim=-1)
