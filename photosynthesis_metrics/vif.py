@@ -81,8 +81,8 @@ def vif_p(prediction: torch.Tensor, target: torch.Tensor, sigma_n_sq: float = 2.
 
         if scale > 1:
             # Convolve and downsample
-            prediction = F.conv2d(prediction, kernel)[:, :, ::2, ::2].clone()  # valid padding
-            target = F.conv2d(target, kernel)[:, :, ::2, ::2].clone()  # valid padding
+            prediction = F.conv2d(prediction, kernel)[:, :, ::2, ::2]  # valid padding
+            target = F.conv2d(target, kernel)[:, :, ::2, ::2]  # valid padding
 
         mu_trgt, mu_pred = F.conv2d(target, kernel), F.conv2d(prediction, kernel)  # valid padding
         mu_trgt_sq, mu_pred_sq, mu_trgt_pred = mu_trgt * mu_trgt, mu_pred * mu_pred, mu_trgt * mu_pred
