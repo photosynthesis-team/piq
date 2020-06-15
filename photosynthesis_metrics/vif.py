@@ -52,7 +52,9 @@ def vif_p(prediction: torch.Tensor, target: torch.Tensor, sigma_n_sq: float = 2.
         See https://live.ece.utexas.edu/research/Quality/VIF.htm for details.
         
     """
-    assert prediction.dim() == 4, f'Expected 4D tensor, got {prediction.size()}'
+    _validate_input((prediction, target), allow_5d=False)
+    prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
+
     if data_range == 255:
         prediction = prediction / 255.
         target = target / 255.
@@ -79,8 +81,8 @@ def vif_p(prediction: torch.Tensor, target: torch.Tensor, sigma_n_sq: float = 2.
 
         if scale > 1:
             # Convolve and downsample
-            prediction = F.conv2d(prediction, kernel)[:, :, ::2, ::2]  # valid padding
-            target = F.conv2d(target, kernel)[:, :, ::2, ::2]  # valid padding
+            prediction = F.conv2d(prediction, kernel)[:, :, ::2, ::2].clone()  # valid padding
+            target = F.conv2d(target, kernel)[:, :, ::2, ::2].clone()  # valid padding
 
         mu_trgt, mu_pred = F.conv2d(target, kernel), F.conv2d(prediction, kernel)  # valid padding
         mu_trgt_sq, mu_pred_sq, mu_trgt_pred = mu_trgt * mu_trgt, mu_pred * mu_pred, mu_trgt * mu_pred
@@ -90,26 +92,27 @@ def vif_p(prediction: torch.Tensor, target: torch.Tensor, sigma_n_sq: float = 2.
         sigma_trgt_pred = F.conv2d(target * prediction, kernel) - mu_trgt_pred
         
         # Zero small negative values
-        torch.relu_(sigma_trgt_sq)
-        torch.relu_(sigma_pred_sq)
+        sigma_trgt_sq = torch.relu(sigma_trgt_sq)
+        sigma_pred_sq = torch.relu(sigma_pred_sq)
 
         g = sigma_trgt_pred / (sigma_trgt_sq + EPS)
         sigma_v_sq = sigma_pred_sq - g * sigma_trgt_pred
 
-        g[sigma_trgt_sq < EPS] = 0
-        sigma_v_sq[sigma_trgt_sq < EPS] = sigma_pred_sq[sigma_trgt_sq < EPS]
-        sigma_trgt_sq[sigma_trgt_sq < EPS] = 0
+        g = torch.where(sigma_trgt_sq >= EPS, g, torch.zeros_like(g))
+        sigma_v_sq = torch.where(sigma_trgt_sq >= EPS, sigma_v_sq, sigma_pred_sq)
+        sigma_trgt_sq = torch.where(sigma_trgt_sq >= EPS, sigma_trgt_sq, torch.zeros_like(sigma_trgt_sq))
 
-        g[sigma_pred_sq < EPS] = 0
-        sigma_v_sq[sigma_pred_sq < EPS] = 0
+        g = torch.where(sigma_pred_sq >= EPS, g, torch.zeros_like(g))
+        sigma_v_sq = torch.where(sigma_pred_sq >= EPS, sigma_v_sq, torch.zeros_like(sigma_v_sq))
 
-        sigma_v_sq[g < 0] = sigma_pred_sq[g < 0]
-        torch.relu_(g)
-        sigma_v_sq[sigma_v_sq <= EPS] = EPS
+        sigma_v_sq = torch.where(g >= 0, sigma_v_sq, sigma_pred_sq)
+        g = torch.relu(g)
+
+        sigma_v_sq = torch.where(sigma_v_sq > EPS, sigma_v_sq, torch.ones_like(sigma_v_sq) * EPS)
     
         pred_vif_scale = torch.log10(1.0 + (g ** 2.) * sigma_trgt_sq / (sigma_v_sq + sigma_n_sq))
-        prediction_vif += torch.sum(pred_vif_scale, dim=[1, 2, 3])
-        target_vif += torch.sum(torch.log10(1.0 + sigma_trgt_sq / sigma_n_sq), dim=[1, 2, 3])
+        prediction_vif = prediction_vif + torch.sum(pred_vif_scale, dim=[1, 2, 3])
+        target_vif = target_vif + torch.sum(torch.log10(1.0 + sigma_trgt_sq / sigma_n_sq), dim=[1, 2, 3])
 
     vif = (prediction_vif + EPS) / (target_vif + EPS)
 
@@ -149,15 +152,10 @@ class VIFLoss(_Loss):
         Returns:
             Value of VIF loss to be minimized. 0 <= VIFLoss <= 1.
         """
-        _validate_input(input_tensors=(prediction, target), allow_5d=False)
-        prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
-
-        return self.compute_metric(prediction, target)
-
-    def compute_metric(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-
+        # All checks are done in vif_p function
         score = vif_p(
             prediction, target, sigma_n_sq=self.sigma_n_sq, data_range=self.data_range, reduction=self.reduction)
+
         # Make sure value to be in [0, 1] range and convert to loss
         loss = 1 - torch.clamp(score, 0, 1)
         return loss
