@@ -55,11 +55,6 @@ def test_psnr_big_for_identical_images(prediction: torch.Tensor) -> None:
     measure = psnr(prediction, target, data_range=1.0)
     assert torch.isclose(measure, max_val), f"PSNR for identical images should be 80, got {measure}"
 
-    prediction = torch.zeros(4, 3, 256, 256).cuda()
-    target = torch.zeros(4, 3, 256, 256).cuda()
-    measure = psnr(prediction, target, data_range=1.0)
-    assert torch.isclose(measure, max_val), f"PSNR for identical images should be 80, got {measure}"
-
 
 def test_psnr_reduction(prediction: torch.Tensor, target: torch.Tensor):
     measure = psnr(prediction, target, reduction='mean')
@@ -71,6 +66,9 @@ def test_psnr_reduction(prediction: torch.Tensor, target: torch.Tensor):
     measure = psnr(prediction, target, reduction='none')
     assert len(measure) == prediction.size(0), \
         f'PSNR with `none` reduction must have length equal to number of images, got {len(measure)}'
+
+    with pytest.raises(ValueError):
+        psnr(prediction, target, reduction='random string')
 
 
 def test_psnr_matches_skimage_greyscale():
