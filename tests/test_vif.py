@@ -95,14 +95,17 @@ def test_vif_loss_reduction(prediction: torch.Tensor, target: torch.Tensor) -> N
     
     loss = VIFLoss(reduction='random string')
     with pytest.raises(KeyError):
-        measure = loss(prediction, target)
+        loss(prediction, target)
+
+
+NONE_GRAD_ERR_MSG = 'Expected non None gradient of leaf variable'
 
 
 def test_vif_loss_computes_grad(prediction: torch.Tensor, target: torch.Tensor) -> None:
     prediction.requires_grad_()
     loss_value = VIFLoss()(prediction, target)
     loss_value.backward()
-    assert prediction.grad is not None, 'Expected non None gradient of leaf variable'
+    assert prediction.grad is not None, NONE_GRAD_ERR_MSG
 
 
 def test_vif_loss_computes_grad_for_zeros_tensors() -> None:
@@ -110,7 +113,7 @@ def test_vif_loss_computes_grad_for_zeros_tensors() -> None:
     target = torch.zeros(4, 3, 256, 256)
     loss_value = VIFLoss()(prediction, target)
     loss_value.backward()
-    assert prediction.grad is not None, 'Expected non None gradient of leaf variable'
+    assert prediction.grad is not None, NONE_GRAD_ERR_MSG
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test if there is no GPU.')
@@ -118,4 +121,4 @@ def test_vif_loss_computes_grad_on_gpu(prediction: torch.Tensor, target: torch.T
     prediction.requires_grad_()
     loss_value = VIFLoss()(prediction.cuda(), target.cuda())
     loss_value.backward()
-    assert prediction.grad is not None, 'Expected non None gradient of leaf variable'
+    assert prediction.grad is not None, NONE_GRAD_ERR_MSG
