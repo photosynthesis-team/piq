@@ -3,7 +3,10 @@
 ![CI testing][ci-testing]  
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
-[![PyPI version][pypi-version-shield]][pypi-version-url]
+[![PyPI version][pypi-version-shield]][pypi-version-url]  
+[![Quality Gate Status][quality-gate-status-shield]][quality-gate-status-url]
+[![Maintainability Rating][maintainability-raiting-shield]][maintainability-raiting-url]
+[![Reliability Rating][reliability-rating-badge]][reliability-rating-url]
 
 
 <!-- ABOUT THE PROJECT -->
@@ -470,4 +473,10 @@ Other projects by PhotoSynthesis Team:
 [ci-flake-8-style-check-shield]: https://github.com/photosynthesis-team/photosynthesis.metrics/workflows/flake-8%20style%20check/badge.svg
 [ci-testing]: https://github.com/photosynthesis-team/photosynthesis.metrics/workflows/testing/badge.svg
 [pypi-version-shield]: https://badge.fury.io/py/photosynthesis-metrics.svg
-[pypi-version-url]: https://badge.fury.io/py/photosynthesis-metrics
+[pypi-version-url]: https://badge.fury.io/py/photosynthesis-metrics  
+[quality-gate-status-shield]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_photosynthesis.metrics&metric=alert_status
+[quality-gate-status-url]: https://sonarcloud.io/dashboard?id=photosynthesis-team_photosynthesis.metrics
+[maintainability-raiting-shield]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_photosynthesis.metrics&metric=sqale_rating
+[maintainability-raiting-url]: https://sonarcloud.io/dashboard?id=photosynthesis-team_photosynthesis.metrics
+[reliability-rating-badge]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_photosynthesis.metrics&metric=reliability_rating
+[reliability-rating-url]:https://sonarcloud.io/dashboard?id=photosynthesis-team_photosynthesis.metrics
