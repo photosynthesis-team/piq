@@ -55,6 +55,10 @@ def vif_p(prediction: torch.Tensor, target: torch.Tensor, sigma_n_sq: float = 2.
     _validate_input((prediction, target), allow_5d=False)
     prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
 
+    min_size = 41
+    if prediction.size(-1) < min_size or prediction.size(-2) < min_size:
+        raise ValueError(f'Invalid size of the input images, expected at least {min_size}x{min_size}.')
+
     if data_range == 255:
         prediction = prediction / 255.
         target = target / 255.
@@ -114,16 +118,15 @@ def vif_p(prediction: torch.Tensor, target: torch.Tensor, sigma_n_sq: float = 2.
         prediction_vif = prediction_vif + torch.sum(pred_vif_scale, dim=[1, 2, 3])
         target_vif = target_vif + torch.sum(torch.log10(1.0 + sigma_trgt_sq / sigma_n_sq), dim=[1, 2, 3])
 
-    vif = (prediction_vif + EPS) / (target_vif + EPS)
+    score = (prediction_vif + EPS) / (target_vif + EPS)
 
     # Reduce if needed
-    if reduction == 'mean':
-        return vif.mean(dim=0)
-    elif reduction == 'sum':
-        return vif.sum(dim=0)
-    elif reduction != 'none':
-        raise ValueError(f'Expected reduction modes are "mean"|"sum"|"none", got {reduction}')
-    return vif
+    if reduction == 'none':
+        return score
+
+    return {'mean': score.mean,
+            'sum': score.sum
+            }[reduction](dim=0)
 
 
 class VIFLoss(_Loss):

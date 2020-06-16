@@ -53,6 +53,13 @@ def test_vif_p_works_for_different_data_range(prediction: torch.Tensor, target: 
     vif_p(prediction_255, target_255, data_range=255)
 
 
+def test_vif_p_fails_for_small_images() -> None:
+    prediction = torch.randn(2, 3, 32, 32)
+    target = torch.randn(2, 3, 32, 32)
+    with pytest.raises(ValueError):
+        vif_p(prediction, target)
+
+
 # ================== Test class: `VIFLoss` ==================
 def test_vif_loss_forward(prediction: torch.Tensor, target: torch.Tensor) -> None:
     loss = VIFLoss()
@@ -87,7 +94,7 @@ def test_vif_loss_reduction(prediction: torch.Tensor, target: torch.Tensor) -> N
         f'VIF with `none` reduction must have length equal to number of images, got {len(measure)}'
     
     loss = VIFLoss(reduction='random string')
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         measure = loss(prediction, target)
 
 
