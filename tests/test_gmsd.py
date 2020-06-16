@@ -6,20 +6,39 @@ from photosynthesis_metrics import GMSDLoss, MultiScaleGMSDLoss
 
 @pytest.fixture(scope='module')
 def prediction() -> torch.Tensor:
-    return torch.rand(3, 3, 256, 256)
+    return torch.rand(2, 3, 128, 128)
 
 
 @pytest.fixture(scope='module')
 def target() -> torch.Tensor:
-    return torch.rand(3, 3, 256, 256)
+    return torch.rand(2, 3, 128, 128)
 
 
 # ================== Test class: `GMSDLoss` ==================
-def test_gmsd_loss_init() -> None:
-    try:
-        GMSDLoss()
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred: {e}")
+def test_gmsd_loss(prediction: torch.Tensor, target: torch.Tensor) -> None:
+    loss = GMSDLoss()
+    loss(prediction, target)
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test if there is no GPU.')
+def test_gmsd_loss_on_gpu(prediction: torch.Tensor, target: torch.Tensor) -> None:
+    loss = GMSDLoss()
+    loss(prediction.cuda(), target.cuda())
+
+
+def test_gmsd_loss_backward(prediction: torch.Tensor, target: torch.Tensor) -> None:
+    prediction.requires_grad_()
+    loss_value = GMSDLoss()(prediction, target)
+    loss_value.backward()
+    assert prediction.grad is not None, 'Expected non None gradient of leaf variable'
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test if there is no GPU.')
+def test_gmsd_loss_backward_on_gpu(prediction: torch.Tensor, target: torch.Tensor) -> None:
+    prediction.requires_grad_()
+    loss_value = GMSDLoss()(prediction.cuda(), target.cuda())
+    loss_value.backward()
+    assert prediction.grad is not None, 'Expected non None gradient of leaf variable'
 
 
 def test_gmsd_zero_for_equal_tensors(prediction: torch.Tensor):
@@ -49,21 +68,47 @@ def test_gmsd_loss_supports_different_data_ranges(prediction: torch.Tensor, targ
 
 def test_gmsd_supports_greyscale_tensors():
     loss = GMSDLoss()
-    target = torch.ones(3, 1, 256, 256)
-    prediction = torch.zeros(3, 1, 256, 256)
-    try:
-        loss(prediction, target)
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred: {e}")
+    target = torch.ones(2, 1, 128, 128)
+    prediction = torch.zeros(2, 1, 128, 128)
+    loss(prediction, target)
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test if there is no GPU.')
+def test_gmsd_supports_greyscale_tensors_on_gpu():
+    loss = GMSDLoss()
+    target = torch.ones(2, 1, 128, 128).cuda()
+    prediction = torch.zeros(2, 1, 128, 128).cuda()
+    loss(prediction, target)
 
 
 # ================== Test class: `MultiScaleGMSDLoss` ==================
-def test_multi_scale_gmsd_loss_init() -> None:
-    try:
-        MultiScaleGMSDLoss()
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred: {e}")
+def test_multi_scale_gmsd_loss(prediction: torch.Tensor, target: torch.Tensor) -> None:
+    loss = MultiScaleGMSDLoss(chromatic=True)
+    loss(prediction, target)
 
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test if there is no GPU.')
+def test_multi_scale_gmsd_loss_on_gpu(prediction: torch.Tensor, target: torch.Tensor) -> None:
+    prediction = prediction.cuda()
+    target = target.cuda()
+    loss = MultiScaleGMSDLoss(chromatic=True)
+    loss(prediction, target)
+
+
+def test_multi_scale_gmsd_loss_backward(prediction: torch.Tensor, target: torch.Tensor) -> None:
+    prediction.requires_grad_()
+    loss_value = MultiScaleGMSDLoss(chromatic=True)(prediction, target)
+    loss_value.backward()
+    assert prediction.grad is not None, 'Expected non None gradient of leaf variable'
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test if there is no GPU.')
+def test_multi_scale_gmsd_loss_backward_on_gpu(prediction: torch.Tensor, target: torch.Tensor) -> None:
+    prediction.requires_grad_()
+    loss_value = MultiScaleGMSDLoss(chromatic=True)(prediction, target)
+    loss_value.backward()
+    assert prediction.grad is not None, 'Expected non None gradient of leaf variable'
+    
 
 def test_multi_scale_gmsd_zero_for_equal_tensors(prediction: torch.Tensor):
     loss = MultiScaleGMSDLoss()
@@ -86,28 +131,38 @@ def test_multi_scale_gmsd_loss_supports_different_data_ranges(
 
 def test_multi_scale_gmsd_supports_greyscale_tensors():
     loss = MultiScaleGMSDLoss()
-    target = torch.ones(3, 1, 256, 256)
-    prediction = torch.zeros(3, 1, 256, 256)
-    try:
-        loss(prediction, target)
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred: {e}")
+    target = torch.ones(2, 1, 128, 128)
+    prediction = torch.zeros(2, 1, 128, 128)
+    loss(prediction, target)
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test if there is no GPU.')
+def test_multi_scale_gmsd_supports_greyscale_tensors_on_gpu():
+    loss = MultiScaleGMSDLoss()
+    target = torch.ones(2, 1, 128, 128).cuda()
+    prediction = torch.zeros(2, 1, 128, 128).cuda()
+    loss(prediction.cuda(), target.cuda())
 
 
 def test_multi_scale_gmsd_fails_for_greyscale_tensors_chromatic_flag():
     loss = MultiScaleGMSDLoss(chromatic=True)
-    target = torch.ones(3, 1, 256, 256)
-    prediction = torch.zeros(3, 1, 256, 256)
+    target = torch.ones(2, 1, 128, 128)
+    prediction = torch.zeros(2, 1, 128, 128)
     with pytest.raises(AssertionError):
         loss(prediction, target)
 
 
-def test_multi_scale_gmsd_supports_custom_scale_weights(prediction: torch.Tensor, target: torch.Tensor):
-    try:
-        loss = MultiScaleGMSDLoss(scale_weights=[3., 4., 2., 1., 2.])
-        loss(prediction, target)
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred: {e}")
+def test_multi_scale_gmsd_supports_custom_weights(
+        prediction: torch.Tensor, target: torch.Tensor):
+    loss = MultiScaleGMSDLoss(scale_weights=[3., 4., 2., 1., 2.])
+    loss(prediction, target)
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test if there is no GPU.')
+def test_multi_scale_gmsd_supports_custom_weights_on_gpu(
+        prediction: torch.Tensor, target: torch.Tensor):
+    loss = MultiScaleGMSDLoss(scale_weights=[3., 4., 2., 1., 2.])
+    loss(prediction, target)
 
 
 def test_multi_scale_gmsd_raise_exception_for_small_images():
