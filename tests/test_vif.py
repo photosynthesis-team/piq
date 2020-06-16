@@ -36,7 +36,6 @@ def test_vif_p_works_for_1_channel(prediction_1d: torch.Tensor, target_1d: torch
 def test_vif_p_one_for_equal_tensors(prediction: torch.Tensor) -> None:
     target = prediction.clone()
     measure = vif_p(prediction, target)
-    print(measure)
     assert torch.isclose(measure, torch.tensor(1.0)), f'VIF for equal tensors shouls be 1.0, got {measure}.'
 
 
