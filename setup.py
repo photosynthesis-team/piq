@@ -13,7 +13,7 @@ def read_version_file(rel_path: str) -> List[str]:
 def get_version(rel_path: str) -> str:
     for line in read_version_file(rel_path):
         if line.startswith('__version__'):
-            # __version__ = "0.9"
+            # Example: __version__ = "0.9"
             delim = '"' if '"' in line else "'"
             return line.split(delim)[1]
 
