@@ -38,7 +38,6 @@ def _sqrtm_newton_schulz(A: torch.Tensor, num_iters: int = 100) -> Tuple[torch.T
 
     if num_iters <= 0:
         raise ValueError(f'Number of iteration equals {num_iters}, expected greater than 0')
-    dtype = A.type()
     dim = A.size(0)
     normA = A.norm(p='fro')
     Y = A.div(normA)
