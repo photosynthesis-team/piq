@@ -2,7 +2,6 @@
 Implementation of VGG16 loss, originaly used for style transfer and usefull in many other task (including GAN training)
 It's work in progress, no guarantees that code will work
 """
-# import collections
 from typing import List, Union
 
 import torch
