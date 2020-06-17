@@ -122,13 +122,14 @@ class ContentLoss(_Loss):
             "mae": nn.L1Loss(reduction='none'),
         }[distance]
 
-        self.weights = weights
+        self.weights = [torch.tensor(w) for w in weights]
         mean = torch.tensor([0.485, 0.456, 0.406]) if normalize_input else torch.tensor([0., 0., 0.])
         std = torch.tensor([0.229, 0.224, 0.225]) if normalize_input else torch.tensor([1., 1., 1.])
         self.mean = mean.view(1, 3, 1, 1)
         self.std = std.view(1, 3, 1, 1)
         
         self.normalize_features = normalize_features
+        self.reduction = reduction
 
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         r"""Computation of Content loss between feature representations of prediction and target tensors.
@@ -140,20 +141,22 @@ class ContentLoss(_Loss):
         """
         _validate_input(input_tensors=(prediction, target), allow_5d=False)
         prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
-        
+        return self.compute_metric(prediction, target)
+    
+    def compute_metric(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # Normalize input
-        prediction = (prediction - self.mean) / self.std
-        target = (target - self.mean) / self.std
+        mean, std = self.mean.to(prediction), self.std.to(prediction)
+        prediction = (prediction - mean) / std
+        target = (target - mean) / std
 
+        self.model.to(prediction)
         prediction_features = self.get_features(prediction)
         target_features = self.get_features(target)
-        return self.compute_metric(prediction_features, target_features)
-    
-    def compute_metric(self, prediction_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+        
         distances = [self.distance(x, y) for x, y in zip(prediction_features, target_features)]
 
-        # Scale distances, then average in spatial dimensions and sum in channel dimensions
-        loss = torch.cat([(d * w).mean(dim=[2, 3]) for d, w in zip(distances, self.weights)]).sum(dim=1)
+        # Scale distances, then average in spatial dimensions, then stack and sum in channels dimension
+        loss = torch.cat([(d * w.to(d)).mean(dim=[2, 3]) for d, w in zip(distances, self.weights)], dim=1).sum(dim=1)
 
         # Solve big memory consumption
         torch.cuda.empty_cache()
@@ -198,14 +201,23 @@ class StyleLoss(ContentLoss):
     Expects input to be in range [0, 1] or normalized with ImageNet statistics into range [-1, 1]
     """
 
-    def compute_metric(self, prediction_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+    def compute_metric(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        # Normalize input
+        mean, std = self.mean.to(prediction), self.std.to(prediction)
+        prediction = (prediction - mean) / std
+        target = (target - mean) / std
+
+        self.model.to(prediction)
+        prediction_features = self.get_features(prediction)
+        target_features = self.get_features(target)
+
         prediction_gram = [self.gram_matrix(x) for x in prediction_features]
         target_gram = [self.gram_matrix(x) for x in target_features]
 
         distances = [self.distance(x, y) for x, y in zip(prediction_gram, target_gram)]
 
-        # Scale distances, then average in spatial dimensions and sum in channel dimensions
-        loss = torch.stack([(d * w).mean(dim=[2, 3]) for d, w in zip(distances, self.weights)]).sum(dim=1)
+        # Scale distances, then average in spatial dimensions, then stack and sum in channels dimension
+        loss = torch.stack([(d * w.to(d)).mean(dim=[1, 2]) for d, w in zip(distances, self.weights)], dim=1).sum(dim=1)
 
         # Solve big memory consumption
         torch.cuda.empty_cache()
@@ -222,13 +234,14 @@ class StyleLoss(ContentLoss):
         Args:
             x: Tensor of shape BxCxHxW
         """
-
         B, C, H, W = x.size()
         gram = []
         for i in range(B):
-            x = x[i].view(C, H * W)
-            gram.append(torch.mm(x, x.t()))
-        return gram
+            features = x[i].view(C, H * W)
+            
+            # Normalize gram matrix by deviding into number of elements
+            gram.append(torch.mm(features, features.t()))
+        return torch.stack(gram)
 
 
 class LPIPS(ContentLoss):
@@ -263,8 +276,8 @@ class LPIPS(ContentLoss):
             https://arxiv.org/abs/1801.03924
 
         """
-        lpips_layers = ['relu1_2', 'relu2_2', 'relu3_3', 'relu4_3', 'relu5_4']
-        lpips_weights = torch.hub.load_state_dict_from_url(self._weights_url)
+        lpips_layers = ['relu1_2', 'relu2_2', 'relu3_3', 'relu4_3', 'relu5_3']
+        lpips_weights = torch.hub.load_state_dict_from_url(self._weights_url, progress=False)
         super().__init__("vgg16", layers=lpips_layers, weights=lpips_weights,
                          replace_pooling=replace_pooling, distance=distance,
                          reduction=reduction, normalize_input=normalize_input,
