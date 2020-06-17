@@ -236,8 +236,6 @@ class StyleLoss(ContentLoss):
         gram = []
         for i in range(B):
             features = x[i].view(C, H * W)
-            
-            
             gram.append(torch.mm(features, features.t()))
         return torch.stack(gram)
 
