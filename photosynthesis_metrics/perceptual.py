@@ -3,12 +3,14 @@ Implementation of VGG16 loss, originaly used for style transfer and usefull in m
 It's work in progress, no guarantees that code will work
 """
 # import collections
-from typing import List
+from typing import List, Union
 
 import torch
 import torch.nn as nn
 from torch.nn.modules.loss import _Loss
 from torchvision.models import vgg16, vgg19
+
+from photosynthesis_metrics.utils import _validate_input, _adjust_dimensions
 
 
 # Map VGG names to corresponding number in torchvision layer
@@ -63,36 +65,46 @@ class ContentLoss(_Loss):
     image to image tasks.
     Uses pretrained VGG models from torchvision. Normalizes features before summation.
     Expects input to be in range [0, 1] or normalized with ImageNet statistics into range [-1, 1]
-
-    Args:
-        feature_extractor: Name of model used to extract features. One of {`vgg16`, `vgg19`}
-        layers: List of string with layer names. Default: [`relu3_3`]
-        weights: List of float weight to balance different layers
-        replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See [1] for details.
-        distance: Method to compute distance between features. One of {`mse`, `mae`}.
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
-
-
-    Uses pretrained VGG16 model from torchvision by default
-    layers: list of VGG layers used to evaluate content loss
-
-    reduction: Type of reduction to use
-    References:
-        .. [1] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
-           (2016). A Neural Algorithm of Artistic Style}
-           Association for Research in Vision and Ophthalmology (ARVO)
-           https://arxiv.org/abs/1508.06576
     """
+    # Constant used in feature normalization to avoid zero division
+    EPS = 1e-10
 
     def __init__(self, feature_extractor: str = "vgg16", layers: List[str] = ["relu3_3"],
-                 weights: List[float] = [1.], replace_pooling: bool = False, distance: str = "mse",
-                 reduction: str = "mean") -> None:
+                 weights: List[Union[float, torch.Tensor]] = [1.], replace_pooling: bool = False, distance: str = "mse",
+                 reduction: str = "mean", normalize_input: bool = True, normalize_features: bool = False) -> None:
+        r"""
+        Args:
+            feature_extractor: Name of model used to extract features. One of {`vgg16`, `vgg19`}
+            layers: List of string with layer names. Default: [`relu3_3`]
+            weights: List of float weight to balance different layers
+            replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See [1] for details.
+            distance: Method to compute distance between features. One of {`mse`, `mae`}.
+            reduction: Reduction over samples in batch: "mean"|"sum"|"none"
+            normalize_input: If true, scales the input from range (0, 1) to the range the
+                pretrained VGG network expects, namely (-1, 1)
+            normalize_features: If true, unit-normalize each feature in channel dimension before scaling
+                and computing distance. See [2] for details.
+
+        References:
+            .. [1] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
+            (2016). A Neural Algorithm of Artistic Style}
+            Association for Research in Vision and Ophthalmology (ARVO)
+            https://arxiv.org/abs/1508.06576
+    
+            .. [2] Zhang, Richard and Isola, Phillip and Efros, et al.
+            (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
+            2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
+            https://arxiv.org/abs/1801.03924
+
+        """
         super().__init__()
 
         if feature_extractor == "vgg16":
             self.model = vgg16(pretrained=True, progress=False)
+            self.layers = [VGG16_LAYERS[l] for l in layers]
         elif feature_extractor == "vgg19":
             self.model = vgg19(pretrained=True, progress=False)
+            self.layers = [VGG19_LAYERS[l] for l in layers]
         else:
             raise ValueError("Unknown feature extractor")
 
@@ -105,12 +117,18 @@ class ContentLoss(_Loss):
         for param in self.model.parameters():
             param.requires_grad_(False)
 
-        if distance == "mse":
-            self.criterion = nn.MSELoss(reduction=reduction)
-        elif distance == "mae":
-            self.criterion = nn.L1Loss(reduction=reduction)
-        else:
-            raise ValueError("Unknown distance. Should be in {`mse`, `mae`}")
+        self.distance = {
+            "mse": nn.MSELoss(reduction='none'),
+            "mae": nn.L1Loss(reduction='none'),
+        }[distance]
+
+        self.weights = weights
+        mean = torch.tensor([0.485, 0.456, 0.406]) if normalize_input else torch.tensor([0., 0., 0.])
+        std = torch.tensor([0.229, 0.224, 0.225]) if normalize_input else torch.tensor([1., 1., 1.])
+        self.mean = mean.view(1, 3, 1, 1)
+        self.std = std.view(1, 3, 1, 1)
+        
+        self.normalize_features = normalize_features
 
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         r"""Computation of Content loss between feature representations of prediction and target tensors.
@@ -120,14 +138,32 @@ class ContentLoss(_Loss):
             target: Reference tensor.
 
         """
-        input_features = torch.stack(self.get_features(prediction))
-        content_features = torch.stack(self.get_features(prediction))
-        loss = self.criterion(input_features, content_features)
+        _validate_input(input_tensors=(prediction, target), allow_5d=False)
+        prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
+        
+        # Normalize input
+        prediction = (prediction - self.mean) / self.std
+        target = (target - self.mean) / self.std
+
+        prediction_features = self.get_features(prediction)
+        target_features = self.get_features(target)
+        return self.compute_metric(prediction_features, target_features)
+    
+    def compute_metric(self, prediction_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+        distances = [self.distance(x, y) for x, y in zip(prediction_features, target_features)]
+
+        # Scale distances, then average in spatial dimensions and sum in channel dimensions
+        loss = torch.cat([(d * w).mean(dim=[2, 3]) for d, w in zip(distances, self.weights)]).sum(dim=1)
 
         # Solve big memory consumption
         torch.cuda.empty_cache()
-    
-        return loss
+
+        if self.reduction == 'none':
+            return loss
+
+        return {'mean': loss.mean,
+                'sum': loss.sum
+                }[self.reduction](dim=0)
 
     def get_features(self, x: torch.Tensor) -> List[torch.Tensor]:
         """
@@ -135,90 +171,101 @@ class ContentLoss(_Loss):
             x: torch.Tensor with shape (N, C, H, W)
         
         Returns:
-            List of features extracted from intermediate layers
+            features: List of features extracted from intermediate layers
         """
-
         features = []
         for name, module in self.model.features._modules.items():
             x = module(x)
-            if name in self.layers:
-                features.append(x)
-        # print(len(features))
+            if int(name) in self.layers:
+                features.append(self.normalize(x) if self.normalize_features else x)
         return features
 
+    def normalize(self, x: torch.Tensor) -> torch.Tensor:
+        """Normalize feature maps in channel direction to unit length.
+        Args:
+            x: Tensor with shape (N, C, H, W)
+        Returns:
+            x_norm: Normalized input
+        """
+        norm_factor = torch.sqrt(torch.sum(x ** 2, dim=1, keepdim=True))
+        return x / (norm_factor + self.EPS)
 
-class StyleLoss(_Loss):
+
+class StyleLoss(ContentLoss):
+    r"""Creates Style loss that can be used for image style transfer or as a measure in
+    image to image tasks.
+    Uses pretrained VGG models from torchvision. Features can be normalized before summation.
+    Expects input to be in range [0, 1] or normalized with ImageNet statistics into range [-1, 1]
     """
-    Class for creating style loss for neural style transfer
-    model: str in ['vgg16_bn']
-    reduction: Type of reduction to use
-    """
 
-    def __init__(
-        self,
-        layers=["0", "5", "10", "19", "28"],
-        weights=[0.75, 0.5, 0.2, 0.2, 0.2],
-        loss="mse",
-        device="cuda",
-        reduction="mean",
-        **args,
-    ):
-        super().__init__()
-        self.model = vgg16(pretrained=True, **args)
-        self.model.eval().to(device)
+    def compute_metric(self, prediction_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+        prediction_gram = [self.gram_matrix(x) for x in prediction_features]
+        target_gram = [self.gram_matrix(x) for x in target_features]
 
-        # self.layers = listify(layers)
-        # self.weights = listify(weights)
+        distances = [self.distance(x, y) for x, y in zip(prediction_gram, target_gram)]
 
-        if loss == "mse":
-            self.criterion = nn.MSELoss(reduction=reduction)
-        elif loss == "mae":
-            self.criterion = nn.L1Loss(reduction=reduction)
-        else:
-            raise KeyError
+        # Scale distances, then average in spatial dimensions and sum in channel dimensions
+        loss = torch.stack([(d * w).mean(dim=[2, 3]) for d, w in zip(distances, self.weights)]).sum(dim=1)
 
-    def forward(self, input, style):
-        """
-        Measure distance between feature representations of input and content images
-        """
-        input_features = self.get_features(input)
-        style_features = self.get_features(style)
-        # print(style_features[0].size(), len(style_features))
+        # Solve big memory consumption
+        torch.cuda.empty_cache()
 
-        input_gram = [self.gram_matrix(x) for x in input_features]
-        style_gram = [self.gram_matrix(x) for x in style_features]
+        if self.reduction == 'none':
+            return loss
 
-        loss = [
-            self.criterion(torch.stack(i_g), torch.stack(s_g)) for i_g, s_g in zip(input_gram, style_gram)
-        ]
-        return torch.mean(torch.tensor(loss))
+        return {'mean': loss.mean,
+                'sum': loss.sum
+                }[self.reduction](dim=0)
 
-    def get_features(self, x):
-        """
-        Extract feature maps from the intermediate layers.
-        """
-        if self.layers is None:
-            self.layers = ["0", "5", "10", "19", "28"]
-
-        features = []
-        for name, module in self.model.features._modules.items():
-            x = module(x)
-            if name in self.layers:
-                features.append(x)
-        return features
-
-    def gram_matrix(self, input):
-        """
-        Compute Gram matrix for each image in batch
-        input: Tensor of shape BxCxHxW
-            B: batch size
-            C: channels size
-            H&W: spatial size
+    def gram_matrix(self, x: torch.Tensor) -> torch.Tensor:
+        r"""Compute Gram matrix for batch of features.
+        Args:
+            x: Tensor of shape BxCxHxW
         """
 
-        B, C, H, W = input.size()
+        B, C, H, W = x.size()
         gram = []
         for i in range(B):
-            x = input[i].view(C, H * W)
+            x = x[i].view(C, H * W)
             gram.append(torch.mm(x, x.t()))
         return gram
+
+
+class LPIPS(ContentLoss):
+    r"""Learned Perceptual Image Patch Similarity metric.
+    For now only VGG16 learned weights are supported.
+    Expects input to be in range [0, 1] or normalized with ImageNet statistics into range [-1, 1]
+    """
+    _weights_url = "https://github.com/photosynthesis-team/" + \
+        "photosynthesis.metrics/releases/download/v0.4.0/lpips_weights.pt"
+
+    def __init__(self, feature_extractor: str = "vgg16",
+                 replace_pooling: bool = False, distance: str = "mse",
+                 reduction: str = "mean", normalize_input: bool = True) -> None:
+        r"""
+        Args:
+            feature_extractor: Name of model used to extract features. One of {`vgg16`, `vgg19`}
+            replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See [1] for details.
+            distance: Method to compute distance between features. One of {`mse`, `mae`}.
+            reduction: Reduction over samples in batch: "mean"|"sum"|"none"
+            normalize_input: If true, scales the input from range (0, 1) to the range the
+                pretrained VGG network expects, namely (-1, 1)
+
+        References:
+            .. [1] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
+            (2016). A Neural Algorithm of Artistic Style}
+            Association for Research in Vision and Ophthalmology (ARVO)
+            https://arxiv.org/abs/1508.06576
+    
+            .. [2] Zhang, Richard and Isola, Phillip and Efros, et al.
+            (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
+            2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
+            https://arxiv.org/abs/1801.03924
+
+        """
+        lpips_layers = ['relu1_2', 'relu2_2', 'relu3_3', 'relu4_3', 'relu5_4']
+        lpips_weights = torch.hub.load_state_dict_from_url(self._weights_url)
+        super().__init__("vgg16", layers=lpips_layers, weights=lpips_weights,
+                         replace_pooling=replace_pooling, distance=distance,
+                         reduction=reduction, normalize_input=normalize_input,
+                         normalize_features=True)
