@@ -82,7 +82,7 @@ def _compute_fid(mu1: torch.Tensor, sigma1: torch.Tensor, mu2: torch.Tensor, sig
     # Product might be almost singular
     if not torch.isfinite(covmean).all():
         print(f'FID calculation produces singular product; adding {eps} to diagonal of cov estimates')
-        offset = torch.eye(sigma1.size(0)) * eps
+        offset = torch.eye(sigma1.size(0)).to(mu1) * eps
         covmean, _ = _sqrtm_newton_schulz((sigma1 + offset).mm(sigma2 + offset))
 
     tr_covmean = torch.trace(covmean)
@@ -117,7 +117,7 @@ def _cov(m: torch.Tensor, rowvar: bool = True) -> torch.Tensor:
     if not rowvar and m.size(0) != 1:
         m = m.t()
     fact = 1.0 / (m.size(1) - 1)
-    m -= torch.mean(m, dim=1, keepdim=True)
+    m = m - torch.mean(m, dim=1, keepdim=True)
     mt = m.t()
     return fact * m.matmul(mt).squeeze()
 
@@ -176,6 +176,6 @@ class FID(BaseFeatureMetric):
         m_pred, s_pred = _compute_statistics(predicted_features.detach())
         m_targ, s_targ = _compute_statistics(target_features.detach())
 
-        score = _compute_fid(m_pred, s_pred, m_targ, s_targ)
+        score = _compute_fid(m_pred, s_pred, m_targ, s_targ).to(predicted_features)
 
-        return torch.tensor(score, device=predicted_features.device)
+        return score
