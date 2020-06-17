@@ -138,8 +138,8 @@ def _RBF_kernel(features: torch.Tensor, sv: torch.Tensor, gamma: float = 0.05) -
 
 
 def _score_svr(features: torch.Tensor) -> torch.Tensor:
-    url = 'https://github.com/photosynthesis-team/photosynthesis.metrics/releases/' \
-          'latest/download/brisque_svm_weights.pt'
+    url = 'https://github.com/photosynthesis-team/photosynthesis.metrics/' \
+          'releases/download/v0.4.0/brisque_svm_weights.pt'
     sv_coef, sv = load_url(url, map_location=features.device)
 
     # gamma and rho are SVM model parameters taken from official implementation of BRISQUE on MATLAB

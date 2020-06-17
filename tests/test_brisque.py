@@ -17,43 +17,29 @@ def prediction_RGB() -> torch.Tensor:
 
 # ================== Test function: `brisque` ==================
 def test_brisque_if_works_with_grey(prediction_grey: torch.Tensor) -> None:
-    try:
-        brisque(prediction_grey)
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred: {e}")
+    brisque(prediction_grey)
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test if there is no GPU.')
 def test_brisque_if_works_with_grey_on_gpu(prediction_grey: torch.Tensor) -> None:
-    try:
-        prediction_grey = prediction_grey.cuda()
-        brisque(prediction_grey)
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred: {e}")
+    prediction_grey = prediction_grey.cuda()
+    brisque(prediction_grey)
 
 
 def test_brisque_if_works_with_RGB(prediction_RGB: torch.Tensor) -> None:
-    try:
-        brisque(prediction_RGB)
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred: {e}")
+    brisque(prediction_RGB)
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test if there is no GPU.')
 def test_brisque_if_works_with_RGB_on_gpu(prediction_RGB: torch.Tensor) -> None:
-    try:
-        prediction_RGB = prediction_RGB.cuda()
-        brisque(prediction_RGB)
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred: {e}")
+    prediction_RGB = prediction_RGB.cuda()
+    brisque(prediction_RGB)
 
 
 def test_brisque_raises_if_wrong_reduction(prediction_grey: torch.Tensor) -> None:
     for mode in ['mean', 'sum', 'none']:
-        try:
-            brisque(prediction_grey, reduction=mode)
-        except Exception as e:
-            pytest.fail(f"Unexpected error occurred: {e}")
+        brisque(prediction_grey, reduction=mode)
+
     for mode in [None, 'n', 2]:
         with pytest.raises(KeyError):
             brisque(prediction_grey, reduction=mode)
@@ -87,31 +73,23 @@ def test_brisque_all_zeros_or_ones() -> None:
 def test_brisque_loss_if_works_with_grey(prediction_grey: torch.Tensor) -> None:
     prediction_grey_grad = prediction_grey.clone()
     prediction_grey_grad.requires_grad_()
-    try:
-        loss_value = BRISQUELoss()(prediction_grey_grad)
-        loss_value.backward()
-        assert prediction_grey_grad.grad is not None, 'Expected non None gradient of leaf variable'
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred: {e}")
+    loss_value = BRISQUELoss()(prediction_grey_grad)
+    loss_value.backward()
+    assert prediction_grey_grad.grad is not None, 'Expected non None gradient of leaf variable'
 
 
 def test_brisque_loss_if_works_with_RGB(prediction_RGB: torch.Tensor) -> None:
     prediction_RGB_grad = prediction_RGB.clone()
     prediction_RGB_grad.requires_grad_()
-    try:
-        loss_value = BRISQUELoss()(prediction_RGB_grad)
-        loss_value.backward()
-        assert prediction_RGB_grad.grad is not None, 'Expected non None gradient of leaf variable'
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred: {e}")
+    loss_value = BRISQUELoss()(prediction_RGB_grad)
+    loss_value.backward()
+    assert prediction_RGB_grad.grad is not None, 'Expected non None gradient of leaf variable'
 
 
 def test_brisque_loss_raises_if_wrong_reduction(prediction_grey: torch.Tensor) -> None:
     for mode in ['mean', 'sum', 'none']:
-        try:
-            BRISQUELoss(reduction=mode)(prediction_grey)
-        except Exception as e:
-            pytest.fail(f"Unexpected error occurred: {e}")
+        BRISQUELoss(reduction=mode)(prediction_grey)
+
     for mode in [None, 'n', 2]:
         with pytest.raises(KeyError):
             BRISQUELoss(reduction=mode)(prediction_grey)
