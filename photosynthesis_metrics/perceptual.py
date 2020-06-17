@@ -1,6 +1,5 @@
 """
 Implementation of VGG16 loss, originaly used for style transfer and usefull in many other task (including GAN training)
-It's work in progress, no guarantees that code will work
 """
 from typing import List, Union
 
@@ -238,7 +237,7 @@ class StyleLoss(ContentLoss):
         for i in range(B):
             features = x[i].view(C, H * W)
             
-            # Normalize gram matrix by deviding into number of elements
+            
             gram.append(torch.mm(features, features.t()))
         return torch.stack(gram)
 
