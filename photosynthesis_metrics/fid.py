@@ -42,8 +42,8 @@ def _sqrtm_newton_schulz(A: torch.Tensor, num_iters: int = 100) -> Tuple[torch.T
     dim = A.size(0)
     normA = A.norm(p='fro')
     Y = A.div(normA)
-    I = torch.eye(dim, dim, requires_grad=False).type(dtype)
-    Z = torch.eye(dim, dim, requires_grad=False).type(dtype)
+    I = torch.eye(dim, dim, requires_grad=False).to(A)
+    Z = torch.eye(dim, dim, requires_grad=False).to(A)
 
     sA = torch.empty_like(A)
     error = torch.empty(1)
@@ -55,7 +55,7 @@ def _sqrtm_newton_schulz(A: torch.Tensor, num_iters: int = 100) -> Tuple[torch.T
 
         sA = Y * torch.sqrt(normA)
         error = _approximation_error(A, sA)
-        if torch.isclose(error, torch.tensor([0.], device=error.device), atol=1e-5):
+        if torch.isclose(error, torch.tensor([0.]).to(error), atol=1e-5):
             break
     return sA, error
 
@@ -176,6 +176,6 @@ class FID(BaseFeatureMetric):
         m_pred, s_pred = _compute_statistics(predicted_features.detach())
         m_targ, s_targ = _compute_statistics(target_features.detach())
 
-        score = _compute_fid(m_pred, s_pred, m_targ, s_targ).to(predicted_features)
+        score = _compute_fid(m_pred, s_pred, m_targ, s_targ)
 
         return score
