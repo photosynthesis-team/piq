@@ -8,3 +8,4 @@ from .gs import GS
 from .isc import IS, inception_score
 from .vif import VIFLoss, vif_p
 from .brisque import BRISQUELoss, brisque
+from .psnr import psnr
