@@ -1,3 +1,5 @@
+__version__ = "0.4.0"
+
 from .ssim import ssim, multi_scale_ssim, SSIMLoss, MultiScaleSSIMLoss
 from .msid import MSID
 from .fid import FID
@@ -9,6 +11,3 @@ from .isc import IS, inception_score
 from .vif import VIFLoss, vif_p
 from .brisque import BRISQUELoss, brisque
 from .psnr import psnr
-
-
-__version__ = "0.4.0"
