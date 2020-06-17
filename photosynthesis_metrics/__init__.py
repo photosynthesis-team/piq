@@ -1,3 +1,5 @@
+__version__ = "0.4.0"
+
 from .ssim import ssim, multi_scale_ssim, SSIMLoss, MultiScaleSSIMLoss
 from .msid import MSID
 from .fid import FID
