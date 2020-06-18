@@ -40,4 +40,5 @@ jobs:
           pip install tensorflow
           pip install libsvm
           pip install pybrisque
+          pip install scikit-image
           pytest
