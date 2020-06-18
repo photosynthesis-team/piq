@@ -43,6 +43,7 @@ def _validate_input(
         assert isinstance(tensor, torch.Tensor), f'Expected input to be torch.Tensor, got {type(tensor)}.'
         assert min_n_dim <= tensor.dim() <= max_n_dim, \
             f'Input images must be {min_n_dim}D - {max_n_dim}D tensors, got images of shape {tensor.size()}.'
+        assert torch.all(tensor >= 0), 'Expected input tensor greater or equal 0'
         if tensor.dim() == 5:
             assert tensor.size(-1) == 2, f'Expected Complex 5D tensor with (N,C,H,W,2) size, got {tensor.size()}'
 
