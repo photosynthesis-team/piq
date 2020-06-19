@@ -168,7 +168,7 @@ from piq import VIFLoss
 loss = VIFLoss(sigma_n_sq=2.0, data_range=1.)
 prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
 target = torch.rand(3, 3, 256, 256)
-ouput: torch.Tensor = loss(prediction, target)
+output: torch.Tensor = loss(prediction, target)
 output.backward()
 ```
 
@@ -191,7 +191,7 @@ from piq import GMSDLoss
 loss = GMSDLoss(data_range=1.)
 prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
 target = torch.rand(3, 3, 256, 256)
-ouput: torch.Tensor = loss(prediction, target)
+output: torch.Tensor = loss(prediction, target)
 output.backward()
 ```
 </p>
@@ -211,7 +211,7 @@ from piq import MultiScaleGMSDLoss
 loss = MultiScaleGMSDLoss(chromatic=True, data_range=1.)
 prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
 target = torch.rand(3, 3, 256, 256)
-ouput: torch.Tensor = loss(prediction, target)
+output: torch.Tensor = loss(prediction, target)
 output.backward()
 ```
 </p>
@@ -378,7 +378,7 @@ import torch
 from piq import inception_score
 
 prediction_feats = torch.rand(10000, 1024)
-mean: torch.Tensor, variance: torch.Tensor = inception_score(prediction_feats, num_splits=10)
+mean, variance = inception_score(prediction_feats, num_splits=10)
 ```
  
 To compute difference between IS for 2 sets of image features, use `IS` class.
