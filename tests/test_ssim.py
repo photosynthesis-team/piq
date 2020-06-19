@@ -450,7 +450,7 @@ def test_multi_scale_ssim_raises_if_kernel_size_greater_than_image() -> None:
 
 def test_multi_scale_ssim_raise_if_wrong_value_is_estimated(prediction: torch.Tensor, target: torch.Tensor) -> None:
     piq_ms_ssim = multi_scale_ssim(prediction, target, kernel_size=11, kernel_sigma=1.5,
-                                              data_range=1., size_average=False)
+                                   data_range=1., size_average=False)
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.).numpy())
@@ -464,7 +464,7 @@ def test_multi_scale_ssim_raise_if_wrong_value_is_estimated_custom_weights(predi
                                                                            target: torch.Tensor) -> None:
     scale_weights = [0.0448, 0.2856, 0.3001]
     piq_ms_ssim = multi_scale_ssim(prediction, target, kernel_size=11, kernel_sigma=1.5,
-                                              data_range=1., size_average=False, scale_weights=scale_weights)
+                                   data_range=1., size_average=False, scale_weights=scale_weights)
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.,
@@ -624,7 +624,7 @@ def test_multi_scale_ssim_loss_raises_if_kernel_size_greater_than_image() -> Non
 def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated(prediction: torch.Tensor,
                                                                  target: torch.Tensor) -> None:
     piq_ms_ssim_loss = MultiScaleSSIMLoss(kernel_size=11, kernel_sigma=1.5,
-                                                     data_range=1.)(prediction, target)
+                                          data_range=1.)(prediction, target)
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.).numpy()).mean()
@@ -638,7 +638,7 @@ def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated_custom_weights(
                                                                                 target: torch.Tensor) -> None:
     scale_weights = [0.0448, 0.2856, 0.3001]
     piq_ms_ssim_loss = MultiScaleSSIMLoss(kernel_size=11, kernel_sigma=1.5,
-                                                     data_range=1., scale_weights=scale_weights)(prediction, target)
+                                          data_range=1., scale_weights=scale_weights)(prediction, target)
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.,
