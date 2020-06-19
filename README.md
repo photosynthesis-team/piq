@@ -1,10 +1,10 @@
 <div align="center">
 
 # PyTorch Image Quality
-![CI flake-8 style check][ci-flake-8-style-check-shield]
-![CI testing][ci-testing]  
-[![MIT License][license-shield]][license-url]
+[![License][license-shield]][license-url]
 [![PyPI version][pypi-version-shield]][pypi-version-url]  
+![CI flake-8 style check][ci-flake-8-style-check-shield]
+![CI testing][ci-testing]    
 [![Quality Gate Status][quality-gate-status-shield]][quality-gate-status-url]
 [![Maintainability Rating][maintainability-raiting-shield]][maintainability-raiting-url]
 [![Reliability Rating][reliability-rating-badge]][reliability-rating-url]
