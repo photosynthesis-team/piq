@@ -474,9 +474,9 @@ Other projects by PhotoSynthesis Team:
 [ci-testing]: https://github.com/photosynthesis-team/piq/workflows/testing/badge.svg
 [pypi-version-shield]: https://badge.fury.io/py/photosynthesis-metrics.svg
 [pypi-version-url]: https://badge.fury.io/py/photosynthesis-metrics  
-[quality-gate-status-shield]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_piq&metric=alert_status
-[quality-gate-status-url]: https://sonarcloud.io/dashboard?id=photosynthesis-team_piq
-[maintainability-raiting-shield]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_piq&metric=sqale_rating
-[maintainability-raiting-url]: https://sonarcloud.io/dashboard?id=photosynthesis-team_piq
-[reliability-rating-badge]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_piq&metric=reliability_rating
-[reliability-rating-url]:https://sonarcloud.io/dashboard?id=photosynthesis-team_piq
+[quality-gate-status-shield]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_photosynthesis.metrics&metric=alert_status
+[quality-gate-status-url]: https://sonarcloud.io/dashboard?id=photosynthesis-team_photosynthesis.metrics
+[maintainability-raiting-shield]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_photosynthesis.metrics&metric=sqale_rating
+[maintainability-raiting-url]: https://sonarcloud.io/dashboard?id=photosynthesis-team_photosynthesis.metrics
+[reliability-rating-badge]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_photosynthesis.metrics&metric=reliability_rating
+[reliability-rating-url]:https://sonarcloud.io/dashboard?id=photosynthesis-team_photosynthesis.metrics
