@@ -1,6 +1,6 @@
 <div align="center">
 
-# PhotoSynthesis.Metrics
+# PyTorch Image Quality
 ![CI flake-8 style check][ci-flake-8-style-check-shield]
 ![CI testing][ci-testing]  
 [![MIT License][license-shield]][license-url]
@@ -13,10 +13,11 @@
 
 <!-- ABOUT THE PROJECT -->
 
-PyTorch library with measures and metrics for various image-to-image tasks like denoising, super-resolution, 
-image generation etc. This easy to use yet flexible and extensive library is developed with focus on reliability 
-and reproducibility of results. Use your favourite measures as losses for training neural networks with ready-to-use 
-PyTorch modules.  
+Collection of measures and metrics for automatic image quality assessment in various image-to-image tasks such as 
+denoising, super-resolution, image generation etc. 
+This easy to use yet flexible and extensive library is developed with focus on reliability and 
+reproducibility of results.
+Use your favourite measures as losses for training neural networks with ready-to-use PyTorch modules.  
 
 
 <!-- GETTING STARTED -->
