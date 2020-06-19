@@ -469,7 +469,7 @@ Other projects by PhotoSynthesis Team:
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 [license-shield]: https://img.shields.io/badge/License-Apache%202.0-blue.svg
-[linkedin-url]: https://www.linkedin.com/in/sergey-kastryulin/
+[license-url]: https://github.com/photosynthesis-team/photosynthesis.metrics/blob/master/LICENSE
 [ci-flake-8-style-check-shield]: https://github.com/photosynthesis-team/photosynthesis.metrics/workflows/flake-8%20style%20check/badge.svg
 [ci-testing]: https://github.com/photosynthesis-team/photosynthesis.metrics/workflows/testing/badge.svg
 [pypi-version-shield]: https://badge.fury.io/py/photosynthesis-metrics.svg
