@@ -12,7 +12,7 @@ import torch
 from torch.nn.modules.loss import _Loss
 from torch.utils.model_zoo import load_url
 import torch.nn.functional as F
-from photosynthesis_metrics.utils import _adjust_dimensions, _validate_input
+from piq.utils import _adjust_dimensions, _validate_input
 
 
 def _ggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -138,7 +138,7 @@ def _RBF_kernel(features: torch.Tensor, sv: torch.Tensor, gamma: float = 0.05) -
 
 
 def _score_svr(features: torch.Tensor) -> torch.Tensor:
-    url = 'https://github.com/photosynthesis-team/photosynthesis.metrics/' \
+    url = 'https://github.com/photosynthesis-team/piq/' \
           'releases/download/v0.4.0/brisque_svm_weights.pt'
     sv_coef, sv = load_url(url, map_location=features.device)
 

@@ -2,7 +2,7 @@
 
 ### Issues
 
-Use [GitHub Issues](https://github.com/photosynthesis-team/photosynthesis.metrics/issues) for bug reports and feature requests.
+Use [GitHub Issues](https://github.com/photosynthesis-team/piq/issues) for bug reports and feature requests.
 
 
 ### Step-by-step guide

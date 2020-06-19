@@ -2,7 +2,7 @@ import torch
 import pytest
 from skimage.metrics import peak_signal_noise_ratio
 
-from photosynthesis_metrics import psnr
+from piq import psnr
 
 
 @pytest.fixture(scope='module')

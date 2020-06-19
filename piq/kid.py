@@ -2,7 +2,7 @@ from typing import Optional, Tuple, Union
 
 import torch
 
-from photosynthesis_metrics.base import BaseFeatureMetric
+from piq.base import BaseFeatureMetric
 
 
 def _polynomial_kernel(
