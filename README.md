@@ -36,7 +36,7 @@ ssim_index = ssim(prediction, target, data_range=1.)
 
 <!-- PSNR EXAMPLES -->
 <details>
-<summary>Peak Signal-to-Noise Ration (PSNR)</summary>
+<summary>Peak Signal-to-Noise Ratio (PSNR)</summary>
 <p>
 
 To compute PSNR as a measure, use lower case function from the library.
