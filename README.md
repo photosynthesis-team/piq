@@ -1,3 +1,4 @@
+<div align="center">
 # PhotoSynthesis.Metrics
 ![CI flake-8 style check][ci-flake-8-style-check-shield]
 ![CI testing][ci-testing]  
@@ -7,7 +8,7 @@
 [![Quality Gate Status][quality-gate-status-shield]][quality-gate-status-url]
 [![Maintainability Rating][maintainability-raiting-shield]][maintainability-raiting-url]
 [![Reliability Rating][reliability-rating-badge]][reliability-rating-url]
-
+</div>
 
 <!-- ABOUT THE PROJECT -->
 
