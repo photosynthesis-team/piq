@@ -155,14 +155,14 @@ def test_ssim_raises_if_kernel_size_greater_than_image() -> None:
 
 
 def test_ssim_raise_if_wrong_value_is_estimated(prediction: torch.Tensor, target: torch.Tensor) -> None:
-    photosynthesis_ssim = ssim(prediction, target, kernel_size=11, kernel_sigma=1.5, data_range=1., size_average=False)
+    piq_ssim = ssim(prediction, target, kernel_size=11, kernel_sigma=1.5, data_range=1., size_average=False)
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ssim = torch.tensor(tf.image.ssim(tf_prediction, tf_target, max_val=1.).numpy())
-    assert torch.isclose(photosynthesis_ssim, tf_ssim, atol=1e-6).all(), \
+    assert torch.isclose(piq_ssim, tf_ssim, atol=1e-6).all(), \
         f'The estimated value must be equal to tensorflow provided one' \
         f'(considering floating point operation error up to 1 * 10^-6), ' \
-        f'got difference {(photosynthesis_ssim - tf_ssim).abs()}'
+        f'got difference {(piq_ssim - tf_ssim).abs()}'
 
 
 # ================== Test class: `SSIMLoss` ==================
@@ -449,30 +449,30 @@ def test_multi_scale_ssim_raises_if_kernel_size_greater_than_image() -> None:
 
 
 def test_multi_scale_ssim_raise_if_wrong_value_is_estimated(prediction: torch.Tensor, target: torch.Tensor) -> None:
-    photosynthesis_ms_ssim = multi_scale_ssim(prediction, target, kernel_size=11, kernel_sigma=1.5,
+    piq_ms_ssim = multi_scale_ssim(prediction, target, kernel_size=11, kernel_sigma=1.5,
                                               data_range=1., size_average=False)
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.).numpy())
-    assert torch.isclose(photosynthesis_ms_ssim, tf_ms_ssim, atol=1e-4).all(), \
+    assert torch.isclose(piq_ms_ssim, tf_ms_ssim, atol=1e-4).all(), \
         f'The estimated value must be equal to tensorflow provided one' \
         f'(considering floating point operation error up to 1 * 10^-4), ' \
-        f'got difference {(photosynthesis_ms_ssim - tf_ms_ssim).abs()}'
+        f'got difference {(piq_ms_ssim - tf_ms_ssim).abs()}'
 
 
 def test_multi_scale_ssim_raise_if_wrong_value_is_estimated_custom_weights(prediction: torch.Tensor,
                                                                            target: torch.Tensor) -> None:
     scale_weights = [0.0448, 0.2856, 0.3001]
-    photosynthesis_ms_ssim = multi_scale_ssim(prediction, target, kernel_size=11, kernel_sigma=1.5,
+    piq_ms_ssim = multi_scale_ssim(prediction, target, kernel_size=11, kernel_sigma=1.5,
                                               data_range=1., size_average=False, scale_weights=scale_weights)
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.,
                                                        power_factors=scale_weights).numpy())
-    assert torch.isclose(photosynthesis_ms_ssim, tf_ms_ssim, atol=1e-4).all(), \
+    assert torch.isclose(piq_ms_ssim, tf_ms_ssim, atol=1e-4).all(), \
         f'The estimated value must be equal to tensorflow provided one' \
         f'(considering floating point operation error up to 1 * 10^-4), ' \
-        f'got difference {(photosynthesis_ms_ssim - tf_ms_ssim).abs()}'
+        f'got difference {(piq_ms_ssim - tf_ms_ssim).abs()}'
 
 
 # ================== Test class: `MultiScaleSSIMLoss` ==================
@@ -623,27 +623,27 @@ def test_multi_scale_ssim_loss_raises_if_kernel_size_greater_than_image() -> Non
 
 def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated(prediction: torch.Tensor,
                                                                  target: torch.Tensor) -> None:
-    photosynthesis_ms_ssim_loss = MultiScaleSSIMLoss(kernel_size=11, kernel_sigma=1.5,
+    piq_ms_ssim_loss = MultiScaleSSIMLoss(kernel_size=11, kernel_sigma=1.5,
                                                      data_range=1.)(prediction, target)
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.).numpy()).mean()
-    assert torch.isclose(photosynthesis_ms_ssim_loss, 1 - tf_ms_ssim, atol=1e-4).all(), \
+    assert torch.isclose(piq_ms_ssim_loss, 1 - tf_ms_ssim, atol=1e-4).all(), \
         f'The estimated value must be equal to tensorflow provided one' \
         f'(considering floating point operation error up to 1 * 10^-4), ' \
-        f'got difference {(photosynthesis_ms_ssim_loss - 1 + tf_ms_ssim).abs()}'
+        f'got difference {(piq_ms_ssim_loss - 1 + tf_ms_ssim).abs()}'
 
 
 def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated_custom_weights(prediction: torch.Tensor,
                                                                                 target: torch.Tensor) -> None:
     scale_weights = [0.0448, 0.2856, 0.3001]
-    photosynthesis_ms_ssim_loss = MultiScaleSSIMLoss(kernel_size=11, kernel_sigma=1.5,
+    piq_ms_ssim_loss = MultiScaleSSIMLoss(kernel_size=11, kernel_sigma=1.5,
                                                      data_range=1., scale_weights=scale_weights)(prediction, target)
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.,
                                                        power_factors=scale_weights).numpy()).mean()
-    assert torch.isclose(photosynthesis_ms_ssim_loss, 1 - tf_ms_ssim, atol=1e-4).all(), \
+    assert torch.isclose(piq_ms_ssim_loss, 1 - tf_ms_ssim, atol=1e-4).all(), \
         f'The estimated value must be equal to tensorflow provided one' \
         f'(considering floating point operation error up to 1 * 10^-4), ' \
-        f'got difference {(photosynthesis_ms_ssim_loss - 1 + tf_ms_ssim).abs()}'
+        f'got difference {(piq_ms_ssim_loss - 1 + tf_ms_ssim).abs()}'
