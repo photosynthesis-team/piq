@@ -138,7 +138,7 @@ def _RBF_kernel(features: torch.Tensor, sv: torch.Tensor, gamma: float = 0.05) -
 
 
 def _score_svr(features: torch.Tensor) -> torch.Tensor:
-    url = 'https://github.com/photosynthesis-team/photosynthesis.metrics/' \
+    url = 'https://github.com/photosynthesis-team/piq/' \
           'releases/download/v0.4.0/brisque_svm_weights.pt'
     sv_coef, sv = load_url(url, map_location=features.device)
 

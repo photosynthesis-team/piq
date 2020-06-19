@@ -33,7 +33,7 @@ setuptools.setup(
     description="Measures and metrics for image2image tasks. PyTorch.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/photosynthesis-team/photosynthesis.metrics",
+    url="https://github.com/photosynthesis-team/piq",
     install_requires=required,
     packages=setuptools.find_packages(),
     classifiers=[
