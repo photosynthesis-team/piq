@@ -472,8 +472,8 @@ Other projects by PhotoSynthesis Team:
 [license-url]: https://github.com/photosynthesis-team/piq/blob/master/LICENSE
 [ci-flake-8-style-check-shield]: https://github.com/photosynthesis-team/piq/workflows/flake-8%20style%20check/badge.svg
 [ci-testing]: https://github.com/photosynthesis-team/piq/workflows/testing/badge.svg
-[pypi-version-shield]: https://badge.fury.io/py/photosynthesis-metrics.svg
-[pypi-version-url]: https://badge.fury.io/py/photosynthesis-metrics  
+[pypi-version-shield]: https://badge.fury.io/py/piq.svg
+[pypi-version-url]: https://badge.fury.io/py/piq  
 [quality-gate-status-shield]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_photosynthesis.metrics&metric=alert_status
 [quality-gate-status-url]: https://sonarcloud.io/dashboard?id=photosynthesis-team_photosynthesis.metrics
 [maintainability-raiting-shield]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_photosynthesis.metrics&metric=sqale_rating
