@@ -3,7 +3,7 @@ r""" This module implements Peak Signal-to-Noise Ration (PSNR) in PyTorch.
 import torch
 from typing import Optional, Union
 
-from photosynthesis_metrics.utils import _validate_input, _adjust_dimensions
+from piq.utils import _validate_input, _adjust_dimensions
 
 
 def psnr(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1.0,

@@ -12,7 +12,7 @@ import torch
 from torch.nn.modules.loss import _Loss
 from torch.utils.model_zoo import load_url
 import torch.nn.functional as F
-from photosynthesis_metrics.utils import _adjust_dimensions, _validate_input
+from piq.utils import _adjust_dimensions, _validate_input
 
 
 def _ggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:

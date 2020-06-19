@@ -3,7 +3,7 @@ import itertools
 import pytest
 import tensorflow as tf
 
-from photosynthesis_metrics import SSIMLoss, MultiScaleSSIMLoss, ssim, multi_scale_ssim
+from piq import SSIMLoss, MultiScaleSSIMLoss, ssim, multi_scale_ssim
 
 
 @pytest.fixture(scope='module')

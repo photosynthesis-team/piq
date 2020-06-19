@@ -24,7 +24,7 @@ with open("README.md", "r") as f, open("requirements.txt", "r") as g:
     long_description = f.read()
     required = g.read().splitlines()
 
-package_name = 'photosynthesis_metrics'
+package_name = 'piq'
 setuptools.setup(
     name=package_name,
     version=get_version(os.path.join(package_name, '__init__.py')),

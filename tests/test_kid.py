@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from photosynthesis_metrics import KID
+from piq import KID
 
 
 @pytest.fixture(scope='module')
