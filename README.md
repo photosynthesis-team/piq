@@ -18,7 +18,6 @@ This easy to use yet flexible and extensive library is developed with focus on r
 reproducibility of results.
 Use your favourite measures as losses for training neural networks with ready-to-use PyTorch modules.  
 
-
 <!-- GETTING STARTED -->
 ### Getting started  
 
@@ -409,7 +408,7 @@ distance: torch.Tensor = is_metric(prediction_feats, target_feats)
 
 ### Overview
 
-*PyTorch Image Quality* helps you to concentrate on your experiments without the boilerplate code.
+*PyTorch Image Quality* (former [PhotoSynthesis.Metrics](https://pypi.org/project/photosynthesis-metrics/0.4.0/)) helps you to concentrate on your experiments without the boilerplate code.
 The library contains a set of measures and metrics that is constantly getting extended. 
 For measures/metrics that can be used as loss functions, corresponding PyTorch modules are implemented.
  
