@@ -1,4 +1,4 @@
-r""" This module implements Peak Signal-to-Noise Ration (PSNR) in PyTorch.
+r""" This module implements Peak Signal-to-Noise Ratio (PSNR) in PyTorch.
 """
 import torch
 from typing import Optional, Union
@@ -8,7 +8,7 @@ from piq.utils import _validate_input, _adjust_dimensions
 
 def psnr(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1.0,
          reduction: Optional[str] = 'mean', convert_to_greyscale: bool = False):
-    r"""Compute Peak Signal-to-Noise Ration for a batch of images.
+    r"""Compute Peak Signal-to-Noise Ratio for a batch of images.
     Supports both greyscale and color images with RGB channel order.
 
     Args:
