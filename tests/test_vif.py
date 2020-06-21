@@ -53,8 +53,8 @@ def test_vif_p_works_for_different_data_range(prediction: torch.Tensor, target: 
 
 
 def test_vif_p_fails_for_small_images() -> None:
-    prediction = torch.randn(2, 3, 32, 32)
-    target = torch.randn(2, 3, 32, 32)
+    prediction = torch.rand(2, 3, 32, 32)
+    target = torch.rand(2, 3, 32, 32)
     with pytest.raises(ValueError):
         vif_p(prediction, target)
 
