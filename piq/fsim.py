@@ -144,7 +144,7 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     # Pre-compute some stuff to speed up filter construction
     grid_x, grid_y = _get_meshgrid((H, W))
     radius = torch.sqrt(grid_x ** 2 + grid_y ** 2)
-    theta = torch.atan2(-grid_y, grid_x).t()
+    theta = torch.atan2(-grid_y, grid_x)
 
     # Quadrant shift radius and theta so that filters are constructed with 0 frequency at the corners.
     # Get rid of the 0 radius value at the 0 frequency point (now at top-left corner)
