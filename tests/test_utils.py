@@ -3,7 +3,7 @@ import pytest
 
 import numpy as np
 
-from photosynthesis_metrics.utils import _validate_input
+from piq.utils import _validate_input
 
 
 @pytest.fixture(scope='module')

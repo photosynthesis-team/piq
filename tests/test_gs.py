@@ -3,7 +3,7 @@ import sys
 import pytest
 import torch
 
-from photosynthesis_metrics import GS
+from piq import GS
 try:
     import gudhi # noqa
 except ImportError:

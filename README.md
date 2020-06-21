@@ -1,28 +1,29 @@
-# PhotoSynthesis.Metrics
-![CI flake-8 style check][ci-flake-8-style-check-shield]
-![CI testing][ci-testing]  
-[![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
+<div align="center">
+
+# PyTorch Image Quality
+[![License][license-shield]][license-url]
 [![PyPI version][pypi-version-shield]][pypi-version-url]  
+![CI flake-8 style check][ci-flake-8-style-check-shield]
+![CI testing][ci-testing]    
 [![Quality Gate Status][quality-gate-status-shield]][quality-gate-status-url]
 [![Maintainability Rating][maintainability-raiting-shield]][maintainability-raiting-url]
 [![Reliability Rating][reliability-rating-badge]][reliability-rating-url]
-
+</div>
 
 <!-- ABOUT THE PROJECT -->
 
-PyTorch library with measures and metrics for various image-to-image tasks like denoising, super-resolution, 
-image generation etc. This easy to use yet flexible and extensive library is developed with focus on reliability 
-and reproducibility of results. Use your favourite measures as losses for training neural networks with ready-to-use 
-PyTorch modules.  
-
+Collection of measures and metrics for automatic image quality assessment in various image-to-image tasks such as 
+denoising, super-resolution, image generation etc. 
+This easy to use yet flexible and extensive library is developed with focus on reliability and 
+reproducibility of results.
+Use your favourite measures as losses for training neural networks with ready-to-use PyTorch modules.  
 
 <!-- GETTING STARTED -->
 ### Getting started  
 
 ```python
 import torch
-from photosynthesis_metrics import ssim
+from piq import ssim
 
 prediction = torch.rand(3, 3, 256, 256)
 target = torch.rand(3, 3, 256, 256)
@@ -33,6 +34,30 @@ ssim_index = ssim(prediction, target, data_range=1.)
 <!-- EXAMPLES -->
 ### Examples
 
+<!-- PSNR EXAMPLES -->
+<details>
+<summary>Peak Signal-to-Noise Ratio (PSNR)</summary>
+<p>
+
+To compute PSNR as a measure, use lower case function from the library.
+By default it computes average of PSNR if more than 1 image is included in batch.
+You can specify other reduction methods by `reduction` flag.
+
+```python
+import torch
+from piq import psnr
+from typing import Union, Tuple
+
+prediction = torch.rand(3, 3, 256, 256)
+target = torch.rand(3, 3, 256, 256) 
+psnr_mean = psnr(prediction, target, data_range=1., reduction='mean')
+psnr_per_image = psnr(prediction, target, data_range=1., reduction='none')
+```
+
+Note: Colour images are first converted to YCbCr format and only luminance component is considered.
+</p>
+</details>
+
 <!-- SSIM EXAMPLES -->
 <details>
 <summary>Structural Similarity (SSIM)</summary>
@@ -41,7 +66,7 @@ ssim_index = ssim(prediction, target, data_range=1.)
 To compute SSIM index as a measure, use lower case function from the library:
 ```python
 import torch
-from photosynthesis_metrics import ssim
+from piq import ssim
 from typing import Union, Tuple
 
 prediction = torch.rand(3, 3, 256, 256)
@@ -52,7 +77,7 @@ ssim_index: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]] = ssim(predic
 In order to use SSIM as a loss function, use corresponding PyTorch module:
 ```python
 import torch
-from photosynthesis_metrics import SSIMLoss
+from piq import SSIMLoss
 
 loss = SSIMLoss(data_range=1.)
 prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
@@ -71,7 +96,7 @@ output.backward()
 To compute MS-SSIM index as a measure, use lower case function from the library:
 ```python
 import torch
-from photosynthesis_metrics import multi_scale_ssim
+from piq import multi_scale_ssim
 
 prediction = torch.rand(3, 3, 256, 256)
 target = torch.rand(3, 3, 256, 256) 
@@ -81,7 +106,7 @@ ms_ssim_index: torch.Tensor = multi_scale_ssim(prediction, target, data_range=1.
 In order to use MS-SSIM as a loss function, use corresponding PyTorch module:
 ```python
 import torch
-from photosynthesis_metrics import MultiScaleSSIMLoss
+from piq import MultiScaleSSIMLoss
 
 loss = MultiScaleSSIMLoss(data_range=1.)
 prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
@@ -100,7 +125,7 @@ output.backward()
 To compute TV as a measure, use lower case function from the library:
 ```python
 import torch
-from photosynthesis_metrics import total_variation
+from piq import total_variation
 
 data = torch.rand(3, 3, 256, 256) 
 tv: torch.Tensor = total_variation(data)
@@ -109,7 +134,7 @@ tv: torch.Tensor = total_variation(data)
 In order to use TV as a loss function, use corresponding PyTorch module:
 ```python
 import torch
-from photosynthesis_metrics import TVLoss
+from piq import TVLoss
 
 loss = TVLoss()
 prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
@@ -127,7 +152,7 @@ output.backward()
 To compute VIF as a measure, use lower case function from the library:
 ```python
 import torch
-from photosynthesis_metrics import vif_p
+from piq import vif_p
 
 predicted = torch.rand(3, 3, 256, 256)
 target = torch.rand(3, 3, 256, 256)
@@ -137,12 +162,12 @@ vif: torch.Tensor = vif_p(predicted, target, data_range=1.)
 In order to use VIF as a loss function, use corresponding PyTorch class:
 ```python
 import torch
-from photosynthesis_metrics import VIFLoss
+from piq import VIFLoss
 
 loss = VIFLoss(sigma_n_sq=2.0, data_range=1.)
 prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
 target = torch.rand(3, 3, 256, 256)
-ouput: torch.Tensor = loss(prediction, target)
+output: torch.Tensor = loss(prediction, target)
 output.backward()
 ```
 
@@ -160,12 +185,12 @@ It can be used both as a measure and as a loss function. In any case it should m
 Usually values of GMSD lie in [0, 0.35] interval.
 ```python
 import torch
-from photosynthesis_metrics import GMSDLoss
+from piq import GMSDLoss
 
 loss = GMSDLoss(data_range=1.)
 prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
 target = torch.rand(3, 3, 256, 256)
-ouput: torch.Tensor = loss(prediction, target)
+output: torch.Tensor = loss(prediction, target)
 output.backward()
 ```
 </p>
@@ -180,12 +205,12 @@ It can be used both as a measure and as a loss function. In any case it should m
 By defualt scale weights are initialized with values from the paper. You can change them by passing a list of 4 variables to `scale_weights` argument during initialization. Both GMSD and MS-GMSD computed for greyscale images, but to take contrast changes into account authors propoced to also add chromatic component. Use flag `chromatic` to use MS-GMSDc version of the loss
 ```python
 import torch
-from photosynthesis_metrics import MultiScaleGMSDLoss
+from piq import MultiScaleGMSDLoss
 
 loss = MultiScaleGMSDLoss(chromatic=True, data_range=1.)
 prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
 target = torch.rand(3, 3, 256, 256)
-ouput: torch.Tensor = loss(prediction, target)
+output: torch.Tensor = loss(prediction, target)
 output.backward()
 ```
 </p>
@@ -199,7 +224,7 @@ output.backward()
 To compute [BRISQUE score](https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf) as a measure, use lower case function from the library:
 ```python
 import torch
-from photosynthesis_metrics import brisque
+from piq import brisque
 from typing import Union, Tuple
 
 prediction = torch.rand(3, 3, 256, 256)
@@ -209,7 +234,7 @@ brisque_index: torch.Tensor = brisque(prediction, data_range=1.)
 In order to use BRISQUE as a loss function, use corresponding PyTorch module:
 ```python
 import torch
-from photosynthesis_metrics import BRISQUELoss
+from piq import BRISQUELoss
 
 loss = BRISQUELoss(data_range=1.)
 prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
@@ -228,7 +253,7 @@ Use `MSID` class to compute [MSID score](https://arxiv.org/abs/1905.11141) from 
 pre-extracted from some feature extractor network: 
 ```python
 import torch
-from photosynthesis_metrics import MSID
+from piq import MSID
 
 msid_metric = MSID()
 prediction_feats = torch.rand(10000, 1024)
@@ -241,7 +266,7 @@ Please note that `_compute_feats` consumes a data loader of predefined format.
 ```python
 import torch
 from  torch.utils.data import DataLoader
-from photosynthesis_metrics import MSID
+from piq import MSID
 
 first_dl, second_dl = DataLoader(), DataLoader()
 msid_metric = MSID() 
@@ -261,7 +286,7 @@ Use `FID` class to compute [FID score](https://arxiv.org/abs/1706.08500) from im
 pre-extracted from some feature extractor network:
 ```python
 import torch
-from photosynthesis_metrics import FID
+from piq import FID
 
 fid_metric = FID()
 prediction_feats = torch.rand(10000, 1024)
@@ -274,7 +299,7 @@ Please note that `_compute_feats` consumes a data loader of predefined format.
 ```python
 import torch
 from  torch.utils.data import DataLoader
-from photosynthesis_metrics import FID
+from piq import FID
 
 first_dl, second_dl = DataLoader(), DataLoader()
 fid_metric = FID() 
@@ -294,7 +319,7 @@ Use `KID` class to compute [KID score](https://arxiv.org/abs/1801.01401) from im
 pre-extracted from some feature extractor network:
 ```python
 import torch
-from photosynthesis_metrics import KID
+from piq import KID
 
 kid_metric = KID()
 prediction_feats = torch.rand(10000, 1024)
@@ -307,7 +332,7 @@ Please note that `_compute_feats` consumes a data loader of predefined format.
 ```python
 import torch
 from  torch.utils.data import DataLoader
-from photosynthesis_metrics import KID
+from piq import KID
 
 first_dl, second_dl = DataLoader(), DataLoader()
 kid_metric = KID() 
@@ -327,7 +352,7 @@ Use `GS` class to compute [Geometry Score](https://arxiv.org/abs/1802.02664) fro
 pre-extracted from some feature extractor network. Computation is heavily CPU dependent, adjust `num_workers` parameter according to your system configuration:
 ```python
 import torch
-from photosynthesis_metrics import GS
+from piq import GS
 
 gs_metric = GS(sample_size=64, num_iters=100, i_max=100, num_workers=4)
 prediction_feats = torch.rand(10000, 1024)
@@ -349,16 +374,16 @@ Use `inception_score` function to compute [IS](https://arxiv.org/abs/1606.03498)
 pre-extracted from some feature extractor network. Note, that we follow recomendations from paper [A Note on the Inception Score](https://arxiv.org/pdf/1801.01973.pdf), which proposed small modification to original algorithm:
 ```python
 import torch
-from photosynthesis_metrics import inception_score
+from piq import inception_score
 
 prediction_feats = torch.rand(10000, 1024)
-mean: torch.Tensor, variance: torch.Tensor = inception_score(prediction_feats, num_splits=10)
+mean, variance = inception_score(prediction_feats, num_splits=10)
 ```
  
 To compute difference between IS for 2 sets of image features, use `IS` class.
 ```python
 import torch
-from photosynthesis_metrics import IS
+from piq import IS
 
 
 is_metric = IS(distance='l1') 
@@ -383,7 +408,7 @@ distance: torch.Tensor = is_metric(prediction_feats, target_feats)
 
 ### Overview
 
-*PhotoSynthesis.Metrics* helps you to concentrate on your experiments without the boilerplate code.
+*PyTorch Image Quality* (former [PhotoSynthesis.Metrics](https://pypi.org/project/photosynthesis-metrics/0.4.0/)) helps you to concentrate on your experiments without the boilerplate code.
 The library contains a set of measures and metrics that is constantly getting extended. 
 For measures/metrics that can be used as loss functions, corresponding PyTorch modules are implemented.
  
@@ -391,17 +416,17 @@ For measures/metrics that can be used as loss functions, corresponding PyTorch m
 
 #### Installation
 
-`$ pip install photosynthesis-metrics`
+`$ pip install piq`
  
 If you want to use the latest features straight from the master, clone the repo:
 ```sh
-$ git clone https://github.com/photosynthesis-team/photosynthesis.metrics.git
+$ git clone https://github.com/photosynthesis-team/piq.git
 ```
 
 <!-- ROADMAP -->
 #### Roadmap
 
-See the [open issues](https://github.com/photosynthesis-team/photosynthesis.metrics/issues) for a list of proposed 
+See the [open issues](https://github.com/photosynthesis-team/piq/issues) for a list of proposed 
 features and known issues.
 
 
@@ -414,7 +439,7 @@ features and known issues.
 
 We appreciate all contributions. If you plan to: 
 - contribute back bug-fixes, please do so without any further discussion
-- close one of [open issues](https://github.com/photosynthesis-team/photosynthesis.metrics/issues), please do so if no one has been assigned to it
+- close one of [open issues](https://github.com/photosynthesis-team/piq/issues), please do so if no one has been assigned to it
 - contribute new features, utility functions or extensions, please first open an issue and discuss the feature with us
 
 Please see the [contribution guide](CONTRIBUTING.md) for more information.
@@ -425,7 +450,7 @@ Please see the [contribution guide](CONTRIBUTING.md) for more information.
 
 **Sergey Kastryulin** - [@snk4tr](https://github.com/snk4tr) - `snk4tr@gmail.com`
 
-Project Link: [https://github.com/photosynthesis-team/photosynthesis.metrics](https://github.com/photosynthesis-team/photosynthesis.metrics)  
+Project Link: [https://github.com/photosynthesis-team/piq](https://github.com/photosynthesis-team/piq)  
 PhotoSynthesis Team: [https://github.com/photosynthesis-team](https://github.com/photosynthesis-team)
 
 Other projects by PhotoSynthesis Team:  
@@ -443,13 +468,11 @@ Other projects by PhotoSynthesis Team:
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 [license-shield]: https://img.shields.io/badge/License-Apache%202.0-blue.svg
-[license-url]: https://github.com/photosynthesis-team/photosynthesis.metrics/blob/master/LICENSE
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=flat-square&logo=linkedin&colorB=555
-[linkedin-url]: https://www.linkedin.com/in/sergey-kastryulin/
-[ci-flake-8-style-check-shield]: https://github.com/photosynthesis-team/photosynthesis.metrics/workflows/flake-8%20style%20check/badge.svg
-[ci-testing]: https://github.com/photosynthesis-team/photosynthesis.metrics/workflows/testing/badge.svg
-[pypi-version-shield]: https://badge.fury.io/py/photosynthesis-metrics.svg
-[pypi-version-url]: https://badge.fury.io/py/photosynthesis-metrics  
+[license-url]: https://github.com/photosynthesis-team/piq/blob/master/LICENSE
+[ci-flake-8-style-check-shield]: https://github.com/photosynthesis-team/piq/workflows/flake-8%20style%20check/badge.svg
+[ci-testing]: https://github.com/photosynthesis-team/piq/workflows/testing/badge.svg
+[pypi-version-shield]: https://badge.fury.io/py/piq.svg
+[pypi-version-url]: https://badge.fury.io/py/piq  
 [quality-gate-status-shield]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_photosynthesis.metrics&metric=alert_status
 [quality-gate-status-url]: https://sonarcloud.io/dashboard?id=photosynthesis-team_photosynthesis.metrics
 [maintainability-raiting-shield]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_photosynthesis.metrics&metric=sqale_rating

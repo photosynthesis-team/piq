@@ -4,7 +4,7 @@ r"""Implemetation of Total Variation metric, based on article
 
 import torch
 from torch.nn.modules.loss import _Loss
-from photosynthesis_metrics.utils import _validate_input, _adjust_dimensions
+from piq.utils import _validate_input, _adjust_dimensions
 
 
 def total_variation(x: torch.Tensor, size_average: bool = True, reduction_type: str = 'l2') -> torch.Tensor:

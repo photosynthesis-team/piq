@@ -1,7 +1,7 @@
 import torch
 import pytest
 
-from photosynthesis_metrics import TVLoss, total_variation
+from piq import TVLoss, total_variation
 
 
 @pytest.fixture(scope='module')
