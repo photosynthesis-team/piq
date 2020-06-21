@@ -24,7 +24,7 @@ with open("README.md", "r") as f, open("requirements.txt", "r") as g:
     long_description = f.read()
     required = g.read().splitlines()
 
-package_name = 'photosynthesis_metrics'
+package_name = 'piq'
 setuptools.setup(
     name=package_name,
     version=get_version(os.path.join(package_name, '__init__.py')),
@@ -33,7 +33,7 @@ setuptools.setup(
     description="Measures and metrics for image2image tasks. PyTorch.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/photosynthesis-team/photosynthesis.metrics",
+    url="https://github.com/photosynthesis-team/piq",
     install_requires=required,
     packages=setuptools.find_packages(),
     classifiers=[

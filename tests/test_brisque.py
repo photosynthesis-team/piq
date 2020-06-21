@@ -2,7 +2,7 @@ import torch
 import pytest
 from libsvm import svmutil  # noqa: F401
 from brisque import BRISQUE
-from photosynthesis_metrics import brisque, BRISQUELoss
+from piq import brisque, BRISQUELoss
 
 
 @pytest.fixture(scope='module')

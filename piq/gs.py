@@ -12,7 +12,7 @@ from scipy.spatial.distance import cdist
 import torch
 import numpy as np
 
-from photosynthesis_metrics.base import BaseFeatureMetric
+from piq.base import BaseFeatureMetric
 
 
 def relative(intervals: np.ndarray, alpha_max: float, i_max: int = 100) -> np.ndarray:

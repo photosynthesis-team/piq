@@ -12,7 +12,7 @@ import torch
 import torch.nn.functional as f
 from torch.nn.modules.loss import _Loss
 
-from photosynthesis_metrics.utils import _adjust_dimensions, _validate_input
+from piq.utils import _adjust_dimensions, _validate_input
 
 
 def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: float = 1.5,

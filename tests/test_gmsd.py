@@ -1,7 +1,7 @@
 import torch
 import pytest
 
-from photosynthesis_metrics import GMSDLoss, MultiScaleGMSDLoss
+from piq import GMSDLoss, MultiScaleGMSDLoss
 
 
 @pytest.fixture(scope='module')

@@ -1,7 +1,7 @@
 import torch
 
-from photosynthesis_metrics.feature_extractors.fid_inception import InceptionV3
-from photosynthesis_metrics.utils import _validate_features
+from piq.feature_extractors.fid_inception import InceptionV3
+from piq.utils import _validate_features
 
 
 class BaseFeatureMetric(torch.nn.Module):

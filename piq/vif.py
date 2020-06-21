@@ -10,7 +10,7 @@ from torch.nn.modules.loss import _Loss
 import torch.nn.functional as F
 from typing import Union
 
-from photosynthesis_metrics.utils import _adjust_dimensions, _validate_input
+from piq.utils import _adjust_dimensions, _validate_input
 
 
 def _gaussian_kernel2d(kernel_size: int = 5, sigma: float = 2.0) -> torch.Tensor:

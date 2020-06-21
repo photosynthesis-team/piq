@@ -11,7 +11,7 @@ Credits:
 from typing import Tuple
 import torch
 
-from photosynthesis_metrics.base import BaseFeatureMetric
+from piq.base import BaseFeatureMetric
 
 
 def _approximation_error(A: torch.Tensor, sA: torch.Tensor) -> torch.Tensor:
