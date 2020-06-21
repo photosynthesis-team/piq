@@ -4,7 +4,7 @@ import torchvision
 import numpy as np
 from scipy.stats import entropy
 
-from photosynthesis_metrics import IS, inception_score
+from piq import IS, inception_score
 
 
 # Same as in https://github.com/sbarratt/inception-score-pytorch

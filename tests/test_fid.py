@@ -1,8 +1,8 @@
 import pytest
 import torch
 
-from photosynthesis_metrics import FID
-from photosynthesis_metrics.feature_extractors.fid_inception import InceptionV3
+from piq import FID
+from piq.feature_extractors.fid_inception import InceptionV3
 
 
 class TestDataset(torch.utils.data.Dataset):

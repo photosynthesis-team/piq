@@ -14,7 +14,7 @@ from typing import Optional, Union, Tuple, List
 import torch.nn.functional as F
 from torch.nn.modules.loss import _Loss
 
-from photosynthesis_metrics.utils import _adjust_dimensions, _validate_input
+from piq.utils import _adjust_dimensions, _validate_input
 
 
 def _prewitt_filter() -> torch.Tensor:

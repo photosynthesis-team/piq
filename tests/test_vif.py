@@ -1,7 +1,7 @@
 import torch
 import pytest
 
-from photosynthesis_metrics import VIFLoss, vif_p
+from piq import VIFLoss, vif_p
 
 
 @pytest.fixture(scope='module')
