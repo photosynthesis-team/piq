@@ -3,7 +3,7 @@ import math
 import torch
 from typing import Union, Tuple
 
-from photosynthesis_metrics.utils import _adjust_dimensions, _validate_input
+from piq.utils import _adjust_dimensions, _validate_input
 
 
 def fsim(x: torch.Tensor, y: torch.Tensor,
@@ -41,7 +41,7 @@ def fsim(x: torch.Tensor, y: torch.Tensor,
     y = y * 255
     
     # Apply average pooling
-    kernel_size = max(1, min(x.shape[-2:]) // 256)
+    kernel_size = max(1, round(min(x.shape[-2:]) / 256))
     x = torch.nn.functional.avg_pool2d(x, kernel_size, stride=2)
     y = torch.nn.functional.avg_pool2d(y, kernel_size, stride=2)
         
@@ -50,7 +50,7 @@ def fsim(x: torch.Tensor, y: torch.Tensor,
     # Convert RGB to YIQ color space https://en.wikipedia.org/wiki/YIQ
     if num_channels == 3:
         yiq_weights = torch.tensor([
-            [0.229, 0.587, 0.114],
+            [0.299, 0.587, 0.114],
             [0.5959, -0.2746, -0.3213],
             [0.2115, -0.5227, 0.3112]]).t().to(x)
         x = torch.matmul(x.permute(0, 2, 3, 1), yiq_weights).permute(0, 3, 1, 2)
@@ -59,10 +59,10 @@ def fsim(x: torch.Tensor, y: torch.Tensor,
         x_Y = x[:, : 1, :, :]
         y_Y = y[:, : 1, :, :]
         
-        x_I = x[:, 1: 2, :, :]
-        y_I = y[:, 1: 2, :, :]
-        x_Q = x[:, 2:, :, :]
-        y_Q = y[:, 2:, :, :]
+        x_I = x[:, 1, :, :]
+        y_I = y[:, 1, :, :]
+        x_Q = x[:, 2, :, :]
+        y_Q = y[:, 2, :, :]
 
     else:
         x_Y = x
@@ -77,8 +77,8 @@ def fsim(x: torch.Tensor, y: torch.Tensor,
     grad_x = torch.nn.functional.conv2d(x_Y, kernel, padding=1)
     grad_y = torch.nn.functional.conv2d(y_Y, kernel, padding=1)
     
-    grad_map_x = torch.sqrt(torch.sum(grad_x ** 2, dim=-3, keepdim=True))
-    grad_map_y = torch.sqrt(torch.sum(grad_y ** 2, dim=-3, keepdim=True))
+    grad_map_x = torch.sqrt(torch.sum(grad_x ** 2, dim=-3))
+    grad_map_y = torch.sqrt(torch.sum(grad_y ** 2, dim=-3))
     
     # Constants from paper
     T1, T2, T3, T4, lmbda = 0.85, 160, 200, 200, 0.03
@@ -87,16 +87,16 @@ def fsim(x: torch.Tensor, y: torch.Tensor,
     PC = (2.0 * PCx * PCy + T1) / (PCx ** 2 + PCy ** 2 + T1)
     GM = (2.0 * grad_map_x * grad_map_y + T2) / (grad_map_x ** 2 + grad_map_y ** 2 + T2)
     PCmax = torch.where(PCx > PCy, PCx, PCy)
-    
     score = GM * PC * PCmax
     
     if chromatic:
         S_I = (2 * x_I * y_I + T3) / (x_I ** 2 + y_I ** 2 + T3)
         S_Q = (2 * x_Q * y_Q + T4) / (x_Q ** 2 + y_Q ** 2 + T4)
-        print(score.shape, S_I.shape, S_Q.shape)
-        score = score * (S_I * S_Q) ** lmbda
+        score = score * torch.abs(S_I * S_Q) ** lmbda
+        # Complex gradients will work in PyTorch 1.6.0
+        # score = score * torch.real((S_I * S_Q).to(torch.complex64) ** lmbda)
 
-    result = score.sum(dim=[2, 3]) / PCmax.sum(dim=[2, 3])
+    result = score.sum(dim=[1, 2]) / PCmax.sum(dim=[1, 2])
     
     if reduction == 'none':
         return result
@@ -229,6 +229,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
 
     filters = _construct_filters(x, scales, orientations, min_length, mult, sigma_f, delta_theta, k)
 
+    # Note rescaling to match power record ifft2 of filter
     filters_ifft = torch.ifft(torch.stack([filters, torch.zeros_like(filters)], dim=-1), 2)[..., 0] * math.sqrt(H * W)
     
     # Convolve image with even and odd filters
@@ -320,13 +321,13 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     # Apply noise threshold
     Energy = torch.max(Energy - T, torch.zeros_like(T))
 
-    EnergyAll = Energy.sum(dim=1, keepdims=True)
+    EnergyAll = Energy.sum(dim=[1, 2])
     
     sumAn = An.sum(dim=2, keepdims=True)
     
-    AnAll = sumAn.sum(dim=1, keepdims=True)
+    AnAll = sumAn.sum(dim=[1, 2])
     
-    ResultPC = (EnergyAll / AnAll).view(B, 1, H, W)
+    ResultPC = EnergyAll / AnAll
     return ResultPC
 
 
