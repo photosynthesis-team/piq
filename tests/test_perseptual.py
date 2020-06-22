@@ -55,6 +55,14 @@ def test_content_loss_raises_if_wrong_extractor(
         ContentLoss(feature_extractor=model)
 
 
+@pytest.mark.parametrize(
+    "model", ['vgg16', InceptionV3()],
+)
+def test_content_loss_use_average_pool(
+        prediction: torch.Tensor, target: torch.Tensor, model: Union[str, Callable]) -> None:
+    ContentLoss(feature_extractor=model, use_average_pooling=True)
+
+
 def test_content_loss_supports_custom_extractor(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
     loss = ContentLoss(feature_extractor=InceptionV3().blocks, layers=['0', '1'])
     loss(prediction, target)

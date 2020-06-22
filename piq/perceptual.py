@@ -127,9 +127,7 @@ class ContentLoss(_Loss):
                 raise ValueError("Unknown feature extractor")
 
         if use_average_pooling:
-            for i, layer in enumerate(self.model.features):
-                if isinstance(layer, torch.nn.MaxPool2d):
-                    self.model.features[i] = torch.nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
+            self.model = self.max_pool_to_average_pool(self.model)
 
         # Disable gradients
         for param in self.model.parameters():
@@ -207,6 +205,17 @@ class ContentLoss(_Loss):
         """
         norm_factor = torch.sqrt(torch.sum(x ** 2, dim=1, keepdim=True))
         return x / (norm_factor + self.EPS)
+
+    def max_pool_to_average_pool(self, module: torch.nn.Module) -> torch.nn.Module:
+        r"""Turn All MaxPool layers into AveragePool"""
+        module_output = module
+        if isinstance(module, torch.nn.MaxPool2d):
+            module_output = torch.nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
+            
+        for name, child in module.named_children():
+            module_output.add_module(name, self.max_pool_to_average_pool(child))
+        del module
+        return module_output
 
 
 class StyleLoss(ContentLoss):
