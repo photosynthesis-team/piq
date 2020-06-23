@@ -46,20 +46,23 @@ def test_brisque_raises_if_wrong_reduction(prediction_grey: torch.Tensor) -> Non
 
 
 def test_brisque_values_grey(prediction_grey: torch.Tensor) -> None:
-    score = brisque(prediction_grey, reduction='none')
-    score_baseline = torch.tensor([BRISQUE().get_score(img.squeeze().numpy()) for img in prediction_grey])
-    assert torch.isclose(score, score_baseline, atol=1e-1).all(), f'Expected values to be equal to ' \
-                                                                  f'baseline prediction.' \
-                                                                  f'got {score} and {score_baseline}'
+    score = brisque(prediction_grey, reduction='none', data_range=1.)
+    score_baseline = torch.tensor([BRISQUE().get_score((img * 255).type(torch.uint8).squeeze().numpy())
+                                   for img in prediction_grey])
+    assert torch.isclose(score, score_baseline, atol=1e-1, rtol=1e-3).all(), f'Expected values to be equal to ' \
+                                                                             f'baseline prediction.' \
+                                                                             f'got {score} and {score_baseline}'
 
 
 def test_brisque_values_RGB(prediction_RGB: torch.Tensor) -> None:
-    score = brisque(prediction_RGB, reduction='none')
-    score_baseline = torch.tensor([BRISQUE().get_score(img.squeeze().permute(1, 2, 0).numpy()[..., ::-1])
-                                   for img in prediction_RGB])
-    assert torch.isclose(score, score_baseline, atol=1e-1).all(), f'Expected values to be equal to ' \
-                                                                  f'baseline prediction.' \
-                                                                  f'got {score} and {score_baseline}'
+    score = brisque(prediction_RGB, reduction='none', data_range=1.)
+    score_baseline = [BRISQUE().get_score((img * 255).type(torch.uint8).squeeze().permute(1, 2, 0).numpy()[..., ::-1])
+                      for img in prediction_RGB]
+    assert torch.isclose(score,
+                         torch.tensor(score_baseline),
+                         atol=1e-1, rtol=1e-3).all(), f'Expected values to be equal to ' \
+                                                      f'baseline prediction.' \
+                                                      f'got {score} and {score_baseline}'
 
 
 def test_brisque_all_zeros_or_ones() -> None:
