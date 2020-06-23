@@ -157,9 +157,7 @@ class ContentLoss(_Loss):
         """
         _validate_input(input_tensors=(prediction, target), allow_5d=False)
         prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
-        return self.compute_metric(prediction, target)
-    
-    def compute_metric(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+
         # Normalize input
         mean, std = self.mean.to(prediction), self.std.to(prediction)
         prediction = (prediction - mean) / std
@@ -168,8 +166,8 @@ class ContentLoss(_Loss):
         self.model.to(prediction)
         prediction_features = self.get_features(prediction)
         target_features = self.get_features(target)
-        
-        distances = [self.distance(x, y) for x, y in zip(prediction_features, target_features)]
+
+        distances = self.compute_distance(prediction_features, target_features)
 
         # Scale distances, then average in spatial dimensions, then stack and sum in channels dimension
         loss = torch.cat([(d * w.to(d)).mean(dim=[2, 3]) for d, w in zip(distances, self.weights)], dim=1).sum(dim=1)
@@ -180,6 +178,10 @@ class ContentLoss(_Loss):
         return {'mean': loss.mean,
                 'sum': loss.sum
                 }[self.reduction](dim=0)
+
+    def compute_distance(self, prediction_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+        """Take L2 or L1 distance between feature maps"""
+        return [self.distance(x, y) for x, y in zip(prediction_features, target_features)]
 
     def get_features(self, x: torch.Tensor) -> List[torch.Tensor]:
         """
@@ -214,7 +216,6 @@ class ContentLoss(_Loss):
             
         for name, child in module.named_children():
             module_output.add_module(name, self.max_pool_to_average_pool(child))
-        del module
         return module_output
 
 
@@ -225,30 +226,11 @@ class StyleLoss(ContentLoss):
     Expects input to be in range [0, 1] or normalized with ImageNet statistics into range [-1, 1]
     """
 
-    def compute_metric(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        # Normalize input
-        mean, std = self.mean.to(prediction), self.std.to(prediction)
-        prediction = (prediction - mean) / std
-        target = (target - mean) / std
-
-        self.model.to(prediction)
-        prediction_features = self.get_features(prediction)
-        target_features = self.get_features(target)
-
+    def compute_distance(self, prediction_features: torch.Tensor, target_features: torch.Tensor):
+        """Take L2 or L1 distance between Gram matrixes of feature maps"""
         prediction_gram = [self.gram_matrix(x) for x in prediction_features]
         target_gram = [self.gram_matrix(x) for x in target_features]
-
-        distances = [self.distance(x, y) for x, y in zip(prediction_gram, target_gram)]
-
-        # Scale distances, then average in spatial dimensions, then stack and sum in channels dimension
-        loss = torch.stack([(d * w.to(d)).mean(dim=[1, 2]) for d, w in zip(distances, self.weights)], dim=1).sum(dim=1)
-
-        if self.reduction == 'none':
-            return loss
-
-        return {'mean': loss.mean,
-                'sum': loss.sum
-                }[self.reduction](dim=0)
+        return [self.distance(x, y) for x, y in zip(prediction_gram, target_gram)]
 
     def gram_matrix(self, x: torch.Tensor) -> torch.Tensor:
         r"""Compute Gram matrix for batch of features.
@@ -259,7 +241,9 @@ class StyleLoss(ContentLoss):
         gram = []
         for i in range(B):
             features = x[i].view(C, H * W)
-            gram.append(torch.mm(features, features.t()))
+
+            # Add fake channel dimension
+            gram.append(torch.mm(features, features.t()).unsqueeze(0))
         return torch.stack(gram)
 
 
