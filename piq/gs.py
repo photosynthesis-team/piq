@@ -181,15 +181,14 @@ class GS(BaseFeatureMetric):
         Returns:
             score: Scalar value of the distance between distributions.
         """
-        p = Pool(self.num_workers)
+        with Pool(self.num_workers) as p:
+            self.features = predicted_features.detach().cpu().numpy()
+            pool_results = p.map(self._relative_living_times, range(self.num_iters))
+            mean_rlt_predicted = np.vstack(pool_results).mean(axis=0)
 
-        self.features = predicted_features.detach().cpu().numpy()
-        pool_results = p.map(self._relative_living_times, range(self.num_iters))
-        mean_rlt_predicted = np.vstack(pool_results).mean(axis=0)
-
-        self.features = target_features.detach().cpu().numpy()
-        pool_results = p.map(self._relative_living_times, range(self.num_iters))
-        mean_rlt_target = np.vstack(pool_results).mean(axis=0)
+            self.features = target_features.detach().cpu().numpy()
+            pool_results = p.map(self._relative_living_times, range(self.num_iters))
+            mean_rlt_target = np.vstack(pool_results).mean(axis=0)
 
         score = np.sum((mean_rlt_predicted - mean_rlt_target) ** 2)
 
