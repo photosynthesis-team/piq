@@ -34,11 +34,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install pytest, \
+                      pytest-cov, \
+                      tensorflow, \
+                      libsvm, \
+                      pybrisque, \
+                      scikit-image
       - name: Test with pytest
         run: |
-          pip install pytest
-          pip install tensorflow
-          pip install libsvm
-          pip install pybrisque
-          pip install scikit-image
           pytest
