@@ -14,49 +14,51 @@ import torch
 from piq.base import BaseFeatureMetric
 
 
-def _approximation_error(A: torch.Tensor, sA: torch.Tensor) -> torch.Tensor:
-    normA = torch.norm(A)
-    error = A - torch.mm(sA, sA)
-    error = torch.norm(error) / normA
+def _approximation_error(matrix: torch.Tensor, s_matrix: torch.Tensor) -> torch.Tensor:
+    norm_of_matrix = torch.norm(matrix)
+    error = matrix - torch.mm(s_matrix, s_matrix)
+    error = torch.norm(error) / norm_of_matrix
     return error
 
 
-def _sqrtm_newton_schulz(A: torch.Tensor, num_iters: int = 100) -> Tuple[torch.Tensor, torch.Tensor]:
+def _sqrtm_newton_schulz(matrix: torch.Tensor, num_iters: int = 100) -> Tuple[torch.Tensor, torch.Tensor]:
     r"""
     Square root of matrix using Newton-Schulz Iterative method
     Source: https://github.com/msubhransu/matrix-sqrt/blob/master/matrix_sqrt.py
     Args:
-        A: matrix or batch of matrices
+        matrix: matrix or batch of matrices
         num_iters: Number of iteration of the method
     Returns:
         Square root of matrix
         Error
     """
     expected_num_dims = 2
-    if A.dim() != expected_num_dims:
-        raise ValueError(f'Input dimension equals {A.dim()}, expected {expected_num_dims}')
+    if matrix.dim() != expected_num_dims:
+        raise ValueError(f'Input dimension equals {matrix.dim()}, expected {expected_num_dims}')
 
     if num_iters <= 0:
         raise ValueError(f'Number of iteration equals {num_iters}, expected greater than 0')
-    dim = A.size(0)
-    normA = A.norm(p='fro')
-    Y = A.div(normA)
-    I = torch.eye(dim, dim, requires_grad=False).to(A)
-    Z = torch.eye(dim, dim, requires_grad=False).to(A)
 
-    sA = torch.empty_like(A)
-    error = torch.empty(1).to(A)
+    dim = matrix.size(0)
+    norm_of_matrix = matrix.norm(p='fro')
+    Y = matrix.div(norm_of_matrix)
+    I = torch.eye(dim, dim, requires_grad=False).to(matrix)
+    Z = torch.eye(dim, dim, requires_grad=False).to(matrix)
 
-    for i in range(num_iters):
+    s_matrix = torch.empty_like(matrix)
+    error = torch.empty(1).to(matrix)
+
+    for _ in range(num_iters):
         T = 0.5 * (3.0 * I - Z.mm(Y))
         Y = Y.mm(T)
         Z = T.mm(Z)
 
-        sA = Y * torch.sqrt(normA)
-        error = _approximation_error(A, sA)
+        s_matrix = Y * torch.sqrt(norm_of_matrix)
+        error = _approximation_error(matrix, s_matrix)
         if torch.isclose(error, torch.tensor([0.]).to(error), atol=1e-5):
             break
-    return sA, error
+
+    return s_matrix, error
 
 
 def _compute_fid(mu1: torch.Tensor, sigma1: torch.Tensor, mu2: torch.Tensor, sigma2: torch.Tensor,
@@ -78,6 +80,7 @@ def _compute_fid(mu1: torch.Tensor, sigma1: torch.Tensor, mu2: torch.Tensor, sig
     """
     diff = mu1 - mu2
     covmean, _ = _sqrtm_newton_schulz(sigma1.mm(sigma2))
+
     # Product might be almost singular
     if not torch.isfinite(covmean).all():
         print(f'FID calculation produces singular product; adding {eps} to diagonal of cov estimates')
@@ -111,10 +114,13 @@ def _cov(m: torch.Tensor, rowvar: bool = True) -> torch.Tensor:
     if m.dim() > 2:
         raise ValueError('Tensor for covariance computations has more than 2 dimensions. '
                          'Only 1 or 2 dimensional arrays are allowed')
+
     if m.dim() < 2:
         m = m.view(1, -1)
+
     if not rowvar and m.size(0) != 1:
         m = m.t()
+
     fact = 1.0 / (m.size(1) - 1)
     m = m - torch.mean(m, dim=1, keepdim=True)
     mt = m.t()
