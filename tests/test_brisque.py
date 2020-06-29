@@ -11,7 +11,7 @@ def prediction_grey() -> torch.Tensor:
 
 
 @pytest.fixture(scope='module')
-def prediction_RGB() -> torch.Tensor:
+def prediction_rgb() -> torch.Tensor:
     return torch.rand(3, 3, 256, 256)
 
 
@@ -26,14 +26,14 @@ def test_brisque_if_works_with_grey_on_gpu(prediction_grey: torch.Tensor) -> Non
     brisque(prediction_grey)
 
 
-def test_brisque_if_works_with_RGB(prediction_RGB: torch.Tensor) -> None:
-    brisque(prediction_RGB)
+def test_brisque_if_works_with_rgb(prediction_rgb) -> None:
+    brisque(prediction_rgb)
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test if there is no GPU.')
-def test_brisque_if_works_with_RGB_on_gpu(prediction_RGB: torch.Tensor) -> None:
-    prediction_RGB = prediction_RGB.cuda()
-    brisque(prediction_RGB)
+def test_brisque_if_works_with_rgb_on_gpu(prediction_rgb) -> None:
+    prediction_rgb = prediction_rgb.cuda()
+    brisque(prediction_rgb)
 
 
 def test_brisque_raises_if_wrong_reduction(prediction_grey: torch.Tensor) -> None:
@@ -54,10 +54,10 @@ def test_brisque_values_grey(prediction_grey: torch.Tensor) -> None:
                                                                              f'got {score} and {score_baseline}'
 
 
-def test_brisque_values_RGB(prediction_RGB: torch.Tensor) -> None:
-    score = brisque(prediction_RGB, reduction='none', data_range=1.)
+def test_brisque_values_rgb(prediction_rgb) -> None:
+    score = brisque(prediction_rgb, reduction='none', data_range=1.)
     score_baseline = [BRISQUE().get_score((img * 255).type(torch.uint8).squeeze().permute(1, 2, 0).numpy()[..., ::-1])
-                      for img in prediction_RGB]
+                      for img in prediction_rgb]
     assert torch.isclose(score,
                          torch.tensor(score_baseline),
                          atol=1e-1, rtol=1e-3).all(), f'Expected values to be equal to ' \
@@ -81,12 +81,12 @@ def test_brisque_loss_if_works_with_grey(prediction_grey: torch.Tensor) -> None:
     assert prediction_grey_grad.grad is not None, 'Expected non None gradient of leaf variable'
 
 
-def test_brisque_loss_if_works_with_RGB(prediction_RGB: torch.Tensor) -> None:
-    prediction_RGB_grad = prediction_RGB.clone()
-    prediction_RGB_grad.requires_grad_()
-    loss_value = BRISQUELoss()(prediction_RGB_grad)
+def test_brisque_loss_if_works_with_rgb(prediction_rgb) -> None:
+    prediction_rgb_grad = prediction_rgb.clone()
+    prediction_rgb_grad.requires_grad_()
+    loss_value = BRISQUELoss()(prediction_rgb_grad)
     loss_value.backward()
-    assert prediction_RGB_grad.grad is not None, 'Expected non None gradient of leaf variable'
+    assert prediction_rgb_grad.grad is not None, 'Expected non None gradient of leaf variable'
 
 
 def test_brisque_loss_raises_if_wrong_reduction(prediction_grey: torch.Tensor) -> None:

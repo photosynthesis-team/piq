@@ -3,6 +3,8 @@ import pytest
 
 from piq import GMSDLoss, MultiScaleGMSDLoss
 
+LEAF_VARIABLE_ERROR_MESSAGE = 'Expected non None gradient of leaf variable'
+
 
 @pytest.fixture(scope='module')
 def prediction() -> torch.Tensor:
@@ -30,7 +32,7 @@ def test_gmsd_loss_backward(prediction: torch.Tensor, target: torch.Tensor) -> N
     prediction.requires_grad_()
     loss_value = GMSDLoss()(prediction, target)
     loss_value.backward()
-    assert prediction.grad is not None, 'Expected non None gradient of leaf variable'
+    assert prediction.grad is not None, LEAF_VARIABLE_ERROR_MESSAGE
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test if there is no GPU.')
