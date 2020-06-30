@@ -46,6 +46,8 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
+          # Upload codecov reports only from a pipeline for a single version
+          python-version: 3.6
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
           flags: unittests
