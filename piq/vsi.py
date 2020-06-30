@@ -150,7 +150,6 @@ class VSILoss(_Loss):
         self.sigma_f = sigma_f
         self.sigma_d = sigma_d
         self.sigma_c = sigma_c
-        pass
 
     def forward(self, prediction, target):
         r"""Computation of VSI as a loss function.
