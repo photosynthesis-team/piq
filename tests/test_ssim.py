@@ -643,7 +643,8 @@ def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated_custom_weights(
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.,
                                                        power_factors=scale_weights).numpy()).mean()
-    assert torch.isclose(piq_ms_ssim_loss, 1 - tf_ms_ssim, atol=1e-4).all(), \
+    match_accuracy = 1e-3
+    assert torch.isclose(piq_ms_ssim_loss, 1 - tf_ms_ssim, atol=match_accuracy).all(), \
         f'The estimated value must be equal to tensorflow provided one' \
-        f'(considering floating point operation error up to 1 * 10^-4), ' \
+        f'(considering floating point operation error up to {match_accuracy}), ' \
         f'got difference {(piq_ms_ssim_loss - 1 + tf_ms_ssim).abs()}'
