@@ -200,7 +200,7 @@ def sdsp(x: torch.Tensor, data_range: float = 255., omega_0: float = 0.021, sigm
     s_f = x_ifft_real.pow(2).sum(dim=1).sqrt()
 
     coordinates = torch.stack((torch.meshgrid([torch.arange(0, size_to_use[0]) - (size[0] - 1) / 2,
-                                               torch.arange(0, size_to_use[1]) - (size[1] - 1) / 2])), dim=0)
+                                               torch.arange(0, size_to_use[1]) - (size[1] - 1) / 2])), dim=0).to(x)
     s_d = torch.exp(-torch.sum(coordinates, dim=0) / sigma_d ** 2)
 
     eps = torch.finfo(x_lab.dtype).eps
