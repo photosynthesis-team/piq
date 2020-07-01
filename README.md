@@ -216,6 +216,35 @@ output.backward()
 </p>
 </details>
 
+<!-- FSIM EXAMPLES -->
+ <details>
+ <summary>Feature Similarity Index Measure (FSIM)</summary>
+ <p>
+
+  To compute [FSIM ](https://www4.comp.polyu.edu.hk/~cslzhang/IQA/TIP_IQA_FSIM.pdf) as a measure, use lower case function from the library:
+ ```python
+ import torch
+ from piq import fsim
+
+ prediction = torch.rand(3, 3, 256, 256)
+ target = torch.rand(3, 3, 256, 256)
+ vsi_index: torch.Tensor = fsim(prediction, target, data_range=1.)
+ ```
+
+  In order to use FSIM as a loss function, use corresponding PyTorch module:
+ ```python
+ import torch
+ from piq import FSIMLoss
+
+ loss = FSIMLoss(data_range=1.)
+ prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+ target = torch.rand(3, 3, 256, 256)
+ output: torch.Tensor = loss(prediction, target)
+ output.backward()
+ ```
+ </p>
+ </details>
+
 <!-- BRISQUE EXAMPLES -->
 <details>
 <summary>Blind/Referenceless Image Spatial Quality Evaluator (BRISQUE)</summary>
