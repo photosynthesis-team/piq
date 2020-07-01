@@ -299,7 +299,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     mean_e2n = - median_e2n / math.log(0.5)
 
     # Estimate of noise power.
-    noisePower = mean_e2n / em_n
+    noise_power = mean_e2n / em_n
     
     # Now estimate the total energy^2 due to noise
     # Estimate for sum(An^2) + sum(Ai.*Aj.*(cphi.*cphj + sphi.*sphj))
@@ -314,7 +314,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     sum_an2 = torch.sum(sum_an2, dim=[-1, -2], keepdim=True)
     sum_ai_aj = torch.sum(sum_ai_aj, dim=[-1, -2], keepdim=True)
 
-    noise_energy2 = 2 * noisePower * sum_an2 + 4 * noisePower * sum_ai_aj
+    noise_energy2 = 2 * noise_power * sum_an2 + 4 * noise_power * sum_ai_aj
 
     # Rayleigh parameter
     tau = torch.sqrt(noise_energy2 / 2)
