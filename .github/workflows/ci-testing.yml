@@ -10,6 +10,9 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    env:
+      USING_COVERAGE: '3.6'
+
     strategy:
       max-parallel: 4
       matrix:
@@ -34,11 +37,22 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install pytest \
+                      pytest-cov \
+                      tensorflow \
+                      libsvm \
+                      pybrisque \
+                      scikit-image
       - name: Test with pytest
         run: |
-          pip install pytest
-          pip install tensorflow
-          pip install libsvm
-          pip install pybrisque
-          pip install scikit-image
-          pytest
+          pytest -x --cov=./piq --cov-report=xml
+      - name: Upload coverage to Codecov
+        # Upload codecov reports only from a pipeline for a single version defined in the env variable
+        if: "contains(env.USING_COVERAGE, matrix.python-version)"
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: true
