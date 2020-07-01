@@ -4,7 +4,8 @@
 [![License][license-shield]][license-url]
 [![PyPI version][pypi-version-shield]][pypi-version-url]  
 ![CI flake-8 style check][ci-flake-8-style-check-shield]
-![CI testing][ci-testing]    
+![CI testing][ci-testing]
+[![codecov][codecov-shield]][codecov-url]  
 [![Quality Gate Status][quality-gate-status-shield]][quality-gate-status-url]
 [![Maintainability Rating][maintainability-raiting-shield]][maintainability-raiting-url]
 [![Reliability Rating][reliability-rating-badge]][reliability-rating-url]
@@ -508,3 +509,5 @@ Other projects by PhotoSynthesis Team:
 [maintainability-raiting-url]: https://sonarcloud.io/dashboard?id=photosynthesis-team_photosynthesis.metrics
 [reliability-rating-badge]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_photosynthesis.metrics&metric=reliability_rating
 [reliability-rating-url]:https://sonarcloud.io/dashboard?id=photosynthesis-team_photosynthesis.metrics
+[codecov-shield]:https://codecov.io/gh/photosynthesis-team/piq/branch/master/graph/badge.svg
+[codecov-url]:https://codecov.io/gh/photosynthesis-team/piq
