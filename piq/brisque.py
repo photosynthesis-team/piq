@@ -173,7 +173,8 @@ def brisque(x: torch.Tensor,
     _validate_input(input_tensors=x, allow_5d=False)
     x = _adjust_dimensions(input_tensors=x)
 
-    x = x / data_range
+    assert data_range >= x.max(), f'Expected data range greater or equal maximum value, got {data_range} and {x.max()}.'
+    x = x * 255. / data_range
 
     if x.size(1) == 3:
         # rgb_to_grey - weights to transform RGB image to grey
