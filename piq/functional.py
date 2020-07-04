@@ -82,10 +82,10 @@ def rgb2lmn(x: torch.Tensor) -> torch.Tensor:
     Returns:
         Batch of 4D (N x 3 x H x W) images in LMN colour space.
     """
-    weights_RGB_to_LMN = torch.tensor([[0.06, 0.63, 0.27],
+    weights_rgb_to_lmn = torch.tensor([[0.06, 0.63, 0.27],
                                        [0.30, 0.04, -0.35],
                                        [0.34, -0.6, 0.17]]).t().to(x)
-    x_lmn = torch.matmul(x.permute(0, 2, 3, 1), weights_RGB_to_LMN).permute(0, 3, 1, 2)
+    x_lmn = torch.matmul(x.permute(0, 2, 3, 1), weights_rgb_to_lmn).permute(0, 3, 1, 2)
     return x_lmn
 
 
@@ -104,11 +104,11 @@ def rgb2xyz(x: torch.Tensor) -> torch.Tensor:
 
     tmp = x / 12.92 * mask_below + torch.pow((x + 0.055) / 1.055, 2.4) * mask_above
 
-    weights_RGB_to_XYZ = torch.tensor([[0.4124564, 0.3575761, 0.1804375],
+    weights_rgb_to_xyz = torch.tensor([[0.4124564, 0.3575761, 0.1804375],
                                        [0.2126729, 0.7151522, 0.0721750],
                                        [0.0193339, 0.1191920, 0.9503041]]).to(x)
 
-    x_xyz = torch.matmul(tmp.permute(0, 2, 3, 1), weights_RGB_to_XYZ.t()).permute(0, 3, 1, 2)
+    x_xyz = torch.matmul(tmp.permute(0, 2, 3, 1), weights_rgb_to_xyz.t()).permute(0, 3, 1, 2)
     return x_xyz
 
 
@@ -147,12 +147,12 @@ def xyz2lab(x: torch.Tensor, illuminant='D50', observer='2') -> torch.Tensor:
     mask_above = tmp > epsilon
     tmp = torch.pow(tmp, 1. / 3.) * mask_above + (kappa * tmp + 16.) / 116. * mask_below
 
-    weights_XYZ_to_LAB = torch.tensor([[0, 116., 0],
+    weights_xyz_to_lab = torch.tensor([[0, 116., 0],
                                        [500., -500., 0],
                                        [0, 200., -200.]]).to(x)
-    bias_XYZ_to_LAB = torch.tensor([-16., 0., 0.]).to(x).view(1, 3, 1, 1)
+    bias_xyz_to_lab = torch.tensor([-16., 0., 0.]).to(x).view(1, 3, 1, 1)
 
-    x_lab = torch.matmul(tmp.permute(0, 2, 3, 1), weights_XYZ_to_LAB.t()).permute(0, 3, 1, 2) + bias_XYZ_to_LAB
+    x_lab = torch.matmul(tmp.permute(0, 2, 3, 1), weights_xyz_to_lab.t()).permute(0, 3, 1, 2) + bias_xyz_to_lab
     return x_lab
 
 
