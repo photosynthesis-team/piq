@@ -67,8 +67,8 @@ def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
                      sigma_d=sigma_d, sigma_c=sigma_c)
 
     # Convert to LMN colour space
-    prediction_LMN = rgb2lmn(prediction)
-    target_LMN = rgb2lmn(target)
+    prediction_lmn = rgb2lmn(prediction)
+    target_lmn = rgb2lmn(target)
 
     # Averaging image if the size is large enough
     kernel_size = max(1, round(min(vs_prediction.size()[-2:]) / 256))
@@ -77,25 +77,25 @@ def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
     if padding:
         vs_prediction = pad(vs_prediction, pad=[1, 0, 1, 0], mode='replicate')
         vs_target = pad(vs_target, pad=[1, 0, 1, 0], mode='replicate')
-        prediction_LMN = pad(prediction_LMN, pad=[1, 0, 1, 0], mode='replicate')
-        target_LMN = pad(target_LMN, pad=[1, 0, 1, 0], mode='replicate')
+        prediction_lmn = pad(prediction_lmn, pad=[1, 0, 1, 0], mode='replicate')
+        target_lmn = pad(target_lmn, pad=[1, 0, 1, 0], mode='replicate')
 
     vs_prediction = avg_pool2d(vs_prediction, kernel_size=kernel_size)
     vs_target = avg_pool2d(vs_target, kernel_size=kernel_size)
 
-    prediction_LMN = avg_pool2d(prediction_LMN, kernel_size=kernel_size)
-    target_LMN = avg_pool2d(target_LMN, kernel_size=kernel_size)
+    prediction_lmn = avg_pool2d(prediction_lmn, kernel_size=kernel_size)
+    target_lmn = avg_pool2d(target_lmn, kernel_size=kernel_size)
 
     # Calculate gradient map
-    kernels = torch.stack([scharr_filter(), scharr_filter().transpose(1, 2)]).to(prediction_LMN)
-    gm_prediction = gradient_map(prediction_LMN[:, :1], kernels)
-    gm_target = gradient_map(target_LMN[:, :1], kernels)
+    kernels = torch.stack([scharr_filter(), scharr_filter().transpose(1, 2)]).to(prediction_lmn)
+    gm_prediction = gradient_map(prediction_lmn[:, :1], kernels)
+    gm_target = gradient_map(target_lmn[:, :1], kernels)
 
     # Calculate all similarity maps
     s_vs = similarity_map(vs_prediction, vs_target, c1)
     s_gm = similarity_map(gm_prediction, gm_target, c2)
-    s_m = similarity_map(prediction_LMN[:, 1:2], target_LMN[:, 1:2], c3)
-    s_n = similarity_map(prediction_LMN[:, 2:], target_LMN[:, 2:], c3)
+    s_m = similarity_map(prediction_lmn[:, 1:2], target_lmn[:, 1:2], c3)
+    s_n = similarity_map(prediction_lmn[:, 2:], target_lmn[:, 2:], c3)
     s_c = s_m * s_n
 
     s_c_complex = [s_c.abs(), torch.atan2(torch.zeros_like(s_c), s_c)]
