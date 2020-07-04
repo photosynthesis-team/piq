@@ -1,23 +1,29 @@
 r"""Implemetation of Visual Saliency-induced Index
-Code is based on MATLAB version for computations in pixel domain
+Code is based on the MATLAB version for computations in pixel domain
 https://sse.tongji.edu.cn/linzhang/IQA/VSI/VSI.htm
 
 References:
     https://ieeexplore.ieee.org/document/6873260
 """
-
+from typing import Union, Tuple
 import torch
 from torch.nn.modules.loss import _Loss
-from torch.nn.functional import conv2d, avg_pool2d, interpolate
+from torch.nn.functional import avg_pool2d, interpolate, pad
+from piq.functional import ifftshift, gradient_map, scharr_filter, rgb2lmn, rgb2lab, similarity_map, get_meshgrid
 from .utils import _validate_input, _adjust_dimensions
+import functools
+import warnings
 
 
-def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean', data_range: float = 1.,
+def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean', data_range: Union[int, float] = 1.,
         c1: float = 1.27, c2: float = 386., c3: float = 130., alpha: float = 0.4, beta: float = 0.02,
         omega_0: float = 0.021, sigma_f: float = 1.34, sigma_d: float = 145., sigma_c: float = 0.001) -> torch.Tensor:
     r"""Compute Visual Saliency-induced Index for a batch of images.
 
-        Both inputs supposed to have RGB order.
+        Both inputs are supposed to have RGB order in accordance with the original approach.
+        Nevertheless, the method supports greyscale images, which they are converted to RGB by copying the grey
+        channel 3 times.
+
         Args:
             prediction: Batch of predicted images with shape (batch_size x channels x H x W)
             target: Batch of target images with shape  (batch_size x channels x H x W)
@@ -35,57 +41,73 @@ def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
 
         Returns:
             VSI: Index of similarity between two images. Usually in [0, 1] interval.
+
+        Shape:
+                - Input: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
+                - Target: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
         Note:
+            The original method supports only RGB image.
             See https://ieeexplore.ieee.org/document/6873260 for details.
         """
-
     _validate_input(input_tensors=(prediction, target), allow_5d=False)
     prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
-    assert prediction.size(-3) == 3 and target.size(-3) == 3, 'Expected RGB images, got images with ' \
-                                                              '{prediction.size(-3)} and {target.size(-3)} channels'
+    if prediction.size(1) == 1:
+        prediction = prediction.repeat(1, 3, 1, 1)
+        target = target.repeat(1, 3, 1, 1)
+        warnings.warn('The original VSI supports only RGB images. The input images were converted to RGB by copying '
+                      'the grey channel 3 times.')
 
-    prediction = prediction * 255. / data_range
-    target = target * 255. / data_range
+    # Scale to [0, 255] range to match scale of constant
+    prediction = prediction * 255. / float(data_range)
+    target = target * 255. / float(data_range)
 
-    vs_prediction = sdsp(prediction, data_range=255., omega_0=omega_0,
+    vs_prediction = sdsp(prediction, data_range=255, omega_0=omega_0,
                          sigma_f=sigma_f, sigma_d=sigma_d, sigma_c=sigma_c)
-    vs_target = sdsp(target, data_range=255., omega_0=omega_0, sigma_f=sigma_f,
+    vs_target = sdsp(target, data_range=255, omega_0=omega_0, sigma_f=sigma_f,
                      sigma_d=sigma_d, sigma_c=sigma_c)
 
-    # Weitghts to translate from RGB colour space to LMN, see https://ieeexplore.ieee.org/document/6873260
-    weights_RGB_to_LMN = torch.tensor([[0.06, 0.63, 0.27],
-                                       [0.30, 0.04, -0.35],
-                                       [0.34, -0.6, 0.17]]).to(target)
+    # Convert to LMN colour space
+    prediction_LMN = rgb2lmn(prediction)
+    target_LMN = rgb2lmn(target)
 
-    prediction_LMN = torch.matmul(prediction.permute(0, 2, 3, 1), weights_RGB_to_LMN.t()).permute(0, 3, 1, 2)
-    target_LMN = torch.matmul(target.permute(0, 2, 3, 1), weights_RGB_to_LMN.t()).permute(0, 3, 1, 2)
-
+    # Averaging image if the size is large enough
     kernel_size = max(1, round(min(vs_prediction.size()[-2:]) / 256))
-    vs_prediction = avg_pool2d(vs_prediction.unsqueeze(1), kernel_size=kernel_size).squeeze(1)
-    vs_target = avg_pool2d(vs_target.unsqueeze(1), kernel_size=kernel_size).squeeze(1)
+    padding = kernel_size // 2
+
+    if padding:
+        vs_prediction = pad(vs_prediction, pad=[1, 0, 1, 0], mode='replicate')
+        vs_target = pad(vs_target, pad=[1, 0, 1, 0], mode='replicate')
+        prediction_LMN = pad(prediction_LMN, pad=[1, 0, 1, 0], mode='replicate')
+        target_LMN = pad(target_LMN, pad=[1, 0, 1, 0], mode='replicate')
+
+    vs_prediction = avg_pool2d(vs_prediction, kernel_size=kernel_size)
+    vs_target = avg_pool2d(vs_target, kernel_size=kernel_size)
 
     prediction_LMN = avg_pool2d(prediction_LMN, kernel_size=kernel_size)
     target_LMN = avg_pool2d(target_LMN, kernel_size=kernel_size)
 
-    gm_prediction = scharr_grad_map(prediction_LMN[:, 1].unsqueeze(1)).squeeze(1)
-    gm_target = scharr_grad_map(target_LMN[:, 1].unsqueeze(1)).squeeze(1)
+    # Calculate gradient map
+    kernels = torch.stack([scharr_filter(), scharr_filter().transpose(1, 2)]).to(prediction_LMN)
+    gm_prediction = gradient_map(prediction_LMN[:, :1], kernels)
+    gm_target = gradient_map(target_LMN[:, :1], kernels)
 
-    s_vs = (2 * vs_prediction * vs_target + c1) / (vs_prediction.pow(2) + vs_target.pow(2) + c1)
-    s_gm = (2 * gm_prediction * gm_target + c2) / (gm_prediction.pow(2) + gm_target.pow(2) + c2)
-
-    s_m = (2 * prediction_LMN[:, 1] * target_LMN[:, 1] + c3) / (
-            prediction_LMN[:, 1].pow(2) + target_LMN[:, 1].pow(2) + c3)
-    s_n = (2 * prediction_LMN[:, 2] * target_LMN[:, 2] + c3) / (
-            prediction_LMN[:, 2].pow(2) + target_LMN[:, 2].pow(2) + c3)
+    # Calculate all similarity maps
+    s_vs = similarity_map(vs_prediction, vs_target, c1)
+    s_gm = similarity_map(gm_prediction, gm_target, c2)
+    s_m = similarity_map(prediction_LMN[:, 1:2], target_LMN[:, 1:2], c3)
+    s_n = similarity_map(prediction_LMN[:, 2:], target_LMN[:, 2:], c3)
     s_c = s_m * s_n
 
-    s = s_vs * s_gm.pow(alpha) * s_c.relu().pow(beta)
+    s_c_complex = [s_c.abs(), torch.atan2(torch.zeros_like(s_c), s_c)]
+    s_c_complex_pow = [s_c_complex[0] ** beta, s_c_complex[1] * beta]
+    s_c_real_pow = s_c_complex_pow[0] * torch.cos(s_c_complex_pow[1])
 
+    s = s_vs * s_gm.pow(alpha) * s_c_real_pow
     vs_max = torch.max(vs_prediction, vs_target)
 
     eps = torch.finfo(vs_max.dtype).eps
-    output = ((s * vs_max).sum(dim=(-1, -2)) + eps) / (vs_max.sum(dim=(-1, -2)) + eps)
-
+    output = s * vs_max
+    output = ((output.sum(dim=(-1, -2)) + eps) / (vs_max.sum(dim=(-1, -2)) + eps)).squeeze(-1)
     if reduction == 'none':
         return output
     return {'mean': torch.mean,
@@ -95,9 +117,8 @@ def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
 
 class VSILoss(_Loss):
     def __init__(self, reduction: str = 'mean', c1: float = 1.27, c2: float = 386., c3: float = 130.,
-                 alpha: float = 0.4, beta: float = 0.02, data_range: float = 1.,
+                 alpha: float = 0.4, beta: float = 0.02, data_range: Union[int, float] = 1.,
                  omega_0: float = 0.021, sigma_f: float = 1.34, sigma_d: float = 145., sigma_c: float = 0.001) -> None:
-
         r"""Creates a criterion that measures Visual Saliency-induced Index error between
             each element in the input and target.
 
@@ -119,8 +140,11 @@ class VSILoss(_Loss):
                 sigma_c: coefficient to get SDSP
 
             Shape:
-                - Input: Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W), channels first.
-                - Target: Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W), channels first.
+                - Input: Required to be 3D (C,H,W), 4D (N,C,H,W), channels first.
+                         Both inputs are supposed to have RGB order in accordance with the original approach.
+                         Nevertheless, the method supports greyscale images, which they are converted to RGB
+                         by copying the grey channel 3 times.
+                - Target: Required to be 3D (C,H,W), 4D (N,C,H,W), channels first.
 
             Examples::
 
@@ -140,16 +164,11 @@ class VSILoss(_Loss):
             """
         super().__init__()
         self.reduction = reduction
-        self.c1 = c1
-        self.c2 = c2
-        self.c3 = c3
-        self.alpha = alpha
-        self.beta = beta
         self.data_range = data_range
-        self.omega_0 = omega_0
-        self.sigma_f = sigma_f
-        self.sigma_d = sigma_d
-        self.sigma_c = sigma_c
+
+        self.vsi = functools.partial(
+            vsi, c1=c1, c2=c2, c3=c3, alpha=alpha, beta=beta, omega_0=omega_0,
+            sigma_f=sigma_f, sigma_d=sigma_d, sigma_c=sigma_c, data_range=data_range, reduction=reduction)
 
     def forward(self, prediction, target):
         r"""Computation of VSI as a loss function.
@@ -160,126 +179,82 @@ class VSILoss(_Loss):
 
             Returns:
                 Value of VSI loss to be minimized. 0 <= VSI loss <= 1.
+
+            Note:
+                Both inputs are supposed to have RGB order in accordance with the original approach.
+                Nevertheless, the method supports greyscale images, which they are converted to RGB by copying the grey
+                channel 3 times.
         """
 
-        return 1. - vsi(prediction=prediction, target=target, reduction=self.reduction, data_range=self.data_range,
-                        c1=self.c1, c2=self.c2, c3=self.c3, alpha=self.alpha, beta=self.beta,
-                        omega_0=self.omega_0, sigma_f=self.sigma_f, sigma_d=self.sigma_d, sigma_c=self.sigma_c)
+        return 1. - self.vsi(prediction=prediction, target=target)
 
 
-def scharr_grad_map(x: torch.Tensor) -> torch.Tensor:
-    # Schaee filters are used to get gradient maps
-    filter_x = torch.tensor([[3., 0., -3.],
-                             [10., 0., -10.],
-                             [3., 0., -3.]]).to(x) / 16
-
-    filter_y = torch.tensor([[3., 10., 3.],
-                             [0., 0., 0.],
-                             [-3., -10., -3.]]).to(x) / 16
-
-    padding = filter_x.size(-1) // 2
-
-    gm_x = conv2d(x, filter_x.view(1, 1, *filter_x.size()), padding=padding)
-    gm_y = conv2d(x, filter_y.view(1, 1, *filter_y.size()), padding=padding)
-
-    return torch.sqrt(gm_x.pow(2) + gm_y.pow(2))
-
-
-def sdsp(x: torch.Tensor, data_range: float = 255., omega_0: float = 0.021, sigma_f: float = 1.34,
+def sdsp(x: torch.Tensor, data_range: Union[int, float] = 255, omega_0: float = 0.021, sigma_f: float = 1.34,
          sigma_d: float = 145., sigma_c: float = 0.001) -> torch.Tensor:
+    r"""
+    SDSP algorithm for salient region detection from a given image.
+
+    Args :
+        x: an  RGB image with dynamic range [0, 1] or [0, 255] for each channel
+        data_range: dynamic range of the image
+        omega_0: coefficient for log Gabor filter
+        sigma_f: coefficient for log Gabor filter
+        sigma_d: coefficient for the central areas, which have a bias towards attention
+        sigma_c: coefficient for the warm colors, which have a bias towards attention
+
+    Returns:
+        torch.Tensor: Visual saliency map
+    """
+    x = x * 255. / float(data_range)
     size = x.size()
-
     size_to_use = (256, 256)
-    x = interpolate(input=x, size=size_to_use, mode='bilinear', align_corners=True)
-    x_lab = rgb2lab(x, data_range=data_range)
+    x = interpolate(input=x, size=size_to_use, mode='bilinear', align_corners=False)
 
-    x_fft = torch.fft(torch.stack([x_lab, torch.zeros_like(x_lab)], dim=-1), 2)
-    lg = log_gabor(size_to_use, omega_0, sigma_f).to(x_fft).view(1, 1, *size_to_use, 1)
+    x_lab = rgb2lab(x, data_range=255)
+    x_fft = torch.rfft(x_lab, 2, onesided=False)
+    lg = _log_gabor(size_to_use, omega_0, sigma_f).to(x_fft).view(1, 1, *size_to_use, 1)
     x_ifft_real = torch.ifft(x_fft * lg, 2)[..., 0]
-    s_f = x_ifft_real.pow(2).sum(dim=1).sqrt()
+    s_f = x_ifft_real.pow(2).sum(dim=1, keepdim=True).sqrt()
 
-    coordinates = torch.stack((torch.meshgrid([torch.arange(0, size_to_use[0]) - (size[0] - 1) / 2,
-                                               torch.arange(0, size_to_use[1]) - (size[1] - 1) / 2])), dim=0).to(x)
-    s_d = torch.exp(-torch.sum(coordinates, dim=0) / sigma_d ** 2)
+    coordinates = torch.stack((get_meshgrid(size_to_use)), dim=0).to(x)
+    coordinates = coordinates * size_to_use[0] + 1
+    s_d = torch.exp(-torch.sum(coordinates ** 2, dim=0) / sigma_d ** 2).view(1, 1, *size_to_use)
 
     eps = torch.finfo(x_lab.dtype).eps
     min_x = x_lab.min(dim=-1, keepdim=True).values.min(dim=-2, keepdim=True).values
     max_x = x_lab.max(dim=-1, keepdim=True).values.max(dim=-2, keepdim=True).values
-    normilized = (x_lab - min_x) / (max_x - min_x + eps)
+    normalized = (x_lab - min_x) / (max_x - min_x + eps)
 
-    norm = normilized[:, 1:].pow(2).sum(dim=1)
+    norm = normalized[:, 1:].pow(2).sum(dim=1, keepdim=True)
     s_c = 1 - torch.exp(-norm / sigma_c ** 2)
 
-    vs_m = interpolate((s_f * s_d * s_c).unsqueeze(1), size[-2:], mode='bilinear', align_corners=True).squeeze(1)
-
+    vs_m = s_f * s_d * s_c
+    vs_m = interpolate(vs_m, size[-2:], mode='bilinear', align_corners=True)
     min_vs_m = vs_m.min(dim=-1, keepdim=True).values.min(dim=-2, keepdim=True).values
     max_vs_m = vs_m.max(dim=-1, keepdim=True).values.max(dim=-2, keepdim=True).values
     return (vs_m - min_vs_m) / (max_vs_m - min_vs_m + eps)
 
 
-def rgb2xyz(x: torch.Tensor) -> torch.Tensor:
+def _log_gabor(size: Tuple[int, int], omega_0: float, sigma_f: float) -> torch.Tensor:
+    r"""
+    Creates log Gabor filter
+    Args:
+        size: size of the requires log Gabor filter
+        omega_0: center frequency of the filter
+        sigma_f: bandwidth of the filter
+
+    Returns:
+        log Gabor filter
     """
-    Translates image from RGB color space to XYZ
-    Input image in [0, 1] range.
-    """
+    xx, yy = get_meshgrid(size)
 
-    mask_below = x <= 0.04045
-    mask_above = x > 0.04045
+    radius = (xx ** 2 + yy ** 2).sqrt()
+    mask = radius <= 0.5
 
-    tmp = x / 12.92 * mask_below + torch.pow((x + 0.055) / 1.055, 2.4) * mask_above
-
-    weights_RGB_to_XYZ = torch.tensor([[0.4124564, 0.3575761, 0.1804375],
-                                       [0.2126729, 0.7151522, 0.0721750],
-                                       [0.0193339, 0.1191920, 0.9503041]]).to(x)
-
-    x_xyz = torch.matmul(tmp.permute(0, 2, 3, 1), weights_RGB_to_XYZ.t()).permute(0, 3, 1, 2)
-
-    return x_xyz
-
-
-def xyz2lab(x: torch.Tensor) -> torch.Tensor:
-    epsilon = 0.008856
-    kappa = 903.3
-    illuminants_d50 = torch.tensor([0.9642119944211994, 1., 0.8251882845188288]).to(x).view(1, 3, 1, 1)
-
-    tmp = x / illuminants_d50
-
-    mask_below = tmp <= epsilon
-    mask_above = tmp > epsilon
-    tmp = torch.pow(tmp, 1. / 3.) * mask_above + (kappa * tmp + 16.) / 116. * mask_below
-
-    weights_XYZ_to_LAB = torch.tensor([[0, 116., 0],
-                                       [500., -500., 0],
-                                       [0, 200., -200.]]).to(x)
-    bias_XYZ_to_LAB = torch.tensor([-16., 0., 0.]).to(x).view(1, 3, 1, 1)
-
-    x_lab = torch.matmul(tmp.permute(0, 2, 3, 1), weights_XYZ_to_LAB.t()).permute(0, 3, 1, 2) + bias_XYZ_to_LAB
-    return x_lab
-
-
-def rgb2lab(x: torch.Tensor, data_range: float = 255.) -> torch.Tensor:
-    return xyz2lab(rgb2xyz(x / data_range))
-
-
-def log_gabor(size: tuple, omega_0: float = 0.021, sigma_f: float = 1.34) -> torch.Tensor:
-    xx, yy = torch.meshgrid((torch.arange(0, size[0], dtype=torch.float32) - size[0] // 2) / (size[0] - size[0] % 2),
-                            (torch.arange(0, size[1], dtype=torch.float32) - size[1] // 2) / (size[1] - size[1] % 2))
-
-    mask = xx.pow(2) + yy.pow(2) <= 0.25
-    xx = xx * mask
-    yy = yy * mask
-
-    xx = ifftshift(xx)
-    yy = ifftshift(yy)
-
-    r = (xx.pow(2) + yy.pow(2)).sqrt()
+    r = radius * mask
+    r = ifftshift(r)
     r[0, 0] = 1
 
     lg = torch.exp((-(r / omega_0).log().pow(2)) / (2 * sigma_f ** 2))
     lg[0, 0] = 0
     return lg
-
-
-def ifftshift(x: torch.Tensor):
-    shift = [-(ax // 2) for ax in x.size()]
-    return torch.roll(x, shift, tuple(range(len(shift))))
