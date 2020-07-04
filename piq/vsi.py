@@ -140,11 +140,12 @@ class VSILoss(_Loss):
                 sigma_c: coefficient to get SDSP
 
             Shape:
-                - Input: Required to be 3D (C,H,W), 4D (N,C,H,W), channels first.
-                         Both inputs are supposed to have RGB order in accordance with the original approach.
-                         Nevertheless, the method supports greyscale images, which they are converted to RGB
-                         by copying the grey channel 3 times.
-                - Target: Required to be 3D (C,H,W), 4D (N,C,H,W), channels first.
+                - Input: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
+                - Target: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
+
+                Both inputs are supposed to have RGB order in accordance with the original approach.
+                Nevertheless, the method supports greyscale images, which they are converted to RGB
+                by copying the grey channel 3 times.
 
             Examples::
 
