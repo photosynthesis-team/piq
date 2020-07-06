@@ -12,3 +12,4 @@ from .vif import VIFLoss, vif_p
 from .brisque import BRISQUELoss, brisque
 from .perceptual import StyleLoss, ContentLoss, LPIPS
 from .psnr import psnr
+from .vsi import vsi, VSILoss

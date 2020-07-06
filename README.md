@@ -4,7 +4,8 @@
 [![License][license-shield]][license-url]
 [![PyPI version][pypi-version-shield]][pypi-version-url]  
 ![CI flake-8 style check][ci-flake-8-style-check-shield]
-![CI testing][ci-testing]    
+![CI testing][ci-testing]
+[![codecov][codecov-shield]][codecov-url]  
 [![Quality Gate Status][quality-gate-status-shield]][quality-gate-status-url]
 [![Maintainability Rating][maintainability-raiting-shield]][maintainability-raiting-url]
 [![Reliability Rating][reliability-rating-badge]][reliability-rating-url]
@@ -239,6 +240,35 @@ from piq import BRISQUELoss
 loss = BRISQUELoss(data_range=1.)
 prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
 output: torch.Tensor = loss(prediction)
+output.backward()
+```
+</p>
+</details>
+
+<!-- VSI EXAMPLES -->
+<details>
+<summary>Visual Saliency-induced Index (VSI)</summary>
+<p>
+
+To compute [VSI score](https://ieeexplore.ieee.org/document/6873260) as a measure, use lower case function from the library:
+```python
+import torch
+from piq import vsi
+
+prediction = torch.rand(3, 3, 256, 256)
+target = torch.rand(3, 3, 256, 256)
+vsi_index: torch.Tensor = vsi(prediction, target, data_range=1.)
+```
+
+In order to use VSI as a loss function, use corresponding PyTorch module:
+```python
+import torch
+from piq import VSILoss
+
+loss = VSILoss(data_range=1.)
+prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+target = torch.rand(3, 3, 256, 256)
+output: torch.Tensor = loss(prediction, target)
 output.backward()
 ```
 </p>
@@ -479,3 +509,5 @@ Other projects by PhotoSynthesis Team:
 [maintainability-raiting-url]: https://sonarcloud.io/dashboard?id=photosynthesis-team_photosynthesis.metrics
 [reliability-rating-badge]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_photosynthesis.metrics&metric=reliability_rating
 [reliability-rating-url]:https://sonarcloud.io/dashboard?id=photosynthesis-team_photosynthesis.metrics
+[codecov-shield]:https://codecov.io/gh/photosynthesis-team/piq/branch/master/graph/badge.svg
+[codecov-url]:https://codecov.io/gh/photosynthesis-team/piq
