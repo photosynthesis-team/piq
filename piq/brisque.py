@@ -13,6 +13,7 @@ from torch.nn.modules.loss import _Loss
 from torch.utils.model_zoo import load_url
 import torch.nn.functional as F
 from piq.utils import _adjust_dimensions, _validate_input
+from piq.functional import rgb2yiq
 
 
 def _ggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -177,9 +178,7 @@ def brisque(x: torch.Tensor,
     x = x * 255. / data_range
 
     if x.size(1) == 3:
-        # rgb_to_grey - weights to transform RGB image to grey
-        rgb_to_grey = torch.tensor([0.299, 0.587, 0.114]).view(1, -1, 1, 1).to(x)
-        x = torch.sum(x * rgb_to_grey, dim=1, keepdim=True)
+        x = rgb2yiq(x)[:, :1]
     features = []
     num_of_scales = 2
     for iteration in range(num_of_scales):

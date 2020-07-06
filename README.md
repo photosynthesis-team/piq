@@ -245,6 +245,35 @@ output.backward()
 </p>
 </details>
 
+<!-- VSI EXAMPLES -->
+<details>
+<summary>Visual Saliency-induced Index (VSI)</summary>
+<p>
+
+To compute [VSI score](https://ieeexplore.ieee.org/document/6873260) as a measure, use lower case function from the library:
+```python
+import torch
+from piq import vsi
+
+prediction = torch.rand(3, 3, 256, 256)
+target = torch.rand(3, 3, 256, 256)
+vsi_index: torch.Tensor = vsi(prediction, target, data_range=1.)
+```
+
+In order to use VSI as a loss function, use corresponding PyTorch module:
+```python
+import torch
+from piq import VSILoss
+
+loss = VSILoss(data_range=1.)
+prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+target = torch.rand(3, 3, 256, 256)
+output: torch.Tensor = loss(prediction, target)
+output.backward()
+```
+</p>
+</details>
+
 <!-- MSID EXAMPLES -->
 <details>
 <summary>Multi-Scale Intrinsic Distance (MSID)</summary>
