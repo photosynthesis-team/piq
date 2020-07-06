@@ -222,7 +222,7 @@ output.backward()
  <summary>Feature Similarity Index Measure (FSIM)</summary>
  <p>
 
-  To compute [FSIM ](https://www4.comp.polyu.edu.hk/~cslzhang/IQA/TIP_IQA_FSIM.pdf) as a measure, use lower case function from the library:
+  To compute [FSIM](https://www4.comp.polyu.edu.hk/~cslzhang/IQA/TIP_IQA_FSIM.pdf) as a measure, use lower case function from the library:
  ```python
  import torch
  from piq import fsim

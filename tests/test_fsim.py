@@ -65,7 +65,7 @@ def test_fsim_simmular_to_matlab_implementation():
     goldhill = torch.tensor(imread('tests/assets/goldhill.gif'))
     goldhill_jpeg = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'))
 
-    score = fsim(goldhill_jpeg, goldhill, data_range=255, chromatic=False)
+    score = fsim(goldhill_jpeg, goldhill, data_range=255, chromatic=False, reduction='none')
     score_baseline = torch.tensor(0.89691)
 
     assert torch.allclose(score, score_baseline), \
@@ -75,8 +75,8 @@ def test_fsim_simmular_to_matlab_implementation():
     I01 = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1)
     i1_01_5 = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1)
 
-    score = fsim(i1_01_5, I01, data_range=255, chromatic=False)
-    score_chromatic = fsim(i1_01_5, I01, data_range=255, chromatic=True)
+    score = fsim(i1_01_5, I01, data_range=255, chromatic=False, reduction='none')
+    score_chromatic = fsim(i1_01_5, I01, data_range=255, chromatic=True, reduction='none')
 
     # Baseline values are from original MATLAB code
     score_baseline = torch.tensor(0.93674)

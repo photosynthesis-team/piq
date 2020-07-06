@@ -12,7 +12,7 @@ import torch
 from torch.nn.modules.loss import _Loss
 
 from piq.utils import _adjust_dimensions, _validate_input
-from piq.functional import ifftshift, get_meshgrid, similarity_map, gradient_map, scharr_filter
+from piq.functional import ifftshift, get_meshgrid, similarity_map, gradient_map, scharr_filter, rgb2yiq
 
 
 def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
@@ -41,9 +41,9 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         
     Returns:
         FSIM: Index of similarity betwen two images. Usually in [0, 1] interval.
-            Can be bigger than 1 for predicted images with higher contrast than original one.
+            Can be bigger than 1 for predicted images with higher contrast than the original ones.
     Note:
-        This implementation is based on original authors MATLAB code.
+        This implementation is based on the original MATLAB code.
         https://www4.comp.polyu.edu.hk/~cslzhang/IQA/FSIM/FSIM.htm
         
     """
@@ -61,27 +61,23 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     
     # Apply average pooling
     kernel_size = max(1, round(min(x.shape[-2:]) / 256))
-    x = torch.nn.functional.avg_pool2d(x, kernel_size, stride=2)
-    y = torch.nn.functional.avg_pool2d(y, kernel_size, stride=2)
+    x = torch.nn.functional.avg_pool2d(x, kernel_size)
+    y = torch.nn.functional.avg_pool2d(y, kernel_size)
         
     num_channels = x.size(1)
 
     # Convert RGB to YIQ color space https://en.wikipedia.org/wiki/YIQ
     if num_channels == 3:
-        yiq_weights = torch.tensor([
-            [0.299, 0.587, 0.114],
-            [0.5959, -0.2746, -0.3213],
-            [0.2115, -0.5227, 0.3112]]).t().to(x)
-        x = torch.matmul(x.permute(0, 2, 3, 1), yiq_weights).permute(0, 3, 1, 2)
-        y = torch.matmul(y.permute(0, 2, 3, 1), yiq_weights).permute(0, 3, 1, 2)
+        x_yiq = rgb2yiq(x)
+        y_yiq = rgb2yiq(y)
+
+        x_lum = x_yiq[:, : 1]
+        y_lum = y_yiq[:, : 1]
         
-        x_lum = x[:, : 1, :, :]
-        y_lum = y[:, : 1, :, :]
-        
-        x_i = x[:, 1:2, :, :]
-        y_i = y[:, 1:2, :, :]
-        x_q = x[:, 2:, :, :]
-        y_q = y[:, 2:, :, :]
+        x_i = x_yiq[:, 1:2]
+        y_i = y_yiq[:, 1:2]
+        x_q = x_yiq[:, 2:]
+        y_q = y_yiq[:, 2:]
 
     else:
         x_lum = x
@@ -104,7 +100,7 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     grad_map_x = gradient_map(x_lum, kernels)
     grad_map_y = gradient_map(y_lum, kernels)
     
-    # Constants from paper
+    # Constants from the paper
     T1, T2, T3, T4, lmbda = 0.85, 160, 200, 200, 0.03
     
     # Compute FSIM
@@ -133,7 +129,7 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
 def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
                        min_length: int = 6, mult: int = 2, sigma_f: float = 0.55,
                        delta_theta: float = 1.2, k: float = 2.0):
-    """Creates stack of filters used for computation of phase congruensy maps
+    """Creates a stack of filters used for computation of phase congruensy maps
     
     Args:
         x: Tensor with shape Bx1xHxW
@@ -187,8 +183,8 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     log_gabor = []
     for s in range(scales):
         wavelength = min_length * mult ** s
-        fo = 1.0 / wavelength  # Centre frequency of filter.
-        gabor_filter = torch.exp((- torch.log(radius / fo) ** 2) / (2 * math.log(sigma_f) ** 2))
+        omega_0 = 1.0 / wavelength
+        gabor_filter = torch.exp((- torch.log(radius / omega_0) ** 2) / (2 * math.log(sigma_f) ** 2))
         gabor_filter = gabor_filter * lp
         gabor_filter[0, 0] = 0
         log_gabor.append(gabor_filter)
@@ -239,7 +235,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
         PCmap: Tensor with shape BxHxW
 
     """
-    EPS = 1e-4
+    EPS = torch.finfo(x.dtype).eps
 
     B, _, H, W = x.shape
 
@@ -252,10 +248,10 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     filters_ifft = torch.ifft(torch.stack([filters, torch.zeros_like(filters)], dim=-1), 2)[..., 0] * math.sqrt(H * W)
     
     # Convolve image with even and odd filters
-    E0 = torch.ifft(imagefft * filters.unsqueeze(-1), 2).view(B, orientations, scales, H, W, 2)
+    even_odd = torch.ifft(imagefft * filters.unsqueeze(-1), 2).view(B, orientations, scales, H, W, 2)
 
     # Amplitude of even & odd filter response. An = sqrt(real^2 + imag^2)
-    an = torch.sqrt(torch.sum(E0 ** 2, dim=-1))
+    an = torch.sqrt(torch.sum(even_odd ** 2, dim=-1))
 
     # Take filter at scale 0 and sum spatially
     # Record mean squared filter value at smallest scale.
@@ -263,10 +259,10 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     em_n = (filters.view(1, orientations, scales, H, W)[:, :, :1, ...] ** 2).sum(dim=[-2, -1], keepdims=True)
 
     # Sum of even filter convolution results.
-    sum_e = E0[..., 0].sum(dim=2, keepdims=True)
+    sum_e = even_odd[..., 0].sum(dim=2, keepdims=True)
     
     # Sum of odd filter convolution results.
-    sum_o = E0[..., 1].sum(dim=2, keepdims=True)
+    sum_o = even_odd[..., 1].sum(dim=2, keepdims=True)
     
     # Get weighted mean filter response vector, this gives the weighted mean phase angle.
     x_energy = torch.sqrt(sum_e ** 2 + sum_o ** 2) + EPS
@@ -280,10 +276,10 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     # This quantity is phase congruency multiplied by An, which we call energy.
 
     # Extract even and odd convolution results.
-    E = E0[..., 0]
-    O = E0[..., 1]
+    even = even_odd[..., 0]
+    odd = even_odd[..., 1]
 
-    energy = (E * mean_e + O * mean_o - torch.abs(E * mean_o - O * mean_e)).sum(dim=2, keepdim=True)
+    energy = (even * mean_e + odd * mean_o - torch.abs(even * mean_o - odd * mean_e)).sum(dim=2, keepdim=True)
     
     # Compensate for noise
     # We estimate the noise power from the energy squared response at the
@@ -293,8 +289,8 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     # The estimate of noise power is obtained by dividing the mean squared
     # energy value by the mean squared filter value
     
-    abs_e0 = torch.sqrt(torch.sum(E0[:, :, :1, ...] ** 2, dim=-1)).reshape(B, orientations, 1, 1, H * W)
-    median_e2n = torch.median(abs_e0 ** 2, dim=-1, keepdims=True).values
+    abs_eo = torch.sqrt(torch.sum(even_odd[:, :, :1, ...] ** 2, dim=-1)).reshape(B, orientations, 1, 1, H * W)
+    median_e2n = torch.median(abs_eo ** 2, dim=-1, keepdims=True).values
 
     mean_e2n = - median_e2n / math.log(0.5)
 
@@ -360,9 +356,8 @@ def _lowpassfilter(size: Union[int, Tuple[int, int]], cutoff: float, n: int) -> 
         The frequency origin of the returned filter is at the corners.
     
     """
-
-    assert (cutoff >= 0) and (cutoff <= 0.5), "Cutoff frequency must be between 0 and 0.5"
-    assert n > 1, "n must be an integer >= 1"
+    assert 0 < cutoff <= 0.5, "Cutoff frequency must be between 0 and 0.5"
+    assert n > 1 and int(n) == n, "n must be an integer >= 1"
 
     grid_x, grid_y = get_meshgrid(size)
     
