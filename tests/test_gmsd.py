@@ -40,7 +40,7 @@ def test_gmsd_loss_backward_on_gpu(prediction: torch.Tensor, target: torch.Tenso
     prediction.requires_grad_()
     loss_value = GMSDLoss()(prediction.cuda(), target.cuda())
     loss_value.backward()
-    assert prediction.grad is not None, 'Expected non None gradient of leaf variable'
+    assert prediction.grad is not None, LEAF_VARIABLE_ERROR_MESSAGE
 
 
 def test_gmsd_zero_for_equal_tensors(prediction: torch.Tensor):
@@ -101,7 +101,7 @@ def test_multi_scale_gmsd_loss_backward(prediction: torch.Tensor, target: torch.
     prediction.requires_grad_()
     loss_value = MultiScaleGMSDLoss(chromatic=True)(prediction, target)
     loss_value.backward()
-    assert prediction.grad is not None, 'Expected non None gradient of leaf variable'
+    assert prediction.grad is not None, LEAF_VARIABLE_ERROR_MESSAGE
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test if there is no GPU.')
@@ -109,7 +109,7 @@ def test_multi_scale_gmsd_loss_backward_on_gpu(prediction: torch.Tensor, target:
     prediction.requires_grad_()
     loss_value = MultiScaleGMSDLoss(chromatic=True)(prediction, target)
     loss_value.backward()
-    assert prediction.grad is not None, 'Expected non None gradient of leaf variable'
+    assert prediction.grad is not None, LEAF_VARIABLE_ERROR_MESSAGE
     
 
 def test_multi_scale_gmsd_zero_for_equal_tensors(prediction: torch.Tensor):
