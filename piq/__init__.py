@@ -13,3 +13,4 @@ from .brisque import BRISQUELoss, brisque
 from .perceptual import StyleLoss, ContentLoss, LPIPS
 from .psnr import psnr
 from .fsim import fsim, FSIMLoss
+from .vsi import vsi, VSILoss
