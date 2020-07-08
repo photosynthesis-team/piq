@@ -453,17 +453,6 @@ output.backward()
 </p>
 </details>
 
-<!-- TABLE OF CONTENTS -->
-### Table of Contents
-
-* [Overview](#overview)
-    * [Installation](#installation)
-    * [Roadmap](#roadmap)
-* [Community](#community)
-    * [Contributing](#contributing)
-    * [Contact](#contact)
-    * [Acknowledgements](#acknowledgements)
-
 
 ### Overview
 
