@@ -37,13 +37,13 @@ def _construct_graph_sparse(data: np.ndarray, k: int) -> np.ndarray:
     return spmat.tocsr()
 
 
-def _laplacian_sparse(A: np.ndarray, normalized: bool = True) -> np.ndarray:
-    D = A.sum(1).A1
+def _laplacian_sparse(matrix: np.ndarray, normalized: bool = True) -> np.ndarray:
+    row_sum = matrix.sum(1).A1
     if not normalized:
-        return diags(D) - A
+        return diags(row_sum) - matrix
 
-    D_sqrt = diags(1 / np.sqrt(D))
-    return eye(A.shape[0]) - D_sqrt.dot(A).dot(D_sqrt)
+    row_sum_sqrt = diags(1 / np.sqrt(row_sum))
+    return eye(matrix.shape[0]) - row_sum_sqrt.dot(matrix).dot(row_sum_sqrt)
 
 
 def _lanczos_m(A: np.ndarray, m: int, nv: int, rademacher: bool, starting_vectors: np.ndarray = None) \
