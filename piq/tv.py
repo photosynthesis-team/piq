@@ -53,13 +53,13 @@ class TVLoss(_Loss):
     the given input :math:`x`.
 
 
-    If :attr:`reduction_type` set to ``'l2'`` the loss can be described as:
+    If :attr:`norm_type` set to ``'l2'`` the loss can be described as:
 
     .. math::
         TV(x) = \sum_{N}\sqrt{\sum_{H, W, C}(|x_{:, :, i+1, j} - x_{:, :, i, j}|^2 +
         |x_{:, :, i, j+1} - x_{:, :, i, j}|^2)}
 
-    Else if :attr:`reduction_type` set to ``'l1'``:
+    Else if :attr:`norm_type` set to ``'l1'``:
 
     .. math::
         TV(x) = \sum_{N}\sum_{H, W, C}(|x_{:, :, i+1, j} - x_{:, :, i, j}| +
@@ -68,14 +68,11 @@ class TVLoss(_Loss):
     where :math:`N` is the batch size, `C` is the channel size.
 
     Args:
-        size_average: If size_average=True, total_variation of all images will be averaged as a scalar.
-        reduction_type: one of {'l1', 'l2', 'l2_squared'}
+        norm_type: one of {'l1', 'l2', 'l2_squared'}
         reduction: Specifies the reduction to apply to the output:
             ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
             ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed. Note: :attr:`size_average`
-            and :attr:`reduce` are in the process of being deprecated, and in the meantime,
-            specifying either of those two args will override :attr:`reduction`. Default: ``'mean'``
+            elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``
     Shape:
         - Input: Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
     Examples::
