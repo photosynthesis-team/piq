@@ -281,7 +281,7 @@ class LPIPS(ContentLoss):
         lpips_layers = ['relu1_2', 'relu2_2', 'relu3_3', 'relu4_3', 'relu5_3']
         lpips_weights = torch.hub.load_state_dict_from_url(self._weights_url, progress=False)
         super().__init__("vgg16", layers=lpips_layers, weights=lpips_weights,
-                         replace_pooling=use_average_pooling, distance=distance,
+                         replace_pooling=replace_pooling, distance=distance,
                          reduction=reduction, mean=mean, std=std,
                          normalize_features=True)
 
@@ -318,7 +318,7 @@ class DISTS(ContentLoss):
         dists_weights.extend(torch.split(weights['beta'], channels, dim=1))
 
         super().__init__("vgg16", layers=dists_layers, weights=dists_weights,
-                         replace_pooling=True, reduction=reduction, 
+                         replace_pooling=True, reduction=reduction,
                          mean=mean, std=std, normalize_features=False)
 
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
@@ -331,12 +331,12 @@ class DISTS(ContentLoss):
 
         for x, y in zip(prediction_features, target_features):
             x_mean = x.mean([2, 3], keepdim=True)
-            y_mean = y.mean([2 ,3], keepdim=True)
+            y_mean = y.mean([2, 3], keepdim=True)
             structure_distance.append(similarity_map(x_mean, y_mean, constant=1e-6))
 
-            x_var = ((x - x_mean) ** 2).mean([2,3], keepdim=True)
-            y_var = ((y - y_mean) ** 2).mean([2,3], keepdim=True)
-            xy_cov = (x * y).mean([2,3], keepdim=True) - x_mean * y_mean
+            x_var = ((x - x_mean) ** 2).mean([2, 3], keepdim=True)
+            y_var = ((y - y_mean) ** 2).mean([2, 3], keepdim=True)
+            xy_cov = (x * y).mean([2, 3], keepdim=True) - x_mean * y_mean
             texture_distance.append((2 * xy_cov + 1e-6) / (x_var + y_var + 1e-6))
 
         return structure_distance + texture_distance
@@ -364,6 +364,7 @@ class L2Pool2d(torch.nn.Module):
     Args:
         x: Tensor with shape (N, C, H, W)"""
     EPS = 1e-12
+
     def __init__(self, kernel_size: int = 3, stride: int = 2, padding=1) -> None:
         super().__init__()
         self.kernel_size = kernel_size
@@ -385,7 +386,7 @@ class L2Pool2d(torch.nn.Module):
         
         # Take bigger window and drop borders
         window = torch.hann_window(self.kernel_size + 2, periodic=False)[1:-1]
-        kernel = window[:,None] * window[None,:]
+        kernel = window[:, None] * window[None, :]
 
         # Normalize and reshape kernel
-        self.kernel = (kernel / kernel.sum()).repeat((C,1,1,1)).to(x)
+        self.kernel = (kernel / kernel.sum()).repeat((C, 1, 1, 1)).to(x)
