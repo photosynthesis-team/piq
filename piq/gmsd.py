@@ -59,15 +59,14 @@ def _gmsd(prediction: torch.Tensor, target: torch.Tensor,
     mean_gms = torch.mean(gms, dim=[1, 2, 3], keepdims=True)
 
     # Compute GMSD along spatial dimensions. Shape (batch_size )
-    gmsd = torch.pow(gms - mean_gms, 2).mean(dim=[1, 2, 3]).sqrt()
+    score = torch.pow(gms - mean_gms, 2).mean(dim=[1, 2, 3]).sqrt()
     
-    if reduction == 'mean':
-        return gmsd.mean(dim=0)
-    elif reduction == 'sum':
-        return gmsd.sum(dim=0)
-    elif reduction != 'none':
-        raise ValueError(f'Expected reduction modes are "mean"|"sum"|"none", got {reduction}')
-    return gmsd
+    if reduction == 'none':
+        return score
+
+    return {'mean': score.mean,
+            'sum': score.sum
+            }[reduction](dim=0)
 
 
 class GMSDLoss(_Loss):
@@ -241,11 +240,9 @@ class MultiScaleGMSDLoss(_Loss):
             
             score = gamma * ms_gmds_val + (1 - gamma) * self.beta1 * rmse_chrome
             
-        if self.reduction == 'mean':
-            score = torch.mean(score, dim=0)
-        elif self.reduction == 'sum':
-            score = torch.sum(score, dim=0)
-        elif self.reduction != 'none':
-            raise ValueError(f'Expected reduction modes are "mean"|"sum"|"none", got {self.reduction}')
+        if self.reduction == 'none':
+            return score
 
-        return score
+        return {'mean': score.mean,
+                'sum': score.sum
+                }[self.reduction](dim=0)
