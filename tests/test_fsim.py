@@ -84,7 +84,7 @@ def test_fsim_simmular_to_matlab_implementation():
 
     assert torch.allclose(score, score_baseline), \
         f'Expected PyTorch score to be equal to MATLAB prediction. Got {score} and {score_baseline}'
-    assert torch.allclose(score, score_baseline), \
+    assert torch.allclose(score_chromatic, score_baseline_chromatic), \
         'Expected PyTorch chromatic score to be equal to MATLAB prediction.' \
         f'Got {score_chromatic} and {score_baseline_chromatic}'
 
