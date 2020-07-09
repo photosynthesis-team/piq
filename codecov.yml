@@ -18,18 +18,8 @@ coverage:
         informational: false
         only_pulls: false
     patch:
-      default:
-        # basic
-        target: auto
-        threshold: 0%
-        base: auto 
-        # advanced
-        branches: 
-          - master
-        if_no_uploads: error
-        if_not_found: success
-        if_ci_failed: error
-        only_pulls: false
+       default:
+         enabled: no
 
 parsers:
   gcov:
