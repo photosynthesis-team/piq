@@ -68,7 +68,7 @@ def test_fsim_simmular_to_matlab_implementation():
     score = fsim(goldhill_jpeg, goldhill, data_range=255, chromatic=False, reduction='none')
     score_baseline = torch.tensor(0.89691)
 
-    assert torch.allclose(score, score_baseline), \
+    assert torch.isclose(score, score_baseline), \
         f'Expected PyTorch score to be equal to MATLAB prediction. Got {score} and {score_baseline}'
 
     # RGB images
@@ -82,9 +82,9 @@ def test_fsim_simmular_to_matlab_implementation():
     score_baseline = torch.tensor(0.93674)
     score_baseline_chromatic = torch.tensor(0.92587)
 
-    assert torch.allclose(score, score_baseline), \
+    assert torch.isclose(score, score_baseline), \
         f'Expected PyTorch score to be equal to MATLAB prediction. Got {score} and {score_baseline}'
-    assert torch.allclose(score_chromatic, score_baseline_chromatic), \
+    assert torch.isclose(score_chromatic, score_baseline_chromatic, atol=1e-4), \
         'Expected PyTorch chromatic score to be equal to MATLAB prediction.' \
         f'Got {score_chromatic} and {score_baseline_chromatic}'
 
