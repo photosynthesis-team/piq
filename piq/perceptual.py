@@ -180,11 +180,11 @@ class ContentLoss(_Loss):
                 }[self.reduction](dim=0)
 
     def compute_distance(self, prediction_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
-        """Take L2 or L1 distance between feature maps"""
+        r"""Take L2 or L1 distance between feature maps"""
         return [self.distance(x, y) for x, y in zip(prediction_features, target_features)]
 
     def get_features(self, x: torch.Tensor) -> List[torch.Tensor]:
-        """
+        r"""
         Args:
             x: torch.Tensor with shape (N, C, H, W)
         
@@ -199,7 +199,7 @@ class ContentLoss(_Loss):
         return features
 
     def normalize(self, x: torch.Tensor) -> torch.Tensor:
-        """Normalize feature maps in channel direction to unit length.
+        r"""Normalize feature maps in channel direction to unit length.
         Args:
             x: Tensor with shape (N, C, H, W)
         Returns:
@@ -326,7 +326,7 @@ class DISTS(ContentLoss):
         return 1 - loss
 
     def compute_distance(self, prediction_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
-        """Compute structure similarity feature maps"""
+        r"""Compute structure similarity between feature maps"""
         structure_distance, texture_distance = [], []
 
         for x, y in zip(prediction_features, target_features):
@@ -381,7 +381,7 @@ class L2Pool2d(torch.nn.Module):
         return (out + self.EPS).sqrt()
     
     def construct_kernel(self, x: torch.Tensor) -> torch.Tensor:
-        """Returns 2D Hann window kernel with number of channels equal to input channels"""
+        r"""Returns 2D Hann window kernel with number of channels equal to input channels"""
         C = x.size(1)
         
         # Take bigger window and drop borders
