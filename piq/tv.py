@@ -102,18 +102,9 @@ class TVLoss(_Loss):
         Returns:
             Value of TV loss to be minimized.
         """
-        return self.compute_metric(prediction)
-
-    def compute_metric(self, prediction: torch.Tensor) -> torch.Tensor:
         score = total_variation(
             prediction,
             reduction=self.reduction,
             norm_type=self.norm_type,
         )
-
-        if self.reduction == 'none':
-            return score
-
-        return {'mean': score.mean,
-                'sum': score.sum
-                }[self.reduction](dim=0)
+        return score
