@@ -52,7 +52,7 @@ def features_prediction_constant() -> torch.Tensor:
 
 
 # ================== Test class: `MSID` ==================
-def test_MSID_fails_for_different_dimensions(features_target_normal: torch.Tensor) -> None:
+def test_fails_for_different_dimensions(features_target_normal: torch.Tensor) -> None:
     features_prediction_normal = torch.rand(1000, 21)
     metric = MSID()
     with pytest.raises(AssertionError):
@@ -68,7 +68,7 @@ def test_compute_msid_works_for_different_number_of_images_in_stack(features_tar
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
-def test_MSID_init() -> None:
+def test_initialization() -> None:
     try:
         MSID()
     except Exception as e:
@@ -88,7 +88,7 @@ def test_msid_is_smaller_for_equal_tensors(
         f'MSID should be smaller for samples from the same distribution, got {measure} and {measure_constant}'
 
 
-def test_MSID_forward(features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor, ) -> None:
+def test_forward(features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor, ) -> None:
     try:
         metric = MSID()
         metric(features_target_normal, features_prediction_normal)
@@ -96,7 +96,7 @@ def test_MSID_forward(features_target_normal: torch.Tensor, features_prediction_
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
-def test_MSID_compute_feats_cpu() -> None:
+def test_compute_feats_cpu() -> None:
     try:
         dataset = TestDataset()
         loader = torch.utils.data.DataLoader(
@@ -112,7 +112,7 @@ def test_MSID_compute_feats_cpu() -> None:
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
-def test_MSID_compute_feats_cuda() -> None:
+def test_compute_feats_cuda() -> None:
     try:
         dataset = TestDataset()
         loader = torch.utils.data.DataLoader(

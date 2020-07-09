@@ -28,7 +28,7 @@ def features_prediction_beta() -> torch.Tensor:
 
 # ================== Test class: `GS` ==================
 @pytest.mark.skipif('gudhi' not in sys.modules, reason="Requires gudhi library")
-def test_GS_init() -> None:
+def test_initialization() -> None:
     try:
         GS()
     except Exception as e:
@@ -36,7 +36,7 @@ def test_GS_init() -> None:
 
 
 @pytest.mark.skipif('gudhi' not in sys.modules, reason="Requires gudhi library")
-def test_GS_forward(
+def test_forward(
         features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor,) -> None:
     try:
         metric = GS(num_iters=10, sample_size=8)
@@ -46,7 +46,7 @@ def test_GS_forward(
 
 
 @pytest.mark.skipif('gudhi' not in sys.modules, reason="Requires gudhi library")
-def test_GS_similar_for_same_distribution(
+def test_similar_for_same_distribution(
         features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor) -> None:
     metric = GS(sample_size=1000, num_iters=100, i_max=1000, num_workers=4)
     diff = metric(features_prediction_normal, features_target_normal)
@@ -55,7 +55,7 @@ def test_GS_similar_for_same_distribution(
 
 
 @pytest.mark.skipif('gudhi' not in sys.modules, reason="Requires gudhi library")
-def test_GS_differs_for_not_simular_distributions(
+def test_differs_for_not_simular_distributions(
         features_prediction_beta: torch.Tensor, features_target_normal: torch.Tensor) -> None:
     metric = GS(sample_size=1000, num_iters=100, i_max=1000, num_workers=4)
     diff = metric(features_prediction_beta, features_target_normal)
