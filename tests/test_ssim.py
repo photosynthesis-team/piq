@@ -28,9 +28,9 @@ def target_5d() -> torch.Tensor:
 
 # ================== Test function: `ssim` ==================
 def test_ssim_symmetry(prediction: torch.Tensor, target: torch.Tensor) -> None:
-    measure = ssim(prediction, target, data_range=1.)
-    reverse_measure = ssim(target, prediction, data_range=1.)
-    assert (measure == reverse_measure).all(), f'Expect: SSIM(a, b) == SSIM(b, a), got {measure} != {reverse_measure}'
+    measure = ssim(prediction, target, data_range=1., reduction='none')
+    reverse_measure = ssim(target, prediction, data_range=1., reduction='none')
+    assert torch.allclose(measure, reverse_measure), f'Expect: SSIM(a, b) == SSIM(b, a), got {measure} != {reverse_measure}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
@@ -46,11 +46,10 @@ def test_ssim_symmetry_5d(prediction_5d: torch.Tensor, target_5d: torch.Tensor) 
 
 def test_ssim_measure_is_one_for_equal_tensors(target: torch.Tensor) -> None:
     prediction = target.clone()
-    measure = ssim(prediction, target, data_range=1.)
-    measure -= 1.
-    assert (measure.abs() <= 1e-6).all(), f'If equal tensors are passed SSIM must be equal to 1 ' \
-                                          f'(considering floating point operation error up to 1 * 10^-6), ' \
-                                          f'got {measure + 1}'
+    measure = ssim(prediction, target, data_range=1., reduction='none')
+    assert torch.allclose(measure, torch.ones_like(measure)), f'If equal tensors are passed SSIM must be equal to 1 ' \
+                                                              f'(considering floating point error up to 1 * 10^-6), '\
+                                                              f'got {measure + 1}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
@@ -63,22 +62,22 @@ def test_ssim_measure_is_less_or_equal_to_one() -> None:
     # Create two maximally different tensors.
     ones = torch.ones((3, 3, 256, 256))
     zeros = torch.zeros((3, 3, 256, 256))
-    measure = ssim(ones, zeros, data_range=1.)
-    assert measure <= 1, f'SSIM must be <= 1, got {measure}'
+    measure = ssim(ones, zeros, data_range=1., reduction='none')
+    assert (measure <= 1).all(), f'SSIM must be <= 1, got {measure}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
 def test_ssim_measure_is_less_or_equal_to_one_cuda() -> None:
     ones = torch.ones((3, 3, 256, 256)).cuda()
     zeros = torch.zeros((3, 3, 256, 256)).cuda()
-    measure = ssim(ones, zeros, data_range=1.)
-    assert measure <= 1, f'SSIM must be <= 1, got {measure}'
+    measure = ssim(ones, zeros, data_range=1., reduction='none')
+    assert (measure <= 1).all(), f'SSIM must be <= 1, got {measure}'
 
 
 def test_ssim_measure_is_less_or_equal_to_one_5d() -> None:
     ones = torch.ones((3, 3, 256, 256, 2))
     zeros = torch.zeros((3, 3, 256, 256, 2))
-    measure = ssim(ones, zeros, data_range=1.)
+    measure = ssim(ones, zeros, data_range=1., reduction='none')
     assert (measure <= 1).all(), f'SSIM must be <= 1, got {measure}'
 
 
@@ -155,14 +154,15 @@ def test_ssim_raises_if_kernel_size_greater_than_image() -> None:
 
 
 def test_ssim_raise_if_wrong_value_is_estimated(prediction: torch.Tensor, target: torch.Tensor) -> None:
-    piq_ssim = ssim(prediction, target, kernel_size=11, kernel_sigma=1.5, data_range=1., size_average=False)
+    piq_ssim = ssim(prediction, target, kernel_size=11, kernel_sigma=1.5, data_range=1., reduction='mean')
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
-    tf_ssim = torch.tensor(tf.image.ssim(tf_prediction, tf_target, max_val=1.).numpy())
-    assert torch.isclose(piq_ssim, tf_ssim, atol=1e-6).all(), \
+    tf_ssim = torch.tensor(tf.image.ssim(tf_prediction, tf_target, max_val=1.).numpy().mean())
+    match_accuracy = 1e-6
+    assert torch.allclose(piq_ssim, tf_ssim), \
         f'The estimated value must be equal to tensorflow provided one' \
-        f'(considering floating point operation error up to 1 * 10^-6), ' \
-        f'got difference {(piq_ssim - tf_ssim).abs()}'
+        f'(considering floating point operation error up to {match_accuracy}), ' \
+        f'got difference {(piq_ssim - tf_ssim)}'
 
 
 # ================== Test class: `SSIMLoss` ==================
@@ -170,8 +170,8 @@ def test_ssim_loss_symmetry(prediction: torch.Tensor, target: torch.Tensor) -> N
     loss = SSIMLoss()
     loss_value = loss(prediction, target)
     reverse_loss_value = loss(target, prediction)
-    assert (loss_value == reverse_loss_value).all(), \
-        f'Expect: SSIM(a, b) == SSIM(b, a), got {loss_value} != {reverse_loss_value}'
+    assert torch.allclose(loss_value, reverse_loss_value), \
+        f'Expect: SSIMLoss(a, b) == SSIMLoss(b, a), got {loss_value} != {reverse_loss_value}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
@@ -188,8 +188,9 @@ def test_ssim_loss_symmetry_5d(prediction_5d: torch.Tensor, target_5d: torch.Ten
 def test_ssim_loss_equality(target: torch.Tensor) -> None:
     prediction = target.clone()
     loss = SSIMLoss()(prediction, target)
-    assert (loss.abs() <= 1e-6).all(), f'If equal tensors are passed SSIM loss must be equal to 0 ' \
-                                       f'(considering floating point operation error up to 1 * 10^-6), got {loss}'
+    assert torch.allclose(loss, torch.zeros_like(loss)), \
+        f'If equal tensors are passed SSIM loss must be equal to 0 '\
+        f'(considering floating point operation error up to 1 * 10^-6), got {loss}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
@@ -203,7 +204,7 @@ def test_ssim_loss_is_less_or_equal_to_one() -> None:
     ones = torch.ones((3, 3, 256, 256))
     zeros = torch.zeros((3, 3, 256, 256))
     loss = SSIMLoss()(ones, zeros)
-    assert loss <= 1, f'SSIM loss must be <= 1, got {loss}'
+    assert (loss <= 1).all(), f'SSIM loss must be <= 1, got {loss}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
@@ -211,7 +212,7 @@ def test_ssim_loss_is_less_or_equal_to_one_cuda() -> None:
     ones = torch.ones((3, 3, 256, 256)).cuda()
     zeros = torch.zeros((3, 3, 256, 256)).cuda()
     loss = SSIMLoss()(ones, zeros)
-    assert loss <= 1, f'SSIM loss must be <= 1, got {loss}'
+    assert (loss <= 1).all(), f'SSIM loss must be <= 1, got {loss}'
 
 
 def test_ssim_loss_is_less_or_equal_to_one_5d() -> None:
@@ -299,17 +300,19 @@ def test_ssim_loss_raise_if_wrong_value_is_estimated(prediction: torch.Tensor, t
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ssim = torch.tensor(tf.image.ssim(tf_prediction, tf_target, max_val=1.).numpy()).mean()
-    assert torch.isclose(ssim_loss, 1 - tf_ssim, atol=1e-6).all(), \
+    match_accuracy = 1e-6
+    assert torch.allclose(ssim_loss, 1 - tf_ssim), \
         f'The estimated value must be equal to tensorflow provided one' \
-        f'(considering floating point operation error up to 1 * 10^-6), ' \
+        f'(considering floating point operation error up to {match_accuracy}), ' \
         f'got difference {(ssim_loss - 1 + tf_ssim).abs()}'
 
 
 # ================== Test function: `multi_scale_ssim` ==================
 def test_multi_scale_ssim_symmetry(prediction: torch.Tensor, target: torch.Tensor) -> None:
-    measure = multi_scale_ssim(prediction, target, data_range=1.)
-    reverse_measure = multi_scale_ssim(target, prediction, data_range=1.)
-    assert (measure == reverse_measure).all(), f'Expect: SSIM(a, b) == SSIM(b, a), got {measure} != {reverse_measure}'
+    measure = multi_scale_ssim(prediction, target, data_range=1., reduction='none')
+    reverse_measure = multi_scale_ssim(target, prediction, data_range=1., reduction='none')
+    assert torch.allclose(measure, reverse_measure), f'Expect: MS-SSIM(a, b) == MSSSIM(b, a), '\
+                                                     f'got {measure} != {reverse_measure}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
@@ -322,16 +325,16 @@ def test_multi_scale_ssim_symmetry_cuda(prediction: torch.Tensor, target: torch.
 def test_multi_scale_ssim_symmetry_5d(prediction_5d: torch.Tensor, target_5d: torch.Tensor) -> None:
     measure = multi_scale_ssim(prediction_5d, target_5d, data_range=1., k2=.4)
     reverse_measure = multi_scale_ssim(target_5d, prediction_5d, data_range=1., k2=.4)
-    assert (measure == reverse_measure).all(), f'Expect: SSIM(a, b) == SSIM(b, a), got {measure} != {reverse_measure}'
+    assert torch.allclose(measure, reverse_measure), f'Expect: MS-SSIM(a, b) == MS-SSIM(b, a), '\
+                                                     f'got {measure} != {reverse_measure}'
 
 
 def test_multi_scale_ssim_measure_is_one_for_equal_tensors(target: torch.Tensor) -> None:
     prediction = target.clone()
     measure = multi_scale_ssim(prediction, target, data_range=1.)
-    measure -= 1.
-    assert (measure.abs() <= 1e-6).all(), f'If equal tensors are passed SSIM must be equal to 1 ' \
-                                          f'(considering floating point operation error up to 1 * 10^-6), ' \
-                                          f'got {measure + 1}'
+    assert torch.allclose(measure, torch.ones_like(measure)), \
+        f'If equal tensors are passed MS-SSIM must be equal to 1 ' \
+        f'(considering floating point operation error up to 1 * 10^-6), got {measure + 1}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
@@ -345,7 +348,7 @@ def test_multi_scale_ssim_measure_is_less_or_equal_to_one() -> None:
     ones = torch.ones((3, 3, 256, 256))
     zeros = torch.zeros((3, 3, 256, 256))
     measure = multi_scale_ssim(ones, zeros, data_range=1.)
-    assert measure <= 1, f'SSIM must be <= 1, got {measure}'
+    assert (measure <= 1).all(), f'MS-SSIM must be <= 1, got {measure}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
@@ -353,7 +356,7 @@ def test_multi_scale_ssim_measure_is_less_or_equal_to_one_cuda() -> None:
     ones = torch.ones((3, 3, 256, 256)).cuda()
     zeros = torch.zeros((3, 3, 256, 256)).cuda()
     measure = multi_scale_ssim(ones, zeros, data_range=1.)
-    assert measure <= 1, f'SSIM must be <= 1, got {measure}'
+    assert (measure <= 1).all(), f'MS-SSIM must be <= 1, got {measure}'
 
 
 def test_multi_scale_ssim_measure_is_less_or_equal_to_one_5d() -> None:
@@ -361,7 +364,7 @@ def test_multi_scale_ssim_measure_is_less_or_equal_to_one_5d() -> None:
     ones = torch.ones((3, 3, 256, 256, 2))
     zeros = torch.zeros((3, 3, 256, 256, 2))
     measure = multi_scale_ssim(ones, zeros, data_range=1.)
-    assert (measure <= 1).all(), f'SSIM must be <= 1, got {measure}'
+    assert (measure <= 1).all(), f'MS-SSIM must be <= 1, got {measure}'
 
 
 def test_multi_scale_ssim_raises_if_tensors_have_different_dimensions() -> None:
@@ -450,13 +453,14 @@ def test_multi_scale_ssim_raises_if_kernel_size_greater_than_image() -> None:
 
 def test_multi_scale_ssim_raise_if_wrong_value_is_estimated(prediction: torch.Tensor, target: torch.Tensor) -> None:
     piq_ms_ssim = multi_scale_ssim(prediction, target, kernel_size=11, kernel_sigma=1.5,
-                                   data_range=1., size_average=False)
+                                   data_range=1., reduction='none')
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.).numpy())
-    assert torch.isclose(piq_ms_ssim, tf_ms_ssim, atol=1e-4).all(), \
+    match_accuracy = 1e-5
+    assert torch.allclose(piq_ms_ssim, tf_ms_ssim), \
         f'The estimated value must be equal to tensorflow provided one' \
-        f'(considering floating point operation error up to 1 * 10^-4), ' \
+        f'(considering floating point operation error up to {match_accuracy}), ' \
         f'got difference {(piq_ms_ssim - tf_ms_ssim).abs()}'
 
 
@@ -464,14 +468,15 @@ def test_multi_scale_ssim_raise_if_wrong_value_is_estimated_custom_weights(predi
                                                                            target: torch.Tensor) -> None:
     scale_weights = [0.0448, 0.2856, 0.3001]
     piq_ms_ssim = multi_scale_ssim(prediction, target, kernel_size=11, kernel_sigma=1.5,
-                                   data_range=1., size_average=False, scale_weights=scale_weights)
+                                   data_range=1., reduction='none', scale_weights=scale_weights)
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.,
                                                        power_factors=scale_weights).numpy())
-    assert torch.isclose(piq_ms_ssim, tf_ms_ssim, atol=1e-4).all(), \
+    match_accuracy = 1e-5
+    assert torch.allclose(piq_ms_ssim, tf_ms_ssim), \
         f'The estimated value must be equal to tensorflow provided one' \
-        f'(considering floating point operation error up to 1 * 10^-4), ' \
+        f'(considering floating point operation error up to {match_accuracy}), ' \
         f'got difference {(piq_ms_ssim - tf_ms_ssim).abs()}'
 
 
@@ -481,7 +486,7 @@ def test_multi_scale_ssim_loss_symmetry(prediction: torch.Tensor, target: torch.
     loss_value = loss(prediction, target)
     reverse_loss_value = loss(target, prediction)
     assert (loss_value == reverse_loss_value).all(), \
-        f'Expect: SSIM(a, b) == SSIM(b, a), got {loss_value} != {reverse_loss_value}'
+        f'Expect: MS-SSIM(a, b) == MS-SSIM(b, a), got {loss_value} != {reverse_loss_value}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
@@ -496,7 +501,7 @@ def test_multi_scale_ssim_loss_symmetry_5d(prediction_5d: torch.Tensor, target_5
     loss_value = loss(prediction_5d, target_5d)
     reverse_loss_value = loss(target_5d, prediction_5d)
     assert (loss_value == reverse_loss_value).all(), \
-        f'Expect: SSIM(a, b) == SSIM(b, a), got {loss_value} != {reverse_loss_value}'
+        f'Expect: MS-SSIM(a, b) == MS-SSIM(b, a), got {loss_value} != {reverse_loss_value}'
 
 
 def test_multi_scale_ssim_loss_equality(target: torch.Tensor) -> None:
@@ -517,7 +522,7 @@ def test_multi_scale_ssim_loss_is_less_or_equal_to_one() -> None:
     ones = torch.ones((3, 3, 256, 256))
     zeros = torch.zeros((3, 3, 256, 256))
     loss = MultiScaleSSIMLoss()(ones, zeros)
-    assert loss <= 1, f'SSIM loss must be <= 1, got {loss}'
+    assert loss <= 1, f'MS-SSIM loss must be <= 1, got {loss}'
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
@@ -525,7 +530,7 @@ def test_multi_scale_ssim_loss_is_less_or_equal_to_one_cuda() -> None:
     ones = torch.ones((3, 3, 256, 256)).cuda()
     zeros = torch.zeros((3, 3, 256, 256)).cuda()
     loss = MultiScaleSSIMLoss()(ones, zeros)
-    assert loss <= 1, f'SSIM loss must be <= 1, got {loss}'
+    assert loss <= 1, f'MS-SSIM loss must be <= 1, got {loss}'
 
 
 def test_multi_scale_ssim_loss_is_less_or_equal_to_one_5d() -> None:
@@ -533,7 +538,7 @@ def test_multi_scale_ssim_loss_is_less_or_equal_to_one_5d() -> None:
     ones = torch.ones((3, 3, 256, 256, 2))
     zeros = torch.zeros((3, 3, 256, 256, 2))
     loss = MultiScaleSSIMLoss()(ones, zeros)
-    assert (loss <= 1).all(), f'SSIM loss must be <= 1, got {loss}'
+    assert (loss <= 1).all(), f'MS-SSIM loss must be <= 1, got {loss}'
 
 
 def test_multi_scale_ssim_loss_raises_if_tensors_have_different_dimensions() -> None:
@@ -628,9 +633,10 @@ def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated(prediction: tor
     tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.).numpy()).mean()
-    assert torch.isclose(piq_ms_ssim_loss, 1 - tf_ms_ssim, atol=1e-4).all(), \
+    match_accuracy = 1e-6
+    assert torch.allclose(piq_ms_ssim_loss, 1 - tf_ms_ssim), \
         f'The estimated value must be equal to tensorflow provided one' \
-        f'(considering floating point operation error up to 1 * 10^-4), ' \
+        f'(considering floating point operation error up to {match_accuracy}), ' \
         f'got difference {(piq_ms_ssim_loss - 1 + tf_ms_ssim).abs()}'
 
 
@@ -643,8 +649,8 @@ def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated_custom_weights(
     tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
     tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.,
                                                        power_factors=scale_weights).numpy()).mean()
-    match_accuracy = 1e-3
-    assert torch.isclose(piq_ms_ssim_loss, 1 - tf_ms_ssim, atol=match_accuracy).all(), \
+    match_accuracy = 1e-6
+    assert torch.allclose(piq_ms_ssim_loss, 1 - tf_ms_ssim), \
         f'The estimated value must be equal to tensorflow provided one' \
         f'(considering floating point operation error up to {match_accuracy}), ' \
         f'got difference {(piq_ms_ssim_loss - 1 + tf_ms_ssim).abs()}'
