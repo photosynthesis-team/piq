@@ -25,14 +25,14 @@ def features_prediction_constant() -> torch.Tensor:
     return torch.ones(1000, 20)
 
 
-def test_KID_init() -> None:
+def test_initialization() -> None:
     try:
         KID()
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
-def test_KID_forward(features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor, ) -> None:
+def test_forward(features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor, ) -> None:
     try:
         metric = KID()
         metric(features_target_normal, features_prediction_normal)
@@ -40,20 +40,20 @@ def test_KID_forward(features_target_normal: torch.Tensor, features_prediction_n
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
-def test_KID_fails_for_different_dimensions(features_target_normal: torch.Tensor) -> None:
+def tes_fails_for_different_dimensions(features_target_normal: torch.Tensor) -> None:
     features_prediction_normal = torch.rand(1000, 21)
     metric = KID()
     with pytest.raises(AssertionError):
         metric(features_target_normal, features_prediction_normal)
 
 
-def test_KID_works_for_different_number_of_images_in_stack(features_target_normal: torch.Tensor) -> None:
+def test_works_for_different_number_of_images_in_stack(features_target_normal: torch.Tensor) -> None:
     features_prediction_normal = torch.rand(1010, 20)
     metric = KID()
     metric(features_target_normal, features_prediction_normal)
 
 
-def test_KID_returns_variance(features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor) -> None:
+def test_returns_variance(features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor) -> None:
     metric = KID(ret_var=True)
     result = metric(features_target_normal, features_prediction_normal)
     print(result)

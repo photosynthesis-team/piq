@@ -64,11 +64,11 @@ def relative(intervals: np.ndarray, alpha_max: float, i_max: int = 100) -> np.nd
     return rlt / alpha_max
 
 
-def lmrk_table(W: np.ndarray, L: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def lmrk_table(witnesses: np.ndarray, landmarks: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     r"""Construct an input for the gudhi.WitnessComplex function.
     Args:
-        W: Array of size w x d, containing witnesses
-        L: Array of size l x d, containing landmarks
+        witnesses: Array of size w x d, containing witnesses
+        landmarks: Array of size l x d, containing landmarks
     Returns:
         distances: 3D array of size w x l x 2. It satisfies the property that
             distances[i, :, :] is [idx_i, dists_i], where dists_i are the sorted distances
@@ -76,7 +76,7 @@ def lmrk_table(W: np.ndarray, L: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
             in L, e.g., D[i, :, :] = [[0, 0.1], [1, 0.2], [3, 0.3], [2, 0.4]]
         max_dist: Maximal distance between W and L
     """
-    a = cdist(W, L)
+    a = cdist(witnesses, landmarks)
     max_dist = np.max(a)
     idx = np.argsort(a)
     b = a[np.arange(np.shape(a)[0])[:, np.newaxis], idx]
@@ -118,7 +118,7 @@ def witness(
     idx = np.random.choice(N, sample_size)
     landmarks = features[idx]
 
-    distances, max_dist = lmrk_table(W=features, L=landmarks)
+    distances, max_dist = lmrk_table(witnesses=features, landmarks=landmarks)
     wc = gudhi.WitnessComplex(distances)
     alpha_max = max_dist * gamma
     st = wc.create_simplex_tree(max_alpha_square=alpha_max, limit_dimension=2)
