@@ -60,7 +60,7 @@ def test_inception_score_equal_to_scipy_version(features_target_normal: torch.Te
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='CPU inference takes ~30 minutes.')
-def test_IS_on_CIFAR10_train_equals_to_paper_value() -> None:
+def test_inception_score_on_cifar10_train_equals_to_paper_value() -> None:
     cifar10 = torchvision.datasets.CIFAR10(
         root="downloads/",
         download=True,
@@ -96,14 +96,14 @@ def test_IS_on_CIFAR10_train_equals_to_paper_value() -> None:
 
 
 # ================== Test class: `IS` ==================
-def test_IS_init() -> None:
+def test_initialization() -> None:
     try:
         IS()
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
-def test_IS_forward(
+def test_forward(
         features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor,) -> None:
     try:
         metric = IS()
@@ -112,7 +112,7 @@ def test_IS_forward(
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
-def test_IS_similar_for_same_distribution(
+def test_similar_for_same_distribution(
         features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor) -> None:
     metric = IS(distance='l1')
     diff = metric(features_prediction_normal, features_target_normal)
@@ -120,7 +120,7 @@ def test_IS_similar_for_same_distribution(
         f'For same distributions IS difference should be small, got {diff}'
 
 
-def test_IS_differs_for_notsimular_distributions(
+def test_differs_for_notsimular_distributions(
         features_prediction_beta: torch.Tensor, features_target_normal: torch.Tensor) -> None:
     metric = IS(distance='l1')
     diff = metric(features_prediction_beta, features_target_normal)

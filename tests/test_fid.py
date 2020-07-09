@@ -42,14 +42,14 @@ def features_prediction_constant() -> torch.Tensor:
 
 
 # ================== Test class: `FID` ==================
-def test_FID_init() -> None:
+def test_initialization() -> None:
     try:
         FID()
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
-def test_FID_forward(features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor, ) -> None:
+def test_forward(features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor, ) -> None:
     try:
         fid = FID()
         fid(features_target_normal, features_prediction_normal)
@@ -57,7 +57,7 @@ def test_FID_forward(features_target_normal: torch.Tensor, features_prediction_n
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
-def test_FID_compute_feats_cpu() -> None:
+def test_compute_feats_cpu() -> None:
     try:
         dataset = TestDataset()
         loader = torch.utils.data.DataLoader(
@@ -73,7 +73,7 @@ def test_FID_compute_feats_cpu() -> None:
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
-def test_FID_compute_feats_cuda() -> None:
+def test_compute_feats_cuda() -> None:
     try:
         dataset = TestDataset()
         loader = torch.utils.data.DataLoader(
