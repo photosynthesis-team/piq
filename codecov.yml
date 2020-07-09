@@ -11,11 +11,7 @@ coverage:
         target: auto
         threshold: 5%
         base: auto
-        flags:
-          - unit
         # advanced
-        branches:
-          - master
         if_not_found: success
         if_ci_failed: error
         informational: false
