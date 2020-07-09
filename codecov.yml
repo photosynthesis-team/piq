@@ -18,8 +18,8 @@ coverage:
         informational: false
         only_pulls: false
     patch:
-       default:
-         enabled: no
+      default:
+        enabled: no
 
 parsers:
   gcov:
