@@ -37,53 +37,49 @@ def _construct_graph_sparse(data: np.ndarray, k: int) -> np.ndarray:
     return spmat.tocsr()
 
 
-def _laplacian_sparse(A: np.ndarray, normalized: bool = True):
-    D = A.sum(1).A1
-    if normalized:
-        Dsqrt = diags(1 / np.sqrt(D))
-        L = eye(A.shape[0]) - Dsqrt.dot(A).dot(Dsqrt)
-    else:
-        L = diags(D) - A
-    return L
+def _laplacian_sparse(matrix: np.ndarray, normalized: bool = True) -> np.ndarray:
+    row_sum = matrix.sum(1).A1
+    if not normalized:
+        return diags(row_sum) - matrix
+
+    row_sum_sqrt = diags(1 / np.sqrt(row_sum))
+    return eye(matrix.shape[0]) - row_sum_sqrt.dot(matrix).dot(row_sum_sqrt)
 
 
-def _lanczos_m(
-        A: np.ndarray,
-        m: int,
-        nv: int,
-        rademacher: bool,
-        SV: np.ndarray = None) -> Tuple[np.ndarray, np.ndarray]:
+def _lanczos_m(A: np.ndarray, m: int, nv: int, rademacher: bool, starting_vectors: np.ndarray = None) \
+        -> Tuple[np.ndarray, np.ndarray]:
     r"""Lanczos algorithm computes symmetric m x m tridiagonal matrix T and matrix V with orthogonal rows
         constituting the basis of the Krylov subspace K_m(A, x),
         where x is an arbitrary starting unit vector.
         This implementation parallelizes `nv` starting vectors.
 
     Args:
+        A: matrix based on which the Krylov subspace will be built.
         m: Number of Lanczos steps.
         nv: Number of random vectors.
         rademacher: True to use Rademacher distribution,
             False - standard normal for random vectors
-        SV: Specified starting vectors.
+        starting_vectors: Specified starting vectors.
 
     Returns:
         T: A nv x m x m tensor, T[i, :, :] is the ith symmetric tridiagonal matrix.
         V: A n x m x nv tensor, V[:, :, i] is the ith matrix with orthogonal rows.
     """
     orthtol = 1e-5
-    if type(SV) != np.ndarray:
+    if type(starting_vectors) != np.ndarray:
         if rademacher:
-            SV = np.sign(np.random.randn(A.shape[0], nv))
+            starting_vectors = np.sign(np.random.randn(A.shape[0], nv))
         else:
-            SV = np.random.randn(A.shape[0], nv)  # init random vectors in columns: n x nv
-    V = np.zeros((SV.shape[0], m, nv))
+            starting_vectors = np.random.randn(A.shape[0], nv)  # init random vectors in columns: n x nv
+    V = np.zeros((starting_vectors.shape[0], m, nv))
     T = np.zeros((nv, m, m))
 
-    np.divide(SV, np.linalg.norm(SV, axis=0), out=SV)  # normalize each column
-    V[:, 0, :] = SV
+    np.divide(starting_vectors, np.linalg.norm(starting_vectors, axis=0), out=starting_vectors)  # normalize each column
+    V[:, 0, :] = starting_vectors
 
-    w = A.dot(SV)
-    alpha = np.einsum('ij,ij->j', w, SV)
-    w -= alpha[None, :] * SV
+    w = A.dot(starting_vectors)
+    alpha = np.einsum('ij,ij->j', w, starting_vectors)
+    w -= alpha[None, :] * starting_vectors
     beta = np.einsum('ij,ij->j', w, w)
     np.sqrt(beta, beta)
 
@@ -96,17 +92,18 @@ def _lanczos_m(
     t = np.zeros((m, nv))
 
     for i in range(1, m):
-        SVold = V[:, i - 1, :]
-        SV = V[:, i, :]
+        old_starting_vectors = V[:, i - 1, :]
+        starting_vectors = V[:, i, :]
 
-        w = A.dot(SV)  # sparse @ dense
-        w -= beta[None, :] * SVold  # n x nv
-        np.einsum('ij,ij->j', w, SV, out=alpha)
+        w = A.dot(starting_vectors)  # sparse @ dense
+        w -= beta[None, :] * old_starting_vectors  # n x nv
+        np.einsum('ij,ij->j', w, starting_vectors, out=alpha)
 
         T[:, i, i] = alpha
 
         if i < m - 1:
-            w -= alpha[None, :] * SV  # n x nv
+            w -= alpha[None, :] * starting_vectors  # n x nv
+
             # reortho
             np.einsum('ijk,ik->jk', V, w, out=t)
             w -= np.einsum('ijk,jk->ik', V, t)
@@ -124,6 +121,7 @@ def _lanczos_m(
                 if not (innerprod > orthtol).sum():
                     reortho = True
                     break
+
                 np.einsum('ijk,ik->jk', V, w, out=t)
                 w -= np.einsum('ijk,jk->ik', V, t)
                 np.divide(w, np.linalg.norm(w, axis=0)[None, :], out=w)
@@ -133,6 +131,7 @@ def _lanczos_m(
 
             if (np.abs(beta) > 1e-6).sum() == 0 or not reortho:
                 break
+
     return T, V
 
 
@@ -251,10 +250,9 @@ def _normalize_msid(msid: np.ndarray, normalization: str, n: int, k: int, ts: np
         er_spectrum = 4 / np.sqrt(k) * xs + 1 - 2 / np.sqrt(k)
         er_msid = np.exp(-np.outer(ts, er_spectrum)).sum(-1)
         normed_msid = normed_msid / (er_msid + EPSILON)
-    elif normalization == 'none' or normalization is None:
-        pass
-    else:
+    elif not (normalization == 'none' or normalization is None):
         raise ValueError('Unknown normalization parameter!')
+
     return normed_msid
 
 

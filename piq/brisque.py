@@ -13,6 +13,7 @@ from torch.nn.modules.loss import _Loss
 from torch.utils.model_zoo import load_url
 import torch.nn.functional as F
 from piq.utils import _adjust_dimensions, _validate_input
+from piq.functional import rgb2yiq
 
 
 def _ggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -130,7 +131,7 @@ def _scale_features(features: torch.Tensor) -> torch.Tensor:
     return scaled_features
 
 
-def _RBF_kernel(features: torch.Tensor, sv: torch.Tensor, gamma: float = 0.05) -> torch.Tensor:
+def _rbf_kernel(features: torch.Tensor, sv: torch.Tensor, gamma: float = 0.05) -> torch.Tensor:
     features.unsqueeze_(dim=-1)
     sv.unsqueeze_(dim=0)
     dist = (features - sv).pow(2).sum(dim=1)
@@ -147,7 +148,7 @@ def _score_svr(features: torch.Tensor) -> torch.Tensor:
     gamma = 0.05
     rho = -153.591
     sv.t_()
-    kernel_features = _RBF_kernel(features=features, sv=sv, gamma=gamma)
+    kernel_features = _rbf_kernel(features=features, sv=sv, gamma=gamma)
     score = kernel_features @ sv_coef
     return score - rho
 
@@ -177,12 +178,10 @@ def brisque(x: torch.Tensor,
     x = x * 255. / data_range
 
     if x.size(1) == 3:
-        # rgb_to_grey - weights to transform RGB image to grey
-        rgb_to_grey = torch.tensor([0.299, 0.587, 0.114]).view(1, -1, 1, 1).to(x)
-        x = torch.sum(x * rgb_to_grey, dim=1, keepdim=True)
+        x = rgb2yiq(x)[:, :1]
     features = []
     num_of_scales = 2
-    for iteration in range(num_of_scales):
+    for _ in range(num_of_scales):
         features.append(_natural_scene_statistics(x, kernel_size, kernel_sigma))
         x = F.interpolate(x, scale_factor=0.5, mode=interpolation)
 

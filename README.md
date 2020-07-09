@@ -35,6 +35,283 @@ ssim_index = ssim(prediction, target, data_range=1.)
 <!-- EXAMPLES -->
 ### Examples
 
+<!-- BRISQUE EXAMPLES -->
+<details>
+<summary>Blind/Referenceless Image Spatial Quality Evaluator (BRISQUE)</summary>
+<p>
+
+To compute [BRISQUE score](https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf) as a measure, use lower case function from the library:
+```python
+import torch
+from piq import brisque
+from typing import Union, Tuple
+
+prediction = torch.rand(3, 3, 256, 256)
+brisque_index: torch.Tensor = brisque(prediction, data_range=1.)
+```
+
+In order to use BRISQUE as a loss function, use corresponding PyTorch module:
+```python
+import torch
+from piq import BRISQUELoss
+
+loss = BRISQUELoss(data_range=1.)
+prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+output: torch.Tensor = loss(prediction)
+output.backward()
+```
+</p>
+</details>
+
+<!-- FSIM EXAMPLES -->
+ <details>
+ <summary>Feature Similarity Index Measure (FSIM)</summary>
+ <p>
+
+  To compute [FSIM](https://www4.comp.polyu.edu.hk/~cslzhang/IQA/TIP_IQA_FSIM.pdf) as a measure, use lower case function from the library:
+ ```python
+ import torch
+ from piq import fsim
+
+ prediction = torch.rand(3, 3, 256, 256)
+ target = torch.rand(3, 3, 256, 256)
+ vsi_index: torch.Tensor = fsim(prediction, target, data_range=1.)
+ ```
+
+  In order to use FSIM as a loss function, use corresponding PyTorch module:
+ ```python
+ import torch
+ from piq import FSIMLoss
+
+ loss = FSIMLoss(data_range=1.)
+ prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+ target = torch.rand(3, 3, 256, 256)
+ output: torch.Tensor = loss(prediction, target)
+ output.backward()
+ ```
+ </p>
+ </details>
+ 
+ <!-- FID EXAMPLES -->
+ <details>
+ <summary>Frechet Inception Distance(FID)</summary>
+ <p>
+ 
+ Use `FID` class to compute [FID score](https://arxiv.org/abs/1706.08500) from image features, 
+ pre-extracted from some feature extractor network:
+ ```python
+ import torch
+ from piq import FID
+ 
+ fid_metric = FID()
+ prediction_feats = torch.rand(10000, 1024)
+ target_feats = torch.rand(10000, 1024)
+ msid: torch.Tensor = fid_metric(prediction_feats, target_feats)
+ ```
+  
+ If image features are not available, extract them using `_compute_feats` of `FID` class. 
+ Please note that `_compute_feats` consumes a data loader of predefined format.
+ ```python
+ import torch
+ from  torch.utils.data import DataLoader
+ from piq import FID
+ 
+ first_dl, second_dl = DataLoader(), DataLoader()
+ fid_metric = FID() 
+ first_feats = fid_metric._compute_feats(first_dl)
+ second_feats = fid_metric._compute_feats(second_dl)
+ msid: torch.Tensor = fid_metric(first_feats, second_feats)
+ ```  
+ </p>
+ </details>
+ 
+ <!-- GS EXAMPLES -->
+ <details>
+ <summary>Geometry Score (GS)</summary>
+ <p>
+ 
+ Use `GS` class to compute [Geometry Score](https://arxiv.org/abs/1802.02664) from image features, 
+ pre-extracted from some feature extractor network. Computation is heavily CPU dependent, adjust `num_workers` parameter according to your system configuration:
+ ```python
+ import torch
+ from piq import GS
+ 
+ gs_metric = GS(sample_size=64, num_iters=100, i_max=100, num_workers=4)
+ prediction_feats = torch.rand(10000, 1024)
+ target_feats = torch.rand(10000, 1024)
+ gs: torch.Tensor = gs_metric(prediction_feats, target_feats)
+ ```
+ 
+ GS metric requiers `gudhi` library which is not installed by default. 
+ If you use conda, write: `conda install -c conda-forge gudhi`, otherwise follow [installation guide](http://gudhi.gforge.inria.fr/python/latest/installation.html).
+ </p>
+ </details>
+ 
+ <!-- GMSD EXAMPLES -->
+ <details>
+ <summary>Gradient Magnitude Similarity Deviation (GMSD)</summary>
+ <p>
+ 
+ This is port of MATLAB version from the authors of original paper.
+ It can be used both as a measure and as a loss function. In any case it should me minimized.
+ Usually values of GMSD lie in [0, 0.35] interval.
+ ```python
+ import torch
+ from piq import GMSDLoss
+ 
+ loss = GMSDLoss(data_range=1.)
+ prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+ target = torch.rand(3, 3, 256, 256)
+ output: torch.Tensor = loss(prediction, target)
+ output.backward()
+ ```
+ </p>
+ </details>
+ 
+ <!-- IS EXAMPLES -->
+ <details>
+ <summary>Inception Score(IS)</summary>
+ <p>
+ 
+ Use `inception_score` function to compute [IS](https://arxiv.org/abs/1606.03498) from image features, 
+ pre-extracted from some feature extractor network. Note, that we follow recomendations from paper [A Note on the Inception Score](https://arxiv.org/pdf/1801.01973.pdf), which proposed small modification to original algorithm:
+ ```python
+ import torch
+ from piq import inception_score
+ 
+ prediction_feats = torch.rand(10000, 1024)
+ mean, variance = inception_score(prediction_feats, num_splits=10)
+ ```
+  
+ To compute difference between IS for 2 sets of image features, use `IS` class.
+ ```python
+ import torch
+ from piq import IS
+ 
+ 
+ is_metric = IS(distance='l1') 
+ prediction_feats = torch.rand(10000, 1024)
+ target_feats = torch.rand(10000, 1024)
+ distance: torch.Tensor = is_metric(prediction_feats, target_feats)
+ ```  
+ </p>
+ </details>
+ 
+ <!-- KID EXAMPLES -->
+ <details>
+ <summary>Kernel Inception Distance(KID)</summary>
+ <p>
+ 
+ Use `KID` class to compute [KID score](https://arxiv.org/abs/1801.01401) from image features, 
+ pre-extracted from some feature extractor network:
+ ```python
+ import torch
+ from piq import KID
+ 
+ kid_metric = KID()
+ prediction_feats = torch.rand(10000, 1024)
+ target_feats = torch.rand(10000, 1024)
+ kid: torch.Tensor = kid_metric(prediction_feats, target_feats)
+ ```
+  
+ If image features are not available, extract them using `_compute_feats` of `KID` class. 
+ Please note that `_compute_feats` consumes a data loader of predefined format. 
+ ```python
+ import torch
+ from  torch.utils.data import DataLoader
+ from piq import KID
+ 
+ first_dl, second_dl = DataLoader(), DataLoader()
+ kid_metric = KID() 
+ first_feats = kid_metric._compute_feats(first_dl)
+ second_feats = kid_metric._compute_feats(second_dl)
+ kid: torch.Tensor = kid_metric(first_feats, second_feats)
+ ```  
+ </p>
+ </details>
+ 
+ <!-- MSID EXAMPLES -->
+ <details>
+ <summary>Multi-Scale Intrinsic Distance (MSID)</summary>
+ <p>
+ 
+ Use `MSID` class to compute [MSID score](https://arxiv.org/abs/1905.11141) from image features, 
+ pre-extracted from some feature extractor network: 
+ ```python
+ import torch
+ from piq import MSID
+ 
+ msid_metric = MSID()
+ prediction_feats = torch.rand(10000, 1024)
+ target_feats = torch.rand(10000, 1024)
+ msid: torch.Tensor = msid_metric(prediction_feats, target_feats)
+ ```
+ 
+ If image features are not available, extract them using `_compute_feats` of `MSID` class. 
+ Please note that `_compute_feats` consumes a data loader of predefined format.
+ ```python
+ import torch
+ from  torch.utils.data import DataLoader
+ from piq import MSID
+ 
+ first_dl, second_dl = DataLoader(), DataLoader()
+ msid_metric = MSID() 
+ first_feats = msid_metric._compute_feats(first_dl)
+ second_feats = msid_metric._compute_feats(second_dl)
+ msid: torch.Tensor = msid_metric(first_feats, second_feats)
+ ```  
+ </p>
+ </details>
+ 
+ <!-- MS-SSIM EXAMPLES -->
+ <details>
+ <summary>Multi-Scale Structural Similarity (MS-SSIM)</summary>
+ <p>
+ 
+ To compute MS-SSIM index as a measure, use lower case function from the library:
+ ```python
+ import torch
+ from piq import multi_scale_ssim
+ 
+ prediction = torch.rand(3, 3, 256, 256)
+ target = torch.rand(3, 3, 256, 256) 
+ ms_ssim_index: torch.Tensor = multi_scale_ssim(prediction, target, data_range=1.)
+ ```
+ 
+ In order to use MS-SSIM as a loss function, use corresponding PyTorch module:
+ ```python
+ import torch
+ from piq import MultiScaleSSIMLoss
+ 
+ loss = MultiScaleSSIMLoss(data_range=1.)
+ prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+ target = torch.rand(3, 3, 256, 256)
+ output: torch.Tensor = loss(prediction, target)
+ output.backward()
+ ```
+ </p>
+ </details>
+ 
+ <!-- MultiScale GMSD EXAMPLES -->
+ <details>
+ <summary>MultiScale GMSD (MS-GMSD)</summary>
+ <p>
+ 
+ It can be used both as a measure and as a loss function. In any case it should me minimized.
+ By defualt scale weights are initialized with values from the paper. You can change them by passing a list of 4 variables to `scale_weights` argument during initialization. Both GMSD and MS-GMSD computed for greyscale images, but to take contrast changes into account authors propoced to also add chromatic component. Use flag `chromatic` to use MS-GMSDc version of the loss
+ ```python
+ import torch
+ from piq import MultiScaleGMSDLoss
+ 
+ loss = MultiScaleGMSDLoss(chromatic=True, data_range=1.)
+ prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+ target = torch.rand(3, 3, 256, 256)
+ output: torch.Tensor = loss(prediction, target)
+ output.backward()
+ ```
+ </p>
+ </details>
+
 <!-- PSNR EXAMPLES -->
 <details>
 <summary>Peak Signal-to-Noise Ratio (PSNR)</summary>
@@ -81,35 +358,6 @@ import torch
 from piq import SSIMLoss
 
 loss = SSIMLoss(data_range=1.)
-prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
-target = torch.rand(3, 3, 256, 256)
-output: torch.Tensor = loss(prediction, target)
-output.backward()
-```
-</p>
-</details>
-
-<!-- MS-SSIM EXAMPLES -->
-<details>
-<summary>Multi-Scale Structural Similarity (MS-SSIM)</summary>
-<p>
-
-To compute MS-SSIM index as a measure, use lower case function from the library:
-```python
-import torch
-from piq import multi_scale_ssim
-
-prediction = torch.rand(3, 3, 256, 256)
-target = torch.rand(3, 3, 256, 256) 
-ms_ssim_index: torch.Tensor = multi_scale_ssim(prediction, target, data_range=1.)
-```
-
-In order to use MS-SSIM as a loss function, use corresponding PyTorch module:
-```python
-import torch
-from piq import MultiScaleSSIMLoss
-
-loss = MultiScaleSSIMLoss(data_range=1.)
 prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
 target = torch.rand(3, 3, 256, 256)
 output: torch.Tensor = loss(prediction, target)
@@ -176,235 +424,34 @@ Note, that VIFLoss returns `1 - VIF` value.
 </p>
 </details>
 
-<!-- GMSD EXAMPLES -->
+<!-- VSI EXAMPLES -->
 <details>
-<summary>Gradient Magnitude Similarity Deviation (GMSD)</summary>
+<summary>Visual Saliency-induced Index (VSI)</summary>
 <p>
 
-This is port of MATLAB version from the authors of original paper.
-It can be used both as a measure and as a loss function. In any case it should me minimized.
-Usually values of GMSD lie in [0, 0.35] interval.
+To compute [VSI score](https://ieeexplore.ieee.org/document/6873260) as a measure, use lower case function from the library:
 ```python
 import torch
-from piq import GMSDLoss
-
-loss = GMSDLoss(data_range=1.)
-prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
-target = torch.rand(3, 3, 256, 256)
-output: torch.Tensor = loss(prediction, target)
-output.backward()
-```
-</p>
-</details>
-
-<!-- MultiScale GMSD EXAMPLES -->
-<details>
-<summary>MultiScale GMSD (MS-GMSD)</summary>
-<p>
-
-It can be used both as a measure and as a loss function. In any case it should me minimized.
-By defualt scale weights are initialized with values from the paper. You can change them by passing a list of 4 variables to `scale_weights` argument during initialization. Both GMSD and MS-GMSD computed for greyscale images, but to take contrast changes into account authors propoced to also add chromatic component. Use flag `chromatic` to use MS-GMSDc version of the loss
-```python
-import torch
-from piq import MultiScaleGMSDLoss
-
-loss = MultiScaleGMSDLoss(chromatic=True, data_range=1.)
-prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
-target = torch.rand(3, 3, 256, 256)
-output: torch.Tensor = loss(prediction, target)
-output.backward()
-```
-</p>
-</details>
-
-<!-- BRISQUE EXAMPLES -->
-<details>
-<summary>Blind/Referenceless Image Spatial Quality Evaluator (BRISQUE)</summary>
-<p>
-
-To compute [BRISQUE score](https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf) as a measure, use lower case function from the library:
-```python
-import torch
-from piq import brisque
-from typing import Union, Tuple
+from piq import vsi
 
 prediction = torch.rand(3, 3, 256, 256)
-brisque_index: torch.Tensor = brisque(prediction, data_range=1.)
+target = torch.rand(3, 3, 256, 256)
+vsi_index: torch.Tensor = vsi(prediction, target, data_range=1.)
 ```
 
-In order to use BRISQUE as a loss function, use corresponding PyTorch module:
+In order to use VSI as a loss function, use corresponding PyTorch module:
 ```python
 import torch
-from piq import BRISQUELoss
+from piq import VSILoss
 
-loss = BRISQUELoss(data_range=1.)
+loss = VSILoss(data_range=1.)
 prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
-output: torch.Tensor = loss(prediction)
+target = torch.rand(3, 3, 256, 256)
+output: torch.Tensor = loss(prediction, target)
 output.backward()
 ```
 </p>
 </details>
-
-<!-- MSID EXAMPLES -->
-<details>
-<summary>Multi-Scale Intrinsic Distance (MSID)</summary>
-<p>
-
-Use `MSID` class to compute [MSID score](https://arxiv.org/abs/1905.11141) from image features, 
-pre-extracted from some feature extractor network: 
-```python
-import torch
-from piq import MSID
-
-msid_metric = MSID()
-prediction_feats = torch.rand(10000, 1024)
-target_feats = torch.rand(10000, 1024)
-msid: torch.Tensor = msid_metric(prediction_feats, target_feats)
-```
-
-If image features are not available, extract them using `_compute_feats` of `MSID` class. 
-Please note that `_compute_feats` consumes a data loader of predefined format.
-```python
-import torch
-from  torch.utils.data import DataLoader
-from piq import MSID
-
-first_dl, second_dl = DataLoader(), DataLoader()
-msid_metric = MSID() 
-first_feats = msid_metric._compute_feats(first_dl)
-second_feats = msid_metric._compute_feats(second_dl)
-msid: torch.Tensor = msid_metric(first_feats, second_feats)
-```  
-</p>
-</details>
-
-<!-- FID EXAMPLES -->
-<details>
-<summary>Frechet Inception Distance(FID)</summary>
-<p>
-
-Use `FID` class to compute [FID score](https://arxiv.org/abs/1706.08500) from image features, 
-pre-extracted from some feature extractor network:
-```python
-import torch
-from piq import FID
-
-fid_metric = FID()
-prediction_feats = torch.rand(10000, 1024)
-target_feats = torch.rand(10000, 1024)
-msid: torch.Tensor = fid_metric(prediction_feats, target_feats)
-```
- 
-If image features are not available, extract them using `_compute_feats` of `FID` class. 
-Please note that `_compute_feats` consumes a data loader of predefined format.
-```python
-import torch
-from  torch.utils.data import DataLoader
-from piq import FID
-
-first_dl, second_dl = DataLoader(), DataLoader()
-fid_metric = FID() 
-first_feats = fid_metric._compute_feats(first_dl)
-second_feats = fid_metric._compute_feats(second_dl)
-msid: torch.Tensor = fid_metric(first_feats, second_feats)
-```  
-</p>
-</details>
-
-<!-- KID EXAMPLES -->
-<details>
-<summary>Kernel Inception Distance(KID)</summary>
-<p>
-
-Use `KID` class to compute [KID score](https://arxiv.org/abs/1801.01401) from image features, 
-pre-extracted from some feature extractor network:
-```python
-import torch
-from piq import KID
-
-kid_metric = KID()
-prediction_feats = torch.rand(10000, 1024)
-target_feats = torch.rand(10000, 1024)
-kid: torch.Tensor = kid_metric(prediction_feats, target_feats)
-```
- 
-If image features are not available, extract them using `_compute_feats` of `KID` class. 
-Please note that `_compute_feats` consumes a data loader of predefined format. 
-```python
-import torch
-from  torch.utils.data import DataLoader
-from piq import KID
-
-first_dl, second_dl = DataLoader(), DataLoader()
-kid_metric = KID() 
-first_feats = kid_metric._compute_feats(first_dl)
-second_feats = kid_metric._compute_feats(second_dl)
-kid: torch.Tensor = kid_metric(first_feats, second_feats)
-```  
-</p>
-</details>
-
-<!-- GS EXAMPLES -->
-<details>
-<summary>Geometry Score (GS)</summary>
-<p>
-
-Use `GS` class to compute [Geometry Score](https://arxiv.org/abs/1802.02664) from image features, 
-pre-extracted from some feature extractor network. Computation is heavily CPU dependent, adjust `num_workers` parameter according to your system configuration:
-```python
-import torch
-from piq import GS
-
-gs_metric = GS(sample_size=64, num_iters=100, i_max=100, num_workers=4)
-prediction_feats = torch.rand(10000, 1024)
-target_feats = torch.rand(10000, 1024)
-gs: torch.Tensor = gs_metric(prediction_feats, target_feats)
-```
-
-GS metric requiers `gudhi` library which is not installed by default. 
-If you use conda, write: `conda install -c conda-forge gudhi`, otherwise follow [installation guide](http://gudhi.gforge.inria.fr/python/latest/installation.html).
-</p>
-</details>
-
-<!-- IS EXAMPLES -->
-<details>
-<summary>Inception Score(IS)</summary>
-<p>
-
-Use `inception_score` function to compute [IS](https://arxiv.org/abs/1606.03498) from image features, 
-pre-extracted from some feature extractor network. Note, that we follow recomendations from paper [A Note on the Inception Score](https://arxiv.org/pdf/1801.01973.pdf), which proposed small modification to original algorithm:
-```python
-import torch
-from piq import inception_score
-
-prediction_feats = torch.rand(10000, 1024)
-mean, variance = inception_score(prediction_feats, num_splits=10)
-```
- 
-To compute difference between IS for 2 sets of image features, use `IS` class.
-```python
-import torch
-from piq import IS
-
-
-is_metric = IS(distance='l1') 
-prediction_feats = torch.rand(10000, 1024)
-target_feats = torch.rand(10000, 1024)
-distance: torch.Tensor = is_metric(prediction_feats, target_feats)
-```  
-</p>
-</details>
-
-<!-- TABLE OF CONTENTS -->
-### Table of Contents
-
-* [Overview](#overview)
-    * [Installation](#installation)
-    * [Roadmap](#roadmap)
-* [Community](#community)
-    * [Contributing](#contributing)
-    * [Contact](#contact)
-    * [Acknowledgements](#acknowledgements)
 
 
 ### Overview

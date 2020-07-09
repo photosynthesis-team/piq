@@ -15,13 +15,7 @@ import torch.nn.functional as F
 from torch.nn.modules.loss import _Loss
 
 from piq.utils import _adjust_dimensions, _validate_input
-
-
-def _prewitt_filter() -> torch.Tensor:
-    """Utility function that returns a normalized 3x3 prewitt kernel in X direction"""
-    # Normalize
-    kernel = torch.tensor([[-1., 0., 1.], [-1., 0., 1.], [-1., 0., 1.]]) / 3
-    return kernel
+from piq.functional import similarity_map, gradient_map, prewitt_filter
 
 
 def _gmsd(prediction: torch.Tensor, target: torch.Tensor,
@@ -54,23 +48,14 @@ def _gmsd(prediction: torch.Tensor, target: torch.Tensor,
         # Add channel dimension
         prediction = prediction[:, None, :, :]
         target = target[:, None, :, :]
-        
-    kernel = _prewitt_filter()
-    kernel_x = kernel.view(1, 1, 3, 3).to(prediction)
-    kernel_y = kernel.t().view(1, 1, 3, 3).to(prediction)
-
-    pred_grad_x = F.conv2d(prediction, kernel_x)
-    pred_grad_y = F.conv2d(prediction, kernel_y)
-    
-    trgt_grad_x = F.conv2d(target, kernel_x)
-    trgt_grad_y = F.conv2d(target, kernel_y)
     
     # Compute grad direction
-    pred_grad = torch.sqrt(pred_grad_x ** 2 + pred_grad_y ** 2)
-    trgt_grad = torch.sqrt(trgt_grad_x ** 2 + trgt_grad_y ** 2)
-    
+    kernels = torch.stack([prewitt_filter(), prewitt_filter().transpose(-1, -2)])
+    pred_grad = gradient_map(prediction, kernels)
+    trgt_grad = gradient_map(target, kernels)
+
     # Compute GMS
-    gms = (2.0 * pred_grad * trgt_grad + EPS) / (pred_grad ** 2 + trgt_grad ** 2 + EPS)
+    gms = similarity_map(pred_grad, trgt_grad, EPS)
     mean_gms = torch.mean(gms, dim=[1, 2, 3], keepdims=True)
 
     # Compute GMSD along spatial dimensions. Shape (batch_size )
