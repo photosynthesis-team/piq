@@ -76,7 +76,7 @@ def test_ssim_raises_if_tensors_have_different_shapes(prediction_target_4d_5d: T
     if target.dim() == 5:
         dims += [[2, 3]]
     for size in list(itertools.product(*dims)):
-        wrong_shape_prediction = torch.rand(size)
+        wrong_shape_prediction = torch.rand(size).to(target)
         if wrong_shape_prediction.size() == target.size():
             try:
                 ssim(wrong_shape_prediction, target)
@@ -127,12 +127,14 @@ def test_ssim_raises_if_kernel_size_greater_than_image() -> None:
         ssim(wrong_size_prediction, wrong_size_target, kernel_size=kernel_size)
 
 
-def test_ssim_raise_if_wrong_value_is_estimated(test_images) -> None:
+def test_ssim_raise_if_wrong_value_is_estimated(test_images, device) -> None:
     for prediction, target in test_images:
-        piq_ssim = ssim(prediction, target, kernel_size=11, kernel_sigma=1.5, data_range=255, reduction='none')
+        piq_ssim = ssim(prediction.to(device), target.to(device), kernel_size=11, kernel_sigma=1.5, 
+                        data_range=255, reduction='none')
         tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
         tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
-        tf_ssim = torch.tensor(tf.image.ssim(tf_prediction, tf_target, max_val=255).numpy())
+        with tf.device('/CPU'):
+            tf_ssim = torch.tensor(tf.image.ssim(tf_prediction, tf_target, max_val=255).numpy()).to(piq_ssim)
         match_accuracy = 2e-5 + 1e-8
         assert torch.allclose(piq_ssim, tf_ssim, rtol=0, atol=match_accuracy), \
             f'The estimated value must be equal to tensorflow provided one' \
@@ -147,7 +149,7 @@ def test_ssim_loss_grad(prediction, target, device: Any) -> None:
     prediction.requires_grad_(True)
     loss = SSIMLoss(data_range=1.)(prediction, target)
     loss.backward()
-    assert prediction.grad is not None, f'Expected finite gradient values, got {prediction.grad}'
+    assert torch.isfinite(prediction.grad).all(), f'Expected finite gradient values, got {prediction.grad}'
 
 
 def test_ssim_loss_symmetry(prediction_target_4d_5d: Tuple[torch.Tensor, torch.Tensor], device: Any) -> None:
@@ -185,7 +187,7 @@ def test_ssim_loss_raises_if_tensors_have_different_shapes(prediction_target_4d_
     if target.dim() == 5:
         dims += [[2, 3]]
     for size in list(itertools.product(*dims)):
-        wrong_shape_prediction = torch.rand(size)
+        wrong_shape_prediction = torch.rand(size).to(target)
         if wrong_shape_prediction.size() == target.size():
             SSIMLoss()(wrong_shape_prediction, target)
         else:
@@ -233,12 +235,14 @@ def test_ssim_loss_raises_if_kernel_size_greater_than_image() -> None:
         SSIMLoss(kernel_size=kernel_size)(wrong_size_prediction, wrong_size_target)
 
 
-def test_ssim_loss_raise_if_wrong_value_is_estimated(test_images) -> None:
+def test_ssim_loss_raise_if_wrong_value_is_estimated(test_images, device) -> None:
     for prediction, target in test_images:
-        ssim_loss = SSIMLoss(kernel_size=11, kernel_sigma=1.5, data_range=255, reduction='mean')(prediction, target)
+        ssim_loss = SSIMLoss(kernel_size=11, kernel_sigma=1.5, 
+                             data_range=255, reduction='mean')(prediction.to(device), target.to(device))
         tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
         tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
-        tf_ssim = torch.tensor(tf.image.ssim(tf_prediction, tf_target, max_val=255).numpy()).mean()
+        with tf.device('/CPU'):
+            tf_ssim = torch.tensor(tf.image.ssim(tf_prediction, tf_target, max_val=255).numpy()).mean().to(device)
         match_accuracy = 2e-5 + 1e-8
         assert torch.isclose(ssim_loss, 1. - tf_ssim, rtol=0, atol=match_accuracy), \
             f'The estimated value must be equal to tensorflow provided one' \
@@ -281,7 +285,7 @@ def test_multi_scale_ssim_raises_if_tensors_have_different_shapes(prediction_tar
     if target.dim() == 5:
         dims += [[2, 3]]
     for size in list(itertools.product(*dims)):
-        wrong_shape_prediction = torch.rand(size)
+        wrong_shape_prediction = torch.rand(size).to(target)
         if wrong_shape_prediction.size() == target.size():
             multi_scale_ssim(wrong_shape_prediction, target)
         else:
@@ -336,14 +340,15 @@ def test_multi_scale_ssim_raises_if_kernel_size_greater_than_image() -> None:
         multi_scale_ssim(wrong_size_prediction, wrong_size_target, kernel_size=kernel_size)
 
 
-def test_multi_scale_ssim_raise_if_wrong_value_is_estimated(test_images, scale_weights) -> None:
+def test_multi_scale_ssim_raise_if_wrong_value_is_estimated(test_images, scale_weights, device) -> None:
     for prediction, target in test_images:
-        piq_ms_ssim = multi_scale_ssim(prediction, target, kernel_size=11, kernel_sigma=1.5,
+        piq_ms_ssim = multi_scale_ssim(prediction.to(device), target.to(device), kernel_size=11, kernel_sigma=1.5,
                                        data_range=255, reduction='none', scale_weights=scale_weights)
         tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
         tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
-        tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=255,
-                                                           power_factors=scale_weights).numpy())
+        with tf.device('/CPU'):
+            tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=255,
+                                                               power_factors=scale_weights).numpy()).to(device)
         number_of_weights = 5.
         match_accuracy = number_of_weights * 1e-5 + 1e-8
         assert torch.allclose(piq_ms_ssim, tf_ms_ssim, rtol=0, atol=match_accuracy), \
@@ -354,11 +359,12 @@ def test_multi_scale_ssim_raise_if_wrong_value_is_estimated(test_images, scale_w
 
 # ================== Test class: `MultiScaleSSIMLoss` ==================
 def test_multi_scale_ssim_loss_grad(prediction: torch.Tensor, target: torch.Tensor, device: Any) -> None:
-    prediction.requires_grad_().to(device)
+    prediction = prediction.to(device)
+    prediction.requires_grad_()
     target = target.to(device)
     loss = MultiScaleSSIMLoss(data_range=1.)(prediction, target)
     loss.backward()
-    assert prediction.grad is not None, f'Expected finite gradient values, got {prediction.grad}'
+    assert torch.isfinite(prediction.grad).all(), f'Expected finite gradient values, got {prediction.grad}'
 
 
 def test_multi_scale_ssim_loss_symmetry(prediction_target_4d_5d: Tuple[torch.Tensor, torch.Tensor],
@@ -396,7 +402,7 @@ def test_multi_scale_ssim_loss_raises_if_tensors_have_different_shapes(predictio
     if target.dim() == 5:
         dims += [[2, 3]]
     for size in list(itertools.product(*dims)):
-        wrong_shape_prediction = torch.rand(size)
+        wrong_shape_prediction = torch.rand(size).to(target)
         if wrong_shape_prediction.size() == target.size():
             MultiScaleSSIMLoss()(wrong_shape_prediction, target)
         else:
@@ -452,15 +458,17 @@ def test_multi_scale_ssim_loss_raises_if_kernel_size_greater_than_image() -> Non
         MultiScaleSSIMLoss(kernel_size=kernel_size)(wrong_size_prediction, wrong_size_target)
 
 
-def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated(test_images: List, scale_weights: Any) -> None:
+def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated(test_images: List, 
+                                                                 scale_weights: Any, device: Any) -> None:
     for prediction, target in test_images:
         piq_loss = MultiScaleSSIMLoss(kernel_size=11, kernel_sigma=1.5, data_range=255, scale_weights=scale_weights)
-        piq_ms_ssim_loss = piq_loss(prediction, target)
+        piq_ms_ssim_loss = piq_loss(prediction.to(device), target.to(device))
         tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
         tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
-        tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target,
-                                                           power_factors=scale_weights,
-                                                           max_val=255).numpy()).mean()
+        with tf.device('/CPU'):
+            tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target,
+                                                               power_factors=scale_weights,
+                                                               max_val=255).numpy()).mean().to(device)
         number_of_weights = len(piq_loss.scale_weights)
         match_accuracy = number_of_weights * 1e-5 + 1e-8
         assert torch.isclose(piq_ms_ssim_loss, 1. - tf_ms_ssim, rtol=0, atol=match_accuracy), \

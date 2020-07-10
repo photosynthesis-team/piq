@@ -46,7 +46,7 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
     _validate_input(input_tensors=(x, y), allow_5d=True, kernel_size=kernel_size, scale_weights=None)
     x, y = _adjust_dimensions(input_tensors=(x, y))
 
-    kernel = gaussian_filter(kernel_size, kernel_sigma).to(x).repeat(x.size(1), 1, 1, 1)
+    kernel = gaussian_filter(kernel_size, kernel_sigma).repeat(x.size(1), 1, 1, 1).to(y)
     _compute_ssim = _ssim_complex if x.dim() == 5 else _ssim
     ssim_val, cs = _compute_ssim(x=x, y=y, kernel=kernel, data_range=data_range, k1=k1, k2=k2)
 
@@ -206,9 +206,9 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
         scale_weights = scale_weights_from_ms_ssim_paper
 
     scale_weights_tensor = scale_weights if isinstance(scale_weights, torch.Tensor) else torch.tensor(scale_weights)
-    scale_weights_tensor = scale_weights_tensor.to(x.device, dtype=x.dtype)
-    kernel = gaussian_filter(kernel_size, kernel_sigma).to(x).repeat(x.size(1), 1, 1, 1)
-
+    scale_weights_tensor = scale_weights_tensor.to(y)
+    kernel = gaussian_filter(kernel_size, kernel_sigma).repeat(x.size(1), 1, 1, 1).to(y)
+    
     _compute_msssim = _multi_scale_ssim_complex if x.dim() == 5 else _multi_scale_ssim
     msssim_val = _compute_msssim(
         x=x,
