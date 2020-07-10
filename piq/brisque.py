@@ -46,7 +46,7 @@ def brisque(x: torch.Tensor,
     num_of_scales = 2
     for _ in range(num_of_scales):
         features.append(_natural_scene_statistics(x, kernel_size, kernel_sigma))
-        x = f.interpolate(x, scale_factor=0.5, mode=interpolation, recompute_scale_factor=True)
+        x = f.interpolate(x, size=(x.size(2) // 2, x.size(3) // 2), mode=interpolation)
 
     features = torch.cat(features, dim=-1)
     scaled_features = _scale_features(features)
