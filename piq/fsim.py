@@ -378,9 +378,7 @@ class FSIMLoss(_Loss):
         reduction: Specifies the reduction to apply to the output:
             ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
             ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed. Note: :attr:`size_average`
-            and :attr:`reduce` are in the process of being deprecated, and in the meantime,
-            specifying either of those two args will override :attr:`reduction`. Default: ``'mean'``
+            elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``
         data_range: The difference between the maximum and minimum of the pixel value,
             i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
             The pixel value interval of both input and output should remain the same.

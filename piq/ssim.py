@@ -16,7 +16,7 @@ from piq.utils import _adjust_dimensions, _validate_input
 
 
 def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: float = 1.5,
-         data_range: Union[int, float] = 255, size_average: bool = True, full: bool = False,
+         data_range: Union[int, float] = 255, reduction: str = 'mean', full: bool = False,
          k1: float = 0.01, k2: float = 0.03) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
     r"""Interface of Structural Similarity (SSIM) index.
     Args:
@@ -25,7 +25,7 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
         kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
         kernel_sigma: Sigma of normal distribution.
         data_range: Value range of input images (usually 1.0 or 255).
-        size_average: If size_average=True, ssim of all images will be averaged as a scalar.
+        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
         full: Return sc or not.
         k1: Algorithm parameter, K1 (small constant, see [1]).
         k2: Algorithm parameter, K2 (small constant, see [1]).
@@ -49,9 +49,14 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
     _compute_ssim = _ssim_complex if x.dim() == 5 else _ssim
     ssim_val, cs = _compute_ssim(x=x, y=y, kernel=kernel, data_range=data_range, full=True, k1=k1, k2=k2)
 
-    if size_average:
-        ssim_val = ssim_val.mean(0)
-        cs = cs.mean(0)
+    if reduction != 'none':
+        ssim_val = {'mean': ssim_val.mean,
+                    'sum': ssim_val.sum
+                    }[reduction](dim=0)
+
+        cs = {'mean': cs.mean,
+              'sum': cs.sum
+              }[reduction](dim=0)
 
     if full:
         return ssim_val, cs
@@ -98,9 +103,7 @@ class SSIMLoss(_Loss):
         reduction: Specifies the reduction to apply to the output:
             ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
             ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed. Note: :attr:`size_average`
-            and :attr:`reduce` are in the process of being deprecated, and in the meantime,
-            specifying either of those two args will override :attr:`reduction`. Default: ``'mean'``
+            elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``
         data_range: The difference between the maximum and minimum of the pixel value,
             i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
             The pixel value interval of both input and output should remain the same.
@@ -178,19 +181,19 @@ class SSIMLoss(_Loss):
             k1=self.k1,
             k2=self.k2
         )
-        ssim_loss = torch.ones_like(ssim_val) - ssim_val
-        if self.reduction == 'mean':
-            ssim_loss = torch.mean(ssim_loss, dim=0)
-        elif self.reduction == 'sum':
-            ssim_loss = torch.sum(ssim_loss, dim=0)
-        elif self.reduction != 'none':
-            raise ValueError(f'Expected reduction modes "mean"|"sum"|"none", got{self.reduction}')
 
-        return ssim_loss
+        loss = 1 - ssim_val
+
+        if self.reduction == 'none':
+            return loss
+
+        return {'mean': loss.mean,
+                'sum': loss.sum
+                }[self.reduction](dim=0)
 
 
 def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: float = 1.5,
-                     data_range: Union[int, float] = 255, size_average: bool = True,
+                     data_range: Union[int, float] = 255, reduction: str = 'mean',
                      scale_weights: Optional[Union[Tuple[float], List[float], torch.Tensor]] = None, k1=0.01,
                      k2=0.03) -> torch.Tensor:
     r""" Interface of Multi-scale Structural Similarity (MS-SSIM) index.
@@ -200,7 +203,7 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
         kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
         kernel_sigma: Sigma of normal distribution.
         data_range: Value range of input images (usually 1.0 or 255).
-        size_average: If size_average=True, ssim of all images will be averaged as a scalar.
+        reduction: Reduction over samples in batch: "mean"|"sum"|"none".
         scale_weights: Weights for different scales.
             If None, default weights from the paper [1] will be used.
             Default weights: (0.0448, 0.2856, 0.3001, 0.2363, 0.1333).
@@ -245,10 +248,12 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
         k2=k2
     )
 
-    if size_average:
-        msssim_val = msssim_val.mean(0)
+    if reduction == 'none':
+        return msssim_val
 
-    return msssim_val
+    return {'mean': msssim_val.mean,
+            'sum': msssim_val.sum
+            }[reduction](dim=0)
 
 
 class MultiScaleSSIMLoss(_Loss):
@@ -294,9 +299,7 @@ class MultiScaleSSIMLoss(_Loss):
         reduction: Specifies the reduction to apply to the output:
             ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
             ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed. Note: :attr:`size_average`
-            and :attr:`reduce` are in the process of being deprecated, and in the meantime,
-            specifying either of those two args will override :attr:`reduction`. Default: ``'mean'``
+            elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``
         data_range: The difference between the maximum and minimum of the pixel value,
             i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
             The pixel value interval of both input and output should remain the same.
@@ -384,15 +387,13 @@ class MultiScaleSSIMLoss(_Loss):
             k1=self.k1,
             k2=self.k2)
 
-        msssim_loss = torch.ones_like(msssim_val) - msssim_val
-        if self.reduction == 'mean':
-            msssim_loss = torch.mean(msssim_loss, dim=0)
-        elif self.reduction == 'sum':
-            msssim_loss = torch.sum(msssim_loss, dim=0)
-        elif self.reduction != 'none':
-            raise ValueError(f'Expected reduction modes "mean"|"sum"|"none", got{self.reduction}')
+        loss = 1 - msssim_val
+        if self.reduction == 'none':
+            return loss
 
-        return msssim_loss
+        return {'mean': loss.mean,
+                'sum': loss.sum
+                }[self.reduction](dim=0)
 
 
 def _fspecial_gauss_1d(size: int, sigma: float) -> torch.Tensor:

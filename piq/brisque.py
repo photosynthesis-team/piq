@@ -216,9 +216,7 @@ class BRISQUELoss(_Loss):
             reduction: Specifies the reduction to apply to the output:
                 ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
                 ``'mean'``: the sum of the output will be divided by the number of
-                elements in the output, ``'sum'``: the output will be summed. Note: :attr:`size_average`
-                and :attr:`reduce` are in the process of being deprecated, and in the meantime,
-                specifying either of those two args will override :attr:`reduction`. Default: ``'mean'``.
+                elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``.
             interpolation: Interpolation to be used for scaling.
 
         Shape:
