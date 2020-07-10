@@ -18,7 +18,7 @@ def _adjust_dimensions(input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, to
             tmp = tmp.unsqueeze(0)
         if tmp.dim() != 4 and tmp.dim() != 5:
             raise ValueError(f'Expected 2, 3, 4 or 5 dimensions (got {tensor.dim()})')
-        resized_tensors.append(tmp)
+        resized_tensors.append(tmp.type(torch.float32))
 
     if len(resized_tensors) == 1:
         return resized_tensors[0]

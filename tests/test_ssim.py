@@ -2,7 +2,8 @@ import torch
 import itertools
 import pytest
 import tensorflow as tf
-
+import numpy as np
+from PIL import Image
 from piq import SSIMLoss, MultiScaleSSIMLoss, ssim, multi_scale_ssim
 
 
@@ -153,25 +154,38 @@ def test_ssim_raises_if_kernel_size_greater_than_image() -> None:
             ssim(wrong_size_prediction, wrong_size_target, kernel_size=kernel_size)
 
 
-def test_ssim_raise_if_wrong_value_is_estimated(prediction: torch.Tensor, target: torch.Tensor) -> None:
-    piq_ssim = ssim(prediction, target, kernel_size=11, kernel_sigma=1.5, data_range=1., reduction='mean')
-    tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
-    tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
-    tf_ssim = torch.tensor(tf.image.ssim(tf_prediction, tf_target, max_val=1.).numpy().mean())
-    match_accuracy = 1e-6
-    assert torch.allclose(piq_ssim, tf_ssim), \
-        f'The estimated value must be equal to tensorflow provided one' \
-        f'(considering floating point operation error up to {match_accuracy}), ' \
-        f'got difference {(piq_ssim - tf_ssim)}'
+def test_ssim_raise_if_wrong_value_is_estimated() -> None:
+    prediction_grey = torch.tensor(np.array(Image.open('tests/assets/goldhill_jpeg.gif'))).unsqueeze(0).unsqueeze(0)
+    target_grey = torch.tensor(np.array(Image.open('tests/assets/goldhill.gif'))).unsqueeze(0).unsqueeze(0)
+    prediction_rgb = torch.tensor(np.array(Image.open('tests/assets/I01.BMP'))).permute(2, 0, 1).unsqueeze(0)
+    target_rgb = torch.tensor(np.array(Image.open('tests/assets/i01_01_5.bmp'))).permute(2, 0, 1).unsqueeze(0)
+    for prediction, target in [(prediction_grey, target_grey), (prediction_rgb, target_rgb)]:
+        piq_ssim = ssim(prediction, target, kernel_size=11, kernel_sigma=1.5, data_range=255, reduction='none')
+        tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
+        tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
+        tf_ssim = torch.tensor(tf.image.ssim(tf_prediction, tf_target, max_val=255).numpy())
+        match_accuracy = 2e-5 + 1e-8
+        assert torch.allclose(piq_ssim, tf_ssim, rtol=0,  atol=match_accuracy), \
+            f'The estimated value must be equal to tensorflow provided one' \
+            f'(considering floating point operation error up to {match_accuracy}), ' \
+            f'got difference {(piq_ssim - tf_ssim).abs()}'
 
 
 # ================== Test class: `SSIMLoss` ==================
+def test_ssim_loss_grad(prediction: torch.Tensor, target: torch.Tensor) -> None:
+    prediction.requires_grad_()
+    loss = SSIMLoss(data_range=1.)(prediction, target)
+    loss.backward()
+    assert prediction.grad is not None, f'Expected finite gradient values'
+
+
 def test_ssim_loss_symmetry(prediction: torch.Tensor, target: torch.Tensor) -> None:
     loss = SSIMLoss()
-    loss_value = loss(prediction, target)
-    reverse_loss_value = loss(target, prediction)
+    loss_value = loss(prediction, target.detach())
+    reverse_loss_value = loss(target, prediction.detach())
     assert torch.allclose(loss_value, reverse_loss_value), \
         f'Expect: SSIMLoss(a, b) == SSIMLoss(b, a), got {loss_value} != {reverse_loss_value}'
+
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
@@ -295,16 +309,21 @@ def test_ssim_loss_raises_if_kernel_size_greater_than_image() -> None:
             SSIMLoss(kernel_size=kernel_size)(wrong_size_prediction, wrong_size_target)
 
 
-def test_ssim_loss_raise_if_wrong_value_is_estimated(prediction: torch.Tensor, target: torch.Tensor) -> None:
-    ssim_loss = SSIMLoss(kernel_size=11, kernel_sigma=1.5, data_range=1.)(prediction, target)
-    tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
-    tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
-    tf_ssim = torch.tensor(tf.image.ssim(tf_prediction, tf_target, max_val=1.).numpy()).mean()
-    match_accuracy = 1e-6
-    assert torch.allclose(ssim_loss, 1 - tf_ssim), \
-        f'The estimated value must be equal to tensorflow provided one' \
-        f'(considering floating point operation error up to {match_accuracy}), ' \
-        f'got difference {(ssim_loss - 1 + tf_ssim).abs()}'
+def test_ssim_loss_raise_if_wrong_value_is_estimated() -> None:
+    prediction_grey = torch.tensor(np.array(Image.open('tests/assets/goldhill_jpeg.gif'))).unsqueeze(0).unsqueeze(0)
+    target_grey = torch.tensor(np.array(Image.open('tests/assets/goldhill.gif'))).unsqueeze(0).unsqueeze(0)
+    prediction_rgb = torch.tensor(np.array(Image.open('tests/assets/I01.BMP'))).permute(2, 0, 1).unsqueeze(0)
+    target_rgb = torch.tensor(np.array(Image.open('tests/assets/i01_01_5.bmp'))).permute(2, 0, 1).unsqueeze(0)
+    for prediction, target in [(prediction_grey, target_grey), (prediction_rgb, target_rgb)]:
+        ssim_loss = SSIMLoss(kernel_size=11, kernel_sigma=1.5, data_range=255, reduction='mean')(prediction, target)
+        tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
+        tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
+        tf_ssim = torch.tensor(tf.image.ssim(tf_prediction, tf_target, max_val=255).numpy()).mean()
+        match_accuracy = 2e-5 + 1e-8
+        assert torch.isclose(ssim_loss, 1. - tf_ssim, rtol=0, atol=match_accuracy), \
+            f'The estimated value must be equal to tensorflow provided one' \
+            f'(considering floating point operation error up to {match_accuracy}), ' \
+            f'got difference {(ssim_loss - 1. + tf_ssim).abs()}'
 
 
 # ================== Test function: `multi_scale_ssim` ==================
@@ -451,36 +470,54 @@ def test_multi_scale_ssim_raises_if_kernel_size_greater_than_image() -> None:
             multi_scale_ssim(wrong_size_prediction, wrong_size_target, kernel_size=kernel_size)
 
 
-def test_multi_scale_ssim_raise_if_wrong_value_is_estimated(prediction: torch.Tensor, target: torch.Tensor) -> None:
-    piq_ms_ssim = multi_scale_ssim(prediction, target, kernel_size=11, kernel_sigma=1.5,
-                                   data_range=1., reduction='none')
-    tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
-    tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
-    tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.).numpy())
-    match_accuracy = 1e-5
-    assert torch.allclose(piq_ms_ssim, tf_ms_ssim), \
-        f'The estimated value must be equal to tensorflow provided one' \
-        f'(considering floating point operation error up to {match_accuracy}), ' \
-        f'got difference {(piq_ms_ssim - tf_ms_ssim).abs()}'
+def test_multi_scale_ssim_raise_if_wrong_value_is_estimated() -> None:
+    prediction_grey = torch.tensor(np.array(Image.open('tests/assets/goldhill_jpeg.gif'))).unsqueeze(0).unsqueeze(0)
+    target_grey = torch.tensor(np.array(Image.open('tests/assets/goldhill.gif'))).unsqueeze(0).unsqueeze(0)
+    prediction_rgb = torch.tensor(np.array(Image.open('tests/assets/I01.BMP'))).permute(2, 0, 1).unsqueeze(0)
+    target_rgb = torch.tensor(np.array(Image.open('tests/assets/i01_01_5.bmp'))).permute(2, 0, 1).unsqueeze(0)
+    for prediction, target in [(prediction_grey, target_grey), (prediction_rgb, target_rgb)]:
+        piq_ms_ssim = multi_scale_ssim(prediction, target, kernel_size=11, kernel_sigma=1.5,
+                                       data_range=255, reduction='none')
+        tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
+        tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
+        tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=255).numpy())
+        number_of_weights = 5.
+        match_accuracy = number_of_weights * 1e-5 + 1e-8
+        assert torch.allclose(piq_ms_ssim, tf_ms_ssim, rtol=0, atol=match_accuracy), \
+            f'The estimated value must be equal to tensorflow provided one' \
+            f'(considering floating point operation error up to {match_accuracy}), ' \
+            f'got difference {(piq_ms_ssim - tf_ms_ssim).abs()}'
 
 
-def test_multi_scale_ssim_raise_if_wrong_value_is_estimated_custom_weights(prediction: torch.Tensor,
-                                                                           target: torch.Tensor) -> None:
+def test_multi_scale_ssim_raise_if_wrong_value_is_estimated_custom_weights() -> None:
     scale_weights = [0.0448, 0.2856, 0.3001]
-    piq_ms_ssim = multi_scale_ssim(prediction, target, kernel_size=11, kernel_sigma=1.5,
-                                   data_range=1., reduction='none', scale_weights=scale_weights)
-    tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
-    tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
-    tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.,
-                                                       power_factors=scale_weights).numpy())
-    match_accuracy = 1e-5
-    assert torch.allclose(piq_ms_ssim, tf_ms_ssim), \
-        f'The estimated value must be equal to tensorflow provided one' \
-        f'(considering floating point operation error up to {match_accuracy}), ' \
-        f'got difference {(piq_ms_ssim - tf_ms_ssim).abs()}'
+    prediction_grey = torch.tensor(np.array(Image.open('tests/assets/goldhill_jpeg.gif'))).unsqueeze(0).unsqueeze(0)
+    target_grey = torch.tensor(np.array(Image.open('tests/assets/goldhill.gif'))).unsqueeze(0).unsqueeze(0)
+    prediction_rgb = torch.tensor(np.array(Image.open('tests/assets/I01.BMP'))).permute(2, 0, 1).unsqueeze(0)
+    target_rgb = torch.tensor(np.array(Image.open('tests/assets/i01_01_5.bmp'))).permute(2, 0, 1).unsqueeze(0)
+    for prediction, target in [(prediction_grey, target_grey), (prediction_rgb, target_rgb)]:
+        piq_ms_ssim = multi_scale_ssim(prediction, target, kernel_size=11, kernel_sigma=1.5,
+                                       data_range=255, reduction='none', scale_weights=scale_weights)
+        tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
+        tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
+        tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=255,
+                                                           power_factors=scale_weights).numpy())
+        number_of_weights = len(scale_weights)
+        match_accuracy = number_of_weights * 1e-5 + 1e-8
+        assert torch.allclose(piq_ms_ssim, tf_ms_ssim, rtol=0, atol=match_accuracy), \
+            f'The estimated value must be equal to tensorflow provided one' \
+            f'(considering floating point operation error up to {match_accuracy}), ' \
+            f'got difference {(piq_ms_ssim - tf_ms_ssim).abs()}'
 
 
 # ================== Test class: `MultiScaleSSIMLoss` ==================
+def test_multi_scale_ssim_loss_grad(prediction: torch.Tensor, target: torch.Tensor) -> None:
+    prediction.requires_grad_()
+    loss = MultiScaleSSIMLoss(data_range=1.)(prediction, target)
+    loss.backward()
+    assert prediction.grad is not None, f'Expected finite gradient values'
+
+
 def test_multi_scale_ssim_loss_symmetry(prediction: torch.Tensor, target: torch.Tensor) -> None:
     loss = MultiScaleSSIMLoss()
     loss_value = loss(prediction, target)
@@ -626,31 +663,41 @@ def test_multi_scale_ssim_loss_raises_if_kernel_size_greater_than_image() -> Non
             MultiScaleSSIMLoss(kernel_size=kernel_size)(wrong_size_prediction, wrong_size_target)
 
 
-def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated(prediction: torch.Tensor,
-                                                                 target: torch.Tensor) -> None:
-    piq_ms_ssim_loss = MultiScaleSSIMLoss(kernel_size=11, kernel_sigma=1.5,
-                                          data_range=1.)(prediction, target)
-    tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
-    tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
-    tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.).numpy()).mean()
-    match_accuracy = 1e-6
-    assert torch.allclose(piq_ms_ssim_loss, 1 - tf_ms_ssim), \
-        f'The estimated value must be equal to tensorflow provided one' \
-        f'(considering floating point operation error up to {match_accuracy}), ' \
-        f'got difference {(piq_ms_ssim_loss - 1 + tf_ms_ssim).abs()}'
+def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated() -> None:
+    prediction_grey = torch.tensor(np.array(Image.open('tests/assets/goldhill_jpeg.gif'))).unsqueeze(0).unsqueeze(0)
+    target_grey = torch.tensor(np.array(Image.open('tests/assets/goldhill.gif'))).unsqueeze(0).unsqueeze(0)
+    prediction_rgb = torch.tensor(np.array(Image.open('tests/assets/I01.BMP'))).permute(2, 0, 1).unsqueeze(0)
+    target_rgb = torch.tensor(np.array(Image.open('tests/assets/i01_01_5.bmp'))).permute(2, 0, 1).unsqueeze(0)
+    for prediction, target in [(prediction_grey, target_grey), (prediction_rgb, target_rgb)]:
+        piq_ms_ssim_loss = MultiScaleSSIMLoss(kernel_size=11, kernel_sigma=1.5,
+                                              data_range=255)(prediction, target)
+        tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
+        tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
+        tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=255).numpy()).mean()
+        number_of_weights = 5.
+        match_accuracy = number_of_weights * 1e-5 + 1e-8
+        assert torch.isclose(piq_ms_ssim_loss, 1. - tf_ms_ssim, rtol=0, atol=match_accuracy), \
+            f'The estimated value must be equal to tensorflow provided one' \
+            f'(considering floating point operation error up to {match_accuracy}), ' \
+            f'got difference {(piq_ms_ssim_loss - 1. + tf_ms_ssim).abs()}'
 
 
-def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated_custom_weights(prediction: torch.Tensor,
-                                                                                target: torch.Tensor) -> None:
+def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated_custom_weights() -> None:
     scale_weights = [0.0448, 0.2856, 0.3001]
-    piq_ms_ssim_loss = MultiScaleSSIMLoss(kernel_size=11, kernel_sigma=1.5,
-                                          data_range=1., scale_weights=scale_weights)(prediction, target)
-    tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
-    tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
-    tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=1.,
-                                                       power_factors=scale_weights).numpy()).mean()
-    match_accuracy = 1e-6
-    assert torch.allclose(piq_ms_ssim_loss, 1 - tf_ms_ssim), \
-        f'The estimated value must be equal to tensorflow provided one' \
-        f'(considering floating point operation error up to {match_accuracy}), ' \
-        f'got difference {(piq_ms_ssim_loss - 1 + tf_ms_ssim).abs()}'
+    prediction_grey = torch.tensor(np.array(Image.open('tests/assets/goldhill_jpeg.gif'))).unsqueeze(0).unsqueeze(0)
+    target_grey = torch.tensor(np.array(Image.open('tests/assets/goldhill.gif'))).unsqueeze(0).unsqueeze(0)
+    prediction_rgb = torch.tensor(np.array(Image.open('tests/assets/I01.BMP'))).permute(2, 0, 1).unsqueeze(0)
+    target_rgb = torch.tensor(np.array(Image.open('tests/assets/i01_01_5.bmp'))).permute(2, 0, 1).unsqueeze(0)
+    for prediction, target in [(prediction_grey, target_grey), (prediction_rgb, target_rgb)]:
+        piq_ms_ssim_loss = MultiScaleSSIMLoss(kernel_size=11, kernel_sigma=1.5,
+                                              data_range=255, scale_weights=scale_weights)(prediction, target)
+        tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
+        tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
+        tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=255,
+                                                           power_factors=scale_weights).numpy()).mean()
+        number_of_weights = len(scale_weights)
+        match_accuracy = number_of_weights * 1e-5 + 1e-8
+        assert torch.isclose(piq_ms_ssim_loss, 1. - tf_ms_ssim, rtol=0, atol=match_accuracy), \
+            f'The estimated value must be equal to tensorflow provided one' \
+            f'(considering floating point operation error up to {match_accuracy}), ' \
+            f'got difference {(piq_ms_ssim_loss - 1. + tf_ms_ssim).abs()}'
