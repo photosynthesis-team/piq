@@ -56,8 +56,10 @@ def _validate_input(
     if scale_weights is not None:
         assert isinstance(scale_weights, (list, tuple, torch.Tensor)), \
             f'Scale weights must be of type list, tuple or torch.Tensor, got {type(scale_weights)}.'
-        assert (torch.tensor(scale_weights).dim() == 1), \
-            f'Scale weights must be one dimensional, got {torch.tensor(scale_weights).dim()}.'
+        if isinstance(scale_weights, (list, tuple)):
+            scale_weights = torch.tensor(scale_weights)
+        assert (scale_weights.dim() == 1), \
+            f'Scale weights must be one dimensional, got {scale_weights.dim()}.'
 
 
 def _validate_features(x: torch.Tensor, y: torch.Tensor) -> None:

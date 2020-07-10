@@ -205,7 +205,8 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
         scale_weights_from_ms_ssim_paper = [0.0448, 0.2856, 0.3001, 0.2363, 0.1333]
         scale_weights = scale_weights_from_ms_ssim_paper
 
-    scale_weights_tensor = torch.tensor(scale_weights).to(x.device, dtype=x.dtype)
+    scale_weights_tensor = scale_weights if isinstance(scale_weights, torch.Tensor) else torch.tensor(scale_weights)
+    scale_weights_tensor = scale_weights_tensor.to(x.device, dtype=x.dtype)
     kernel = gaussian_filter(kernel_size, kernel_sigma).to(x).repeat(x.size(1), 1, 1, 1)
 
     _compute_msssim = _multi_scale_ssim_complex if x.dim() == 5 else _multi_scale_ssim
@@ -314,7 +315,7 @@ class MultiScaleSSIMLoss(_Loss):
         if scale_weights is None:
             scale_weights_from_ms_ssim_paper = [0.0448, 0.2856, 0.3001, 0.2363, 0.1333]
             scale_weights = scale_weights_from_ms_ssim_paper
-        self.scale_weights = torch.tensor(scale_weights)
+        self.scale_weights = scale_weights if isinstance(scale_weights, torch.Tensor) else torch.tensor(scale_weights)
         self.kernel_size = kernel_size
         self.kernel_sigma = kernel_sigma
         self.k1 = k1
