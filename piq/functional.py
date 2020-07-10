@@ -68,8 +68,8 @@ def gaussian_filter(size: int, sigma: float) -> torch.Tensor:
     coords = torch.arange(size).to(dtype=torch.float32)
     coords -= (size - 1) / 2.
 
-    g = - (coords ** 2) / (2 * sigma ** 2)
-    g = (g.unsqueeze(0) + g.unsqueeze(1)).exp()
+    g = coords ** 2
+    g = (- (g.unsqueeze(0) + g.unsqueeze(1)) / (2 * sigma ** 2)).exp()
 
     g /= g.sum()
     return g.unsqueeze(0)

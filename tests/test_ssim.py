@@ -130,8 +130,8 @@ def test_ssim_raises_if_kernel_size_greater_than_image() -> None:
 def test_ssim_raise_if_wrong_value_is_estimated(test_images: Tuple[torch.Tensor, torch.Tensor],
                                                 device: Any) -> None:
     for prediction, target in test_images:
-        piq_ssim = ssim(prediction.to(device), target.to(device), kernel_size=11, kernel_sigma=1.5, 
-                        data_range=255, reduction='none')
+        piq_ssim = ssim(prediction.to(device), target.to(device), kernel_size=11, kernel_sigma=1.5, data_range=255,
+                        reduction='none')
         tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
         tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
         with tf.device('/CPU'):
@@ -239,8 +239,8 @@ def test_ssim_loss_raises_if_kernel_size_greater_than_image() -> None:
 def test_ssim_loss_raise_if_wrong_value_is_estimated(test_images: Tuple[torch.Tensor, torch.Tensor],
                                                      device: Any) -> None:
     for prediction, target in test_images:
-        ssim_loss = SSIMLoss(kernel_size=11, kernel_sigma=1.5, 
-                             data_range=255, reduction='mean')(prediction.to(device), target.to(device))
+        ssim_loss = SSIMLoss(kernel_size=11, kernel_sigma=1.5, data_range=255, reduction='mean')(prediction.to(device),
+                                                                                                 target.to(device))
         tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
         tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
         with tf.device('/CPU'):
@@ -463,8 +463,8 @@ def test_multi_scale_ssim_loss_raises_if_kernel_size_greater_than_image() -> Non
         MultiScaleSSIMLoss(kernel_size=kernel_size)(wrong_size_prediction, wrong_size_target)
 
 
-def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated(test_images: List, 
-                                                                 scale_weights: Any, device: Any) -> None:
+def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated(test_images: List, scale_weights: Any,
+                                                                 device: Any) -> None:
     for prediction, target in test_images:
         piq_loss = MultiScaleSSIMLoss(kernel_size=11, kernel_sigma=1.5, data_range=255, scale_weights=scale_weights)
         piq_ms_ssim_loss = piq_loss(prediction.to(device), target.to(device))
