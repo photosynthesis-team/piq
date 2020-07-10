@@ -181,8 +181,8 @@ def test_ssim_loss_grad(prediction: torch.Tensor, target: torch.Tensor) -> None:
 
 def test_ssim_loss_symmetry(prediction: torch.Tensor, target: torch.Tensor) -> None:
     loss = SSIMLoss()
-    loss_value = loss(prediction, target.detach())
-    reverse_loss_value = loss(target, prediction.detach())
+    loss_value = loss(prediction, target)
+    reverse_loss_value = loss(target, prediction)
     assert torch.allclose(loss_value, reverse_loss_value), \
         f'Expect: SSIMLoss(a, b) == SSIMLoss(b, a), got {loss_value} != {reverse_loss_value}'
 
