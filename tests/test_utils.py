@@ -3,7 +3,7 @@ import pytest
 
 import numpy as np
 
-from piq.utils import _validate_input
+from piq.utils import _validate_input, _adjust_dimensions
 
 
 @pytest.fixture(scope='module')
@@ -129,3 +129,10 @@ def test_breaks_if_scale_weight_wrong_n_dims_provided(tensor_2d: torch.Tensor) -
     wrong_scale_weights = tensor_2d.clone()
     with pytest.raises(AssertionError):
         _validate_input(tensor_2d, allow_5d=False, scale_weights=wrong_scale_weights)
+
+
+# ================== Test function: `_adjust_dimensions` ==================
+def test_breaks_if_number_of_dim_greater_five() -> None:
+    tensor_6d = torch.rand(1, 1, 1, 1, 1, 1)
+    with pytest.raises(ValueError):
+        _adjust_dimensions(tensor_6d)
