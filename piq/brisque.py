@@ -11,7 +11,7 @@ from typing import Union, Tuple
 import torch
 from torch.nn.modules.loss import _Loss
 from torch.utils.model_zoo import load_url
-import torch.nn.functional as f
+import torch.nn.functional as F
 from piq.utils import _adjust_dimensions, _validate_input
 from piq.functional import rgb2yiq, gaussian_filter
 
@@ -46,7 +46,7 @@ def brisque(x: torch.Tensor,
     num_of_scales = 2
     for _ in range(num_of_scales):
         features.append(_natural_scene_statistics(x, kernel_size, kernel_sigma))
-        x = f.interpolate(x, size=(x.size(2) // 2, x.size(3) // 2), mode=interpolation)
+        x = F.interpolate(x, size=(x.size(2) // 2, x.size(3) // 2), mode=interpolation)
 
     features = torch.cat(features, dim=-1)
     scaled_features = _scale_features(features)
@@ -61,14 +61,9 @@ def brisque(x: torch.Tensor,
 
 class BRISQUELoss(_Loss):
     r"""Creates a criterion that measures the BRISQUE score for input :math:`x`.
-
         :math:`x` is tensor of 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
-
         The sum operation still operates over all the elements, and divides by :math:`n`.
-
         The division by :math:`n` can be avoided by setting ``reduction = 'sum'``.
-
-
         Args:
             kernel_size: By default, the mean and covariance of a pixel is obtained
                 by convolution with given filter_size.
@@ -81,18 +76,14 @@ class BRISQUELoss(_Loss):
                 ``'mean'``: the sum of the output will be divided by the number of
                 elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``.
             interpolation: Interpolation to be used for scaling.
-
         Shape:
             - Input: Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
-
         Examples::
-
             >>> loss = BRISQUELoss()
             >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
             >>> target = torch.rand(3, 3, 256, 256)
             >>> output = loss(prediction)
             >>> output.backward()
-
         References:
             .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
             https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
@@ -109,14 +100,11 @@ class BRISQUELoss(_Loss):
 
     def forward(self, prediction: torch.Tensor) -> torch.Tensor:
         r"""Computation of BRISQUE score as a loss function.
-
-                Args:
-                    prediction: Tensor of prediction of the network.
-
-                Returns:
-                    Value of BRISQUE loss to be minimized.
-                """
-
+            Args:
+                prediction: Tensor of prediction of the network.
+            Returns:
+                Value of BRISQUE loss to be minimized.
+        """
         return brisque(prediction, reduction=self.reduction, kernel_size=self.kernel_size,
                        kernel_sigma=self.kernel_sigma, data_range=self.data_range, interpolation=self.interpolation)
 
@@ -173,9 +161,9 @@ def _aggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch
 def _natural_scene_statistics(luma: torch.Tensor, kernel_size: int = 7, sigma: float = 7. / 6) -> torch.Tensor:
     kernel = gaussian_filter(size=kernel_size, sigma=sigma).view(1, 1, kernel_size, kernel_size).to(luma)
     C = 1
-    mu = f.conv2d(luma, kernel, padding=kernel_size // 2)
+    mu = F.conv2d(luma, kernel, padding=kernel_size // 2)
     mu_sq = mu ** 2
-    std = f.conv2d(luma ** 2, kernel, padding=kernel_size // 2)
+    std = F.conv2d(luma ** 2, kernel, padding=kernel_size // 2)
     std = ((std - mu_sq).abs().sqrt())
 
     luma_nrmlzd = (luma - mu) / (std + C)

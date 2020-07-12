@@ -2,10 +2,15 @@ import torch
 import itertools
 import pytest
 import tensorflow as tf
-import numpy as np
-from PIL import Image
 from piq import SSIMLoss, MultiScaleSSIMLoss, ssim, multi_scale_ssim
 from typing import Tuple, List, Any
+from skimage.io import imread
+from contextlib import contextmanager
+
+
+@contextmanager
+def raise_nothing(enter_result=None):
+    yield enter_result
 
 
 @pytest.fixture(scope='module')
@@ -30,20 +35,21 @@ def ones_zeros_4d_5d(request: Any) -> Tuple[torch.Tensor, torch.Tensor]:
 
 @pytest.fixture(scope='module')
 def test_images() -> List[Tuple[torch.Tensor, torch.Tensor]]:
-    prediction_grey = torch.tensor(np.array(Image.open('tests/assets/goldhill_jpeg.gif'))).unsqueeze(0).unsqueeze(0)
-    target_grey = torch.tensor(np.array(Image.open('tests/assets/goldhill.gif'))).unsqueeze(0).unsqueeze(0)
-    prediction_rgb = torch.tensor(np.array(Image.open('tests/assets/I01.BMP'))).permute(2, 0, 1).unsqueeze(0)
-    target_rgb = torch.tensor(np.array(Image.open('tests/assets/i01_01_5.bmp'))).permute(2, 0, 1).unsqueeze(0)
+    prediction_grey = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'),
+                                   dtype=torch.uint8).unsqueeze(0).unsqueeze(0)
+    target_grey = torch.tensor(imread('tests/assets/goldhill.gif'), dtype=torch.uint8).unsqueeze(0).unsqueeze(0)
+    prediction_rgb = torch.tensor(imread('tests/assets/I01.BMP'), dtype=torch.uint8).permute(2, 0, 1).unsqueeze(0)
+    target_rgb = torch.tensor(imread('tests/assets/i01_01_5.bmp'), dtype=torch.uint8).permute(2, 0, 1).unsqueeze(0)
     return [(prediction_grey, target_grey), (prediction_rgb, target_rgb)]
 
 
 @pytest.fixture(params=[[0.0448, 0.2856, 0.3001, 0.2363, 0.1333], [0.0448, 0.2856, 0.3001]], scope='module')
-def scale_weights(request: Any) -> Any:
+def scale_weights(request: Any) -> List:
     return request.param
 
 
 # ================== Test function: `ssim` ==================
-def test_ssim_symmetry(prediction_target_4d_5d: Tuple[torch.Tensor, torch.Tensor], device: Any) -> None:
+def test_ssim_symmetry(prediction_target_4d_5d: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
     prediction = prediction_target_4d_5d[0].to(device)
     target = prediction_target_4d_5d[1].to(device)
     measure = ssim(prediction, target, data_range=1., reduction='none')
@@ -52,7 +58,7 @@ def test_ssim_symmetry(prediction_target_4d_5d: Tuple[torch.Tensor, torch.Tensor
                                                      f'got {measure} != {reverse_measure}'
 
 
-def test_ssim_measure_is_one_for_equal_tensors(target: torch.Tensor, device: Any) -> None:
+def test_ssim_measure_is_one_for_equal_tensors(target: torch.Tensor, device: str) -> None:
     target = target.to(device)
     prediction = target.clone()
     measure = ssim(prediction, target, data_range=1., reduction='none')
@@ -61,7 +67,24 @@ def test_ssim_measure_is_one_for_equal_tensors(target: torch.Tensor, device: Any
                                                               f'got {measure + 1}'
 
 
-def test_ssim_measure_is_less_or_equal_to_one(ones_zeros_4d_5d: Tuple[torch.Tensor, torch.Tensor], device: Any) -> None:
+@pytest.mark.parametrize(
+    "reduction,full,expectation",
+    [('mean', False, raise_nothing()),
+     ('sum', False, raise_nothing()),
+     ('none', False, raise_nothing()),
+     ('none', True, raise_nothing()),
+     ('reduction', False, pytest.raises(KeyError))]
+)
+def test_ssim_reduction_and_full(reduction: str, full: bool, expectation: Any,
+                                 prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+    prediction = prediction.to(device)
+    target = target.to(device)
+    with expectation:
+        ssim(prediction, target, data_range=1., reduction=reduction, full=full)
+
+
+def test_ssim_measure_is_less_or_equal_to_one(ones_zeros_4d_5d: Tuple[torch.Tensor, torch.Tensor],
+                                              device: str) -> None:
     # Create two maximally different tensors.
     ones = ones_zeros_4d_5d[0].to(device)
     zeros = ones_zeros_4d_5d[1].to(device)
@@ -109,7 +132,10 @@ def test_ssim_check_available_dimensions() -> None:
         custom_target.unsqueeze_(0)
 
 
-def test_ssim_check_kernel_size_is_passed(prediction: torch.Tensor, target: torch.Tensor) -> None:
+def test_ssim_check_kernel_size_is_passed(prediction_target_4d_5d: Tuple[torch.Tensor, torch.Tensor],
+                                          device: str) -> None:
+    prediction = prediction_target_4d_5d[0].to(device)
+    target = prediction_target_4d_5d[1].to(device)
     kernel_sizes = list(range(0, 50))
     for kernel_size in kernel_sizes:
         if kernel_size % 2:
@@ -119,16 +145,19 @@ def test_ssim_check_kernel_size_is_passed(prediction: torch.Tensor, target: torc
                 ssim(prediction, target, kernel_size=kernel_size)
 
 
-def test_ssim_raises_if_kernel_size_greater_than_image() -> None:
+def test_ssim_raises_if_kernel_size_greater_than_image(prediction_target_4d_5d: Tuple[torch.Tensor, torch.Tensor],
+                                                       device: str) -> None:
+    prediction = prediction_target_4d_5d[0].to(device)
+    target = prediction_target_4d_5d[1].to(device)
     kernel_size = 11
-    wrong_size_prediction = torch.rand(3, 3, kernel_size - 1, kernel_size - 1)
-    wrong_size_target = torch.rand(3, 3, kernel_size - 1, kernel_size - 1)
+    wrong_size_prediction = prediction[:, :, :kernel_size - 1, :kernel_size - 1]
+    wrong_size_target = target[:, :, :kernel_size - 1, :kernel_size - 1]
     with pytest.raises(ValueError):
         ssim(wrong_size_prediction, wrong_size_target, kernel_size=kernel_size)
 
 
 def test_ssim_raise_if_wrong_value_is_estimated(test_images: Tuple[torch.Tensor, torch.Tensor],
-                                                device: Any) -> None:
+                                                device: str) -> None:
     for prediction, target in test_images:
         piq_ssim = ssim(prediction.to(device), target.to(device), kernel_size=11, kernel_sigma=1.5, data_range=255,
                         reduction='none')
@@ -144,7 +173,7 @@ def test_ssim_raise_if_wrong_value_is_estimated(test_images: Tuple[torch.Tensor,
 
 
 # ================== Test class: `SSIMLoss` ==================
-def test_ssim_loss_grad(prediction: torch.Tensor, target: torch.Tensor, device: Any) -> None:
+def test_ssim_loss_grad(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
     prediction = prediction.to(device)
     target = target.to(device)
     prediction.requires_grad_(True)
@@ -153,7 +182,7 @@ def test_ssim_loss_grad(prediction: torch.Tensor, target: torch.Tensor, device: 
     assert torch.isfinite(prediction.grad).all(), f'Expected finite gradient values, got {prediction.grad}'
 
 
-def test_ssim_loss_symmetry(prediction_target_4d_5d: Tuple[torch.Tensor, torch.Tensor], device: Any) -> None:
+def test_ssim_loss_symmetry(prediction_target_4d_5d: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
     prediction = prediction_target_4d_5d[0].to(device)
     target = prediction_target_4d_5d[1].to(device)
     loss = SSIMLoss()
@@ -163,7 +192,7 @@ def test_ssim_loss_symmetry(prediction_target_4d_5d: Tuple[torch.Tensor, torch.T
         f'Expect: SSIMLoss(a, b) == SSIMLoss(b, a), got {loss_value} != {reverse_loss_value}'
 
 
-def test_ssim_loss_equality(target: torch.Tensor, device: Any) -> None:
+def test_ssim_loss_equality(target: torch.Tensor, device: str) -> None:
     target = target.to(device)
     prediction = target.clone()
     loss = SSIMLoss()(prediction, target)
@@ -172,7 +201,7 @@ def test_ssim_loss_equality(target: torch.Tensor, device: Any) -> None:
         f'(considering floating point operation error up to 1 * 10^-6), got {loss}'
 
 
-def test_ssim_loss_is_less_or_equal_to_one(ones_zeros_4d_5d: Tuple[torch.Tensor, torch.Tensor], device: Any) -> None:
+def test_ssim_loss_is_less_or_equal_to_one(ones_zeros_4d_5d: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
     # Create two maximally different tensors.
     ones = ones_zeros_4d_5d[0].to(device)
     zeros = ones_zeros_4d_5d[1].to(device)
@@ -228,16 +257,19 @@ def test_ssim_loss_check_kernel_size_is_passed(prediction: torch.Tensor, target:
                 SSIMLoss(kernel_size=kernel_size)(prediction, target)
 
 
-def test_ssim_loss_raises_if_kernel_size_greater_than_image() -> None:
+def test_ssim_loss_raises_if_kernel_size_greater_than_image(prediction_target_4d_5d: Tuple[torch.Tensor, torch.Tensor],
+                                                            device: str) -> None:
+    prediction = prediction_target_4d_5d[0].to(device)
+    target = prediction_target_4d_5d[1].to(device)
     kernel_size = 11
-    wrong_size_prediction = torch.rand(3, 3, kernel_size - 1, kernel_size - 1)
-    wrong_size_target = torch.rand(3, 3, kernel_size - 1, kernel_size - 1)
+    wrong_size_prediction = prediction[:, :, :kernel_size - 1, :kernel_size - 1]
+    wrong_size_target = target[:, :, :kernel_size - 1, :kernel_size - 1]
     with pytest.raises(ValueError):
         SSIMLoss(kernel_size=kernel_size)(wrong_size_prediction, wrong_size_target)
 
 
 def test_ssim_loss_raise_if_wrong_value_is_estimated(test_images: Tuple[torch.Tensor, torch.Tensor],
-                                                     device: Any) -> None:
+                                                     device: str) -> None:
     for prediction, target in test_images:
         ssim_loss = SSIMLoss(kernel_size=11, kernel_sigma=1.5, data_range=255, reduction='mean')(prediction.to(device),
                                                                                                  target.to(device))
@@ -253,7 +285,7 @@ def test_ssim_loss_raise_if_wrong_value_is_estimated(test_images: Tuple[torch.Te
 
 
 # ================== Test function: `multi_scale_ssim` ==================
-def test_multi_scale_ssim_symmetry(prediction_target_4d_5d: Tuple[torch.Tensor, torch.Tensor], device: Any) -> None:
+def test_multi_scale_ssim_symmetry(prediction_target_4d_5d: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
     prediction = prediction_target_4d_5d[0].to(device)
     target = prediction_target_4d_5d[1].to(device)
     measure = multi_scale_ssim(prediction, target, data_range=1., reduction='none')
@@ -262,7 +294,7 @@ def test_multi_scale_ssim_symmetry(prediction_target_4d_5d: Tuple[torch.Tensor, 
                                                      f'got {measure} != {reverse_measure}'
 
 
-def test_multi_scale_ssim_measure_is_one_for_equal_tensors(target: torch.Tensor, device: Any) -> None:
+def test_multi_scale_ssim_measure_is_one_for_equal_tensors(target: torch.Tensor, device: str) -> None:
     target = target.to(device)
     prediction = target.clone()
     measure = multi_scale_ssim(prediction, target, data_range=1.)
@@ -272,7 +304,7 @@ def test_multi_scale_ssim_measure_is_one_for_equal_tensors(target: torch.Tensor,
 
 
 def test_multi_scale_ssim_measure_is_less_or_equal_to_one(ones_zeros_4d_5d: Tuple[torch.Tensor, torch.Tensor],
-                                                          device: Any) -> None:
+                                                          device: str) -> None:
     # Create two maximally different tensors.
     ones = ones_zeros_4d_5d[0].to(device)
     zeros = ones_zeros_4d_5d[1].to(device)
@@ -282,7 +314,7 @@ def test_multi_scale_ssim_measure_is_less_or_equal_to_one(ones_zeros_4d_5d: Tupl
 
 def test_multi_scale_ssim_raises_if_tensors_have_different_shapes(prediction_target_4d_5d: Tuple[torch.Tensor,
                                                                                                  torch.Tensor],
-                                                                  device: Any) -> None:
+                                                                  device: str) -> None:
     target = prediction_target_4d_5d[1].to(device)
     dims = [[3], [2, 3], [161, 162], [161, 162]]
     if target.dim() == 5:
@@ -335,16 +367,21 @@ def test_multi_scale_ssim_check_kernel_size_is_passed(prediction: torch.Tensor, 
                 multi_scale_ssim(prediction, target, kernel_size=kernel_size)
 
 
-def test_multi_scale_ssim_raises_if_kernel_size_greater_than_image() -> None:
+def test_ms_ssim_raises_if_kernel_size_greater_than_image(prediction_target_4d_5d: Tuple[torch.Tensor, torch.Tensor],
+                                                          device: str) -> None:
+    prediction = prediction_target_4d_5d[0].to(device)
+    target = prediction_target_4d_5d[1].to(device)
     kernel_size = 11
-    wrong_size_prediction = torch.rand(3, 3, kernel_size - 1, kernel_size - 1)
-    wrong_size_target = torch.rand(3, 3, kernel_size - 1, kernel_size - 1)
+    levels = 5
+    min_size = (kernel_size - 1) * 2 ** (levels - 1) + 1
+    wrong_size_prediction = prediction[:, :, :min_size - 1, :min_size - 1]
+    wrong_size_target = target[:, :, :min_size - 1, :min_size - 1]
     with pytest.raises(ValueError):
         multi_scale_ssim(wrong_size_prediction, wrong_size_target, kernel_size=kernel_size)
 
 
 def test_multi_scale_ssim_raise_if_wrong_value_is_estimated(test_images: Tuple[torch.Tensor, torch.Tensor],
-                                                            scale_weights: List, device: Any) -> None:
+                                                            scale_weights: List, device: str) -> None:
     for prediction, target in test_images:
         piq_ms_ssim = multi_scale_ssim(prediction.to(device), target.to(device), kernel_size=11, kernel_sigma=1.5,
                                        data_range=255, reduction='none', scale_weights=scale_weights)
@@ -362,7 +399,7 @@ def test_multi_scale_ssim_raise_if_wrong_value_is_estimated(test_images: Tuple[t
 
 
 # ================== Test class: `MultiScaleSSIMLoss` ==================
-def test_multi_scale_ssim_loss_grad(prediction: torch.Tensor, target: torch.Tensor, device: Any) -> None:
+def test_multi_scale_ssim_loss_grad(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
     prediction = prediction.to(device)
     prediction.requires_grad_()
     target = target.to(device)
@@ -372,7 +409,7 @@ def test_multi_scale_ssim_loss_grad(prediction: torch.Tensor, target: torch.Tens
 
 
 def test_multi_scale_ssim_loss_symmetry(prediction_target_4d_5d: Tuple[torch.Tensor, torch.Tensor],
-                                        device: Any) -> None:
+                                        device: str) -> None:
     prediction = prediction_target_4d_5d[0].to(device)
     target = prediction_target_4d_5d[1].to(device)
     loss = MultiScaleSSIMLoss()
@@ -382,7 +419,7 @@ def test_multi_scale_ssim_loss_symmetry(prediction_target_4d_5d: Tuple[torch.Ten
         f'Expect: MS-SSIM(a, b) == MS-SSIM(b, a), got {loss_value} != {reverse_loss_value}'
 
 
-def test_multi_scale_ssim_loss_equality(target: torch.Tensor, device: Any) -> None:
+def test_multi_scale_ssim_loss_equality(target: torch.Tensor, device: str) -> None:
     target = target.to(device)
     prediction = target.clone()
     loss = MultiScaleSSIMLoss()(prediction, target)
@@ -391,7 +428,7 @@ def test_multi_scale_ssim_loss_equality(target: torch.Tensor, device: Any) -> No
 
 
 def test_multi_scale_ssim_loss_is_less_or_equal_to_one(ones_zeros_4d_5d: Tuple[torch.Tensor, torch.Tensor],
-                                                       device: Any) -> None:
+                                                       device: str) -> None:
     # Create two maximally different tensors.
     ones = ones_zeros_4d_5d[0].to(device)
     zeros = ones_zeros_4d_5d[1].to(device)
@@ -401,7 +438,7 @@ def test_multi_scale_ssim_loss_is_less_or_equal_to_one(ones_zeros_4d_5d: Tuple[t
 
 def test_multi_scale_ssim_loss_raises_if_tensors_have_different_shapes(prediction_target_4d_5d: Tuple[torch.Tensor,
                                                                                                       torch.Tensor],
-                                                                       device: Any) -> None:
+                                                                       device: str) -> None:
     target = prediction_target_4d_5d[1].to(device)
     dims = [[3], [2, 3], [161, 162], [161, 162]]
     if target.dim() == 5:
@@ -455,16 +492,22 @@ def test_multi_scale_ssim_loss_raises_if_wrong_kernel_size_is_passed(prediction:
                 MultiScaleSSIMLoss(kernel_size=kernel_size)(prediction, target)
 
 
-def test_multi_scale_ssim_loss_raises_if_kernel_size_greater_than_image() -> None:
+def test_ms_ssim_loss_raises_if_kernel_size_greater_than_image(prediction_target_4d_5d: Tuple[torch.Tensor,
+                                                                                              torch.Tensor],
+                                                               device: str) -> None:
+    prediction = prediction_target_4d_5d[0].to(device)
+    target = prediction_target_4d_5d[1].to(device)
     kernel_size = 11
-    wrong_size_prediction = torch.rand(3, 3, kernel_size - 1, kernel_size - 1)
-    wrong_size_target = torch.rand(3, 3, kernel_size - 1, kernel_size - 1)
+    levels = 5
+    min_size = (kernel_size - 1) * 2 ** (levels - 1) + 1
+    wrong_size_prediction = prediction[:, :, :min_size - 1, :min_size - 1]
+    wrong_size_target = target[:, :, :min_size - 1, :min_size - 1]
     with pytest.raises(ValueError):
         MultiScaleSSIMLoss(kernel_size=kernel_size)(wrong_size_prediction, wrong_size_target)
 
 
-def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated(test_images: List, scale_weights: Any,
-                                                                 device: Any) -> None:
+def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated(test_images: List, scale_weights: List,
+                                                                 device: str) -> None:
     for prediction, target in test_images:
         piq_loss = MultiScaleSSIMLoss(kernel_size=11, kernel_sigma=1.5, data_range=255, scale_weights=scale_weights)
         piq_ms_ssim_loss = piq_loss(prediction.to(device), target.to(device))

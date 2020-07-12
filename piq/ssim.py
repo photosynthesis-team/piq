@@ -9,7 +9,7 @@ https://github.com/pytorch/pytorch/pull/22289/files
 from typing import List, Optional, Tuple, Union
 
 import torch
-import torch.nn.functional as f
+import torch.nn.functional as F
 from torch.nn.modules.loss import _Loss
 
 from piq.utils import _adjust_dimensions, _validate_input
@@ -47,8 +47,10 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
     x, y = _adjust_dimensions(input_tensors=(x, y))
 
     kernel = gaussian_filter(kernel_size, kernel_sigma).repeat(x.size(1), 1, 1, 1).to(y)
-    _compute_ssim = _ssim_complex if x.dim() == 5 else _ssim
-    ssim_val, cs = _compute_ssim(x=x, y=y, kernel=kernel, data_range=data_range, k1=k1, k2=k2)
+    _compute_ssim_per_channel = _ssim_per_channel_complex if x.dim() == 5 else _ssim_per_channel
+    ssim_map, cs_map = _compute_ssim_per_channel(x=x, y=y, kernel=kernel, data_range=data_range, k1=k1, k2=k2)
+    ssim_val = ssim_map.mean(1)
+    cs = cs_map.mean(1)
 
     if reduction != 'none':
         reduction_operation = {'mean': torch.mean,
@@ -87,11 +89,8 @@ class SSIMLoss(_Loss):
     of :math:`n` elements each.
 
     The sum operation still operates over all the elements, and divides by :math:`n`.
-
     The division by :math:`n` can be avoided if one sets ``reduction = 'sum'``.
-
     In case of 5D input tensors, complex value is returned as a tensor of size 2.
-
     Args:
         kernel_size: By default, the mean and covariance of a pixel is obtained
             by convolution with given filter_size.
@@ -105,19 +104,15 @@ class SSIMLoss(_Loss):
         data_range: The difference between the maximum and minimum of the pixel value,
             i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
             The pixel value interval of both input and output should remain the same.
-
     Shape:
         - Input: Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first.
         - Target: Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first.
-
     Examples::
-
         >>> loss = SSIMLoss()
         >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
         >>> target = torch.rand(3, 3, 256, 256)
         >>> output = loss(prediction, target)
         >>> output.backward()
-
     References:
         .. [1] Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P.
            (2004). Image quality assessment: From error visibility to
@@ -146,13 +141,11 @@ class SSIMLoss(_Loss):
                 prediction: torch.Tensor,
                 target: torch.Tensor) -> torch.Tensor:
         r"""Computation of Structural Similarity (SSIM) index as a loss function.
-
         Args:
             prediction: Tensor of prediction of the network. Required to be
                 2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first.
             target: Reference tensor. Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2),
                 channels first.
-
         Returns:
             Value of SSIM loss to be minimized, i.e 1 - `ssim`. 0 <= SSIM loss <= 1. In case of 5D input tensors,
             complex value is returned as a tensor of size 2.
@@ -170,7 +163,9 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
     r""" Interface of Multi-scale Structural Similarity (MS-SSIM) index.
     Args:
         x: Batch of images. Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first.
+            The size of the image should be (kernel_size - 1) * 2 ** (levels - 1) + 1.
         y: Batch of images. Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first.
+            The size of the image should be (kernel_size - 1) * 2 ** (levels - 1) + 1.
         kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
         kernel_sigma: Sigma of normal distribution.
         data_range: Value range of input images (usually 1.0 or 255).
@@ -251,13 +246,9 @@ class MultiScaleSSIMLoss(_Loss):
 
     :math:`x` and :math:`y` are tensors of arbitrary shapes with a total
     of :math:`n` elements each.
-
     The sum operation still operates over all the elements, and divides by :math:`n`.
-
     The division by :math:`n` can be avoided if one sets ``reduction = 'sum'``.
-
     In case of 5D input tensors, complex value is returned as a tensor of size 2.
-
    Args:
         kernel_size: By default, the mean and covariance of a pixel is obtained
             by convolution with given filter_size.
@@ -274,20 +265,17 @@ class MultiScaleSSIMLoss(_Loss):
         data_range: The difference between the maximum and minimum of the pixel value,
             i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
             The pixel value interval of both input and output should remain the same.
-
-
     Shape:
         - Input: Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first.
+            The size of the image should be (kernel_size - 1) * 2 ** (levels - 1) + 1.
         - Target: Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first.
-
+            The size of the image should be (kernel_size - 1) * 2 ** (levels - 1) + 1.
     Examples::
-
         >>> loss = MultiScaleSSIMLoss()
         >>> input = torch.rand(3, 3, 256, 256, requires_grad=True)
         >>> target = torch.rand(3, 3, 256, 256)
         >>> output = loss(input, target)
         >>> output.backward()
-
     References:
         .. [1] Wang, Z., Simoncelli, E. P., Bovik, A. C. (2003).
            Multi-scale Structural Similarity for Image Quality Assessment.
@@ -324,14 +312,12 @@ class MultiScaleSSIMLoss(_Loss):
 
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         r"""Computation of Multi-scale Structural Similarity (MS-SSIM) index as a loss function.
-
-
         Args:
             prediction: Tensor of prediction of the network. Required to be
-                2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first.
+                2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first. The size of the image
+                should be (kernel_size - 1) * 2 ** (levels - 1) + 1.
             target: Reference tensor. Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2),
-                channels first.
-
+                channels first. The size of the image should be (kernel_size - 1) * 2 ** (levels - 1) + 1.
         Returns:
             Value of MS-SSIM loss to be minimized, i.e. 1-`ms_sim`. 0 <= MS-SSIM loss <= 1. In case of 5D tensor,
             complex value is returned as a tensor of size 2.
@@ -347,7 +333,6 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
                       data_range: Union[float, int] = 1., k1: float = 0.01,
                       k2: float = 0.03) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
     r"""Calculate Structural Similarity (SSIM) index for X and Y per channel.
-
         Args:
             x: Batch of images, (N,C,H,W).
             y: Batch of images, (N,C,H,W).
@@ -356,10 +341,8 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
             k1: Algorithm parameter, K1 (small constant, see [1]).
             k2: Algorithm parameter, K2 (small constant, see [1]).
                 Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
-
-
-    Returns:
-        Full Value of Structural Similarity (SSIM) index.
+        Returns:
+            Full Value of Structural Similarity (SSIM) index.
     """
 
     if x.size(-1) < kernel.size(-1) or x.size(-2) < kernel.size(-2):
@@ -369,56 +352,30 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
     c1 = (k1 * data_range) ** 2
     c2 = (k2 * data_range) ** 2
     n_channels = x.size(1)
-    mu1 = f.conv2d(x, weight=kernel, stride=1, padding=0, groups=n_channels)
-    mu2 = f.conv2d(y, weight=kernel, stride=1, padding=0, groups=n_channels)
+    mu1 = F.conv2d(x, weight=kernel, stride=1, padding=0, groups=n_channels)
+    mu2 = F.conv2d(y, weight=kernel, stride=1, padding=0, groups=n_channels)
 
     mu1_sq = mu1.pow(2)
     mu2_sq = mu2.pow(2)
     mu1_mu2 = mu1 * mu2
 
     compensation = 1.0
-    sigma1_sq = compensation * (f.conv2d(x * x, weight=kernel, stride=1, padding=0, groups=n_channels) - mu1_sq)
-    sigma2_sq = compensation * (f.conv2d(y * y, weight=kernel, stride=1, padding=0, groups=n_channels) - mu2_sq)
-    sigma12 = compensation * (f.conv2d(x * y, weight=kernel, stride=1, padding=0, groups=n_channels) - mu1_mu2)
+    sigma1_sq = compensation * (F.conv2d(x * x, weight=kernel, stride=1, padding=0, groups=n_channels) - mu1_sq)
+    sigma2_sq = compensation * (F.conv2d(y * y, weight=kernel, stride=1, padding=0, groups=n_channels) - mu2_sq)
+    sigma12 = compensation * (F.conv2d(x * y, weight=kernel, stride=1, padding=0, groups=n_channels) - mu1_mu2)
 
     # Set alpha = beta = gamma = 1.
     cs_map = (2 * sigma12 + c2) / (sigma1_sq + sigma2_sq + c2)
-    ssim_map = (2 * mu1_mu2 + c1) / (mu1_sq + mu2_sq + c1) * cs_map
+    ssim_map = ((2 * mu1_mu2 + c1) / (mu1_sq + mu2_sq + c1)) * cs_map
 
     ssim_val = ssim_map.mean(dim=(-1, -2))
     cs = cs_map.mean(dim=(-1, -2))
     return ssim_val, cs
 
 
-def _ssim(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor, data_range: Union[float, int] = 1.,
-          k1: float = 0.01, k2: float = 0.03) \
-        -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
-    r"""Calculate Structural Similarity (SSIM) index for X and Y.
-
-    Args:
-        x: Batch of images, (N,C,H,W).
-        y: Batch of images, (N,C,H,W).
-        kernel: 2D Gaussian kernel.
-        data_range: Value range of input images (usually 1.0 or 255).
-        k1: Algorithm parameter, K1 (small constant, see [1]).
-        k2: Algorithm parameter, K2 (small constant, see [1]).
-            Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
-
-    Returns:
-        Value of Structural Similarity (SSIM) index.
-    """
-
-    ssim_map, cs_map = _ssim_per_channel(x=x, y=y, kernel=kernel, data_range=data_range, k1=k1, k2=k2)
-
-    ssim_val = ssim_map.mean(1)
-    cs = cs_map.mean(1)
-    return ssim_val, cs
-
-
 def _multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float], kernel: torch.Tensor,
                       scale_weights_tensor: torch.Tensor, k1: float, k2: float) -> torch.Tensor:
     r"""Calculates Multi scale Structural Similarity (MS-SSIM) index for X and Y.
-
         Args:
             x: Batch of images, (N,C,H,W).
             y: Batch of images, (N,C,H,W).
@@ -428,7 +385,6 @@ def _multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, f
             k1: Algorithm parameter, K1 (small constant, see [1]).
             k2: Algorithm parameter, K2 (small constant, see [1]).
                 Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
-
         Returns:
             Value of Multi scale Structural Similarity (MS-SSIM) index.
         """
@@ -442,10 +398,10 @@ def _multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, f
     for iteration in range(levels):
         if iteration > 0:
             padding = (x.shape[2] % 2, x.shape[3] % 2)
-            x = f.pad(x, pad=[padding[0], 0, padding[1], 0], mode='replicate')
-            y = f.pad(y, pad=[padding[0], 0, padding[1], 0], mode='replicate')
-            x = f.avg_pool2d(x, kernel_size=2, padding=0)
-            y = f.avg_pool2d(y, kernel_size=2, padding=0)
+            x = F.pad(x, pad=[padding[0], 0, padding[1], 0], mode='replicate')
+            y = F.pad(y, pad=[padding[0], 0, padding[1], 0], mode='replicate')
+            x = F.avg_pool2d(x, kernel_size=2, padding=0)
+            y = F.avg_pool2d(y, kernel_size=2, padding=0)
 
         ssim_val, cs = _ssim_per_channel(x, y, kernel=kernel, data_range=data_range, k1=k1, k2=k2)
         mcs.append(cs)
@@ -463,7 +419,6 @@ def _ssim_per_channel_complex(x: torch.Tensor, y: torch.Tensor, kernel: torch.Te
                               data_range: Union[float, int] = 1., k1: float = 0.01,
                               k2: float = 0.03) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
     r"""Calculate Structural Similarity (SSIM) index for Complex X and Y per channel.
-
         Args:
             x: Batch of complex images, (N,C,H,W,2).
             y: Batch of complex images, (N,C,H,W,2).
@@ -472,10 +427,8 @@ def _ssim_per_channel_complex(x: torch.Tensor, y: torch.Tensor, kernel: torch.Te
             k1: Algorithm parameter, K1 (small constant, see [1]).
             k2: Algorithm parameter, K2 (small constant, see [1]).
                 Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
-
-
-    Returns:
-        Full Value of Complex Structural Similarity (SSIM) index.
+        Returns:
+            Full Value of Complex Structural Similarity (SSIM) index.
     """
     n_channels = x.size(1)
     if x.size(-2) < kernel.size(-1) or x.size(-3) < kernel.size(-2):
@@ -490,10 +443,10 @@ def _ssim_per_channel_complex(x: torch.Tensor, y: torch.Tensor, kernel: torch.Te
     y_real = y[..., 0]
     y_imag = y[..., 1]
 
-    mu1_real = f.conv2d(x_real, weight=kernel, stride=1, padding=0, groups=n_channels)
-    mu1_imag = f.conv2d(x_imag, weight=kernel, stride=1, padding=0, groups=n_channels)
-    mu2_real = f.conv2d(y_real, weight=kernel, stride=1, padding=0, groups=n_channels)
-    mu2_imag = f.conv2d(y_imag, weight=kernel, stride=1, padding=0, groups=n_channels)
+    mu1_real = F.conv2d(x_real, weight=kernel, stride=1, padding=0, groups=n_channels)
+    mu1_imag = F.conv2d(x_imag, weight=kernel, stride=1, padding=0, groups=n_channels)
+    mu2_real = F.conv2d(y_real, weight=kernel, stride=1, padding=0, groups=n_channels)
+    mu2_imag = F.conv2d(y_imag, weight=kernel, stride=1, padding=0, groups=n_channels)
 
     mu1_sq = mu1_real.pow(2) + mu1_imag.pow(2)
     mu2_sq = mu2_real.pow(2) + mu2_imag.pow(2)
@@ -507,15 +460,15 @@ def _ssim_per_channel_complex(x: torch.Tensor, y: torch.Tensor, kernel: torch.Te
     x_y_real = x_real * y_real - x_imag * y_imag
     x_y_imag = x_real * y_imag + x_imag * y_real
 
-    sigma1_sq = f.conv2d(x_sq, weight=kernel, stride=1, padding=0, groups=n_channels) - mu1_sq
-    sigma2_sq = f.conv2d(y_sq, weight=kernel, stride=1, padding=0, groups=n_channels) - mu2_sq
-    sigma12_real = f.conv2d(x_y_real, weight=kernel, stride=1, padding=0, groups=n_channels) - mu1_mu2_real
-    sigma12_imag = f.conv2d(x_y_imag, weight=kernel, stride=1, padding=0, groups=n_channels) - mu1_mu2_imag
+    sigma1_sq = F.conv2d(x_sq, weight=kernel, stride=1, padding=0, groups=n_channels) - mu1_sq
+    sigma2_sq = F.conv2d(y_sq, weight=kernel, stride=1, padding=0, groups=n_channels) - mu2_sq
+    sigma12_real = F.conv2d(x_y_real, weight=kernel, stride=1, padding=0, groups=n_channels) - mu1_mu2_real
+    sigma12_imag = F.conv2d(x_y_imag, weight=kernel, stride=1, padding=0, groups=n_channels) - mu1_mu2_imag
     sigma12 = torch.stack((sigma12_imag, sigma12_real), dim=-1)
     mu1_mu2 = torch.stack((mu1_mu2_real, mu1_mu2_imag), dim=-1)
     # Set alpha = beta = gamma = 1.
     cs_map = (sigma12 * 2 + c2 * compensation) / (sigma1_sq.unsqueeze(-1) + sigma2_sq.unsqueeze(-1) + c2 * compensation)
-    ssim_map = ((mu1_mu2 * 2 + c1 * compensation) / (mu1_sq.unsqueeze(-1) + mu2_sq.unsqueeze(-1) + c1 * compensation))
+    ssim_map = (mu1_mu2 * 2 + c1 * compensation) / (mu1_sq.unsqueeze(-1) + mu2_sq.unsqueeze(-1) + c1 * compensation)
     ssim_map = ssim_map * cs_map
 
     ssim_val = ssim_map.mean(dim=(-2, -3))
@@ -524,36 +477,10 @@ def _ssim_per_channel_complex(x: torch.Tensor, y: torch.Tensor, kernel: torch.Te
     return ssim_val, cs
 
 
-def _ssim_complex(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
-                  data_range: Union[float, int] = 1., k1: float = 0.01,
-                  k2: float = 0.03) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
-    r"""Calculate Structural Similarity (SSIM) index for Complex X and Y.
-
-    Args:
-        x: Batch of complex images, (N,C,H,W,2).
-        y: Batch of complex images, (N,C,H,W,2).
-        kernel: 2-D gauss kernel.
-        data_range: Value range of input images (usually 1.0 or 255).
-        k1: Algorithm parameter, K1 (small constant, see [1]).
-        k2: Algorithm parameter, K2 (small constant, see [1]).
-            Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
-
-    Returns:
-        Value of Complex Structural Similarity (SSIM) index.
-    """
-    ssim_map, cs_map = _ssim_per_channel_complex(x=x, y=y, kernel=kernel, data_range=data_range, k1=k1, k2=k2)
-
-    ssim_val = ssim_map.mean(1)
-    cs = cs_map.mean(1)
-
-    return ssim_val, cs
-
-
 def _multi_scale_ssim_complex(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float],
                               kernel: torch.Tensor, scale_weights_tensor: torch.Tensor, k1: float,
                               k2: float) -> torch.Tensor:
     r"""Calculate Multi scale Structural Similarity (MS-SSIM) index for Complex X and Y.
-
         Args:
             x: Batch of complex images, (N,C,H,W,2).
             y: Batch of complex images, (N,C,H,W,2).
@@ -562,10 +489,9 @@ def _multi_scale_ssim_complex(x: torch.Tensor, y: torch.Tensor, data_range: Unio
             k1: Algorithm parameter, K1 (small constant, see [1]).
             k2: Algorithm parameter, K2 (small constant, see [1]).
                 Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
-
         Returns:
             Value of Complex Mulri scale Structural Similarity (MS-SSIM) index.
-        """
+    """
     levels = scale_weights_tensor.size(0)
     min_size = (kernel.size(-1) - 1) * 2 ** (levels - 1) + 1
     if x.size(-2) < min_size or x.size(-3) < min_size:
@@ -579,15 +505,15 @@ def _multi_scale_ssim_complex(x: torch.Tensor, y: torch.Tensor, data_range: Unio
         y_imag = y[..., 1]
         if iteration > 0:
             padding = (x.size(2) % 2, x.size(3) % 2)
-            x_real = f.pad(x_real, pad=[padding[0], 0, padding[1], 0], mode='replicate')
-            x_imag = f.pad(x_imag, pad=[padding[0], 0, padding[1], 0], mode='replicate')
-            y_real = f.pad(y_real, pad=[padding[0], 0, padding[1], 0], mode='replicate')
-            y_imag = f.pad(y_imag, pad=[padding[0], 0, padding[1], 0], mode='replicate')
+            x_real = F.pad(x_real, pad=[padding[0], 0, padding[1], 0], mode='replicate')
+            x_imag = F.pad(x_imag, pad=[padding[0], 0, padding[1], 0], mode='replicate')
+            y_real = F.pad(y_real, pad=[padding[0], 0, padding[1], 0], mode='replicate')
+            y_imag = F.pad(y_imag, pad=[padding[0], 0, padding[1], 0], mode='replicate')
 
-            x_real = f.avg_pool2d(x_real, kernel_size=2, padding=0)
-            x_imag = f.avg_pool2d(x_imag, kernel_size=2, padding=0)
-            y_real = f.avg_pool2d(y_real, kernel_size=2, padding=0)
-            y_imag = f.avg_pool2d(y_imag, kernel_size=2, padding=0)
+            x_real = F.avg_pool2d(x_real, kernel_size=2, padding=0)
+            x_imag = F.avg_pool2d(x_imag, kernel_size=2, padding=0)
+            y_real = F.avg_pool2d(y_real, kernel_size=2, padding=0)
+            y_imag = F.avg_pool2d(y_imag, kernel_size=2, padding=0)
             x = torch.stack((x_real, x_imag), dim=-1)
             y = torch.stack((y_real, y_imag), dim=-1)
 
