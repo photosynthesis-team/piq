@@ -11,8 +11,9 @@ def ifftshift(x: torch.Tensor):
 
 def get_meshgrid(size: Tuple[int, int]) -> torch.Tensor:
     r"""Create meshgrid of requested size.
-        Args:
-            size: Shape of meshgrid to create
+
+    Args:
+        size: Shape of meshgrid to create
     """
     if size[0] % 2:
         # Odd
@@ -32,21 +33,24 @@ def get_meshgrid(size: Tuple[int, int]) -> torch.Tensor:
 
 def similarity_map(map_x: torch.Tensor, map_y: torch.Tensor, constant: float) -> torch.Tensor:
     r""" Compute similarity_map between two tensors using Dice-like equation.
-        Args:
-            map_x: Tensor with map to be compared
-            map_y: Tensor with map to be compared
-            constant: Used for numerical stability
+
+    Args:
+        map_x: Tensor with map to be compared
+        map_y: Tensor with map to be compared
+        constant: Used for numerical stability
     """
     return (2.0 * map_x * map_y + constant) / (map_x ** 2 + map_y ** 2 + constant)
 
 
 def gradient_map(x: torch.Tensor, kernels: torch.Tensor) -> torch.Tensor:
     r""" Compute gradient map for a given tensor and stack of kernels.
-        Args:
-            x: Tensor with shape B x C x H x W
-            kernels: Stack of tensors for gradient computation with shape N x k_W x k_H
-        Returns:
-            Gradients of x per-channel with shape B x C x H x W
+
+    Args:
+        x: Tensor with shape B x C x H x W
+        kernels: Stack of tensors for gradient computation with shape N x k_W x k_H
+
+    Returns:
+        Gradients of x per-channel with shape B x C x H x W
     """
     padding = kernels.size(-1) // 2
     grads = torch.nn.functional.conv2d(x, kernels.to(x), padding=padding)
@@ -57,11 +61,13 @@ def gradient_map(x: torch.Tensor, kernels: torch.Tensor) -> torch.Tensor:
 # ================== Operation Kernels  ==================
 def gaussian_filter(size: int, sigma: float) -> torch.Tensor:
     r"""Returns 2D Gaussian kernel N(0,`sigma`^2)
-        Args:
-            size: Size of the lernel
-            sigma: Std of the distribution
-        Returns:
-            gaussian_kernel: 2D kernel with shape (1 x kernel_size x kernel_size)
+
+    Args:
+        size: Size of the lernel
+        sigma: Std of the distribution
+
+    Returns:
+        gaussian_kernel: 2D kernel with shape (1 x kernel_size x kernel_size)
     """
     coords = torch.arange(size).to(dtype=torch.float32)
     coords -= (size - 1) / 2.
@@ -75,26 +81,30 @@ def gaussian_filter(size: int, sigma: float) -> torch.Tensor:
 
 def scharr_filter() -> torch.Tensor:
     r"""Utility function that returns a normalized 3x3 Scharr kernel in X direction
-        Returns:
-            kernel: Tensor with shape 1x3x3
+
+    Returns:
+        kernel: Tensor with shape 1x3x3
     """
     return torch.tensor([[[-3., 0., 3.], [-10., 0., 10.], [-3., 0., 3.]]]) / 16
 
 
 def prewitt_filter() -> torch.Tensor:
     r"""Utility function that returns a normalized 3x3 Prewitt kernel in X direction
-        Returns:
-            kernel: Tensor with shape 1x3x3"""
+
+    Returns:
+        kernel: Tensor with shape 1x3x3"""
     return torch.tensor([[[-1., 0., 1.], [-1., 0., 1.], [-1., 0., 1.]]]) / 3
 
 
 # ================== Color space conversion  ==================
 def rgb2lmn(x: torch.Tensor) -> torch.Tensor:
     r"""Convert a batch of RGB images to a batch of LMN images
-        Args:
-            x: Batch of 4D (N x 3 x H x W) images in RGB colour space.
-        Returns:
-            Batch of 4D (N x 3 x H x W) images in LMN colour space.
+
+    Args:
+        x: Batch of 4D (N x 3 x H x W) images in RGB colour space.
+
+    Returns:
+        Batch of 4D (N x 3 x H x W) images in LMN colour space.
     """
     weights_rgb_to_lmn = torch.tensor([[0.06, 0.63, 0.27],
                                        [0.30, 0.04, -0.35],
@@ -105,10 +115,12 @@ def rgb2lmn(x: torch.Tensor) -> torch.Tensor:
 
 def rgb2xyz(x: torch.Tensor) -> torch.Tensor:
     r"""Convert a batch of RGB images to a batch of XYZ images
-        Args:
-            x: Batch of 4D (N x 3 x H x W) images in RGB colour space.
-        Returns:
-            Batch of 4D (N x 3 x H x W) images in XYZ colour space.
+
+    Args:
+        x: Batch of 4D (N x 3 x H x W) images in RGB colour space.
+
+    Returns:
+        Batch of 4D (N x 3 x H x W) images in XYZ colour space.
     """
     mask_below = (x <= 0.04045).to(x)
     mask_above = (x > 0.04045).to(x)
@@ -123,14 +135,16 @@ def rgb2xyz(x: torch.Tensor) -> torch.Tensor:
     return x_xyz
 
 
-def xyz2lab(x: torch.Tensor, illuminant='D50', observer='2') -> torch.Tensor:
+def xyz2lab(x: torch.Tensor, illuminant: str = 'D50', observer: str = '2') -> torch.Tensor:
     r"""Convert a batch of XYZ images to a batch of LAB images
-        Args:
-            x: Batch of 4D (N x 3 x H x W) images in XYZ colour space.
-            illuminant: {“A”, “D50”, “D55”, “D65”, “D75”, “E”}, optional. The name of the illuminant.
-            observer: {“2”, “10”}, optional. The aperture angle of the observer.
-        Returns:
-            Batch of 4D (N x 3 x H x W) images in LAB colour space.
+
+    Args:
+        x: Batch of 4D (N x 3 x H x W) images in XYZ colour space.
+        illuminant: {“A”, “D50”, “D55”, “D65”, “D75”, “E”}, optional. The name of the illuminant.
+        observer: {“2”, “10”}, optional. The aperture angle of the observer.
+
+    Returns:
+        Batch of 4D (N x 3 x H x W) images in LAB colour space.
     """
     epsilon = 0.008856
     kappa = 903.3
@@ -167,21 +181,25 @@ def xyz2lab(x: torch.Tensor, illuminant='D50', observer='2') -> torch.Tensor:
 
 def rgb2lab(x: torch.Tensor, data_range: Union[int, float] = 255) -> torch.Tensor:
     r"""Convert a batch of RGB images to a batch of LAB images
-        Args:
-            x: Batch of 4D (N x 3 x H x W) images in RGB colour space.
-            data_range: dynamic range of the input image.
-        Returns:
-            Batch of 4D (N x 3 x H x W) images in LAB colour space.
+
+    Args:
+        x: Batch of 4D (N x 3 x H x W) images in RGB colour space.
+        data_range: dynamic range of the input image.
+
+    Returns:
+        Batch of 4D (N x 3 x H x W) images in LAB colour space.
     """
     return xyz2lab(rgb2xyz(x / float(data_range)))
 
 
 def rgb2yiq(x: torch.Tensor) -> torch.Tensor:
     r"""Convert a batch of RGB images to a batch of YIQ images
-        Args:
-            x: Batch of 4D (N x 3 x H x W) images in RGB colour space.
-        Returns:
-            Batch of 4D (N x 3 x H x W) images in YIQ colour space.
+
+    Args:
+        x: Batch of 4D (N x 3 x H x W) images in RGB colour space.
+
+    Returns:
+        Batch of 4D (N x 3 x H x W) images in YIQ colour space.
     """
     yiq_weights = torch.tensor([
         [0.299, 0.587, 0.114],
