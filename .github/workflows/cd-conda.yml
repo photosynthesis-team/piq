@@ -28,7 +28,8 @@ jobs:
           CONDA_TOKEN: ${{ secrets.CONDA_TOKEN }}
           CONDA_USERNAME: ${{ secrets.CONDA_USERNAME }}
         run: |
+          conda init bash
           conda build --quiet --no-test --output-folder conda_build ./conda/
           conda convert --platform win-64 conda_build/linux-64/*.tar.bz2 -o conda_build/
           conda convert --platform osx-64 conda_build/linux-64/*.tar.bz2 -o conda_build/
-          ls conda_build/*/*.tar.bz2 | xargs anaconda -v -t $CONDA_TOKEN upload -u $CONDA_USERNAME
+          ls conda_build/*/*.tar.bz2 | xargs -I {} anaconda -v -t $CONDA_TOKEN upload -u $CONDA_USERNAME {}
