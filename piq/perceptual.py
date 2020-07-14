@@ -18,7 +18,7 @@ from torch.nn.modules.loss import _Loss
 from torchvision.models import vgg16, vgg19
 
 from piq.utils import _validate_input, _adjust_dimensions
-from piq.functional import similarity_map, hann_filter
+from piq.functional import similarity_map, L2Pool2d
 
 
 # Map VGG names to corresponding number in torchvision layer
@@ -345,31 +345,3 @@ class DISTS(ContentLoss):
         for name, child in module.named_children():
             module_output.add_module(name, self.replace_pooling(child))
         return module_output
-
-
-class L2Pool2d(torch.nn.Module):
-    r"""Applies L2 pooling with Hann window of size 3x3
-    Args:
-        x: Tensor with shape (N, C, H, W)"""
-    EPS = 1e-12
-
-    def __init__(self, kernel_size: int = 3, stride: int = 2, padding=1) -> None:
-        super().__init__()
-        self.kernel_size = kernel_size
-        self.stride = stride
-        self.padding = padding
-
-        self.kernel = None
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        if self.kernel is None:
-            C = x.size(1)
-            self.kernel = hann_filter(self.kernel_size).repeat((C, 1, 1, 1)).to(x)
-
-        out = torch.nn.functional.conv2d(
-            x ** 2, self.kernel,
-            stride=self.stride,
-            padding=self.padding,
-            groups=x.shape[1]
-        )
-        return (out + self.EPS).sqrt()
