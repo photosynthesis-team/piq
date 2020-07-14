@@ -13,6 +13,9 @@ def raise_nothing():
     yield
 
 
+NONE_GRAD_ERR_MSG = 'Expected non None gradient of leaf variable'
+
+
 # ================== Test class: `ContentLoss` ==================
 def test_content_loss_init() -> None:
     ContentLoss()
@@ -24,11 +27,12 @@ def test_content_loss_forward(input_tensors: Tuple[torch.Tensor, torch.Tensor], 
     loss(prediction.to(device), target.to(device))
 
 
-def test_content_loss_backward(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
+def test_content_loss_computes_grad(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
     prediction, target = input_tensors
     prediction.requires_grad_()
-    loss = ContentLoss()
-    loss(prediction.to(device), target.to(device)).backward()
+    loss_value = ContentLoss()(prediction.to(device), target.to(device))
+    loss_value.backward()
+    assert prediction.grad is not None, NONE_GRAD_ERR_MSG
 
 
 def test_content_loss_raises_if_wrong_reduction(prediction: torch.Tensor, target: torch.Tensor) -> None:
@@ -72,11 +76,11 @@ def test_content_loss_supports_custom_extractor(prediction: torch.Tensor, target
 @pytest.mark.parametrize(
     "prediction,target,expectation,value",
     [
-        (torch.rand(4, 3, 96, 96, 2), torch.rand(4, 3, 96, 96, 2), pytest.raises(AssertionError), None),
-        (torch.randn(4, 3, 96, 96), torch.randn(4, 3, 96, 96), pytest.raises(AssertionError), None),
-        (torch.zeros(4, 3, 96, 96), torch.zeros(4, 3, 96, 96), raise_nothing(), 0.0),
-        (torch.ones(4, 3, 96, 96), torch.ones(4, 3, 96, 96), raise_nothing(), 0.0),
-        (torch.rand(4, 3, 28, 28), torch.rand(4, 3, 28, 28), pytest.raises(RuntimeError), None),
+        (torch.rand(2, 3, 96, 96, 2), torch.rand(2, 3, 96, 96, 2), pytest.raises(AssertionError), None),
+        (torch.randn(2, 3, 96, 96), torch.randn(2, 3, 96, 96), pytest.raises(AssertionError), None),
+        (torch.zeros(2, 3, 96, 96), torch.zeros(2, 3, 96, 96), raise_nothing(), 0.0),
+        (torch.ones(2, 3, 96, 96), torch.ones(2, 3, 96, 96), raise_nothing(), 0.0),
+        (torch.rand(2, 3, 28, 28), torch.rand(2, 3, 28, 28), pytest.raises(RuntimeError), None),
     ],
 )
 def test_content_loss_forward_for_special_cases(
@@ -91,6 +95,14 @@ def test_content_loss_forward_for_special_cases(
                 f'Expected loss value to be equal to target value. Got {loss_value} and {value}'
 
 
+@pytest.mark.skip("Negative tensors are not supported yet")
+def test_content_loss_forward_for_normalized_input(device: str) -> None:
+    prediction = torch.randn(2, 3, 96, 96).to(device)
+    target = torch.randn(2, 3, 96, 96).to(device)
+    loss = ContentLoss(mean=[0., 0., 0.], std=[1., 1., 1.])
+    loss(prediction.to(device), target.to(device))
+
+
 # ================== Test class: `StyleLoss` ==================
 def test_style_loss_init() -> None:
     StyleLoss()
@@ -102,11 +114,12 @@ def test_style_loss_forward(input_tensors: Tuple[torch.Tensor, torch.Tensor], de
     loss(prediction.to(device), target.to(device))
 
 
-def test_style_loss_backward(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
+def test_style_loss_computes_grad(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
     prediction, target = input_tensors
     prediction.requires_grad_()
-    loss = StyleLoss()
-    loss(prediction.to(device), target.to(device)).backward()
+    loss_value = StyleLoss()(prediction.to(device), target.to(device))
+    loss_value.backward()
+    assert prediction.grad is not None, NONE_GRAD_ERR_MSG
 
 
 def test_style_loss_raises_if_wrong_reduction(prediction: torch.Tensor, target: torch.Tensor) -> None:
@@ -129,9 +142,11 @@ def test_lpips_loss_forward(input_tensors: Tuple[torch.Tensor, torch.Tensor], de
     loss(prediction.to(device), target.to(device))
 
 
-def test_lpips_loss_backward(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
-    loss = LPIPS()
-    loss(prediction.to(device), target.to(device))
+def test_lpips_computes_grad(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+    prediction.requires_grad_()
+    loss_value = LPIPS()(prediction.to(device), target.to(device))
+    loss_value.backward()
+    assert prediction.grad is not None, NONE_GRAD_ERR_MSG
 
 
 def test_lpips_loss_raises_if_wrong_reduction(prediction: torch.Tensor, target: torch.Tensor) -> None:
@@ -143,33 +158,54 @@ def test_lpips_loss_raises_if_wrong_reduction(prediction: torch.Tensor, target: 
             LPIPS(reduction=mode)(prediction, target)
 
 
+@pytest.mark.parametrize(
+    "prediction,target,expectation,value",
+    [
+        (torch.zeros(2, 3, 96, 96), torch.zeros(2, 3, 96, 96), raise_nothing(), 0.0),
+        (torch.ones(2, 3, 96, 96), torch.ones(2, 3, 96, 96), raise_nothing(), 0.0),
+    ],
+)
+def test_lpips_loss_forward_for_special_cases(
+        prediction: torch.Tensor, target: torch.Tensor, expectation: Any, value: float) -> None:
+    loss = LPIPS()
+    with expectation:
+        if value is None:
+            loss(prediction, target)
+        else:
+            loss_value = loss(prediction, target)
+            assert torch.isclose(loss_value, torch.tensor(value), atol=1e-6), \
+                f'Expected loss value to be equal to target value. Got {loss_value} and {value}'
+
+
 # ================== Test class: `DISTS` ==================
 def test_dists_loss_forward(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
     loss = DISTS()
     loss(prediction.to(device), target.to(device))
 
 
-def test_dists_loss_backward(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
-    loss = LPIPS()
-    loss(prediction.to(device), target.to(device))
+def test_dists_computes_grad(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+    prediction.requires_grad_()
+    loss_value = DISTS()(prediction.to(device), target.to(device))
+    loss_value.backward()
+    assert prediction.grad is not None, NONE_GRAD_ERR_MSG
 
 
 @pytest.mark.parametrize(
     "prediction,target,expectation,value",
     [
-        (torch.zeros(4, 3, 128, 128), torch.zeros(4, 3, 128, 128), raise_nothing(), 0.0),
-        (torch.ones(4, 3, 128, 128), torch.ones(4, 3, 128, 128), raise_nothing(), 0.0),
+        (torch.zeros(2, 3, 96, 96), torch.zeros(2, 3, 96, 96), raise_nothing(), 0.0),
+        (torch.ones(2, 3, 96, 96), torch.ones(2, 3, 96, 96), raise_nothing(), 0.0),
     ],
 )
 def test_dists_loss_forward_for_special_cases(
         prediction: torch.Tensor, target: torch.Tensor, expectation: Any, value: float) -> None:
-    loss = ContentLoss()
+    loss = DISTS()
     with expectation:
         if value is None:
             loss(prediction, target)
         else:
             loss_value = loss(prediction, target)
-            assert torch.isclose(loss_value, torch.tensor(value)), \
+            assert torch.isclose(loss_value, torch.tensor(value), atol=1e-6), \
                 f'Expected loss value to be equal to target value. Got {loss_value} and {value}'
 
 

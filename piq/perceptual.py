@@ -5,7 +5,6 @@ References:
     (2016). A Neural Algorithm of Artistic Style}
     Association for Research in Vision and Ophthalmology (ARVO)
     https://arxiv.org/abs/1508.06576
-
     .. [2] Zhang, Richard and Isola, Phillip and Efros, et al.
     (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
     2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
@@ -19,7 +18,7 @@ from torch.nn.modules.loss import _Loss
 from torchvision.models import vgg16, vgg19
 
 from piq.utils import _validate_input, _adjust_dimensions
-from piq.functional import similarity_map
+from piq.functional import similarity_map, hann_filter
 
 
 # Map VGG names to corresponding number in torchvision layer
@@ -71,13 +70,15 @@ VGG19_LAYERS = {
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
 
+# Constant used in feature normalization to avoid zero division
+EPS = 1e-10
+
 
 class ContentLoss(_Loss):
     r"""Creates Content loss that can be used for image style transfer of as a measure in
     image to image tasks.
     Uses pretrained VGG models from torchvision. Normalizes features before summation.
     Expects input to be in range [0, 1] or normalized with ImageNet statistics into range [-1, 1]
-
     Args:
         feature_extractor: Model to extract features or model name in {`vgg16`, `vgg19`}.
         layers: List of strings with layer names. Default: [`relu3_3`]
@@ -91,20 +92,16 @@ class ContentLoss(_Loss):
             If there is no need to normalize data, use [1., 1., 1.].
         normalize_features: If true, unit-normalize each feature in channel dimension before scaling
             and computing distance. See [2] for details.
-
     References:
         .. [1] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
         (2016). A Neural Algorithm of Artistic Style}
         Association for Research in Vision and Ophthalmology (ARVO)
         https://arxiv.org/abs/1508.06576
-
         .. [2] Zhang, Richard and Isola, Phillip and Efros, et al.
         (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
         2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
         https://arxiv.org/abs/1801.03924
     """
-    # Constant used in feature normalization to avoid zero division
-    EPS = 1e-10
 
     def __init__(self, feature_extractor: Union[str, Callable] = "vgg16", layers: Tuple[str] = ("relu3_3", ),
                  weights: List[Union[float, torch.Tensor]] = [1.], replace_pooling: bool = False,
@@ -149,19 +146,12 @@ class ContentLoss(_Loss):
 
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         r"""Computation of Content loss between feature representations of prediction and target tensors.
-
         Args:
             prediction: Tensor of prediction of the network.
             target: Reference tensor.
-
         """
         _validate_input(input_tensors=(prediction, target), allow_5d=False)
         prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
-
-        # Normalize input
-        mean, std = self.mean.to(prediction), self.std.to(prediction)
-        prediction = (prediction - mean) / std
-        target = (target - mean) / std
 
         self.model.to(prediction)
         prediction_features = self.get_features(prediction)
@@ -191,6 +181,9 @@ class ContentLoss(_Loss):
         Returns:
             features: List of features extracted from intermediate layers
         """
+        # Normalize input
+        x = (x - self.mean.to(x)) / self.std.to(x)
+
         features = []
         for name, module in self.model._modules.items():
             x = module(x)
@@ -206,7 +199,7 @@ class ContentLoss(_Loss):
             x_norm: Normalized input
         """
         norm_factor = torch.sqrt(torch.sum(x ** 2, dim=1, keepdim=True))
-        return x / (norm_factor + self.EPS)
+        return x / (norm_factor + EPS)
 
     def replace_pooling(self, module: torch.nn.Module) -> torch.nn.Module:
         r"""Turn All MaxPool layers into AveragePool"""
@@ -251,7 +244,6 @@ class LPIPS(ContentLoss):
     r"""Learned Perceptual Image Patch Similarity metric.
     For now only VGG16 learned weights are supported.
     Expects input to be in range [0, 1] or normalized with ImageNet statistics into range [-1, 1]
-
     Args:
         feature_extractor: Name of model used to extract features. One of {`vgg16`, `vgg19`}
         use_average_pooling: Flag to replace MaxPooling layer with AveragePooling. See [1] for details.
@@ -261,13 +253,11 @@ class LPIPS(ContentLoss):
             If there is no need to normalize data, use [0., 0., 0.].
         std: List of float values used for data standartization. Default: ImageNet std.
             If there is no need to normalize data, use [1., 1., 1.].
-
     References:
         .. [1] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
         (2016). A Neural Algorithm of Artistic Style}
         Association for Research in Vision and Ophthalmology (ARVO)
         https://arxiv.org/abs/1508.06576
-
         .. [2] Zhang, Richard and Isola, Phillip and Efros, et al.
         (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
         2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
@@ -289,7 +279,6 @@ class LPIPS(ContentLoss):
 class DISTS(ContentLoss):
     r"""Deep Image Structure and Texture Similarity metric.
     Expects input to be in range [0, 1] or normalized with ImageNet statistics into range [-1, 1]
-
     Args:
         layers: List of strings with layer names. Default: [`relu3_3`]
         reduction: Reduction over samples in batch: "mean"|"sum"|"none"
@@ -297,15 +286,12 @@ class DISTS(ContentLoss):
             If there is no need to normalize data, use [0., 0., 0.].
         std: List of float values used for data standartization. Default: ImageNet std.
             If there is no need to normalize data, use [1., 1., 1.].
-
     References:
         .. [1] Keyan Ding, Kede Ma, Shiqi Wang, Eero P. Simoncelli
         (2020). Image Quality Assessment: Unifying Structure and Texture Similarity.
         https://arxiv.org/abs/2004.07728
         .. [2] https://github.com/dingkeyan93/DISTS
     """
-    # Constant used in feature normalization to avoid zero division
-    EPS = 1e-10
     _weights_url = "https://github.com/photosynthesis-team/piq/releases/download/v0.4.1/dists_weights.pt"
 
     def __init__(self, reduction: str = "mean", mean: List[float] = IMAGENET_MEAN,
@@ -325,19 +311,21 @@ class DISTS(ContentLoss):
         loss = super().forward(prediction, target)
         return 1 - loss
 
-    def compute_distance(self, prediction_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+    def compute_distance(self, prediction_features: torch.Tensor, target_features: torch.Tensor) -> List[torch.Tensor]:
         r"""Compute structure similarity between feature maps"""
         structure_distance, texture_distance = [], []
+        # Small constant for numerical stability
+        EPS = 1e-6
 
         for x, y in zip(prediction_features, target_features):
             x_mean = x.mean([2, 3], keepdim=True)
             y_mean = y.mean([2, 3], keepdim=True)
-            structure_distance.append(similarity_map(x_mean, y_mean, constant=1e-6))
+            structure_distance.append(similarity_map(x_mean, y_mean, constant=EPS))
 
             x_var = ((x - x_mean) ** 2).mean([2, 3], keepdim=True)
             y_var = ((y - y_mean) ** 2).mean([2, 3], keepdim=True)
             xy_cov = (x * y).mean([2, 3], keepdim=True) - x_mean * y_mean
-            texture_distance.append((2 * xy_cov + 1e-6) / (x_var + y_var + 1e-6))
+            texture_distance.append((2 * xy_cov + EPS) / (x_var + y_var + EPS))
 
         return structure_distance + texture_distance
 
@@ -375,18 +363,13 @@ class L2Pool2d(torch.nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.kernel is None:
-            self.construct_kernel(x)
-    
-        out = nn.functional.conv2d(x ** 2, self.kernel, stride=self.stride, padding=self.padding, groups=x.shape[1])
-        return (out + self.EPS).sqrt()
-    
-    def construct_kernel(self, x: torch.Tensor) -> torch.Tensor:
-        r"""Returns 2D Hann window kernel with number of channels equal to input channels"""
-        C = x.size(1)
-        
-        # Take bigger window and drop borders
-        window = torch.hann_window(self.kernel_size + 2, periodic=False)[1:-1]
-        kernel = window[:, None] * window[None, :]
+            C = x.size(1)
+            self.kernel = hann_filter(self.kernel_size).repeat((C, 1, 1, 1)).to(x)
 
-        # Normalize and reshape kernel
-        self.kernel = (kernel / kernel.sum()).repeat((C, 1, 1, 1)).to(x)
+        out = torch.nn.functional.conv2d(
+            x ** 2, self.kernel,
+            stride=self.stride,
+            padding=self.padding,
+            groups=x.shape[1]
+        )
+        return (out + self.EPS).sqrt()
