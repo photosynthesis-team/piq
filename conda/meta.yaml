@@ -10,8 +10,17 @@ source:
 requirements:
   build:
     - python>=3.6
+    - setuptools
+    - torch>=1.2.0,!=1.5.0
+    - scipy==1.3.3
+    - torchvision>=0.4.0,!=0.6.0
+    - gudhi>=3.2.0
   run:
     - python>=3.6
+    - torch>=1.2.0,!=1.5.0
+    - scipy==1.3.3
+    - torchvision>=0.4.0,!=0.6.0
+    - gudhi>=3.2.0
 
 build:
   script: python setup.py install
