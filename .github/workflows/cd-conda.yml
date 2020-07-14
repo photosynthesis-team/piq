@@ -22,4 +22,4 @@ jobs:
           echo "Still alive"
           conda -V
           conda build -V
-          python setup.py install
+          conda build ./conda/
