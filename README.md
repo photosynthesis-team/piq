@@ -2,7 +2,8 @@
 
 # PyTorch Image Quality
 [![License][license-shield]][license-url]
-[![PyPI version][pypi-version-shield]][pypi-version-url]  
+[![PyPI version][pypi-version-shield]][pypi-version-url]
+[![Conda version][conda-version-shield]][conda-version-url]
 ![CI flake-8 style check][ci-flake-8-style-check-shield]
 ![CI testing][ci-testing]
 [![codecov][codecov-shield]][codecov-url]  
@@ -465,6 +466,8 @@ For measures/metrics that can be used as loss functions, corresponding PyTorch m
 #### Installation
 
 `$ pip install piq`
+
+`$ conda install -c photosynthesis-team piq`
  
 If you want to use the latest features straight from the master, clone the repo:
 ```sh
@@ -520,7 +523,9 @@ Other projects by PhotoSynthesis Team:
 [ci-flake-8-style-check-shield]: https://github.com/photosynthesis-team/piq/workflows/flake-8%20style%20check/badge.svg
 [ci-testing]: https://github.com/photosynthesis-team/piq/workflows/testing/badge.svg
 [pypi-version-shield]: https://badge.fury.io/py/piq.svg
-[pypi-version-url]: https://badge.fury.io/py/piq  
+[pypi-version-url]: https://badge.fury.io/py/piq
+[conda-version-shield]: https://anaconda.org/photosynthesis-team/piq/badges/version.svg
+[conda-version-url]: https://anaconda.org/photosynthesis-team/piq
 [quality-gate-status-shield]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_photosynthesis.metrics&metric=alert_status
 [quality-gate-status-url]: https://sonarcloud.io/dashboard?id=photosynthesis-team_photosynthesis.metrics
 [maintainability-raiting-shield]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_photosynthesis.metrics&metric=sqale_rating
