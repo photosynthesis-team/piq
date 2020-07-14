@@ -12,9 +12,8 @@ def _adjust_dimensions(input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, to
     resized_tensors = []
     for tensor in input_tensors:
         if not isinstance(tensor, torch.FloatTensor):
-            warnings.warn(f'Expected input tensor with {torch.float} type, got {tensor.type()}. '
-                          f'The type of the tensor was changed to {torch.float}')
-        tmp = tensor.clone().type(torch.float)
+            warnings.warn(f'Expected input tensor {torch.FloatTensor}, got {tensor.type()}.')
+        tmp = tensor.clone()
         if tmp.dim() == 2:
             tmp = tmp.unsqueeze(0)
         if tmp.dim() == 3:

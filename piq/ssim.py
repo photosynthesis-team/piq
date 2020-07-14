@@ -48,6 +48,9 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
     """
     _validate_input(input_tensors=(x, y), allow_5d=True, kernel_size=kernel_size, scale_weights=None)
     x, y = _adjust_dimensions(input_tensors=(x, y))
+    if isinstance(x, torch.ByteTensor) or isinstance(y, torch.ByteTensor):
+        x = x.type(torch.float32)
+        y = y.type(torch.float32)
 
     kernel = gaussian_filter(kernel_size, kernel_sigma).repeat(x.size(1), 1, 1, 1).to(y)
     _compute_ssim_per_channel = _ssim_per_channel_complex if x.dim() == 5 else _ssim_per_channel
@@ -207,6 +210,9 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
     """
     _validate_input(input_tensors=(x, y), allow_5d=True, kernel_size=kernel_size, scale_weights=scale_weights)
     x, y = _adjust_dimensions(input_tensors=(x, y))
+    if isinstance(x, torch.ByteTensor) or isinstance(y, torch.ByteTensor):
+        x = x.type(torch.float32)
+        y = y.type(torch.float32)
 
     if scale_weights is None:
         scale_weights_from_ms_ssim_paper = [0.0448, 0.2856, 0.3001, 0.2363, 0.1333]

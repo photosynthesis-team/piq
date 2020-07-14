@@ -35,11 +35,10 @@ def ones_zeros_4d_5d(request: Any) -> Tuple[torch.Tensor, torch.Tensor]:
 
 @pytest.fixture(scope='module')
 def test_images() -> List[Tuple[torch.Tensor, torch.Tensor]]:
-    prediction_grey = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'),
-                                   dtype=torch.uint8).unsqueeze(0).unsqueeze(0)
-    target_grey = torch.tensor(imread('tests/assets/goldhill.gif'), dtype=torch.uint8).unsqueeze(0).unsqueeze(0)
-    prediction_rgb = torch.tensor(imread('tests/assets/I01.BMP'), dtype=torch.uint8).permute(2, 0, 1).unsqueeze(0)
-    target_rgb = torch.tensor(imread('tests/assets/i01_01_5.bmp'), dtype=torch.uint8).permute(2, 0, 1).unsqueeze(0)
+    prediction_grey = torch.tensor(imread('tests/assets/goldhill_jpeg.gif')).unsqueeze(0).unsqueeze(0)
+    target_grey = torch.tensor(imread('tests/assets/goldhill.gif')).unsqueeze(0).unsqueeze(0)
+    prediction_rgb = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1).unsqueeze(0)
+    target_rgb = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1).unsqueeze(0)
     return [(prediction_grey, target_grey), (prediction_rgb, target_rgb)]
 
 
@@ -173,11 +172,11 @@ def test_ssim_raise_if_wrong_value_is_estimated(test_images: Tuple[torch.Tensor,
 
 
 # ================== Test class: `SSIMLoss` ==================
-def test_ssim_loss_grad(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
-    prediction = prediction.to(device)
-    target = target.to(device)
+def test_ssim_loss_grad(prediction_target_4d_5d: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
+    prediction = prediction_target_4d_5d[0].to(device)
+    target = prediction_target_4d_5d[1].to(device)
     prediction.requires_grad_(True)
-    loss = SSIMLoss(data_range=1.)(prediction, target)
+    loss = SSIMLoss(data_range=1.)(prediction, target).mean()
     loss.backward()
     assert torch.isfinite(prediction.grad).all(), f'Expected finite gradient values, got {prediction.grad}'
 
@@ -399,11 +398,11 @@ def test_multi_scale_ssim_raise_if_wrong_value_is_estimated(test_images: Tuple[t
 
 
 # ================== Test class: `MultiScaleSSIMLoss` ==================
-def test_multi_scale_ssim_loss_grad(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
-    prediction = prediction.to(device)
+def test_multi_scale_ssim_loss_grad(prediction_target_4d_5d: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
+    prediction = prediction_target_4d_5d[0].to(device)
+    target = prediction_target_4d_5d[1].to(device)
     prediction.requires_grad_()
-    target = target.to(device)
-    loss = MultiScaleSSIMLoss(data_range=1.)(prediction, target)
+    loss = MultiScaleSSIMLoss(data_range=1.)(prediction, target).mean()
     loss.backward()
     assert torch.isfinite(prediction.grad).all(), f'Expected finite gradient values, got {prediction.grad}'
 
