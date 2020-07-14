@@ -1,3 +1,4 @@
+r"""Filters for gradient computation, bluring, etc."""
 import torch
 
 

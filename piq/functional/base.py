@@ -1,16 +1,16 @@
+r"""General purpose functions"""
 from typing import Tuple
 import torch
 
 
-def ifftshift(x: torch.Tensor):
-    r""" Similar to np.fft.ifftshift but applies to PyTorch Tensors
-    """
+def ifftshift(x: torch.Tensor) -> torch.Tensor:
+    r""" Similar to np.fft.ifftshift but applies to PyTorch Tensors"""
     shift = [-(ax // 2) for ax in x.size()]
     return torch.roll(x, shift, tuple(range(len(shift))))
 
 
 def get_meshgrid(size: Tuple[int, int]) -> torch.Tensor:
-    r"""
+    r"""Return coordinate grid matrices centered at zero point.
     Args:
         size: Shape of meshgrid to create
     """

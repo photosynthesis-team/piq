@@ -1,4 +1,4 @@
-r"""Color space convertion functions"""
+r"""Colour space convertion functions"""
 from typing import Union
 import torch
 
