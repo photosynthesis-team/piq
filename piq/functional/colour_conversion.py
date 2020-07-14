@@ -4,8 +4,7 @@ import torch
 
 
 def rgb2lmn(x: torch.Tensor) -> torch.Tensor:
-    r"""
-    Convert a batch of RGB images to a batch of LMN images
+    r"""Convert a batch of RGB images to a batch of LMN images
 
     Args:
         x: Batch of 4D (N x 3 x H x W) images in RGB colour space.
@@ -21,8 +20,7 @@ def rgb2lmn(x: torch.Tensor) -> torch.Tensor:
 
 
 def rgb2xyz(x: torch.Tensor) -> torch.Tensor:
-    r"""
-    Convert a batch of RGB images to a batch of XYZ images
+    r"""Convert a batch of RGB images to a batch of XYZ images
 
     Args:
         x: Batch of 4D (N x 3 x H x W) images in RGB colour space.
@@ -43,14 +41,14 @@ def rgb2xyz(x: torch.Tensor) -> torch.Tensor:
     return x_xyz
 
 
-def xyz2lab(x: torch.Tensor, illuminant='D50', observer='2') -> torch.Tensor:
-    r"""
-    Convert a batch of XYZ images to a batch of LAB images
+def xyz2lab(x: torch.Tensor, illuminant: str = 'D50', observer: str = '2') -> torch.Tensor:
+    r"""Convert a batch of XYZ images to a batch of LAB images
 
     Args:
         x: Batch of 4D (N x 3 x H x W) images in XYZ colour space.
         illuminant: {“A”, “D50”, “D55”, “D65”, “D75”, “E”}, optional. The name of the illuminant.
         observer: {“2”, “10”}, optional. The aperture angle of the observer.
+
     Returns:
         Batch of 4D (N x 3 x H x W) images in LAB colour space.
     """
@@ -88,12 +86,12 @@ def xyz2lab(x: torch.Tensor, illuminant='D50', observer='2') -> torch.Tensor:
 
 
 def rgb2lab(x: torch.Tensor, data_range: Union[int, float] = 255) -> torch.Tensor:
-    r"""
-    Convert a batch of RGB images to a batch of LAB images
+    r"""Convert a batch of RGB images to a batch of LAB images
 
     Args:
         x: Batch of 4D (N x 3 x H x W) images in RGB colour space.
         data_range: dynamic range of the input image.
+
     Returns:
         Batch of 4D (N x 3 x H x W) images in LAB colour space.
     """
@@ -101,8 +99,7 @@ def rgb2lab(x: torch.Tensor, data_range: Union[int, float] = 255) -> torch.Tenso
 
 
 def rgb2yiq(x: torch.Tensor) -> torch.Tensor:
-    r"""
-    Convert a batch of RGB images to a batch of YIQ images
+    r"""Convert a batch of RGB images to a batch of YIQ images
 
     Args:
         x: Batch of 4D (N x 3 x H x W) images in RGB colour space.

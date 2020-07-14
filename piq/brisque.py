@@ -13,7 +13,109 @@ from torch.nn.modules.loss import _Loss
 from torch.utils.model_zoo import load_url
 import torch.nn.functional as F
 from piq.utils import _adjust_dimensions, _validate_input
-from piq.functional import rgb2yiq
+from piq.functional import rgb2yiq, gaussian_filter
+
+
+def brisque(x: torch.Tensor,
+            kernel_size: int = 7, kernel_sigma: float = 7 / 6,
+            data_range: Union[int, float] = 1., reduction: str = 'mean',
+            interpolation: str = 'nearest') -> torch.Tensor:
+    r"""Interface of BRISQUE index.
+
+    Args:
+        x: Batch of images. Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
+        kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
+        kernel_sigma: Sigma of normal distribution.
+        data_range: Value range of input images (usually 1.0 or 255).
+        reduction: Reduction over samples in batch: "mean"|"sum"|"none".
+        interpolation: Interpolation to be used for scaling.
+
+    Returns:
+        Value of BRISQUE index.
+
+    References:
+        .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
+        https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
+    """
+    _validate_input(input_tensors=x, allow_5d=False)
+    x = _adjust_dimensions(input_tensors=x)
+
+    assert data_range >= x.max(), f'Expected data range greater or equal maximum value, got {data_range} and {x.max()}.'
+    x = x * 255. / data_range
+
+    if x.size(1) == 3:
+        x = rgb2yiq(x)[:, :1]
+    features = []
+    num_of_scales = 2
+    for _ in range(num_of_scales):
+        features.append(_natural_scene_statistics(x, kernel_size, kernel_sigma))
+        x = F.interpolate(x, size=(x.size(2) // 2, x.size(3) // 2), mode=interpolation)
+
+    features = torch.cat(features, dim=-1)
+    scaled_features = _scale_features(features)
+    score = _score_svr(scaled_features)
+    if reduction == 'none':
+        return score
+
+    return {'mean': score.mean,
+            'sum': score.sum
+            }[reduction](dim=0)
+
+
+class BRISQUELoss(_Loss):
+    r"""Creates a criterion that measures the BRISQUE score for input :math:`x`.
+    :math:`x` is tensor of 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
+    The sum operation still operates over all the elements, and divides by :math:`n`.
+    The division by :math:`n` can be avoided by setting ``reduction = 'sum'``.
+
+    Args:
+        kernel_size: By default, the mean and covariance of a pixel is obtained
+            by convolution with given filter_size.
+        kernel_sigma: Standard deviation for Gaussian kernel.
+        data_range: The difference between the maximum and minimum of the pixel value,
+            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
+            The pixel value interval of both input and output should remain the same.
+        reduction: Specifies the reduction to apply to the output:
+            ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
+            ``'mean'``: the sum of the output will be divided by the number of
+            elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``.
+        interpolation: Interpolation to be used for scaling.
+
+    Shape:
+        - Input: Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
+
+    Examples::
+        >>> loss = BRISQUELoss()
+        >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> target = torch.rand(3, 3, 256, 256)
+        >>> output = loss(prediction)
+        >>> output.backward()
+
+    References:
+        .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
+        https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
+    """
+    def __init__(self, kernel_size: int = 7, kernel_sigma: float = 7 / 6,
+                 data_range: Union[int, float] = 1., reduction: str = 'mean',
+                 interpolation: str = 'nearest') -> None:
+        super().__init__()
+        self.reduction = reduction
+        self.kernel_size = kernel_size
+        self.kernel_sigma = kernel_sigma
+        self.data_range = data_range
+        self.interpolation = interpolation
+
+    def forward(self, prediction: torch.Tensor) -> torch.Tensor:
+        r"""Computation of BRISQUE score as a loss function.
+
+        Args:
+            prediction: Tensor of prediction of the network.
+
+        Returns:
+            Value of BRISQUE loss to be minimized.
+        """
+        return brisque(prediction, reduction=self.reduction, kernel_size=self.kernel_size,
+                       kernel_sigma=self.kernel_sigma, data_range=self.data_range, interpolation=self.interpolation)
 
 
 def _ggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -65,24 +167,8 @@ def _aggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch
     return solution, left_sigma.squeeze(dim=-1), right_sigma.squeeze(dim=-1)
 
 
-def _gaussian_kernel2d(kernel_size: int = 7, sigma: float = 7 / 6) -> torch.Tensor:
-    r"""Returns 2D Gaussian kernel N(0,`sigma`)
-    Args:
-        kernel_size: Size
-        sigma: Sigma
-    Returns:
-        gaussian_kernel: 2D kernel with shape (kernel_size x kernel_size)
-
-    """
-    x = torch.arange(- (kernel_size // 2), kernel_size // 2 + 1).view(1, kernel_size)
-    y = torch.arange(- (kernel_size // 2), kernel_size // 2 + 1).view(kernel_size, 1)
-    kernel = torch.exp(-(x * x + y * y) / (2.0 * sigma ** 2))
-    kernel = kernel / torch.sum(kernel)
-    return kernel
-
-
 def _natural_scene_statistics(luma: torch.Tensor, kernel_size: int = 7, sigma: float = 7. / 6) -> torch.Tensor:
-    kernel = _gaussian_kernel2d(kernel_size=kernel_size, sigma=sigma).view(1, 1, kernel_size, kernel_size).to(luma)
+    kernel = gaussian_filter(size=kernel_size, sigma=sigma).view(1, 1, kernel_size, kernel_size).to(luma)
     C = 1
     mu = F.conv2d(luma, kernel, padding=kernel_size // 2)
     mu_sq = mu ** 2
@@ -132,9 +218,7 @@ def _scale_features(features: torch.Tensor) -> torch.Tensor:
 
 
 def _rbf_kernel(features: torch.Tensor, sv: torch.Tensor, gamma: float = 0.05) -> torch.Tensor:
-    features.unsqueeze_(dim=-1)
-    sv.unsqueeze_(dim=0)
-    dist = (features - sv).pow(2).sum(dim=1)
+    dist = (features.unsqueeze(dim=-1) - sv.unsqueeze(dim=0)).pow(2).sum(dim=1)
     return torch.exp(- dist * gamma)
 
 
@@ -151,108 +235,3 @@ def _score_svr(features: torch.Tensor) -> torch.Tensor:
     kernel_features = _rbf_kernel(features=features, sv=sv, gamma=gamma)
     score = kernel_features @ sv_coef
     return score - rho
-
-
-def brisque(x: torch.Tensor,
-            kernel_size: int = 7, kernel_sigma: float = 7 / 6,
-            data_range: Union[int, float] = 1., reduction: str = 'mean',
-            interpolation: str = 'nearest') -> torch.Tensor:
-    r"""Interface of SBRISQUE index.
-        Args:
-            x: Batch of images. Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
-            kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
-            kernel_sigma: Sigma of normal distribution.
-            data_range: Value range of input images (usually 1.0 or 255).
-            reduction: Reduction over samples in batch: "mean"|"sum"|"none".
-            interpolation: Interpolation to be used for scaling.
-        Returns:
-            Value of BRISQUE index.
-        References:
-            .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
-            https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
-        """
-    _validate_input(input_tensors=x, allow_5d=False)
-    x = _adjust_dimensions(input_tensors=x)
-
-    assert data_range >= x.max(), f'Expected data range greater or equal maximum value, got {data_range} and {x.max()}.'
-    x = x * 255. / data_range
-
-    if x.size(1) == 3:
-        x = rgb2yiq(x)[:, :1]
-    features = []
-    num_of_scales = 2
-    for _ in range(num_of_scales):
-        features.append(_natural_scene_statistics(x, kernel_size, kernel_sigma))
-        x = F.interpolate(x, scale_factor=0.5, mode=interpolation)
-
-    features = torch.cat(features, dim=-1)
-    scaled_features = _scale_features(features)
-    score = _score_svr(scaled_features)
-    if reduction == 'none':
-        return score
-
-    return {'mean': score.mean,
-            'sum': score.sum
-            }[reduction](dim=0)
-
-
-class BRISQUELoss(_Loss):
-    r"""Creates a criterion that measures the BRISQUE score for input :math:`x`.
-
-        :math:`x` is tensor of 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
-
-        The sum operation still operates over all the elements, and divides by :math:`n`.
-
-        The division by :math:`n` can be avoided by setting ``reduction = 'sum'``.
-
-
-        Args:
-            kernel_size: By default, the mean and covariance of a pixel is obtained
-                by convolution with given filter_size.
-            kernel_sigma: Standard deviation for Gaussian kernel.
-            data_range: The difference between the maximum and minimum of the pixel value,
-                i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
-                The pixel value interval of both input and output should remain the same.
-            reduction: Specifies the reduction to apply to the output:
-                ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
-                ``'mean'``: the sum of the output will be divided by the number of
-                elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``.
-            interpolation: Interpolation to be used for scaling.
-
-        Shape:
-            - Input: Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
-
-        Examples::
-
-            >>> loss = BRISQUELoss()
-            >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
-            >>> target = torch.rand(3, 3, 256, 256)
-            >>> output = loss(prediction)
-            >>> output.backward()
-
-        References:
-            .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
-            https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
-        """
-    def __init__(self, kernel_size: int = 7, kernel_sigma: float = 7 / 6,
-                 data_range: Union[int, float] = 1., reduction: str = 'mean',
-                 interpolation: str = 'nearest') -> None:
-        super().__init__()
-        self.reduction = reduction
-        self.kernel_size = kernel_size
-        self.kernel_sigma = kernel_sigma
-        self.data_range = data_range
-        self.interpolation = interpolation
-
-    def forward(self, prediction: torch.Tensor) -> torch.Tensor:
-        r"""Computation of BRISQUE score as a loss function.
-
-                Args:
-                    prediction: Tensor of prediction of the network.
-
-                Returns:
-                    Value of BRISQUE loss to be minimized.
-                """
-
-        return brisque(prediction, reduction=self.reduction, kernel_size=self.kernel_size,
-                       kernel_sigma=self.kernel_sigma, data_range=self.data_range, interpolation=self.interpolation)

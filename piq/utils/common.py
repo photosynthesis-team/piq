@@ -1,5 +1,5 @@
 from typing import Optional, Union, Tuple, List
-
+import warnings
 import torch
 
 
@@ -11,6 +11,8 @@ def _adjust_dimensions(input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, to
 
     resized_tensors = []
     for tensor in input_tensors:
+        if not isinstance(tensor, torch.FloatTensor):
+            warnings.warn(f'Expected input tensor {torch.FloatTensor}, got {tensor.type()}.')
         tmp = tensor.clone()
         if tmp.dim() == 2:
             tmp = tmp.unsqueeze(0)
@@ -56,8 +58,10 @@ def _validate_input(
     if scale_weights is not None:
         assert isinstance(scale_weights, (list, tuple, torch.Tensor)), \
             f'Scale weights must be of type list, tuple or torch.Tensor, got {type(scale_weights)}.'
-        assert (torch.tensor(scale_weights).dim() == 1), \
-            f'Scale weights must be one dimensional, got {torch.tensor(scale_weights).dim()}.'
+        if isinstance(scale_weights, (list, tuple)):
+            scale_weights = torch.tensor(scale_weights)
+        assert (scale_weights.dim() == 1), \
+            f'Scale weights must be one dimensional, got {scale_weights.dim()}.'
 
 
 def _validate_features(x: torch.Tensor, y: torch.Tensor) -> None:
