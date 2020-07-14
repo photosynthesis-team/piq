@@ -3,7 +3,7 @@
 # PyTorch Image Quality
 [![License][license-shield]][license-url]
 [![PyPI version][pypi-version-shield]][pypi-version-url]
-[![Conda version][conda-version-shield]][conda-version-url]
+[![Conda version][conda-version-shield]][conda-version-url]  
 ![CI flake-8 style check][ci-flake-8-style-check-shield]
 ![CI testing][ci-testing]
 [![codecov][codecov-shield]][codecov-url]  
