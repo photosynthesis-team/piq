@@ -24,17 +24,17 @@ def target() -> torch.Tensor:
 
 
 prediction_tensors = [
-    torch.rand(4, 3, 128, 128),  # Random 4D
-    torch.rand(4, 1, 128, 128),  # Random 4D greyscale
-    torch.rand(3, 128, 128),  # Random 3D
-    torch.rand(128, 128),  # Random 2D
+    torch.rand(4, 3, 96, 96),  # Random 4D
+    torch.rand(3, 96, 96),  # Random 3D
+    torch.rand(4, 1, 96, 96),  # Random 4D greyscale
+    torch.rand(96, 96),  # Random 2D greyscale
 ]
 
 target_tensors = [
-    torch.rand(4, 3, 128, 128),  # Random 4D
-    torch.rand(4, 1, 128, 128),  # Random 4D greyscale
-    torch.rand(3, 128, 128),  # Random 3D
-    torch.rand(128, 128),  # Random 2D
+    torch.rand(4, 3, 96, 96),  # Random 4D
+    torch.rand(3, 96, 96),  # Random 3D
+    torch.rand(4, 1, 96, 96),  # Random 4D greyscale
+    torch.rand(96, 96),  # Random 2D greyscale
 ]
 
 
