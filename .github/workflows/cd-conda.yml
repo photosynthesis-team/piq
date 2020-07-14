@@ -1,0 +1,24 @@
+name: deployment to conda
+
+on: push
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      - name: Setup Miniconda
+        uses: goanpeca/setup-miniconda@v1
+      - name: Install dependencies
+        run: |
+          conda install -y anaconda-client conda-build
+          conda config --set anaconda_upload yes
+      - name: Build and publish
+        run: |
+          echo "Still alive"
+          conda -V
+          conda build -V
