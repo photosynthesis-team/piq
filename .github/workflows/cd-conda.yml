@@ -15,7 +15,9 @@ jobs:
         uses: goanpeca/setup-miniconda@v1
       - name: Install dependencies
         run: |
-          conda install -y anaconda-client conda-build setuptools
+          python -m pip install --upgrade pip
+          pip install setuptools
+          conda install -y anaconda-client conda-build
           conda config --set anaconda_upload no
       - name: Build and publish
         run: |
