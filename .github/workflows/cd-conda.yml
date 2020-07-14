@@ -12,7 +12,13 @@ jobs:
         with:
           python-version: '3.x'
       - name: Setup Miniconda
-        uses: goanpeca/setup-miniconda@v1
+        run: |
+          sudo apt-get update
+          wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+          bash miniconda.sh -b -p $HOME/miniconda
+          export PATH="$HOME/miniconda/bin:$PATH"
+          hash -r
+          conda update -q conda
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -26,4 +32,9 @@ jobs:
           echo "Still alive"
           conda -V
           conda build -V
-          conda build ./conda/
+          conda build --quiet --no-test --output-folder conda_build ./conda/
+          conda convert --platform win-64 conda_build/linux-64/*.tar.bz2 -o conda_build/
+          conda convert --platform osx-64 conda_build/linux-64/*.tar.bz2 -o conda_build/
+          ls conda_build
+
+# https://github.com/pytorch/ignite
