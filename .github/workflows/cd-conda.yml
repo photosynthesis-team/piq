@@ -21,18 +21,14 @@ jobs:
           conda update -q conda
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install setuptools
           conda install -y anaconda-client conda-build
           conda config --set anaconda_upload no
-          conda config --append channels pytorch
-          conda config --append channels conda-forge
       - name: Build and publish
+        env:
+          CONDA_TOKEN: ${{ secrets.CONDA_TOKEN }}
+          CONDA_USERNAME: ${{ secrets.CONDA_USERNAME }}
         run: |
-          echo "Still alive"
-          conda -V
-          conda build -V
           conda build --quiet --no-test --output-folder conda_build ./conda/
           conda convert --platform win-64 conda_build/linux-64/*.tar.bz2 -o conda_build/
           conda convert --platform osx-64 conda_build/linux-64/*.tar.bz2 -o conda_build/
-#          ls conda_build/*/*.tar.bz2 | xargs -I {} anaconda -v -t $ANACONDA_TOKEN upload -u photosynthesis-team {}
+          ls conda_build/*/*.tar.bz2 | xargs -I {} anaconda -v -t $ANACONDA_TOKEN upload -u $CONDA_USERNAME {}
