@@ -19,6 +19,8 @@ jobs:
           pip install setuptools
           conda install -y anaconda-client conda-build
           conda config --set anaconda_upload no
+          conda config --append channels pytorch
+          conda config --append channels conda-forge
       - name: Build and publish
         run: |
           echo "Still alive"
