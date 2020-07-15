@@ -21,7 +21,7 @@ jobs:
           conda update -q conda
       - name: Install dependencies
         run: |
-          conda install -y -p $HOME/miniconda anaconda-client conda-build conda-verify
+          conda install -y --use-local anaconda-client conda-build conda-verify
           conda config --set anaconda_upload no
       - name: Build and publish
         env:
