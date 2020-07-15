@@ -1,8 +1,6 @@
 name: deployment to conda
 
-on:
-  release:
-    types: [published]
+on: [push]
 
 jobs:
   deploy:
