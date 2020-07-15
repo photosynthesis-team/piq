@@ -10,7 +10,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.x'
+          python-version: '3.7'
       - name: Setup Miniconda
         run: |
           sudo apt-get update
