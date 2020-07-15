@@ -10,7 +10,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.7'
+          python-version: '3.x'
       - name: Setup Miniconda
         run: |
           sudo apt-get update
@@ -29,6 +29,4 @@ jobs:
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
           conda build --quiet --no-test --output-folder conda_build conda.recipe
-          conda convert --platform win-64 conda_build/linux-64/*.tar.bz2 -o conda_build/
-          conda convert --platform osx-64 conda_build/linux-64/*.tar.bz2 -o conda_build/
-          ls conda_build/*/*.tar.bz2 | xargs -I {} anaconda -v -t $CONDA_TOKEN upload -u $CONDA_USERNAME {}
+          anaconda -v -t $CONDA_TOKEN upload -u $CONDA_USERNAME conda_build/noarch/*.tar.bz2
