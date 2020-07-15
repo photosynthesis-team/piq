@@ -31,4 +31,6 @@ jobs:
           conda build --quiet --no-test --output-folder conda_build conda.recipe
           conda convert --platform win-64 conda_build/linux-64/*.tar.bz2 -o conda_build/
           conda convert --platform osx-64 conda_build/linux-64/*.tar.bz2 -o conda_build/
-          ls conda_build/*/
+          anaconda upload conda_build/linux-64/*.tar.bz2
+          anaconda upload conda_build/win-64/*.tar.bz2
+          anaconda upload conda_build/osx-64/*.tar.bz2
