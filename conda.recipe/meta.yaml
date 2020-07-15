@@ -17,7 +17,7 @@ requirements:
     - gudhi>=3.2
 
 build:
-  script: python setup.py install
+  script: python setup.py install --single-version-externally-managed --record=record.txt
 
 about:
   home: https://github.com/photosynthesis-team/piq
