@@ -14,7 +14,7 @@ jobs:
       - name: Setup Anaconda
         run: |
           sudo apt-get update
-          wget https://repo.continuum.io/anaconda/Anaconda3-latest-Linux-x86_64.sh -O anaconda.sh;
+          wget https://repo.anaconda.com/archive/Anaconda3-latest-Linux-x86_64.sh -O anaconda.sh;
           bash anaconda.sh -b -p $HOME/anaconda
           export PATH="$HOME/anaconda/bin:$PATH"
           hash -r
