@@ -8,7 +8,7 @@ source:
   git_depth: 1
 
 build:
-  script: python setup.py install
+  script: python setup.py install --no-deps
 
 about:
   home: https://github.com/photosynthesis-team/piq
