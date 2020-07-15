@@ -29,6 +29,4 @@ jobs:
           conda build --quiet --no-test --output-folder conda_build conda.recipe
           conda convert --platform win-64 conda_build/linux-64/*.tar.bz2 -o conda_build/
           conda convert --platform osx-64 conda_build/linux-64/*.tar.bz2 -o conda_build/
-          ls /usr/share/miniconda/bin/
-          ls $HOME/miniconda/bin/
           ls conda_build/*/*.tar.bz2 | xargs -I {} anaconda -v -t $CONDA_TOKEN upload -u $CONDA_USERNAME {}
