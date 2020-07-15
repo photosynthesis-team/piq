@@ -11,12 +11,12 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: '3.x'
-      - name: Setup Anaconda
+      - name: Setup Miniconda
         run: |
           sudo apt-get update
-          wget https://repo.anaconda.com/archive/Anaconda3-latest-Linux-x86_64.sh -O anaconda.sh;
-          bash anaconda.sh -b -p $HOME/anaconda
-          export PATH="$HOME/anaconda/bin:$PATH"
+          wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+          bash miniconda.sh -b -p $HOME/miniconda
+          export PATH="$HOME/miniconda/bin:$PATH"
           hash -r
           conda update -q conda
       - name: Install dependencies
