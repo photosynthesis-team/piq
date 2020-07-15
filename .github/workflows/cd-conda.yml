@@ -15,10 +15,9 @@ jobs:
         run: |
           sudo apt-get update
           wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-          bash miniconda.sh -p $HOME/miniconda
+          bash miniconda.sh -b -p $HOME/miniconda
+          export PATH="$HOME/miniconda/bin:$PATH"
           conda update -q conda
-          conda config --add channels conda-forge
-          conda config --add channels pytorch
           conda install -y anaconda-client conda-build conda-verify
           conda config --set anaconda_upload no
       - name: Build and publish
@@ -26,6 +25,7 @@ jobs:
           CONDA_TOKEN: ${{ secrets.CONDA_TOKEN }}
           CONDA_USERNAME: ${{ secrets.CONDA_USERNAME }}
         run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
           conda build --quiet --no-test --output-folder conda_build conda.recipe
           conda convert --platform win-64 conda_build/linux-64/*.tar.bz2 -o conda_build/
           conda convert --platform osx-64 conda_build/linux-64/*.tar.bz2 -o conda_build/
