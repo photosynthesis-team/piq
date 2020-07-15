@@ -21,7 +21,7 @@ jobs:
           conda update -q conda
       - name: Install dependencies
         run: |
-          conda install -y anaconda-client conda-build conda-verify
+          conda install -y anaconda anaconda-client conda-build conda-verify
           conda config --set anaconda_upload no
       - name: Build and publish
         env:
@@ -31,6 +31,4 @@ jobs:
           conda build --quiet --no-test --output-folder conda_build conda.recipe
           conda convert --platform win-64 conda_build/linux-64/*.tar.bz2 -o conda_build/
           conda convert --platform osx-64 conda_build/linux-64/*.tar.bz2 -o conda_build/
-          anaconda upload conda_build/linux-64/*.tar.bz2
-          anaconda upload conda_build/win-64/*.tar.bz2
-          anaconda upload conda_build/osx-64/*.tar.bz2
+          ls conda_build/*/*.tar.bz2 | xargs -I {} anaconda -v -t $CONDA_TOKEN upload -u $CONDA_USERNAME {}
