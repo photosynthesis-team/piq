@@ -18,6 +18,8 @@ jobs:
           bash miniconda.sh -b -p $HOME/miniconda
           export PATH="$HOME/miniconda/bin:$PATH"
           conda update -q conda
+          conda config --add channels conda-forge
+          conda config --add channels pytorch
           conda install -y anaconda-client conda-build conda-verify
           conda config --set anaconda_upload no
       - name: Build and publish
