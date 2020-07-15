@@ -22,12 +22,13 @@ jobs:
       - name: Install dependencies
         run: |
           conda install -y anaconda-client conda-build conda-verify
-          conda config --set anaconda_upload yes
+          conda config --set anaconda_upload no
       - name: Build and publish
         env:
           CONDA_TOKEN: ${{ secrets.CONDA_TOKEN }}
           CONDA_USERNAME: ${{ secrets.CONDA_USERNAME }}
         run: |
-          conda build --token $CONDA_TOKEN --user $CONDA_USERNAME --quiet --no-test --output-folder conda_build ./conda/
+          conda build --quiet --no-test --output-folder conda_build conda.recipe
           conda convert --platform win-64 conda_build/linux-64/*.tar.bz2 -o conda_build/
           conda convert --platform osx-64 conda_build/linux-64/*.tar.bz2 -o conda_build/
+          ls conda_build
