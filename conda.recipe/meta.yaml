@@ -23,7 +23,7 @@ requirements:
     - gudhi>=3.2
 
 build:
-  script: python setup.py install --no-deps
+  script: python setup.py install
 
 about:
   home: https://github.com/photosynthesis-team/piq
