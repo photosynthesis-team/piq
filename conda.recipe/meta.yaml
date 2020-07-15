@@ -1,9 +1,9 @@
+{% set data = load_setup_py_data() %}
 package:
   name: piq
-  version: "0.5.0"
+  version: {{ data.get('version') }}
 
 source:
-  git_rev: "v0.5.0"
   git_url: https://github.com/photosynthesis-team/piq.git
   git_depth: 1
 
@@ -21,3 +21,4 @@ about:
   home: https://github.com/photosynthesis-team/piq
   license: Apache License 2.0
   license_file: LICENSE
+  summary: PyTorch Image Quality. Collection of measures and metrics for automatic image quality assessment in various image-to-image tasks such as denoising, super-resolution, image generation etc.
