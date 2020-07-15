@@ -1,6 +1,6 @@
 name: deployment to conda
 
-on: push
+on: [push]
 
 jobs:
   deploy:
