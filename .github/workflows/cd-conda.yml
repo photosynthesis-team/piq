@@ -19,10 +19,7 @@ jobs:
           export PATH="$HOME/miniconda/bin:$PATH"
           hash -r
           conda update -q conda
-      - name: Install dependencies
-        run: |
-          conda install -y -p $HOME/miniconda anaconda-client
-          conda install -y conda-build conda-verify
+          conda install -y anaconda-client conda-build conda-verify
           conda config --set anaconda_upload no
       - name: Build and publish
         env:
