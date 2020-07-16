@@ -4,7 +4,6 @@ import pytest
 import torch
 
 from piq import GS
-import gudhi
 
 
 @pytest.fixture(scope='module')
