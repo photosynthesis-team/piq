@@ -1,0 +1,36 @@
+name: deployment to conda
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      - name: Setup Miniconda
+        run: |
+          sudo apt-get update
+          wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+          bash miniconda.sh -b -p $HOME/miniconda
+          export PATH="$HOME/miniconda/bin:$PATH"
+          conda update -q conda
+          conda config --add channels conda-forge
+          conda config --add channels pytorch
+          conda install -y anaconda-client conda-build conda-verify
+          conda config --set anaconda_upload no
+      - name: Build and publish
+        env:
+          CONDA_TOKEN: ${{ secrets.CONDA_TOKEN }}
+          CONDA_USERNAME: ${{ secrets.CONDA_USERNAME }}
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          conda build --quiet --no-test --output-folder conda_build conda.recipe
+          conda convert --platform win-64 conda_build/linux-64/*.tar.bz2 -o conda_build/
+          conda convert --platform osx-64 conda_build/linux-64/*.tar.bz2 -o conda_build/
+          ls conda_build/*/*.tar.bz2 | xargs -I {} anaconda -v -t $CONDA_TOKEN upload -u $CONDA_USERNAME {}
