@@ -2,7 +2,7 @@ import pytest
 import torch
 
 from piq import FID
-from piq.feature_extractors.fid_inception import InceptionV3
+from piq.feature_extractors import InceptionV3
 
 
 class TestDataset(torch.utils.data.Dataset):

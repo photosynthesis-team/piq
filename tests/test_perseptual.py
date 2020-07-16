@@ -5,7 +5,7 @@ from contextlib import contextmanager
 
 from skimage.io import imread
 from piq import ContentLoss, StyleLoss, LPIPS, DISTS
-from piq.feature_extractors.fid_inception import InceptionV3
+from piq.feature_extractors import InceptionV3
 
 
 @contextmanager
