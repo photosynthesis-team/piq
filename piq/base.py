@@ -1,6 +1,6 @@
 import torch
 
-from piq.feature_extractors.fid_inception import InceptionV3
+from piq.feature_extractors import InceptionV3
 from piq.utils import _validate_features
 
 
