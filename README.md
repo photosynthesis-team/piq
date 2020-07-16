@@ -467,7 +467,7 @@ For measures/metrics that can be used as loss functions, corresponding PyTorch m
 
 `$ pip install piq`
 
-`$ conda install -c photosynthesis-team piq`
+`$ conda install piq -c photosynthesis-team -c conda-forge -c pytorch`
  
 If you want to use the latest features straight from the master, clone the repo:
 ```sh
