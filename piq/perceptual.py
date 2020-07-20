@@ -1,5 +1,5 @@
 """
-Implementation of Content loss, Style loss and LPIPS metric
+Implementation of Content loss, Style loss, LPIPS and DISTS metrics
 References:
     .. [1] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
     (2016). A Neural Algorithm of Artistic Style}

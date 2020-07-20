@@ -64,6 +64,47 @@ output.backward()
 </p>
 </details>
 
+<!-- CONTENT EXAMPLES -->
+<details>
+<summary>Content score</summary>
+<p>
+
+To compute [Content score](https://openaccess.thecvf.com/content_cvpr_2016/html/Gatys_Image_Style_Transfer_CVPR_2016_paper.html) as a loss function, use corresponding PyTorch module:
+```python
+import torch
+from piq import ContentLoss
+
+loss = ContentLoss(feature_extractor="vgg16", layers=("relu3_3", ))
+prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+output: torch.Tensor = loss(prediction)
+output.backward()
+```
+
+By default VGG16 model is used, but any feature extractor model is supported. Don't forget to adjust layers names accordingly.
+Features from different layers can be weighted differently. Use `weights` parameter. See other options in class docstring. 
+</p>
+</details>
+
+ <!-- DISTS EXAMPLES -->
+<details>
+<summary>Deep Image Structure and Texture Similarity measure (DISTS)</summary>
+<p>
+
+To compute [DISTS](https://arxiv.org/abs/2004.07728) as a loss function, use corresponding PyTorch module:
+```python
+import torch
+from piq import DISTS
+
+loss = DISTS()
+prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+output: torch.Tensor = loss(prediction)
+output.backward()
+```
+
+By default input images are normalized with ImageNet statistics before forwarding through VGG16 model. If there is no need to normalize the data, use `mean=[0.0, 0.0, 0.0]` and `std=[1.0, 1.0, 1.0]`.
+</p>
+</details>
+
 <!-- FSIM EXAMPLES -->
  <details>
  <summary>Feature Similarity Index Measure (FSIM)</summary>
@@ -231,6 +272,25 @@ output.backward()
  </p>
  </details>
  
+ <!-- LPIPS EXAMPLES -->
+<details>
+<summary>Learned Perceptual Image Patch Similarity measure (LPIPS)</summary>
+<p>
+
+To compute [LPIPS](https://arxiv.org/abs/1801.03924) as a loss function, use corresponding PyTorch module:
+```python
+import torch
+from piq import LPIPS
+
+loss = LPIPS()
+prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+output: torch.Tensor = loss(prediction)
+output.backward()
+```
+Now LPIPS is supported only for VGG16 model. If you need other models, check [original repo](https://github.com/richzhang/PerceptualSimilarity).
+</p>
+</details>
+
  <!-- MSID EXAMPLES -->
  <details>
  <summary>Multi-Scale Intrinsic Distance (MSID)</summary>
@@ -364,6 +424,27 @@ target = torch.rand(3, 3, 256, 256)
 output: torch.Tensor = loss(prediction, target)
 output.backward()
 ```
+</p>
+</details>
+
+<!-- STYLE EXAMPLES -->
+<details>
+<summary>Style score</summary>
+<p>
+
+To compute [Style score](https://openaccess.thecvf.com/content_cvpr_2016/html/Gatys_Image_Style_Transfer_CVPR_2016_paper.html) as a loss function, use corresponding PyTorch module:
+```python
+import torch
+from piq import StyleLoss
+
+loss = StyleLoss(feature_extractor="vgg16", layers=("relu3_3", ))
+prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+output: torch.Tensor = loss(prediction)
+output.backward()
+```
+
+By default VGG16 model is used, but any feature extractor model is supported. Don't forget to adjust layers names accordingly.
+Features from different layers can be weighted differently. Use `weights` parameter. See other options in class docstring. 
 </p>
 </details>
 
