@@ -26,6 +26,7 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     Args:
         x: Batch of predicted images with shape (batch_size x channels x H x W)
         y: Batch of target images with shape  (batch_size x channels x H x W)
+        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
         data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
         chromatic: Flag to compute FSIMc, which also takes into account chromatic components
         scales: Number of wavelets used for computation of phase congruensy maps
@@ -374,7 +375,6 @@ class FSIMLoss(_Loss):
     use function `fsim` instead.
 
     Args:
-        chromatic: Flag to compute FSIMc, which also takes into account chromatic components
         reduction: Specifies the reduction to apply to the output:
             ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
             ``'mean'``: the sum of the output will be divided by the number of
@@ -382,6 +382,7 @@ class FSIMLoss(_Loss):
         data_range: The difference between the maximum and minimum of the pixel value,
             i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
             The pixel value interval of both input and output should remain the same.
+        chromatic: Flag to compute FSIMc, which also takes into account chromatic components
         scales: Number of wavelets used for computation of phase congruensy maps
         orientations: Number of filter orientations used for computation of phase congruensy maps
         min_length: Wavelength of smallest scale filter
@@ -409,10 +410,9 @@ class FSIMLoss(_Loss):
         .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
         https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
         """
-    def __init__(self, data_range: Union[int, float] = 1., reduction: str = 'mean', scales: int = 4,
-                 orientations: int = 4, min_length: int = 6, mult: int = 2, sigma_f: float = 0.55,
-                 delta_theta: float = 1.2, k: float = 2.0) -> None:
-
+    def __init__(self, reduction: str = 'mean', data_range: Union[int, float] = 1., chromatic: bool = True,
+                 scales: int = 4, orientations: int = 4, min_length: int = 6, mult: int = 2,
+                 sigma_f: float = 0.55, delta_theta: float = 1.2, k: float = 2.0) -> None:
         super().__init__()
         self.data_range = data_range
         self.reduction = reduction
@@ -420,8 +420,9 @@ class FSIMLoss(_Loss):
         # Save function with predefined parameters, rather than parameters themself
         self.fsim = functools.partial(
             fsim,
-            data_range=data_range,
             reduction=reduction,
+            data_range=data_range,
+            chromatic=chromatic,
             scales=scales,
             orientations=orientations,
             min_length=min_length,
