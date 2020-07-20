@@ -425,9 +425,9 @@ def _multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, f
     ssim_val = None
     for iteration in range(levels):
         if iteration > 0:
-            padding = (x.shape[2] % 2, x.shape[3] % 2)
-            x = F.pad(x, pad=[padding[0], 0, padding[1], 0], mode='replicate')
-            y = F.pad(y, pad=[padding[0], 0, padding[1], 0], mode='replicate')
+            padding = max(x.shape[2] % 2, x.shape[3] % 2)
+            x = F.pad(x, pad=[padding, 0, padding, 0], mode='replicate')
+            y = F.pad(y, pad=[padding, 0, padding, 0], mode='replicate')
             x = F.avg_pool2d(x, kernel_size=2, padding=0)
             y = F.avg_pool2d(y, kernel_size=2, padding=0)
 
@@ -536,11 +536,11 @@ def _multi_scale_ssim_complex(x: torch.Tensor, y: torch.Tensor, data_range: Unio
         y_real = y[..., 0]
         y_imag = y[..., 1]
         if iteration > 0:
-            padding = (x.size(2) % 2, x.size(3) % 2)
-            x_real = F.pad(x_real, pad=[padding[0], 0, padding[1], 0], mode='replicate')
-            x_imag = F.pad(x_imag, pad=[padding[0], 0, padding[1], 0], mode='replicate')
-            y_real = F.pad(y_real, pad=[padding[0], 0, padding[1], 0], mode='replicate')
-            y_imag = F.pad(y_imag, pad=[padding[0], 0, padding[1], 0], mode='replicate')
+            padding = max(x.size(2) % 2, x.size(3) % 2)
+            x_real = F.pad(x_real, pad=[padding, 0, padding, 0], mode='replicate')
+            x_imag = F.pad(x_imag, pad=[padding, 0, padding, 0], mode='replicate')
+            y_real = F.pad(y_real, pad=[padding, 0, padding, 0], mode='replicate')
+            y_imag = F.pad(y_imag, pad=[padding, 0, padding, 0], mode='replicate')
 
             x_real = F.avg_pool2d(x_real, kernel_size=2, padding=0)
             x_imag = F.avg_pool2d(x_imag, kernel_size=2, padding=0)

@@ -389,8 +389,7 @@ def test_multi_scale_ssim_raise_if_wrong_value_is_estimated(test_images: Tuple[t
         with tf.device('/CPU'):
             tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target, max_val=255,
                                                                power_factors=scale_weights).numpy()).to(device)
-        number_of_weights = 5.
-        match_accuracy = number_of_weights * 1e-5 + 1e-8
+        match_accuracy = 1e-5 + 1e-8
         assert torch.allclose(piq_ms_ssim, tf_ms_ssim, rtol=0, atol=match_accuracy), \
             f'The estimated value must be equal to tensorflow provided one' \
             f'(considering floating point operation error up to {match_accuracy}), ' \
@@ -516,8 +515,7 @@ def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated(test_images: Li
             tf_ms_ssim = torch.tensor(tf.image.ssim_multiscale(tf_prediction, tf_target,
                                                                power_factors=scale_weights,
                                                                max_val=255).numpy()).mean().to(device)
-        number_of_weights = len(piq_loss.scale_weights)
-        match_accuracy = number_of_weights * 1e-5 + 1e-8
+        match_accuracy = 1e-5 + 1e-8
         assert torch.isclose(piq_ms_ssim_loss, 1. - tf_ms_ssim, rtol=0, atol=match_accuracy), \
             f'The estimated value must be equal to tensorflow provided one' \
             f'(considering floating point operation error up to {match_accuracy}), ' \

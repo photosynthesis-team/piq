@@ -75,10 +75,14 @@ def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
     padding = kernel_size // 2
 
     if padding:
-        vs_prediction = pad(vs_prediction, pad=[1, 0, 1, 0], mode='replicate')
-        vs_target = pad(vs_target, pad=[1, 0, 1, 0], mode='replicate')
-        prediction_lmn = pad(prediction_lmn, pad=[1, 0, 1, 0], mode='replicate')
-        target_lmn = pad(target_lmn, pad=[1, 0, 1, 0], mode='replicate')
+        upper_pad = padding
+        bottom_pad = (kernel_size - 1) // 2
+        pad_to_use = [upper_pad, bottom_pad, upper_pad, bottom_pad]
+        mode = 'replicate'
+        vs_prediction = pad(vs_prediction, pad=pad_to_use, mode=mode)
+        vs_target = pad(vs_target, pad=pad_to_use, mode=mode)
+        prediction_lmn = pad(prediction_lmn, pad=pad_to_use, mode=mode)
+        target_lmn = pad(target_lmn, pad=pad_to_use, mode=mode)
 
     vs_prediction = avg_pool2d(vs_prediction, kernel_size=kernel_size)
     vs_target = avg_pool2d(vs_target, kernel_size=kernel_size)

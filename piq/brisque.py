@@ -37,7 +37,7 @@ def brisque(x: torch.Tensor,
         .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
         https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
     """
-    _validate_input(input_tensors=x, allow_5d=False)
+    _validate_input(input_tensors=x, allow_5d=False, kernel_size=kernel_size)
     x = _adjust_dimensions(input_tensors=x)
 
     assert data_range >= x.max(), f'Expected data range greater or equal maximum value, got {data_range} and {x.max()}.'
