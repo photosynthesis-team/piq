@@ -1,5 +1,5 @@
 r"""General purpose functions"""
-from typing import Tuple
+from typing import Tuple, Union
 import torch
 
 
@@ -54,3 +54,28 @@ def gradient_map(x: torch.Tensor, kernels: torch.Tensor) -> torch.Tensor:
     grads = torch.nn.functional.conv2d(x, kernels.to(x), padding=padding)
 
     return torch.sqrt(torch.sum(grads ** 2, dim=-3, keepdim=True))
+
+
+def pow_for_complex(base: torch.Tensor, exp: Union[int, float]) -> torch.Tensor:
+    r""" Power a 4D tensor with negative values or 5D tensor with complex values.
+    Complex numbers are represented by modulus and argument: r * \exp(i * \phi).
+
+    It will likely to be redundant with introduction of torch.ComplexTensor.
+
+    Args:
+        base: Tensor with shape (B x C x H x W) or (2 x B x C x H x W)
+        exp: int or float
+    Returns:
+        Complex tensor with shape (2 x B x C x H x W)
+    """
+    if base.dim() == 4:
+        x_complex = [base.abs(), torch.atan2(torch.zeros_like(base), base)]
+    elif base.dim() == 5 and base.size(0) == 2:
+        x_complex = [base.pow(2).sum(dim=0).sqrt(), torch.atan2(base[1], base[0])]
+    else:
+        raise ValueError(f'Expected real or complex tensor, got {base.size()}')
+
+    x_complex_pow = [x_complex[0] ** exp, x_complex[1] * exp]
+    x_real_pow = x_complex_pow[0] * torch.cos(x_complex_pow[1])
+    x_imag_pow = x_complex_pow[0] * torch.sin(x_complex_pow[1])
+    return torch.stack((x_real_pow, x_imag_pow), dim=0)
