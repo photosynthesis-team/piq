@@ -20,35 +20,35 @@ def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
         omega_0: float = 0.021, sigma_f: float = 1.34, sigma_d: float = 145., sigma_c: float = 0.001) -> torch.Tensor:
     r"""Compute Visual Saliency-induced Index for a batch of images.
 
-        Both inputs are supposed to have RGB order in accordance with the original approach.
-        Nevertheless, the method supports greyscale images, which they are converted to RGB by copying the grey
-        channel 3 times.
+    Both inputs are supposed to have RGB order in accordance with the original approach.
+    Nevertheless, the method supports greyscale images, which they are converted to RGB by copying the grey
+    channel 3 times.
 
-        Args:
-            prediction: Batch of predicted images with shape (batch_size x channels x H x W)
-            target: Batch of target images with shape  (batch_size x channels x H x W)
-            reduction: Reduction over samples in batch: "mean"|"sum"|"none"
-            data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
-            c1: coefficient to calculate saliency component of VSI
-            c2: coefficient to calculate gradient component of VSI
-            c3: coefficient to calculate color component of VSI
-            alpha: power for gradient component of VSI
-            beta: power for color component of VSI
-            omega_0: coefficient to get log Gabor filter at SDSP
-            sigma_f: coefficient to get log Gabor filter at SDSP
-            sigma_d: coefficient to get SDSP
-            sigma_c: coefficient to get SDSP
+    Args:
+        prediction: Batch of predicted images with shape (batch_size x channels x H x W)
+        target: Batch of target images with shape  (batch_size x channels x H x W)
+        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
+        data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
+        c1: coefficient to calculate saliency component of VSI
+        c2: coefficient to calculate gradient component of VSI
+        c3: coefficient to calculate color component of VSI
+        alpha: power for gradient component of VSI
+        beta: power for color component of VSI
+        omega_0: coefficient to get log Gabor filter at SDSP
+        sigma_f: coefficient to get log Gabor filter at SDSP
+        sigma_d: coefficient to get SDSP
+        sigma_c: coefficient to get SDSP
 
-        Returns:
-            VSI: Index of similarity between two images. Usually in [0, 1] interval.
+    Returns:
+        VSI: Index of similarity between two images. Usually in [0, 1] interval.
 
-        Shape:
-                - Input: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
-                - Target: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
-        Note:
-            The original method supports only RGB image.
-            See https://ieeexplore.ieee.org/document/6873260 for details.
-        """
+    Shape:
+            - Input: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
+            - Target: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
+    Note:
+        The original method supports only RGB image.
+        See https://ieeexplore.ieee.org/document/6873260 for details.
+    """
     _validate_input(input_tensors=(prediction, target), allow_5d=False)
     prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
     if prediction.size(1) == 1:
@@ -120,53 +120,53 @@ def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
 
 
 class VSILoss(_Loss):
+    r"""Creates a criterion that measures Visual Saliency-induced Index error between
+    each element in the input and target.
+
+    The sum operation still operates over all the elements, and divides by :math:`n`.
+
+    The division by :math:`n` can be avoided if one sets ``reduction = 'sum'``.
+
+    Args:
+        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
+        data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
+        c1: coefficient to calculate saliency component of VSI
+        c2: coefficient to calculate gradient component of VSI
+        c3: coefficient to calculate color component of VSI
+        alpha: power for gradient component of VSI
+        beta: power for color component of VSI
+        omega_0: coefficient to get log Gabor filter at SDSP
+        sigma_f: coefficient to get log Gabor filter at SDSP
+        sigma_d: coefficient to get SDSP
+        sigma_c: coefficient to get SDSP
+
+    Shape:
+        - Input: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
+        - Target: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
+
+        Both inputs are supposed to have RGB order in accordance with the original approach.
+        Nevertheless, the method supports greyscale images, which they are converted to RGB
+        by copying the grey channel 3 times.
+
+    Examples::
+
+        >>> loss = VSILoss()
+        >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> target = torch.rand(3, 3, 256, 256)
+        >>> output = loss(prediction, target)
+        >>> output.backward()
+
+    References:
+        .. [1] Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P.
+           (2004). Image quality assessment: From error visibility to
+           structural similarity. IEEE Transactions on Image Processing,
+           13, 600-612.
+           https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
+           :DOI:`10.1109/TIP.2003.819861`
+    """
     def __init__(self, reduction: str = 'mean', c1: float = 1.27, c2: float = 386., c3: float = 130.,
                  alpha: float = 0.4, beta: float = 0.02, data_range: Union[int, float] = 1.,
                  omega_0: float = 0.021, sigma_f: float = 1.34, sigma_d: float = 145., sigma_c: float = 0.001) -> None:
-        r"""Creates a criterion that measures Visual Saliency-induced Index error between
-            each element in the input and target.
-
-            The sum operation still operates over all the elements, and divides by :math:`n`.
-
-            The division by :math:`n` can be avoided if one sets ``reduction = 'sum'``.
-
-            Args:
-                reduction: Reduction over samples in batch: "mean"|"sum"|"none"
-                data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
-                c1: coefficient to calculate saliency component of VSI
-                c2: coefficient to calculate gradient component of VSI
-                c3: coefficient to calculate color component of VSI
-                alpha: power for gradient component of VSI
-                beta: power for color component of VSI
-                omega_0: coefficient to get log Gabor filter at SDSP
-                sigma_f: coefficient to get log Gabor filter at SDSP
-                sigma_d: coefficient to get SDSP
-                sigma_c: coefficient to get SDSP
-
-            Shape:
-                - Input: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
-                - Target: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
-
-                Both inputs are supposed to have RGB order in accordance with the original approach.
-                Nevertheless, the method supports greyscale images, which they are converted to RGB
-                by copying the grey channel 3 times.
-
-            Examples::
-
-                >>> loss = VSILoss()
-                >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
-                >>> target = torch.rand(3, 3, 256, 256)
-                >>> output = loss(prediction, target)
-                >>> output.backward()
-
-            References:
-                .. [1] Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P.
-                   (2004). Image quality assessment: From error visibility to
-                   structural similarity. IEEE Transactions on Image Processing,
-                   13, 600-612.
-                   https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
-                   :DOI:`10.1109/TIP.2003.819861`
-            """
         super().__init__()
         self.reduction = reduction
         self.data_range = data_range
@@ -178,17 +178,17 @@ class VSILoss(_Loss):
     def forward(self, prediction, target):
         r"""Computation of VSI as a loss function.
 
-            Args:
-                prediction: Tensor of prediction of the network.
-                target: Reference tensor.
+        Args:
+            prediction: Tensor of prediction of the network.
+            target: Reference tensor.
 
-            Returns:
-                Value of VSI loss to be minimized. 0 <= VSI loss <= 1.
+        Returns:
+            Value of VSI loss to be minimized. 0 <= VSI loss <= 1.
 
-            Note:
-                Both inputs are supposed to have RGB order in accordance with the original approach.
-                Nevertheless, the method supports greyscale images, which they are converted to RGB by copying the grey
-                channel 3 times.
+        Note:
+            Both inputs are supposed to have RGB order in accordance with the original approach.
+            Nevertheless, the method supports greyscale images, which they are converted to RGB by copying the grey
+            channel 3 times.
         """
 
         return 1. - self.vsi(prediction=prediction, target=target)
@@ -196,8 +196,7 @@ class VSILoss(_Loss):
 
 def sdsp(x: torch.Tensor, data_range: Union[int, float] = 255, omega_0: float = 0.021, sigma_f: float = 1.34,
          sigma_d: float = 145., sigma_c: float = 0.001) -> torch.Tensor:
-    r"""
-    SDSP algorithm for salient region detection from a given image.
+    r"""SDSP algorithm for salient region detection from a given image.
 
     Args :
         x: an  RGB image with dynamic range [0, 1] or [0, 255] for each channel
@@ -241,8 +240,8 @@ def sdsp(x: torch.Tensor, data_range: Union[int, float] = 255, omega_0: float = 
 
 
 def _log_gabor(size: Tuple[int, int], omega_0: float, sigma_f: float) -> torch.Tensor:
-    r"""
-    Creates log Gabor filter
+    r"""Creates log Gabor filter
+
     Args:
         size: size of the requires log Gabor filter
         omega_0: center frequency of the filter
