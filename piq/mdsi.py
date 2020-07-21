@@ -22,7 +22,7 @@ def mdsi(prediction: torch.Tensor, target: torch.Tensor, data_range: Union[int, 
 
     Note:
         Both inputs are supposed to have RGB order in accordance with the original approach.
-        Nevertheless, the method supports greyscale images, which they are converted to RGB by copying the grey
+        Nevertheless, the method supports greyscale images, which are converted to RGB by copying the grey
         channel 3 times.
 
     Args:
@@ -54,7 +54,7 @@ def mdsi(prediction: torch.Tensor, target: torch.Tensor, data_range: Union[int, 
     if prediction.size(1) == 1:
         prediction = prediction.repeat(1, 3, 1, 1)
         target = target.repeat(1, 3, 1, 1)
-        warnings.warn('The original VSI supports only RGB images. The input images were converted to RGB by copying '
+        warnings.warn('The original MDSI supports only RGB images. The input images were converted to RGB by copying '
                       'the grey channel 3 times.')
 
     prediction = prediction * 255. / data_range
@@ -105,7 +105,7 @@ def mdsi(prediction: torch.Tensor, target: torch.Tensor, data_range: Union[int, 
 
     mct_complex = pow_for_complex(base=gcs, exp=q).mean(dim=(-1, -2), keepdim=True)
     score = (pow_for_complex(base=gcs, exp=q) - mct_complex).pow(2).sum(dim=0).sqrt()
-    score = (score ** rho).mean(dim=(-1, -2)) ** (o / rho)
+    score = ((score ** rho).mean(dim=(-1, -2)) ** (o / rho)).squeeze(1)
     if reduction == 'none':
         return score
     return {'mean': score.mean,
@@ -178,7 +178,7 @@ class MDSILoss(_Loss):
 
         Note:
             Both inputs are supposed to have RGB order in accordance with the original approach.
-            Nevertheless, the method supports greyscale images, which they are converted to RGB by copying the grey
+            Nevertheless, the method supports greyscale images, which are converted to RGB by copying the grey
             channel 3 times.
         """
         return 1. - torch.clamp(self.mdsi(prediction=prediction, target=target), min=0., max=1.)
