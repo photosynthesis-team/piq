@@ -57,14 +57,14 @@ def gradient_map(x: torch.Tensor, kernels: torch.Tensor) -> torch.Tensor:
 
 
 def pow_for_complex(base: torch.Tensor, exp: Union[int, float]) -> torch.Tensor:
-    r""" Power a 4D tensor with negative values or 5D tensor with complex values.
+    r""" Takes the power of each element in  a 4D tensor with negative values or 5D tensor with complex values.
     Complex numbers are represented by modulus and argument: r * \exp(i * \phi).
 
     It will likely to be redundant with introduction of torch.ComplexTensor.
 
     Args:
         base: Tensor with shape (B x C x H x W) or (2 x B x C x H x W)
-        exp: int or float
+        exp: Exponent
     Returns:
         Complex tensor with shape (2 x B x C x H x W)
     """
