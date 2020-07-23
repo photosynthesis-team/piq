@@ -113,3 +113,23 @@ def rgb2yiq(x: torch.Tensor) -> torch.Tensor:
         [0.2115, -0.5227, 0.3112]]).t().to(x)
     x_yiq = torch.matmul(x.permute(0, 2, 3, 1), yiq_weights).permute(0, 3, 1, 2)
     return x_yiq
+
+
+def rgb2lhm(x: torch.Tensor) -> torch.Tensor:
+    r"""Convert a batch of RGB images to a batch of LHM images
+
+    Args:
+        x: Batch of 4D (N x 3 x H x W) images in RGB colour space.
+
+    Returns:
+        Batch of 4D (N x 3 x H x W) images in LHM colour space.
+
+    Reference:
+        https://arxiv.org/pdf/1608.07433.pdf
+    """
+    lhm_weights = torch.tensor([
+        [0.2989, 0.587, 0.114],
+        [0.3, 0.04, -0.35],
+        [0.34, -0.6, 0.17]]).t().to(x)
+    x_lhm = torch.matmul(x.permute(0, 2, 3, 1), lhm_weights).permute(0, 3, 1, 2)
+    return x_lhm

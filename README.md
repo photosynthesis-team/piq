@@ -291,6 +291,35 @@ Now LPIPS is supported only for VGG16 model. If you need other models, check [or
 </p>
 </details>
 
+ <!-- MDSI EXAMPLES -->
+ <details>
+ <summary>Mean Deviation Similarity Index (MDSI)</summary>
+ <p>
+ 
+ To compute MDSI  as a measure, use lower case function from the library:
+ ```python
+ import torch
+ from piq import mdsi
+ 
+ prediction = torch.rand(3, 3, 256, 256)
+ target = torch.rand(3, 3, 256, 256) 
+ mdsi_score: torch.Tensor = mdsi(prediction, target, data_range=1.)
+ ```
+ 
+ In order to use MDSI as a loss function, use corresponding PyTorch module:
+ ```python
+ import torch
+ from piq import MDSILoss
+ 
+ loss = MDSILoss(data_range=1.)
+ prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+ target = torch.rand(3, 3, 256, 256)
+ output: torch.Tensor = loss(prediction, target)
+ output.backward()
+ ```
+ </p>
+ </details>
+ 
  <!-- MSID EXAMPLES -->
  <details>
  <summary>Multi-Scale Intrinsic Distance (MSID)</summary>
