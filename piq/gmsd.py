@@ -140,9 +140,9 @@ class GMSDLoss(_Loss):
 
 
 def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range: Union[int, float] = 1.,
-                     reduction: str = 'mean', scale_weights: Optional[Union[Tuple[float], List[float]]] = None,
-                     chromatic: bool = False, beta1: float = 0.01, beta2: float = 0.32,
-                     beta3: float = 15.):
+                     reduction: str = 'mean',
+                     scale_weights: Optional[Union[torch.Tensor, Tuple[float], List[float]]] = None,
+                     chromatic: bool = False, beta1: float = 0.01, beta2: float = 0.32, beta3: float = 15.):
     r"""Computation of Multi scale GMSD.
 
     Args:
@@ -255,7 +255,7 @@ class MultiScaleGMSDLoss(_Loss):
     """
 
     def __init__(self, reduction: str = 'mean', data_range: Union[int, float] = 1.,
-                 scale_weights: Optional[Union[Tuple[float], List[float]]] = None,
+                 scale_weights: Optional[Union[torch.Tensor, Tuple[float], List[float]]] = None,
                  chromatic: bool = False, beta1: float = 0.01, beta2: float = 0.32,
                  beta3: float = 15.) -> None:
         super().__init__()

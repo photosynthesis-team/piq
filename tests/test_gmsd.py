@@ -144,6 +144,7 @@ def test_multi_scale_gmsd_fails_for_greyscale_tensors_chromatic_flag(device: str
 
 def test_multi_scale_gmsd_supports_custom_weights(prediction: torch.Tensor, target: torch.Tensor, device: str):
     multi_scale_gmsd(prediction.to(device), target.to(device), scale_weights=[3., 4., 2., 1., 2.])
+    multi_scale_gmsd(prediction.to(device), target.to(device), scale_weights=torch.tensor([3., 4., 2., 1., 2.]))
 
 
 def test_multi_scale_gmsd_raise_exception_for_small_images(device: str):
@@ -206,6 +207,8 @@ def test_multi_scale_gmsd_loss_fails_for_greyscale_tensors_chromatic_flag(device
 
 def test_multi_scale_gmsd_loss_supports_custom_weights(prediction: torch.Tensor, target: torch.Tensor, device: str):
     loss = MultiScaleGMSDLoss(scale_weights=[3., 4., 2., 1., 2.])
+    loss(prediction.to(device), target.to(device))
+    loss = MultiScaleGMSDLoss(scale_weights=torch.tensor([3., 4., 2., 1., 2.]))
     loss(prediction.to(device), target.to(device))
 
 
