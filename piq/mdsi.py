@@ -99,12 +99,14 @@ def mdsi(prediction: torch.Tensor, target: torch.Tensor, data_range: Union[int, 
     elif combination == 'mult':
         gs_total_pow = pow_for_complex(base=gs_total, exp=gamma)
         cs_total_pow = pow_for_complex(base=cs_total, exp=beta)
-        gcs = torch.stack((gs_total_pow[0] * cs_total_pow[0], gs_total_pow[1] + cs_total_pow[1]))
+        gcs = torch.stack((gs_total_pow[..., 0] * cs_total_pow[..., 0],
+                           gs_total_pow[..., 1] + cs_total_pow[..., 1]), dim=-1)
     else:
         raise ValueError(f'Expected combination method "sum" or "mult", got {combination}')
 
-    mct_complex = pow_for_complex(base=gcs, exp=q).mean(dim=(-1, -2), keepdim=True)
-    score = (pow_for_complex(base=gcs, exp=q) - mct_complex).pow(2).sum(dim=0).sqrt()
+    mct_complex = pow_for_complex(base=gcs, exp=q)
+    mct_complex = mct_complex.mean(dim=2, keepdim=True).mean(dim=3, keepdim=True)  # split to increase precision
+    score = (pow_for_complex(base=gcs, exp=q) - mct_complex).pow(2).sum(dim=-1).sqrt()
     score = ((score ** rho).mean(dim=(-1, -2)) ** (o / rho)).squeeze(1)
     if reduction == 'none':
         return score

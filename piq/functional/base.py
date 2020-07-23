@@ -63,19 +63,22 @@ def pow_for_complex(base: torch.Tensor, exp: Union[int, float]) -> torch.Tensor:
     It will likely to be redundant with introduction of torch.ComplexTensor.
 
     Args:
-        base: Tensor with shape (B x C x H x W) or (2 x B x C x H x W)
+        base: Tensor with shape (B x C x H x W) or (B x C x H x W x 2)
         exp: Exponent
     Returns:
-        Complex tensor with shape (2 x B x C x H x W)
+        Complex tensor with shape (B x C x H x W x 2)
     """
     if base.dim() == 4:
-        x_complex = [base.abs(), torch.atan2(torch.zeros_like(base), base)]
-    elif base.dim() == 5 and base.size(0) == 2:
-        x_complex = [base.pow(2).sum(dim=0).sqrt(), torch.atan2(base[1], base[0])]
+        x_complex_r = base.abs()
+        x_complex_phi = torch.atan2(torch.zeros_like(base), base)
+    elif base.dim() == 5 and base.size(-1) == 2:
+        x_complex_r = base.pow(2).sum(dim=-1).sqrt()
+        x_complex_phi = torch.atan2(base[..., 1], base[..., 0])
     else:
         raise ValueError(f'Expected real or complex tensor, got {base.size()}')
 
-    x_complex_pow = [x_complex[0] ** exp, x_complex[1] * exp]
-    x_real_pow = x_complex_pow[0] * torch.cos(x_complex_pow[1])
-    x_imag_pow = x_complex_pow[0] * torch.sin(x_complex_pow[1])
-    return torch.stack((x_real_pow, x_imag_pow), dim=0)
+    x_complex_pow_r = x_complex_r ** exp
+    x_complex_pow_phi = x_complex_phi * exp
+    x_real_pow = x_complex_pow_r * torch.cos(x_complex_pow_phi)
+    x_imag_pow = x_complex_pow_r * torch.sin(x_complex_pow_phi)
+    return torch.stack((x_real_pow, x_imag_pow), dim=-1)
