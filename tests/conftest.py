@@ -15,12 +15,12 @@ def device(request: Any) -> Any:
 
 @pytest.fixture(scope='module')
 def prediction() -> torch.Tensor:
-    return torch.rand(4, 3, 128, 128)
+    return torch.rand(4, 3, 96, 96)
 
 
 @pytest.fixture(scope='module')
 def target() -> torch.Tensor:
-    return torch.rand(4, 3, 128, 128)
+    return torch.rand(4, 3, 96, 96)
 
 
 prediction_tensors = [

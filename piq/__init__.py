@@ -14,3 +14,4 @@ from .perceptual import StyleLoss, ContentLoss, LPIPS, DISTS
 from .psnr import psnr
 from .fsim import fsim, FSIMLoss
 from .vsi import vsi, VSILoss
+from .mdsi import mdsi, MDSILoss
