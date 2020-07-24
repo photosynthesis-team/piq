@@ -1,5 +1,7 @@
 import torch
 import pytest
+from skimage.io import imread
+from typing import Any, Tuple
 
 from piq import gmsd, multi_scale_gmsd, GMSDLoss, MultiScaleGMSDLoss
 
@@ -14,6 +16,26 @@ def prediction() -> torch.Tensor:
 @pytest.fixture(scope='module')
 def target() -> torch.Tensor:
     return torch.rand(2, 3, 128, 128)
+
+
+prediction_image = [
+    torch.tensor(imread('tests/assets/goldhill_jpeg.gif'), dtype=torch.float32).unsqueeze(0).unsqueeze(0),
+    torch.tensor(imread('tests/assets/i01_01_5.bmp'), dtype=torch.float32).permute(2, 0, 1).unsqueeze(0)
+]
+
+target_image = [
+    torch.tensor(imread('tests/assets/goldhill.gif'), dtype=torch.float32).unsqueeze(0).unsqueeze(0),
+    torch.tensor(imread('tests/assets/I01.BMP'), dtype=torch.float32).permute(2, 0, 1).unsqueeze(0)
+]
+target_score = [
+    torch.tensor(0.138012587141798),
+    torch.tensor(0.094124655829098)
+]
+
+
+@pytest.fixture(params=zip(prediction_image, target_image, target_score))
+def input_images_score(request: Any) -> Any:
+    return request.param
 
 
 # ================== Test function: `gmsd` ==================
@@ -56,6 +78,14 @@ def test_gmsd_modes(prediction: torch.Tensor, target: torch.Tensor, device: str)
     for reduction in ['DEADBEEF', 'random']:
         with pytest.raises(KeyError):
             gmsd(prediction.to(device), target.to(device), reduction=reduction)
+
+
+def test_gmsd_compare_with_matlab(input_images_score: Tuple[torch.Tensor, torch.Tensor, torch.Tensor],
+                                  device: str) -> None:
+    prediction, target, target_value = input_images_score
+    score = gmsd(prediction=prediction.to(device), target=target.to(device), data_range=255)
+    assert torch.isclose(score, target_value.to(score)), f'The estimated value must be equal to MATLAB provided one, ' \
+                                                         f'got {score.item():.8f}, while MATLAB equals {target_value}'
 
 
 # ================== Test class: `GMSDLoss` ==================

@@ -43,13 +43,21 @@ def gmsd(prediction: torch.Tensor, target: torch.Tensor, reduction: Optional[str
     _validate_input(input_tensors=(prediction, target), allow_5d=False, scale_weights=None)
     prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
 
-    if data_range == 255:
-        prediction = prediction / 255.
-        target = target / 255.
+    prediction = prediction / float(data_range)
+    target = target / float(data_range)
 
-    padding = (prediction.shape[2] % 2, prediction.shape[3] % 2)
-    prediction = F.avg_pool2d(prediction, kernel_size=2, stride=2, padding=padding)
-    target = F.avg_pool2d(target, kernel_size=2, stride=2, padding=padding)
+    num_channels = prediction.size(1)
+    if num_channels == 3:
+        prediction = rgb2yiq(prediction)[:, :1]
+        target = rgb2yiq(target)[:, :1]
+    up_pad = 0
+    down_pad = max(prediction.shape[2] % 2, prediction.shape[3] % 2)
+    pad_to_use = [up_pad, down_pad, up_pad, down_pad]
+    prediction = F.pad(prediction, pad=pad_to_use)
+    target = F.pad(target, pad=pad_to_use)
+
+    prediction = F.avg_pool2d(prediction, kernel_size=2, stride=2, padding=0)
+    target = F.avg_pool2d(target, kernel_size=2, stride=2, padding=0)
 
     score = _gmsd(prediction=prediction, target=target)
     if reduction == 'none':
@@ -64,8 +72,8 @@ def _gmsd(prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     r"""Compute Gradient Magnitude Similarity Deviation
     Both inputs supposed to be in range [0, 1] with RGB order.
     Args:
-        prediction: Tensor of shape :math:`(N, C, H, W)` holding an distorted image.
-        target: Tensor of shape :math:`(N, C, H, W)` holding an target image
+        prediction: Tensor of shape :math:`(N, 1, H, W)` holding an distorted grayscale image.
+        target: Tensor of shape :math:`(N, 1, H, W)` holding an target grayscale image
 
     Returns:
         gmsd : Gradient Magnitude Similarity Deviation between given tensors.
@@ -75,14 +83,7 @@ def _gmsd(prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     """
 
     # Constant for numerical stability
-    EPS: float = 0.0026
-
-    # Convert RGB image to YCbCr and take luminance: Y = 0.299 R + 0.587 G + 0.114 B
-    num_channels = prediction.size(1)
-    if num_channels == 3:
-        prediction = rgb2yiq(prediction)[:, :1]
-        target = rgb2yiq(target)[:, :1]
-    
+    EPS: float = 170. / (255. ** 2)
     # Compute grad direction
     kernels = torch.stack([prewitt_filter(), prewitt_filter().transpose(-1, -2)])
     pred_grad = gradient_map(prediction, kernels)
@@ -91,7 +92,6 @@ def _gmsd(prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     # Compute GMS
     gms = similarity_map(pred_grad, trgt_grad, EPS)
     mean_gms = torch.mean(gms, dim=[1, 2, 3], keepdims=True)
-
     # Compute GMSD along spatial dimensions. Shape (batch_size )
     score = torch.pow(gms - mean_gms, 2).mean(dim=[1, 2, 3]).sqrt()
     return score
@@ -163,7 +163,7 @@ def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range:
         beta3: Algorithm parameter. Small constant, see [1].
 
     Returns:
-        Value of GMSD. 0 <= GMSD loss <= 1.
+        Value of MS-GMSD. 0 <= GMSD loss <= 1.
     """
     _validate_input(input_tensors=(prediction, target), allow_5d=False, scale_weights=scale_weights)
     prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
@@ -184,20 +184,28 @@ def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range:
     if prediction.size(-1) < min_size or prediction.size(-2) < min_size:
         raise ValueError(f'Invalid size of the input images, expected at least {min_size}x{min_size}.')
 
-    if data_range == 255:
-        prediction = prediction / 255.
-        target = target / 255.
+    prediction = prediction / float(data_range)
+    target = target / float(data_range)
+
+    num_channels = prediction.size(1)
+    if num_channels == 3:
+        prediction = rgb2yiq(prediction)
+        target = rgb2yiq(target)
 
     scale_weights = scale_weights.to(prediction)
     ms_gmds = []
     for scale in range(num_scales):
         if scale > 0:
             # Average by 2x2 filter and downsample
-            padding = (prediction.shape[2] % 2, prediction.shape[3] % 2)
-            prediction = F.avg_pool2d(prediction, kernel_size=2, padding=padding)
-            target = F.avg_pool2d(target, kernel_size=2, padding=padding)
+            up_pad = 0
+            down_pad = max(prediction.shape[2] % 2, prediction.shape[3] % 2)
+            pad_to_use = [up_pad, down_pad, up_pad, down_pad]
+            prediction = F.pad(prediction, pad=pad_to_use)
+            target = F.pad(target, pad=pad_to_use)
+            prediction = F.avg_pool2d(prediction, kernel_size=2, padding=0)
+            target = F.avg_pool2d(target, kernel_size=2, padding=0)
 
-        score = _gmsd(prediction, target)
+        score = _gmsd(prediction[:, :1], target[:, :1])
         ms_gmds.append(score)
 
     # Stack results in different scales and multiply by weight
@@ -212,8 +220,8 @@ def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range:
     if chromatic:
         assert prediction.size(1) == 3, "Chromatic component can be computed only for RGB images!"
 
-        prediction_iq = rgb2yiq(prediction)[:, 1:]
-        target_iq = rgb2yiq(target)[:, 1:]
+        prediction_iq = prediction[:, 1:]
+        target_iq = target[:, 1:]
 
         rmse_iq = torch.sqrt(torch.mean((prediction_iq - target_iq) ** 2, dim=[2, 3]))
         rmse_chrome = torch.sqrt(torch.sum(rmse_iq ** 2, dim=1))
@@ -266,15 +274,7 @@ class MultiScaleGMSDLoss(_Loss):
         # Loss-specific parameters.
         self.data_range = data_range
 
-        # Values from the paper
-        if scale_weights is None:
-            self.scale_weights = torch.tensor([0.096, 0.596, 0.289, 0.019])
-        elif isinstance(scale_weights, torch.Tensor):
-            # Normalize scale weights
-            self.scale_weights = scale_weights / scale_weights.sum()
-        else:
-            self.scale_weights = torch.tensor(scale_weights) / torch.tensor(scale_weights).sum()
-
+        self.scale_weights = scale_weights
         self.chromatic = chromatic
         self.beta1 = beta1
         self.beta2 = beta2
@@ -289,8 +289,7 @@ class MultiScaleGMSDLoss(_Loss):
             target: Reference tensor. Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
 
         Returns:
-            Value of SSIM loss to be minimized, i.e 1 - `ssim`. 0 <= SSIM loss <= 1. In case of 5D input tensors,
-            complex value is returned as a tensor of size 2.
+            Value of MS-GMSD loss to be minimized. 0 <= MS-GMSD loss <= 1.
         """
         return multi_scale_gmsd(prediction=prediction, target=target, data_range=self.data_range,
                                 reduction=self.reduction, chromatic=self.chromatic, beta1=self.beta1,
