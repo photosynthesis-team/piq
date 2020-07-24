@@ -145,14 +145,14 @@ class GMSDLoss(_Loss):
 
 def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range: Union[int, float] = 1.,
                      reduction: str = 'mean',
-                     scale_weights: Optional[Union[torch.Tensor, Tuple[float], List[float]]] = None,
+                     scale_weights: Optional[Union[torch.Tensor, Tuple[float, ...], List[float]]] = None,
                      chromatic: bool = False, beta1: float = 0.01, beta2: float = 0.32, beta3: float = 15.,
-                     t: float = 170 / (255. ** 2)):
+                     t: float = 170 / (255. ** 2)) -> torch.Tensor:
     r"""Computation of Multi scale GMSD.
 
     Args:
-        prediction: Tensor of prediction of the network.
-        target: Reference tensor.
+        prediction: Tensor of prediction of the network. The height and width should be at least 2 ** scales + 1.
+        target: Reference tensor. The height and width should be at least 2 ** scales + 1.
         data_range: The difference between the maximum and minimum of the pixel value,
             i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
             The pixel value interval of both input and output should remain the same.
@@ -270,7 +270,7 @@ class MultiScaleGMSDLoss(_Loss):
     """
 
     def __init__(self, reduction: str = 'mean', data_range: Union[int, float] = 1.,
-                 scale_weights: Optional[Union[torch.Tensor, Tuple[float], List[float]]] = None,
+                 scale_weights: Optional[Union[torch.Tensor, Tuple[float, ...], List[float]]] = None,
                  chromatic: bool = False, beta1: float = 0.01, beta2: float = 0.32,
                  beta3: float = 15., t: float = 170 / (255. ** 2)) -> None:
         super().__init__()
@@ -292,9 +292,10 @@ class MultiScaleGMSDLoss(_Loss):
         r"""Computation of Multi Scale GMSD index as a loss function.
 
         Args:
-            prediction: Tensor of prediction of the network. Required to be
-                2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
+            prediction: Tensor of prediction of the network. Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W),
+            channels first. The height and width should be at least 2 ** scales + 1.
             target: Reference tensor. Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
+            The height and width should be at least 2 ** scales + 1.
 
         Returns:
             Value of MS-GMSD loss to be minimized. 0 <= MS-GMSD loss <= 1.

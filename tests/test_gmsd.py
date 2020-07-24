@@ -1,6 +1,7 @@
 import torch
 import pytest
 from skimage.io import imread
+import numpy as np
 from typing import Any, Tuple
 
 from piq import gmsd, multi_scale_gmsd, GMSDLoss, MultiScaleGMSDLoss
@@ -10,12 +11,12 @@ LEAF_VARIABLE_ERROR_MESSAGE = 'Expected non None gradient of leaf variable'
 
 @pytest.fixture(scope='module')
 def prediction() -> torch.Tensor:
-    return torch.rand(2, 3, 128, 128)
+    return torch.rand(2, 3, 96, 96)
 
 
 @pytest.fixture(scope='module')
 def target() -> torch.Tensor:
-    return torch.rand(2, 3, 128, 128)
+    return torch.rand(2, 3, 96, 96)
 
 
 prediction_image = [
@@ -43,16 +44,17 @@ def test_gmsd_forward(prediction: torch.Tensor, target: torch.Tensor, device: st
     gmsd(prediction.to(device), target.to(device))
 
 
-def test_gmsd_zero_for_equal_tensors(prediction: torch.Tensor, device: str):
+def test_gmsd_zero_for_equal_tensors(prediction: torch.Tensor, device: str) -> None:
     target = prediction.clone()
     measure = gmsd(prediction.to(device), target.to(device))
     assert measure.abs() <= 1e-6, f'GMSD for equal tensors must be 0, got {measure}'
 
 
 def test_gmsd_raises_if_tensors_have_different_types(target: torch.Tensor, device: str) -> None:
-    wrong_type_prediction = list(range(10))
-    with pytest.raises(AssertionError):
-        gmsd(wrong_type_prediction, target.to(device))
+    wrong_type_predictions = [list(range(10)), np.arange(10)]
+    for wrong_type_prediction in wrong_type_predictions:
+        with pytest.raises(AssertionError):
+            gmsd(wrong_type_prediction, target.to(device))
 
 
 def test_gmsd_supports_different_data_ranges(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
@@ -65,13 +67,13 @@ def test_gmsd_supports_different_data_ranges(prediction: torch.Tensor, target: t
     assert diff <= 1e-4, f'Result for same tensor with different data_range should be the same, got {diff}'
 
 
-def test_gmsd_supports_greyscale_tensors(device: str):
-    target = torch.ones(2, 1, 128, 128)
-    prediction = torch.zeros(2, 1, 128, 128)
+def test_gmsd_supports_greyscale_tensors(device: str) -> None:
+    target = torch.ones(2, 1, 96, 96)
+    prediction = torch.zeros(2, 1, 96, 96)
     gmsd(prediction.to(device), target.to(device))
 
 
-def test_gmsd_modes(prediction: torch.Tensor, target: torch.Tensor, device: str):
+def test_gmsd_modes(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
     for reduction in ['mean', 'sum', 'none']:
         gmsd(prediction.to(device), target.to(device), reduction=reduction)
 
@@ -96,7 +98,7 @@ def test_gmsd_loss_forward_backward(prediction: torch.Tensor, target: torch.Tens
     assert torch.isfinite(prediction.grad).all(), LEAF_VARIABLE_ERROR_MESSAGE
 
 
-def test_gmsd_loss_zero_for_equal_tensors(prediction: torch.Tensor, device: str):
+def test_gmsd_loss_zero_for_equal_tensors(prediction: torch.Tensor, device: str) -> None:
     loss = GMSDLoss()
     target = prediction.clone()
     measure = loss(prediction.to(device), target.to(device))
@@ -104,9 +106,10 @@ def test_gmsd_loss_zero_for_equal_tensors(prediction: torch.Tensor, device: str)
 
 
 def test_gmsd_loss_raises_if_tensors_have_different_types(target: torch.Tensor, device: str) -> None:
-    wrong_type_prediction = list(range(10))
-    with pytest.raises(AssertionError):
-        GMSDLoss()(wrong_type_prediction, target.to(device))
+    wrong_type_predictions = [list(range(10)), np.arange(10)]
+    for wrong_type_prediction in wrong_type_predictions:
+        with pytest.raises(AssertionError):
+            GMSDLoss()(wrong_type_prediction, target.to(device))
 
 
 def test_gmsd_loss_supports_different_data_ranges(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
@@ -121,14 +124,14 @@ def test_gmsd_loss_supports_different_data_ranges(prediction: torch.Tensor, targ
     assert diff <= 1e-4, f'Result for same tensor with different data_range should be the same, got {diff}'
 
 
-def test_gmsd_loss_supports_greyscale_tensors(device: str):
+def test_gmsd_loss_supports_greyscale_tensors(device: str) -> None:
     loss = GMSDLoss()
-    target = torch.ones(2, 1, 128, 128)
-    prediction = torch.zeros(2, 1, 128, 128)
+    target = torch.ones(2, 1, 96, 96)
+    prediction = torch.zeros(2, 1, 96, 96)
     loss(prediction.to(device), target.to(device))
 
 
-def test_gmsd_loss_modes(prediction: torch.Tensor, target: torch.Tensor, device: str):
+def test_gmsd_loss_modes(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
     for reduction in ['mean', 'sum', 'none']:
         GMSDLoss(reduction=reduction)(prediction.to(device), target.to(device))
 
@@ -142,7 +145,7 @@ def test_multi_scale_gmsd_forward_backward(prediction: torch.Tensor, target: tor
     multi_scale_gmsd(prediction.to(device), target.to(device), chromatic=True)
 
 
-def test_multi_scale_gmsd_zero_for_equal_tensors(prediction: torch.Tensor, device: str):
+def test_multi_scale_gmsd_zero_for_equal_tensors(prediction: torch.Tensor, device: str) -> None:
     target = prediction.clone()
     measure = multi_scale_gmsd(prediction.to(device), target.to(device))
     assert measure.abs() <= 1e-6, f'MultiScaleGMSD for equal tensors must be 0, got {measure}'
@@ -159,32 +162,33 @@ def test_multi_scale_gmsd_supports_different_data_ranges(prediction: torch.Tenso
     assert diff <= 1e-4, f'Result for same tensor with different data_range should be the same, got {diff}'
 
 
-def test_multi_scale_gmsd_supports_greyscale_tensors(device: str):
-    target = torch.ones(2, 1, 128, 128)
-    prediction = torch.zeros(2, 1, 128, 128)
+def test_multi_scale_gmsd_supports_greyscale_tensors(device: str) -> None:
+    target = torch.ones(2, 1, 96, 96)
+    prediction = torch.zeros(2, 1, 96, 96)
     multi_scale_gmsd(prediction.to(device), target.to(device))
 
 
-def test_multi_scale_gmsd_fails_for_greyscale_tensors_chromatic_flag(device: str):
-    target = torch.ones(2, 1, 128, 128)
-    prediction = torch.zeros(2, 1, 128, 128)
+def test_multi_scale_gmsd_fails_for_greyscale_tensors_chromatic_flag(device: str) -> None:
+    target = torch.ones(2, 1, 96, 96)
+    prediction = torch.zeros(2, 1, 96, 96)
     with pytest.raises(AssertionError):
         multi_scale_gmsd(prediction.to(device), target.to(device), chromatic=True)
 
 
-def test_multi_scale_gmsd_supports_custom_weights(prediction: torch.Tensor, target: torch.Tensor, device: str):
+def test_multi_scale_gmsd_supports_custom_weights(prediction: torch.Tensor, target: torch.Tensor,
+                                                  device: str) -> None:
     multi_scale_gmsd(prediction.to(device), target.to(device), scale_weights=[3., 4., 2., 1., 2.])
     multi_scale_gmsd(prediction.to(device), target.to(device), scale_weights=torch.tensor([3., 4., 2., 1., 2.]))
 
 
-def test_multi_scale_gmsd_raise_exception_for_small_images(device: str):
+def test_multi_scale_gmsd_raise_exception_for_small_images(device: str) -> None:
     target = torch.ones(3, 1, 32, 32)
     prediction = torch.zeros(3, 1, 32, 32)
     with pytest.raises(ValueError):
         multi_scale_gmsd(prediction.to(device), target.to(device), scale_weights=[3., 4., 2., 1., 1.])
 
 
-def test_multi_scale_gmsd_modes(prediction: torch.Tensor, target: torch.Tensor, device: str):
+def test_multi_scale_gmsd_modes(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
     for reduction in ['mean', 'sum', 'none']:
         multi_scale_gmsd(prediction.to(device), target.to(device), reduction=reduction)
 
@@ -201,7 +205,7 @@ def test_multi_scale_gmsd_loss_forward_backward(prediction: torch.Tensor, target
     assert torch.isfinite(prediction.grad).all(), LEAF_VARIABLE_ERROR_MESSAGE
     
 
-def test_multi_scale_gmsd_loss_zero_for_equal_tensors(prediction: torch.Tensor, device: str):
+def test_multi_scale_gmsd_loss_zero_for_equal_tensors(prediction: torch.Tensor, device: str) -> None:
     loss = MultiScaleGMSDLoss()
     target = prediction.clone()
     measure = loss(prediction.to(device), target.to(device))
@@ -220,29 +224,30 @@ def test_multi_scale_gmsd_loss_supports_different_data_ranges(prediction: torch.
     assert diff <= 1e-4, f'Result for same tensor with different data_range should be the same, got {diff}'
 
 
-def test_multi_scale_gmsd_loss_supports_greyscale_tensors(device: str):
+def test_multi_scale_gmsd_loss_supports_greyscale_tensors(device: str) -> None:
     loss = MultiScaleGMSDLoss()
-    target = torch.ones(2, 1, 128, 128)
-    prediction = torch.zeros(2, 1, 128, 128)
+    target = torch.ones(2, 1, 96, 96)
+    prediction = torch.zeros(2, 1, 96, 96)
     loss(prediction.to(device), target.to(device))
 
 
-def test_multi_scale_gmsd_loss_fails_for_greyscale_tensors_chromatic_flag(device: str):
+def test_multi_scale_gmsd_loss_fails_for_greyscale_tensors_chromatic_flag(device: str) -> None:
     loss = MultiScaleGMSDLoss(chromatic=True)
-    target = torch.ones(2, 1, 128, 128)
-    prediction = torch.zeros(2, 1, 128, 128)
+    target = torch.ones(2, 1, 96, 96)
+    prediction = torch.zeros(2, 1, 96, 96)
     with pytest.raises(AssertionError):
         loss(prediction.to(device), target.to(device))
 
 
-def test_multi_scale_gmsd_loss_supports_custom_weights(prediction: torch.Tensor, target: torch.Tensor, device: str):
+def test_multi_scale_gmsd_loss_supports_custom_weights(prediction: torch.Tensor, target: torch.Tensor,
+                                                       device: str) -> None:
     loss = MultiScaleGMSDLoss(scale_weights=[3., 4., 2., 1., 2.])
     loss(prediction.to(device), target.to(device))
     loss = MultiScaleGMSDLoss(scale_weights=torch.tensor([3., 4., 2., 1., 2.]))
     loss(prediction.to(device), target.to(device))
 
 
-def test_multi_scale_gmsd_loss_raise_exception_for_small_images(device: str):
+def test_multi_scale_gmsd_loss_raise_exception_for_small_images(device: str) -> None:
     target = torch.ones(3, 1, 32, 32)
     prediction = torch.zeros(3, 1, 32, 32)
     loss = MultiScaleGMSDLoss(scale_weights=[3., 4., 2., 1., 1.])
@@ -250,7 +255,7 @@ def test_multi_scale_gmsd_loss_raise_exception_for_small_images(device: str):
         loss(prediction.to(device), target.to(device))
 
 
-def test_multi_scale_loss_gmsd_modes(prediction: torch.Tensor, target: torch.Tensor, device: str):
+def test_multi_scale_loss_gmsd_modes(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
     for reduction in ['mean', 'sum', 'none']:
         MultiScaleGMSDLoss(reduction=reduction)(prediction.to(device), target.to(device))
 

@@ -402,6 +402,8 @@ Now LPIPS is supported only for VGG16 model. If you need other models, check [or
  It can be used both as a measure and as a loss function. In any case it should me minimized.
  By defualt scale weights are initialized with values from the paper. You can change them by passing a list of 4 variables to `scale_weights` argument during initialization. Both GMSD and MS-GMSD computed for greyscale images, but to take contrast changes into account authors propoced to also add chromatic component. Use flag `chromatic` to use MS-GMSDc version of the loss.
  
+ Note that input tensors should contain images with height and width equal `2 ** number_of_scales + 1` at least.
+ 
  To compute Multi-Scale GMSD as a measure, use lower case function from the library:
  ```python
  import torch
