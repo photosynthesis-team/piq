@@ -19,7 +19,7 @@ from piq.functional import similarity_map, gradient_map, prewitt_filter, rgb2yiq
 
 
 def gmsd(prediction: torch.Tensor, target: torch.Tensor, reduction: Optional[str] = 'mean',
-         data_range: Union[int, float] = 1.) -> torch.Tensor:
+         data_range: Union[int, float] = 1., t: float = 170 / (255. ** 2)) -> torch.Tensor:
     r"""Compute Gradient Magnitude Similarity Deviation
     Both inputs supposed to be in range [0, 1] with RGB order.
     Args:
@@ -32,6 +32,7 @@ def gmsd(prediction: torch.Tensor, target: torch.Tensor, reduction: Optional[str
         data_range: The difference between the maximum and minimum of the pixel value,
             i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
             The pixel value interval of both input and output should remain the same.
+        t: Constant from the reference paper numerical stability of similarity map.
 
     Returns:
         gmsd : Gradient Magnitude Similarity Deviation between given tensors.
@@ -59,7 +60,7 @@ def gmsd(prediction: torch.Tensor, target: torch.Tensor, reduction: Optional[str
     prediction = F.avg_pool2d(prediction, kernel_size=2, stride=2, padding=0)
     target = F.avg_pool2d(target, kernel_size=2, stride=2, padding=0)
 
-    score = _gmsd(prediction=prediction, target=target)
+    score = _gmsd(prediction=prediction, target=target, t=t)
     if reduction == 'none':
         return score
 
@@ -68,12 +69,13 @@ def gmsd(prediction: torch.Tensor, target: torch.Tensor, reduction: Optional[str
             }[reduction](dim=0)
 
 
-def _gmsd(prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+def _gmsd(prediction: torch.Tensor, target: torch.Tensor, t: float = 170 / (255. ** 2)) -> torch.Tensor:
     r"""Compute Gradient Magnitude Similarity Deviation
     Both inputs supposed to be in range [0, 1] with RGB order.
     Args:
         prediction: Tensor of shape :math:`(N, 1, H, W)` holding an distorted grayscale image.
         target: Tensor of shape :math:`(N, 1, H, W)` holding an target grayscale image
+        t: Constant from the reference paper numerical stability of similarity map
 
     Returns:
         gmsd : Gradient Magnitude Similarity Deviation between given tensors.
@@ -82,15 +84,13 @@ def _gmsd(prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         https://arxiv.org/pdf/1308.3052.pdf
     """
 
-    # Constant for numerical stability
-    EPS: float = 170. / (255. ** 2)
     # Compute grad direction
     kernels = torch.stack([prewitt_filter(), prewitt_filter().transpose(-1, -2)])
     pred_grad = gradient_map(prediction, kernels)
     trgt_grad = gradient_map(target, kernels)
 
     # Compute GMS
-    gms = similarity_map(pred_grad, trgt_grad, EPS)
+    gms = similarity_map(pred_grad, trgt_grad, t)
     mean_gms = torch.mean(gms, dim=[1, 2, 3], keepdims=True)
     # Compute GMSD along spatial dimensions. Shape (batch_size )
     score = torch.pow(gms - mean_gms, 2).mean(dim=[1, 2, 3]).sqrt()
@@ -109,6 +109,7 @@ class GMSDLoss(_Loss):
         data_range: The difference between the maximum and minimum of the pixel value,
             i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
             The pixel value interval of both input and output should remain the same.
+        t: Constant from the reference paper numerical stability of similarity map
             
     Reference:
         Wufeng Xue et al. Gradient Magnitude Similarity Deviation (2013)
@@ -116,7 +117,8 @@ class GMSDLoss(_Loss):
         
     """
 
-    def __init__(self, reduction: str = 'mean', data_range: Union[int, float] = 1.) -> None:
+    def __init__(self, reduction: str = 'mean', data_range: Union[int, float] = 1.,
+                 t: float = 170 / (255. ** 2)) -> None:
         super().__init__()
 
         # Generic loss parameters.
@@ -124,6 +126,7 @@ class GMSDLoss(_Loss):
 
         # Loss-specific parameters.
         self.data_range = data_range
+        self.t = t
 
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         r"""Computation of Gradient Magnitude Similarity Deviation (GMSD) as a loss function.
@@ -136,13 +139,15 @@ class GMSDLoss(_Loss):
             Value of GMSD loss to be minimized. 0 <= GMSD loss <= 1.
         """
 
-        return gmsd(prediction=prediction, target=target, reduction=self.reduction, data_range=self.data_range)
+        return gmsd(prediction=prediction, target=target, reduction=self.reduction, data_range=self.data_range,
+                    t=self.t)
 
 
 def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range: Union[int, float] = 1.,
                      reduction: str = 'mean',
                      scale_weights: Optional[Union[torch.Tensor, Tuple[float], List[float]]] = None,
-                     chromatic: bool = False, beta1: float = 0.01, beta2: float = 0.32, beta3: float = 15.):
+                     chromatic: bool = False, beta1: float = 0.01, beta2: float = 0.32, beta3: float = 15.,
+                     t: float = 170 / (255. ** 2)):
     r"""Computation of Multi scale GMSD.
 
     Args:
@@ -161,6 +166,7 @@ def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range:
         beta1: Algorithm parameter. Weight of chromatic component in the loss.
         beta2: Algorithm parameter. Small constant, see [1].
         beta3: Algorithm parameter. Small constant, see [1].
+        t: Constant from the reference paper numerical stability of similarity map
 
     Returns:
         Value of MS-GMSD. 0 <= GMSD loss <= 1.
@@ -205,7 +211,7 @@ def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range:
             prediction = F.avg_pool2d(prediction, kernel_size=2, padding=0)
             target = F.avg_pool2d(target, kernel_size=2, padding=0)
 
-        score = _gmsd(prediction[:, :1], target[:, :1])
+        score = _gmsd(prediction[:, :1], target[:, :1], t=t)
         ms_gmds.append(score)
 
     # Stack results in different scales and multiply by weight
@@ -256,6 +262,7 @@ class MultiScaleGMSDLoss(_Loss):
         beta1: Algorithm parameter. Weight of chromatic component in the loss.
         beta2: Algorithm parameter. Small constant, see [1].
         beta3: Algorithm parameter. Small constant, see [1].
+        t: Constant from the reference paper numerical stability of similarity map
         
     Reference:
         [1] GRADIENT MAGNITUDE SIMILARITY DEVIATION ON MULTIPLE SCALES (2017)
@@ -265,7 +272,7 @@ class MultiScaleGMSDLoss(_Loss):
     def __init__(self, reduction: str = 'mean', data_range: Union[int, float] = 1.,
                  scale_weights: Optional[Union[torch.Tensor, Tuple[float], List[float]]] = None,
                  chromatic: bool = False, beta1: float = 0.01, beta2: float = 0.32,
-                 beta3: float = 15.) -> None:
+                 beta3: float = 15., t: float = 170 / (255. ** 2)) -> None:
         super().__init__()
 
         # Generic loss parameters.
@@ -279,6 +286,7 @@ class MultiScaleGMSDLoss(_Loss):
         self.beta1 = beta1
         self.beta2 = beta2
         self.beta3 = beta3
+        self.t = t
             
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         r"""Computation of Multi Scale GMSD index as a loss function.
@@ -293,4 +301,4 @@ class MultiScaleGMSDLoss(_Loss):
         """
         return multi_scale_gmsd(prediction=prediction, target=target, data_range=self.data_range,
                                 reduction=self.reduction, chromatic=self.chromatic, beta1=self.beta1,
-                                beta2=self.beta2, beta3=self.beta3, scale_weights=self.scale_weights)
+                                beta2=self.beta2, beta3=self.beta3, scale_weights=self.scale_weights, t=self.t)
