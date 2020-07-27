@@ -34,6 +34,10 @@ def brisque(x: torch.Tensor,
     Returns:
         Value of BRISQUE index.
 
+    Note:
+        The back propagation is not available using torch=1.5.0 due to bug in argmin/argmax back propagation.
+        Update the torch and torchvision to the latest versions.
+
     References:
         .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
         https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
@@ -97,6 +101,10 @@ class BRISQUELoss(_Loss):
         >>> target = torch.rand(3, 3, 256, 256)
         >>> output = loss(prediction)
         >>> output.backward()
+
+    Note:
+        The back propagation is not available using torch=1.5.0 due to bug in argmin/argmax back propagation.
+        Update the torch and torchvision to the latest versions.
 
     References:
         .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
