@@ -42,7 +42,7 @@ def brisque(x: torch.Tensor,
         .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
         https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
     """
-    if torch.__version__ == '1.5.0':
+    if '1.5.0' in torch.__version__:
         warnings.warn(f'BRISQUE does not support back propagation due to bug in torch={torch.__version__}.'
                       f'Update torch to the latest version to access full functionality of the BRIQSUE.'
                       f'More info is available at https://github.com/photosynthesis-team/piq/pull/79 and'
