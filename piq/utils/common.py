@@ -1,5 +1,4 @@
 from typing import Optional, Union, Tuple, List
-import warnings
 import torch
 
 
@@ -11,8 +10,6 @@ def _adjust_dimensions(input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, to
 
     resized_tensors = []
     for tensor in input_tensors:
-        if not isinstance(tensor, torch.FloatTensor):
-            warnings.warn(f'Expected input tensor {torch.FloatTensor}, got {tensor.type()}.')
         tmp = tensor.clone()
         if tmp.dim() == 2:
             tmp = tmp.unsqueeze(0)
@@ -24,6 +21,7 @@ def _adjust_dimensions(input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, to
 
     if len(resized_tensors) == 1:
         return resized_tensors[0]
+
     return tuple(resized_tensors)
 
 
