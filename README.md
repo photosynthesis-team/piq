@@ -51,7 +51,9 @@ prediction = torch.rand(3, 3, 256, 256)
 brisque_index: torch.Tensor = brisque(prediction, data_range=1.)
 ```
 
-In order to use BRISQUE as a loss function, use corresponding PyTorch module:
+In order to use BRISQUE as a loss function, use corresponding PyTorch module. 
+
+Note: the back propagation is not available using `torch==1.5.0`. Update the environment with latest `torch` and `torchvision`.
 ```python
 import torch
 from piq import BRISQUELoss
@@ -197,6 +199,18 @@ By default input images are normalized with ImageNet statistics before forwardin
  This is port of MATLAB version from the authors of original paper.
  It can be used both as a measure and as a loss function. In any case it should me minimized.
  Usually values of GMSD lie in [0, 0.35] interval.
+ 
+ To compute GMSD as a measure, use lower case function from the library:
+ ```python
+ import torch
+ from piq import gmsd
+
+ prediction = torch.rand(3, 3, 256, 256)
+ target = torch.rand(3, 3, 256, 256)
+ gmsd: torch.Tensor = gmsd(prediction, target, data_range=1.)
+ ```
+
+ In order to use GMSD as a loss function, use corresponding PyTorch module:
  ```python
  import torch
  from piq import GMSDLoss
@@ -384,11 +398,25 @@ Now LPIPS is supported only for VGG16 model. If you need other models, check [or
  
  <!-- MultiScale GMSD EXAMPLES -->
  <details>
- <summary>MultiScale GMSD (MS-GMSD)</summary>
+ <summary>Multi-Scale GMSD (MS-GMSD)</summary>
  <p>
  
  It can be used both as a measure and as a loss function. In any case it should me minimized.
- By defualt scale weights are initialized with values from the paper. You can change them by passing a list of 4 variables to `scale_weights` argument during initialization. Both GMSD and MS-GMSD computed for greyscale images, but to take contrast changes into account authors propoced to also add chromatic component. Use flag `chromatic` to use MS-GMSDc version of the loss
+ By defualt scale weights are initialized with values from the paper. You can change them by passing a list of 4 variables to `scale_weights` argument during initialization. Both GMSD and MS-GMSD computed for greyscale images, but to take contrast changes into account authors propoced to also add chromatic component. Use flag `chromatic` to use MS-GMSDc version of the loss.
+ 
+ Note that input tensors should contain images with height and width equal `2 ** number_of_scales + 1` at least.
+ 
+ To compute Multi-Scale GMSD as a measure, use lower case function from the library:
+ ```python
+ import torch
+ from piq import multi_scale_gmsd
+
+ prediction = torch.rand(3, 3, 256, 256)
+ target = torch.rand(3, 3, 256, 256)
+ multi_scale_gmsd: torch.Tensor = multi_scale_gmsd(prediction, target, data_range=1.)
+ ```
+
+ In order to use Multi-Scale GMSD as a loss function, use corresponding PyTorch module:
  ```python
  import torch
  from piq import MultiScaleGMSDLoss
