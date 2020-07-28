@@ -8,6 +8,7 @@ Credits:
     https://github.com/bukalapak/pybrisque
 """
 from typing import Union, Tuple
+import warnings
 import torch
 from torch.nn.modules.loss import _Loss
 from torch.utils.model_zoo import load_url
@@ -33,10 +34,20 @@ def brisque(x: torch.Tensor,
     Returns:
         Value of BRISQUE index.
 
+    Note:
+        The back propagation is not available using torch=1.5.0 due to bug in argmin/argmax back propagation.
+        Update the torch and torchvision to the latest versions.
+
     References:
         .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
         https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
     """
+    if '1.5.0' in torch.__version__:
+        warnings.warn(f'BRISQUE does not support back propagation due to bug in torch={torch.__version__}.'
+                      f'Update torch to the latest version to access full functionality of the BRIQSUE.'
+                      f'More info is available at https://github.com/photosynthesis-team/piq/pull/79 and'
+                      f'https://github.com/pytorch/pytorch/issues/38869.')
+
     _validate_input(input_tensors=x, allow_5d=False, kernel_size=kernel_size)
     x = _adjust_dimensions(input_tensors=x)
 
@@ -90,6 +101,10 @@ class BRISQUELoss(_Loss):
         >>> target = torch.rand(3, 3, 256, 256)
         >>> output = loss(prediction)
         >>> output.backward()
+
+    Note:
+        The back propagation is not available using torch=1.5.0 due to bug in argmin/argmax back propagation.
+        Update the torch and torchvision to the latest versions.
 
     References:
         .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",

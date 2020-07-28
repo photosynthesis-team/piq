@@ -51,7 +51,9 @@ prediction = torch.rand(3, 3, 256, 256)
 brisque_index: torch.Tensor = brisque(prediction, data_range=1.)
 ```
 
-In order to use BRISQUE as a loss function, use corresponding PyTorch module:
+In order to use BRISQUE as a loss function, use corresponding PyTorch module. 
+
+Note: the back propagation is not available using `torch==1.5.0`. Update the environment with latest `torch` and `torchvision`.
 ```python
 import torch
 from piq import BRISQUELoss
