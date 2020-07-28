@@ -42,8 +42,7 @@ jobs:
                       tensorflow \
                       libsvm \
                       pybrisque \
-                      scikit-image \
-                      scipy==1.3.3
+                      scikit-image
       - name: Test with pytest
         run: |
           pytest -x --cov=./piq --cov-report=xml
