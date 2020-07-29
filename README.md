@@ -662,7 +662,7 @@ Other projects by PhotoSynthesis Team:
 [ci-testing]: https://github.com/photosynthesis-team/piq/workflows/testing/badge.svg
 [pypi-version-shield]: https://badge.fury.io/py/piq.svg
 [pypi-version-url]: https://badge.fury.io/py/piq
-[conda-version-shield]: https://anaconda.org/photosynthesis-team/piq/badges/version.svg
+[conda-version-shield]: https://img.shields.io/conda/vn/photosynthesis-team/piq?color=G&label=Anaconda%20Cloud&logo=Anaconda
 [conda-version-url]: https://anaconda.org/photosynthesis-team/piq
 [quality-gate-status-shield]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_photosynthesis.metrics&metric=alert_status
 [quality-gate-status-url]: https://sonarcloud.io/dashboard?id=photosynthesis-team_photosynthesis.metrics
