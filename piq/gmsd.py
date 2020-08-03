@@ -69,13 +69,14 @@ def gmsd(prediction: torch.Tensor, target: torch.Tensor, reduction: Optional[str
             }[reduction](dim=0)
 
 
-def _gmsd(prediction: torch.Tensor, target: torch.Tensor, t: float = 170 / (255. ** 2)) -> torch.Tensor:
+def _gmsd(prediction: torch.Tensor, target: torch.Tensor, t: float = 170 / (255. ** 2), alpha: float = 0.0) -> torch.Tensor:
     r"""Compute Gradient Magnitude Similarity Deviation
     Both inputs supposed to be in range [0, 1] with RGB order.
     Args:
         prediction: Tensor of shape :math:`(N, 1, H, W)` holding an distorted grayscale image.
         target: Tensor of shape :math:`(N, 1, H, W)` holding an target grayscale image
         t: Constant from the reference paper numerical stability of similarity map
+        alpha: Masking coefficient for similarity masks computation
 
     Returns:
         gmsd : Gradient Magnitude Similarity Deviation between given tensors.
@@ -90,7 +91,7 @@ def _gmsd(prediction: torch.Tensor, target: torch.Tensor, t: float = 170 / (255.
     trgt_grad = gradient_map(target, kernels)
 
     # Compute GMS
-    gms = similarity_map(pred_grad, trgt_grad, t)
+    gms = similarity_map(pred_grad, trgt_grad, constant=t, alpha=alpha)
     mean_gms = torch.mean(gms, dim=[1, 2, 3], keepdims=True)
     # Compute GMSD along spatial dimensions. Shape (batch_size )
     score = torch.pow(gms - mean_gms, 2).mean(dim=[1, 2, 3]).sqrt()
@@ -146,8 +147,8 @@ class GMSDLoss(_Loss):
 def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range: Union[int, float] = 1.,
                      reduction: str = 'mean',
                      scale_weights: Optional[Union[torch.Tensor, Tuple[float, ...], List[float]]] = None,
-                     chromatic: bool = False, beta1: float = 0.01, beta2: float = 0.32, beta3: float = 15.,
-                     t: float = 170 / (255. ** 2)) -> torch.Tensor:
+                     chromatic: bool = False, alpha: float = 0.5, beta1: float = 0.01, beta2: float = 0.32,
+                     beta3: float = 15., t: float = 170 / (255. ** 2)) -> torch.Tensor:
     r"""Computation of Multi scale GMSD.
 
     Args:
@@ -163,6 +164,7 @@ def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range:
         scale_weights: Weights for different scales. Can contain any number of floating point values.
         chromatic: Flag to use MS-GMSDc algorithm from paper.
             It also evaluates chromatic components of the image. Default: True
+        alpha: Masking coefficient. See [1] for details.
         beta1: Algorithm parameter. Weight of chromatic component in the loss.
         beta2: Algorithm parameter. Small constant, see [1].
         beta3: Algorithm parameter. Small constant, see [1].
@@ -211,7 +213,7 @@ def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range:
             prediction = F.avg_pool2d(prediction, kernel_size=2, padding=0)
             target = F.avg_pool2d(target, kernel_size=2, padding=0)
 
-        score = _gmsd(prediction[:, :1], target[:, :1], t=t)
+        score = _gmsd(prediction[:, :1], target[:, :1], t=t, alpha=alpha)
         ms_gmds.append(score)
 
     # Stack results in different scales and multiply by weight
