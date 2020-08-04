@@ -1,0 +1,4 @@
+site_name: PyTorch Image Quality
+nav:
+  - Home: index.md
+theme: readthedocs
