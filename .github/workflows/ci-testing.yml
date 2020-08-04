@@ -43,6 +43,7 @@ jobs:
                       libsvm \
                       pybrisque \
                       scikit-image
+          pip install --upgrade scipy
       - name: Test with pytest
         run: |
           pytest -x --cov=./piq --cov-report=xml
