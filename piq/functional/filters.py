@@ -1,8 +1,20 @@
 r"""Filters for gradient computation, bluring, etc."""
+import math
+
 import torch
 
 
-def hann_filter(kernel_size) -> torch.Tensor:
+def haar_filter(kernel_size: int) -> torch.Tensor:
+    r"""Creates Haar kernel
+    Returns:
+        kernel: Tensor with shape 1 x `kernel_size` x `kernel_size`"""
+    scale = math.log2(kernel_size)
+    kernel = 2 ** (- scale) * torch.ones((kernel_size, kernel_size))
+    kernel[kernel_size // 2:, :] = - kernel[kernel_size // 2:, :]
+    return kernel.unsqueeze(0)
+
+
+def hann_filter(kernel_size: int) -> torch.Tensor:
     r"""Creates  Hann kernel
     Returns:
         kernel: Tensor with shape 1 x `kernel_size` x `kernel_size`"""
