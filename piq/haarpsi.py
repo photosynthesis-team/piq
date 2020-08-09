@@ -7,9 +7,11 @@ Reference:
     [2] Code from authors on MATLAB and Python
         https://github.com/rgcda/haarpsi
 """
-import torch
+
+import functools
 from typing import Optional, Union
 
+import torch
 import torch.nn.functional as F
 from torch.nn.modules.loss import _Loss
 
@@ -40,7 +42,7 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: Optional[str] = 'mean',
     Returns:
         HaarPSI : Wavelet-Based Perceptual Similarity between two tensors
     
-    Reference:
+    References:
         [1] R. Reisenhofer, S. Bosse, G. Kutyniok & T. Wiegand (2017)
             'A Haar Wavelet-Based Perceptual Similarity Index for Image Quality Assessment'
             http://www.math.uni-bremen.de/cda/HaarPSI/publications/HaarPSI_preprint_v4.pdf
@@ -115,8 +117,8 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: Optional[str] = 'mean',
         pad_to_use = [0, 1, 0, 1]
         x_iq = F.pad(x_iq, pad=pad_to_use)
         y_iq = F.pad(y_iq, pad=pad_to_use)
-        coefficients_x_iq =  torch.abs(F.avg_pool2d(x_iq, kernel_size=2, stride=1, padding=0))
-        coefficients_y_iq =  torch.abs(F.avg_pool2d(y_iq, kernel_size=2, stride=1, padding=0))
+        coefficients_x_iq = torch.abs(F.avg_pool2d(x_iq, kernel_size=2, stride=1, padding=0))
+        coefficients_y_iq = torch.abs(F.avg_pool2d(y_iq, kernel_size=2, stride=1, padding=0))
     
         # Compute weights and simmilarity
         weights = torch.cat([weights, weights.mean(dim=1, keepdims=True)], dim=1)
@@ -126,8 +128,9 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: Optional[str] = 'mean',
     sim_map = torch.cat(sim_map, dim=1)
     
     # Calculate the final score
-    score = torch.sum((sim_map * alpha).sigmoid() * weights, dim=[1, 2, 3]) /\
-             torch.sum(weights, dim=[1, 2, 3])
+    eps = torch.finfo(sim_map.dtype).eps
+    score = (((sim_map * alpha).sigmoid() * weights).sum(dim=[1, 2, 3]) + eps) /\
+        (torch.sum(weights, dim=[1, 2, 3]) + eps)
     # Logit of score
     score = (torch.log(score / (1 - score)) / alpha) ** 2
 
@@ -137,3 +140,65 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: Optional[str] = 'mean',
     return {'mean': score.mean,
             'sum': score.sum
             }[reduction](dim=0)
+
+
+class HaarPSILoss(_Loss):
+    r"""Creates a criterion that measures  Haar Wavelet-Based Perceptual Similarity loss between
+    each element in the input and target.
+
+    The sum operation still operates over all the elements, and divides by :math:`n`.
+
+    The division by :math:`n` can be avoided if one sets ``reduction = 'sum'``.
+
+    Args:
+        reduction: Specifies the reduction to apply to the output:
+            ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
+            ``'mean'``: the sum of the output will be divided by the number of
+            elements in the output, ``'sum'``: the output will be summed.
+        data_range: The difference between the maximum and minimum of the pixel value,
+            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
+            The pixel value interval of both input and output should remain the same.
+        scales: Number of Haar wavelets used for image decomposition.
+        subsample: Flag to apply average pooling before HaarPSI computation. See [1] for details.
+        C: Constant from the paper. See [1] for details
+        alpha: Exponent used for similarity maps weightning. See [1] for details
+
+    Shape:
+        - Input: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
+        - Target: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
+
+    Examples::
+
+        >>> loss = HaarPSILoss()
+        >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> target = torch.rand(3, 3, 256, 256)
+        >>> output = loss(prediction, target)
+        >>> output.backward()
+
+    References:
+        .. [1] R. Reisenhofer, S. Bosse, G. Kutyniok & T. Wiegand (2017)
+            'A Haar Wavelet-Based Perceptual Similarity Index for Image Quality Assessment'
+            http://www.math.uni-bremen.de/cda/HaarPSI/publications/HaarPSI_preprint_v4.pdf
+    """
+    def __init__(self, reduction: Optional[str] = 'mean', data_range: Union[int, float] = 1.,
+                 scales: int = 3, subsample: bool = True, C: float = 30.0, alpha: float = 4.2) -> None:
+        super().__init__()
+        self.reduction = reduction
+        self.data_range = data_range
+
+        self.haarpsi = functools.partial(
+            haarpsi, scales=scales, subsample=subsample, C=C, alpha=alpha,
+            data_range=data_range, reduction=reduction)
+
+    def forward(self, prediction, target):
+        r"""Computation of HaarPSI as a loss function.
+
+        Args:
+            prediction: Tensor of prediction of the network.
+            target: Reference tensor.
+
+        Returns:
+            Value of HaarPSI loss to be minimized. 0 <= HaarPSI loss <= 1.
+        """
+
+        return 1. - self.haarpsi(x=prediction, y=target)
