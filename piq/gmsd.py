@@ -69,7 +69,8 @@ def gmsd(prediction: torch.Tensor, target: torch.Tensor, reduction: Optional[str
             }[reduction](dim=0)
 
 
-def _gmsd(prediction: torch.Tensor, target: torch.Tensor, t: float = 170 / (255. ** 2), alpha: float = 0.0) -> torch.Tensor:
+def _gmsd(prediction: torch.Tensor, target: torch.Tensor,
+          t: float = 170 / (255. ** 2), alpha: float = 0.0) -> torch.Tensor:
     r"""Compute Gradient Magnitude Similarity Deviation
     Both inputs supposed to be in range [0, 1] with RGB order.
     Args:
