@@ -21,7 +21,7 @@ from piq.functional import similarity_map, rgb2yiq, haar_filter
 
 def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: Optional[str] = 'mean',
             data_range: Union[int, float] = 1., scales: int = 3, subsample: bool = True,
-            C: float = 30.0, alpha: float = 4.2) -> torch.Tensor:
+            c: float = 30.0, alpha: float = 4.2) -> torch.Tensor:
     r"""Compute Haar Wavelet-Based Perceptual Similarity
     Input can by greyscale tensor of colour image with RGB channels order.
     Args:
@@ -36,7 +36,7 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: Optional[str] = 'mean',
             The pixel value interval of both input and output should remain the same.
         scales: Number of Haar wavelets used for image decomposition.
         subsample: Flag to apply average pooling before HaarPSI computation. See [1] for details.
-        C: Constant from the paper. See [1] for details
+        c: Constant from the paper. See [1] for details
         alpha: Exponent used for similarity maps weightning. See [1] for details
 
     Returns:
@@ -111,7 +111,7 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: Optional[str] = 'mean',
     for orientation in range(2):
         magnitude_x = torch.abs(coefficients_x[:, (orientation, orientation + 2)])
         magnitude_y = torch.abs(coefficients_y[:, (orientation, orientation + 2)])
-        sim_map.append(similarity_map(magnitude_x, magnitude_y, constant=C).sum(dim=1, keepdims=True) / 2)
+        sim_map.append(similarity_map(magnitude_x, magnitude_y, constant=c).sum(dim=1, keepdims=True) / 2)
 
     if num_channels == 3:
         pad_to_use = [0, 1, 0, 1]
@@ -123,7 +123,7 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: Optional[str] = 'mean',
         # Compute weights and simmilarity
         weights = torch.cat([weights, weights.mean(dim=1, keepdims=True)], dim=1)
         sim_map.append(
-            similarity_map(coefficients_x_iq, coefficients_y_iq, constant=C).sum(dim=1, keepdims=True) / 2)
+            similarity_map(coefficients_x_iq, coefficients_y_iq, constant=c).sum(dim=1, keepdims=True) / 2)
 
     sim_map = torch.cat(sim_map, dim=1)
     
@@ -160,7 +160,7 @@ class HaarPSILoss(_Loss):
             The pixel value interval of both input and output should remain the same.
         scales: Number of Haar wavelets used for image decomposition.
         subsample: Flag to apply average pooling before HaarPSI computation. See [1] for details.
-        C: Constant from the paper. See [1] for details
+        c: Constant from the paper. See [1] for details
         alpha: Exponent used for similarity maps weightning. See [1] for details
 
     Shape:
@@ -181,13 +181,13 @@ class HaarPSILoss(_Loss):
             http://www.math.uni-bremen.de/cda/HaarPSI/publications/HaarPSI_preprint_v4.pdf
     """
     def __init__(self, reduction: Optional[str] = 'mean', data_range: Union[int, float] = 1.,
-                 scales: int = 3, subsample: bool = True, C: float = 30.0, alpha: float = 4.2) -> None:
+                 scales: int = 3, subsample: bool = True, c: float = 30.0, alpha: float = 4.2) -> None:
         super().__init__()
         self.reduction = reduction
         self.data_range = data_range
 
         self.haarpsi = functools.partial(
-            haarpsi, scales=scales, subsample=subsample, C=C, alpha=alpha,
+            haarpsi, scales=scales, subsample=subsample, c=c, alpha=alpha,
             data_range=data_range, reduction=reduction)
 
     def forward(self, prediction, target):
