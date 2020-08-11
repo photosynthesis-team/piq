@@ -53,6 +53,12 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: Optional[str] = 'mean',
     _validate_input(input_tensors=(x, y), allow_5d=False, scale_weights=None)
     x, y = _adjust_dimensions(input_tensors=(x, y))
 
+    # Assert minimal image size
+    kernel_size = 2 ** (scales + 1)
+    if x.size(-1) < kernel_size or x.size(-2) < kernel_size:
+        raise ValueError(f'Kernel size can\'t be greater than actual input size. Input size: {x.size()}. '
+                         f'Kernel size: {kernel_size}')
+
     # Scale images to [0, 255] range as in the paper
     x = x * 255.0 / float(data_range)
     y = y * 255.0 / float(data_range)
@@ -98,7 +104,7 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: Optional[str] = 'mean',
         coefficients_x.append(coeff_x)
         coefficients_y.append(coeff_y)
 
-    # Shape B x 6 x H x W
+    # Shape [B x {scales * 2} x H x W]
     coefficients_x = torch.cat(coefficients_x, dim=1)
     coefficients_y = torch.cat(coefficients_y, dim=1)
 
