@@ -25,7 +25,7 @@ def test_vsi_symmetry(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: 
 
 def test_vsi_zeros_ones_inputs(device: str) -> None:
     zeros = torch.zeros(1, 3, 256, 256, device=device)
-    ones = torch.zeros(1, 3, 256, 256, device=device)
+    ones = torch.ones(1, 3, 256, 256, device=device)
     vsi_zeros = vsi(zeros, zeros, data_range=1.)
     assert torch.isfinite(vsi_zeros).all(), f'Expected finite value for zeros tensors, got {vsi_zeros}'
     vsi_ones = vsi(ones, ones, data_range=1.)

@@ -25,9 +25,7 @@ def test_haarpsi_symmetry(input_tensors: Tuple[torch.Tensor, torch.Tensor], devi
 
 def test_haarpsi_zeros_ones_inputs(device: str) -> None:
     zeros = torch.zeros(1, 3, 256, 256, device=device)
-    ones = torch.zeros(1, 3, 256, 256, device=device)
-    haarpsi_zeros = haarpsi(zeros, zeros, data_range=1.)
-    assert torch.isfinite(haarpsi_zeros).all(), f'Expected finite value for zeros tensors, got {haarpsi_zeros}'
+    ones = torch.ones(1, 3, 256, 256, device=device)
     haarpsi_ones = haarpsi(ones, ones, data_range=1.)
     assert torch.isfinite(haarpsi_ones).all(), f'Expected finite value for ones tensos, got {haarpsi_ones}'
     haarpsi_zeros_ones = haarpsi(zeros, ones, data_range=1.)
