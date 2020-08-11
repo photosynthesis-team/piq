@@ -52,9 +52,9 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     _validate_input(input_tensors=(x, y), allow_5d=False)
     x, y = _adjust_dimensions(input_tensors=(x, y))
     
-    # # Rescale to [0, 255] range, because all constant are calculated for this factor
-    x = x * 255 / float(data_range)
-    y = y * 255 / float(data_range)
+    # Rescale to [0, 255] range, because all constant are calculated for this factor
+    x = (x / float(data_range)) * 255
+    y = (y / float(data_range)) * 255
     
     # Apply average pooling
     kernel_size = max(1, round(min(x.shape[-2:]) / 256))
