@@ -63,31 +63,26 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: Optional[str] = 'mean',
     x = x * 255.0 / float(data_range)
     y = y * 255.0 / float(data_range)
 
+    num_channels = x.size(1)
+    # Convert RGB to YIQ color space https://en.wikipedia.org/wiki/YIQ
+    if num_channels == 3:
+        x_yiq = rgb2yiq(x)
+        y_yiq = rgb2yiq(y)
+    else:
+        x_yiq = x
+        y_yiq = y
+
     # Downscale input to simulates the typical distance between an image and its viewer.
     if subsample:
         up_pad = 0
         down_pad = max(x.shape[2] % 2, x.shape[3] % 2)
         pad_to_use = [up_pad, down_pad, up_pad, down_pad]
-        x = F.pad(x, pad=pad_to_use)
-        y = F.pad(y, pad=pad_to_use)
+        x_yiq = F.pad(x_yiq, pad=pad_to_use)
+        y_yiq = F.pad(y_yiq, pad=pad_to_use)
 
-        x = F.avg_pool2d(x, kernel_size=2, stride=2, padding=0)
-        y = F.avg_pool2d(y, kernel_size=2, stride=2, padding=0)
-
-    num_channels = x.size(1)
-    # Convert RGB to YIQ color space https://en.wikipedia.org/wiki/YIQ
-    if num_channels == 3:
-        x = rgb2yiq(x)
-        y = rgb2yiq(y)
-
-        x_lum = x[:, : 1]
-        y_lum = y[:, : 1]
-        x_iq = x[:, 1:]
-        y_iq = y[:, 1:]
-    else:
-        x_lum = x
-        y_lum = y
-
+        x_yiq = F.avg_pool2d(x_yiq, kernel_size=2, stride=2, padding=0)
+        y_yiq = F.avg_pool2d(y_yiq, kernel_size=2, stride=2, padding=0)
+    
     # Haar wavelet decomposition
     coefficients_x, coefficients_y = [], []
     for scale in range(scales):
@@ -98,8 +93,8 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: Optional[str] = 'mean',
         upper_pad = kernel_size // 2 - 1
         bottom_pad = kernel_size // 2
         pad_to_use = [upper_pad, bottom_pad, upper_pad, bottom_pad]
-        coeff_x = torch.nn.functional.conv2d(F.pad(x_lum, pad=pad_to_use, mode='constant'), kernels.to(x))
-        coeff_y = torch.nn.functional.conv2d(F.pad(y_lum, pad=pad_to_use, mode='constant'), kernels.to(y))
+        coeff_x = torch.nn.functional.conv2d(F.pad(x_yiq[:, : 1], pad=pad_to_use, mode='constant'), kernels.to(x))
+        coeff_y = torch.nn.functional.conv2d(F.pad(y_yiq[:, : 1], pad=pad_to_use, mode='constant'), kernels.to(y))
     
         coefficients_x.append(coeff_x)
         coefficients_y.append(coeff_y)
@@ -121,10 +116,10 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: Optional[str] = 'mean',
 
     if num_channels == 3:
         pad_to_use = [0, 1, 0, 1]
-        x_iq = F.pad(x_iq, pad=pad_to_use)
-        y_iq = F.pad(y_iq, pad=pad_to_use)
-        coefficients_x_iq = torch.abs(F.avg_pool2d(x_iq, kernel_size=2, stride=1, padding=0))
-        coefficients_y_iq = torch.abs(F.avg_pool2d(y_iq, kernel_size=2, stride=1, padding=0))
+        x_yiq = F.pad(x_yiq, pad=pad_to_use)
+        y_yiq = F.pad(y_yiq, pad=pad_to_use)
+        coefficients_x_iq = torch.abs(F.avg_pool2d(x_yiq[:, 1:], kernel_size=2, stride=1, padding=0))
+        coefficients_y_iq = torch.abs(F.avg_pool2d(y_yiq[:, 1:], kernel_size=2, stride=1, padding=0))
     
         # Compute weights and simmilarity
         weights = torch.cat([weights, weights.mean(dim=1, keepdims=True)], dim=1)
