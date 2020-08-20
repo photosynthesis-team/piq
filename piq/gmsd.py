@@ -149,7 +149,7 @@ def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range:
                      reduction: str = 'mean',
                      scale_weights: Optional[Union[torch.Tensor, Tuple[float, ...], List[float]]] = None,
                      chromatic: bool = False, alpha: float = 0.5, beta1: float = 0.01, beta2: float = 0.32,
-                     beta3: float = 15., t: float = 170) -> torch.Tensor:
+                     beta3: float = 15., t: float = 170 / (255 ** 2)) -> torch.Tensor:
     r"""Computation of Multi scale GMSD.
 
     Args:
@@ -193,8 +193,8 @@ def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range:
     if prediction.size(-1) < min_size or prediction.size(-2) < min_size:
         raise ValueError(f'Invalid size of the input images, expected at least {min_size}x{min_size}.')
 
-    prediction = prediction * 255.0 / float(data_range)
-    target = target * 255.0 / float(data_range)
+    prediction = prediction / float(data_range)
+    target = target / float(data_range)
 
     num_channels = prediction.size(1)
     if num_channels == 3:
@@ -274,7 +274,7 @@ class MultiScaleGMSDLoss(_Loss):
 
     def __init__(self, reduction: str = 'mean', data_range: Union[int, float] = 1.,
                  scale_weights: Optional[Union[torch.Tensor, Tuple[float, ...], List[float]]] = None,
-                 chromatic: bool = False, beta1: float = 0.01, beta2: float = 0.32,
+                 chromatic: bool = False, alpha: float = 0.5, beta1: float = 0.01, beta2: float = 0.32,
                  beta3: float = 15., t: float = 170 / (255. ** 2)) -> None:
         super().__init__()
 
@@ -286,6 +286,7 @@ class MultiScaleGMSDLoss(_Loss):
 
         self.scale_weights = scale_weights
         self.chromatic = chromatic
+        self.alpha = alpha
         self.beta1 = beta1
         self.beta2 = beta2
         self.beta3 = beta3
@@ -304,5 +305,5 @@ class MultiScaleGMSDLoss(_Loss):
             Value of MS-GMSD loss to be minimized. 0 <= MS-GMSD loss <= 1.
         """
         return multi_scale_gmsd(prediction=prediction, target=target, data_range=self.data_range,
-                                reduction=self.reduction, chromatic=self.chromatic, beta1=self.beta1,
+                                reduction=self.reduction, chromatic=self.chromatic, alpha=self.alpha, beta1=self.beta1,
                                 beta2=self.beta2, beta3=self.beta3, scale_weights=self.scale_weights, t=self.t)
