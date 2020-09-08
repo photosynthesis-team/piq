@@ -153,8 +153,8 @@ def test_multi_scale_gmsd_zero_for_equal_tensors(prediction: torch.Tensor, devic
 
 def test_multi_scale_gmsd_supports_different_data_ranges(prediction: torch.Tensor, target: torch.Tensor,
                                                          device: str) -> None:
-    prediction_255 = (prediction * 255).type(torch.uint8)
-    target_255 = (target * 255).type(torch.uint8)
+    prediction_255 = prediction * 255
+    target_255 = target * 255
 
     measure = multi_scale_gmsd(prediction.to(device), target.to(device))
     measure_255 = multi_scale_gmsd(prediction_255.to(device), target_255.to(device), data_range=255)
@@ -214,8 +214,8 @@ def test_multi_scale_gmsd_loss_zero_for_equal_tensors(prediction: torch.Tensor, 
 
 def test_multi_scale_gmsd_loss_supports_different_data_ranges(prediction: torch.Tensor, target: torch.Tensor,
                                                               device: str) -> None:
-    prediction_255 = (prediction * 255).type(torch.uint8)
-    target_255 = (target * 255).type(torch.uint8)
+    prediction_255 = prediction * 255
+    target_255 = target * 255
     loss = MultiScaleGMSDLoss()
     measure = loss(prediction.to(device), target.to(device))
     loss_255 = MultiScaleGMSDLoss(data_range=255)
