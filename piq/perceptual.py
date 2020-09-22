@@ -245,8 +245,7 @@ class LPIPS(ContentLoss):
     For now only VGG16 learned weights are supported.
     Expects input to be in range [0, 1] or normalized with ImageNet statistics into range [-1, 1]
     Args:
-        feature_extractor: Name of model used to extract features. One of {`vgg16`, `vgg19`}
-        use_average_pooling: Flag to replace MaxPooling layer with AveragePooling. See [1] for details.
+        replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See [1] for details.
         distance: Method to compute distance between features. One of {`mse`, `mae`}.
         reduction: Reduction over samples in batch: "mean"|"sum"|"none"
         mean: List of float values used for data standartization. Default: ImageNet mean.
@@ -280,7 +279,6 @@ class DISTS(ContentLoss):
     r"""Deep Image Structure and Texture Similarity metric.
     Expects input to be in range [0, 1] or normalized with ImageNet statistics into range [-1, 1]
     Args:
-        layers: List of strings with layer names. Default: [`relu3_3`]
         reduction: Reduction over samples in batch: "mean"|"sum"|"none"
         mean: List of float values used for data standartization. Default: ImageNet mean.
             If there is no need to normalize data, use [0., 0., 0.].
