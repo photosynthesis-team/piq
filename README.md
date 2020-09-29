@@ -253,6 +253,38 @@ By default input images are normalized with ImageNet statistics before forwardin
  </p>
  </details>
  
+ <!-- HaarPSI EXAMPLES -->
+ <details>
+ <summary>Haar Wavelet-Based Perceptual Similarity Index (HaarPSI)</summary>
+ <p>
+ 
+ This is port of MATLAB version from the authors of original paper.
+ It can be used both as a measure and as a loss function.
+ 
+ To compute HaarPSI as a measure, use lower case function from the library:
+ ```python
+ import torch
+ from piq import haarpsi
+
+ prediction = torch.rand(3, 3, 256, 256)
+ target = torch.rand(3, 3, 256, 256)
+ score: torch.Tensor = haarpsi(prediction, target, data_range=1.)
+ ```
+
+ In order to use HaarPSI as a loss function, use corresponding PyTorch module:
+ ```python
+ import torch
+ from piq import HaarPSILoss
+ 
+ loss = HaarPSILoss(data_range=1.)
+ prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
+ target = torch.rand(3, 3, 256, 256)
+ output: torch.Tensor = loss(prediction, target)
+ output.backward()
+ ```
+ </p>
+ </details>
+
  <!-- KID EXAMPLES -->
  <details>
  <summary>Kernel Inception Distance(KID)</summary>
