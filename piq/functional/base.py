@@ -30,15 +30,17 @@ def get_meshgrid(size: Tuple[int, int]) -> torch.Tensor:
     return torch.meshgrid(x, y)
 
 
-def similarity_map(map_x: torch.Tensor, map_y: torch.Tensor, constant: float) -> torch.Tensor:
+def similarity_map(map_x: torch.Tensor, map_y: torch.Tensor, constant: float, alpha: float = 0.0) -> torch.Tensor:
     r""" Compute similarity_map between two tensors using Dice-like equation.
 
     Args:
         map_x: Tensor with map to be compared
         map_y: Tensor with map to be compared
         constant: Used for numerical stability
+        alpha: Masking coefficient. Substracts - `alpha` * map_x * map_y from denominator and nominator
     """
-    return (2.0 * map_x * map_y + constant) / (map_x ** 2 + map_y ** 2 + constant)
+    return (2.0 * map_x * map_y - alpha * map_x * map_y + constant) / \
+           (map_x ** 2 + map_y ** 2 - alpha * map_x * map_y + constant)
 
 
 def gradient_map(x: torch.Tensor, kernels: torch.Tensor) -> torch.Tensor:
