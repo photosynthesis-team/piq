@@ -150,7 +150,7 @@ class ContentLoss(_Loss):
             prediction: Tensor of prediction of the network.
             target: Reference tensor.
         """
-        _validate_input(input_tensors=(prediction, target), allow_5d=False)
+        _validate_input(input_tensors=(prediction, target), allow_5d=False, allow_negative=True)
         prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
 
         self.model.to(prediction)
