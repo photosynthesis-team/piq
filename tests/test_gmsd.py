@@ -63,7 +63,6 @@ def test_gmsd_supports_different_data_ranges(prediction: torch.Tensor, target: t
     measure_255 = gmsd(prediction_255.to(device), target_255.to(device), data_range=255)
     measure = gmsd((prediction_255 / 255.).to(device), (target_255 / 255.).to(device))
 
-    measure_255 = gmsd(prediction_255.to(device), target_255.to(device), data_range=255)
     diff = torch.abs(measure_255 - measure)
     assert diff <= 1e-6, f'Result for same tensor with different data_range should be the same, got {diff}'
 
