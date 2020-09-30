@@ -164,7 +164,7 @@ class HaarPSILoss(_Loss):
         alpha: Exponent used for similarity maps weightning. See [1] for details
 
     Shape:
-        - Input:Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
+        - Input: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
         - Target: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
 
     Examples::

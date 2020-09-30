@@ -16,7 +16,7 @@ def _polynomial_kernel(
     K(X, Y) = (gamma <X, Y> + coef0)^degree
 
     Args:
-        X: Tensor with hape (n_samples_1, n_features)
+        X: Tensor with shape (n_samples_1, n_features)
         Y: torch.Tensor of shape (n_samples_2, n_features)
         degree: default 3
         gamma: if None, defaults to 1.0 / n_features.
