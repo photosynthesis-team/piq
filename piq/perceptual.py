@@ -75,10 +75,11 @@ EPS = 1e-10
 
 
 class ContentLoss(_Loss):
-    r"""Creates Content loss that can be used for image style transfer of as a measure in
-    image to image tasks.
-    Uses pretrained VGG models from torchvision. Normalizes features before summation.
-    Expects input to be in range [0, 1] or normalized with ImageNet statistics into range [-1, 1]
+    r"""Creates Content loss that can be used for image style transfer or as a measure for
+    image to image tasks. Uses pretrained VGG models from torchvision. 
+    By default expects input to be in range [0, 1], which is then normalized using ImageNet statistics into range [-1, 1].
+    If no normaliation is requiered, change `mean` and `std` values accordingly. 
+
     Args:
         feature_extractor: Model to extract features or model name in {`vgg16`, `vgg19`}.
         layers: List of strings with layer names. Default: [`relu3_3`]
@@ -215,8 +216,33 @@ class ContentLoss(_Loss):
 class StyleLoss(ContentLoss):
     r"""Creates Style loss that can be used for image style transfer or as a measure in
     image to image tasks. Computes distance between Gram matrixes of feature maps.
-    Uses pretrained VGG models from torchvision. Features can be normalized before summation.
-    Expects input to be in range [0, 1] or normalized with ImageNet statistics into range [-1, 1]
+    Uses pretrained VGG models from torchvision.
+
+    By default expects input to be in range [0, 1], which is then normalized using ImageNet statistics into range [-1, 1].
+    If no normaliation is requiered, change `mean` and `std` values accordingly.
+
+    Args:
+        feature_extractor: Model to extract features or model name in {`vgg16`, `vgg19`}.
+        layers: List of strings with layer names. Default: [`relu3_3`]
+        weights: List of float weight to balance different layers
+        replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See [1] for details.
+        distance: Method to compute distance between features. One of {`mse`, `mae`}.
+        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
+        mean: List of float values used for data standartization. Default: ImageNet mean.
+            If there is no need to normalize data, use [0., 0., 0.].
+        std: List of float values used for data standartization. Default: ImageNet std.
+            If there is no need to normalize data, use [1., 1., 1.].
+        normalize_features: If true, unit-normalize each feature in channel dimension before scaling
+            and computing distance. See [2] for details.
+    References:
+        .. [1] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
+        (2016). A Neural Algorithm of Artistic Style}
+        Association for Research in Vision and Ophthalmology (ARVO)
+        https://arxiv.org/abs/1508.06576
+        .. [2] Zhang, Richard and Isola, Phillip and Efros, et al.
+        (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
+        2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
+        https://arxiv.org/abs/1801.03924
     """
 
     def compute_distance(self, prediction_features: torch.Tensor, target_features: torch.Tensor):
@@ -241,9 +267,11 @@ class StyleLoss(ContentLoss):
 
 
 class LPIPS(ContentLoss):
-    r"""Learned Perceptual Image Patch Similarity metric.
-    For now only VGG16 learned weights are supported.
-    Expects input to be in range [0, 1] or normalized with ImageNet statistics into range [-1, 1]
+    r"""Learned Perceptual Image Patch Similarity metric. Only VGG16 learned weights are supported.
+
+    By default expects input to be in range [0, 1], which is then normalized using ImageNet statistics into range [-1, 1].
+    If no normaliation is requiered, change `mean` and `std` values accordingly.
+
     Args:
         replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See [1] for details.
         distance: Method to compute distance between features. One of {`mse`, `mae`}.
@@ -277,7 +305,10 @@ class LPIPS(ContentLoss):
 
 class DISTS(ContentLoss):
     r"""Deep Image Structure and Texture Similarity metric.
-    Expects input to be in range [0, 1] or normalized with ImageNet statistics into range [-1, 1]
+
+    By default expects input to be in range [0, 1], which is then normalized using ImageNet statistics into range [-1, 1].
+    If no normaliation is requiered, change `mean` and `std` values accordingly.
+
     Args:
         reduction: Reduction over samples in batch: "mean"|"sum"|"none"
         mean: List of float values used for data standartization. Default: ImageNet mean.
