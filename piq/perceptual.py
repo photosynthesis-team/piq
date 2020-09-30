@@ -76,9 +76,9 @@ EPS = 1e-10
 
 class ContentLoss(_Loss):
     r"""Creates Content loss that can be used for image style transfer or as a measure for
-    image to image tasks. Uses pretrained VGG models from torchvision. 
-    By default expects input to be in range [0, 1], which is then normalized using ImageNet statistics into range [-1, 1].
-    If no normaliation is requiered, change `mean` and `std` values accordingly. 
+    image to image tasks. Uses pretrained VGG models from torchvision.
+    By default expects input to be in range [0, 1], which is then normalized by ImageNet statistics into range [-1, 1].
+    If no normaliation is requiered, change `mean` and `std` values accordingly.
 
     Args:
         feature_extractor: Model to extract features or model name in {`vgg16`, `vgg19`}.
@@ -218,7 +218,7 @@ class StyleLoss(ContentLoss):
     image to image tasks. Computes distance between Gram matrixes of feature maps.
     Uses pretrained VGG models from torchvision.
 
-    By default expects input to be in range [0, 1], which is then normalized using ImageNet statistics into range [-1, 1].
+    By default expects input to be in range [0, 1], which is then normalized by ImageNet statistics into range [-1, 1].
     If no normaliation is requiered, change `mean` and `std` values accordingly.
 
     Args:
@@ -269,7 +269,7 @@ class StyleLoss(ContentLoss):
 class LPIPS(ContentLoss):
     r"""Learned Perceptual Image Patch Similarity metric. Only VGG16 learned weights are supported.
 
-    By default expects input to be in range [0, 1], which is then normalized using ImageNet statistics into range [-1, 1].
+    By default expects input to be in range [0, 1], which is then normalized by ImageNet statistics into range [-1, 1].
     If no normaliation is requiered, change `mean` and `std` values accordingly.
 
     Args:
@@ -306,7 +306,7 @@ class LPIPS(ContentLoss):
 class DISTS(ContentLoss):
     r"""Deep Image Structure and Texture Similarity metric.
 
-    By default expects input to be in range [0, 1], which is then normalized using ImageNet statistics into range [-1, 1].
+    By default expects input to be in range [0, 1], which is then normalized by ImageNet statistics into range [-1, 1].
     If no normaliation is requiered, change `mean` and `std` values accordingly.
 
     Args:
