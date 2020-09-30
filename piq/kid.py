@@ -12,21 +12,22 @@ def _polynomial_kernel(
         gamma: Optional[float] = None,
         coef0: float = 1.) -> torch.Tensor:
     """
-        Compute the polynomial kernel between x and y::
-            K(X, Y) = (gamma <X, Y> + coef0)^degree
-        Source: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise.polynomial_kernel.html
-        Parameters
-        ----------
-        X : torch.Tensor of shape (n_samples_1, n_features)
-        Y : torch.Tensor of shape (n_samples_2, n_features)
-        degree : int, default 3
-        gamma : float, default None
-            if None, defaults to 1.0 / n_features
-        coef0 : float, default 1
-        Returns
-        -------
-        Gram matrix : array of shape (n_samples_1, n_samples_2)
-        """
+    Compute the polynomial kernel between x and y
+    K(X, Y) = (gamma <X, Y> + coef0)^degree
+
+    Args:
+        X: Tensor with hape (n_samples_1, n_features)
+        Y: torch.Tensor of shape (n_samples_2, n_features)
+        degree: default 3
+        gamma: if None, defaults to 1.0 / n_features.
+        coef0 : default 1
+
+    Returns:
+        Gram matrix : Array with shape (n_samples_1, n_samples_2)
+
+    Reference:
+        https://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise.polynomial_kernel.html
+    """
 
     if Y is None:
         Y = X
@@ -151,12 +152,12 @@ class KID(BaseFeatureMetric):
     But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
 
     Args:
-        predicted_features(torch.Tensor): Low-dimension representation of predicted image set.
+        predicted_features: Low-dimension representation of predicted image set.
             Shape (N_pred, encoder_dim)
-        target_features(torch.Tensor): Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
+        target_features: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
 
     Returns:
-        score(torch.Tensor): Scalar value of the distance between image sets features.
+        score: Scalar value of the distance between image sets features.
         variance(Optional[torch.Tensor]): If `ret_var` is True, also returns variance
 
     Reference:
@@ -212,9 +213,9 @@ class KID(BaseFeatureMetric):
 
         Args:
             predicted_features: Samples from data distribution.
-                Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1.
+                Shape (N_samples, data_dim), dtype: torch.float32 in range [0, 1].
             target_features: Samples from data distribution.
-                Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1
+                Shape (N_samples, data_dim), dtype: torch.float32 in range [0, 1].
 
         Returns:
             KID score and variance (optional).

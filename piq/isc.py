@@ -58,10 +58,10 @@ class IS(BaseFeatureMetric):
     IS is computed separatly for predicted and target features and expects raw InceptionV3 model logits as inputs.
 
     Args:
-        predicted_features (torch.Tensor): Low-dimension representation of predicted image set.
-            Required to have shape (N_pred, encoder_dim)
-        target_features (torch.Tensor): Low-dimension representation of target image set.
-            Required to have shape (N_targ, encoder_dim)
+        predicted_features: Low-dimension representation of predicted image set.
+            Shape (N_pred, encoder_dim).
+        target_features: Low-dimension representation of target image set.
+            Shape (N_targ, encoder_dim).
 
     Returns:
         distance(predicted_score, target_score): L1 or L2 distance between scores.

@@ -20,7 +20,7 @@ def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
         omega_0: float = 0.021, sigma_f: float = 1.34, sigma_d: float = 145., sigma_c: float = 0.001) -> torch.Tensor:
     r"""Compute Visual Saliency-induced Index for a batch of images.
 
-    Both inputs are supposed to have RGB order in accordance with the original approach.
+    Both inputs are supposed to have RGB channels order in accordance with the original approach.
     Nevertheless, the method supports greyscale images, which they are converted to RGB by copying the grey
     channel 3 times.
 
@@ -144,7 +144,7 @@ class VSILoss(_Loss):
         - Input: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
         - Target: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
 
-        Both inputs are supposed to have RGB order in accordance with the original approach.
+        Both inputs are supposed to have RGB channels order in accordance with the original approach.
         Nevertheless, the method supports greyscale images, which they are converted to RGB
         by copying the grey channel 3 times.
 
@@ -186,7 +186,7 @@ class VSILoss(_Loss):
             Value of VSI loss to be minimized. 0 <= VSI loss <= 1.
 
         Note:
-            Both inputs are supposed to have RGB order in accordance with the original approach.
+            Both inputs are supposed to have RGB channels order in accordance with the original approach.
             Nevertheless, the method supports greyscale images, which they are converted to RGB by copying the grey
             channel 3 times.
         """

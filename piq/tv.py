@@ -11,7 +11,7 @@ def total_variation(x: torch.Tensor, reduction: str = 'mean', norm_type: str = '
     r"""Compute Total Variation metric
 
     Args:
-        x: Tensor of shape :math:`(N, C, H, W)` holding an input image.
+        x: Tensor with shape (N, C, H, W).
         reduction: Reduction over samples in batch: "mean"|"sum"|"none"
         norm_type: {'l1', 'l2', 'l2_squared'}, defines which type of norm to implement, isotropic  or anisotropic.
 
@@ -74,7 +74,7 @@ class TVLoss(_Loss):
             ``'mean'``: the sum of the output will be divided by the number of
             elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``
     Shape:
-        - Input: Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
+        - Input: Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W)
     Examples::
 
         >>> loss = TVLoss()

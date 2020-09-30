@@ -21,14 +21,12 @@ def mdsi(prediction: torch.Tensor, target: torch.Tensor, data_range: Union[int, 
     r"""Compute Mean Deviation Similarity Index (MDSI) for a batch of images.
 
     Note:
-        Both inputs are supposed to have RGB order in accordance with the original approach.
-        Nevertheless, the method supports greyscale images, which are converted to RGB by copying the grey
-        channel 3 times.
+        Both inputs are supposed to have RGB channels order.
+        Greyscale images converted to RGB by copying the grey channel 3 times.
 
     Args:
-        prediction: Batch of predicted (distorted) images. Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W),
-        channels first.
-        target: Batch of target (reference) images. Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
+        prediction: Predicted images. Shape (H, W), (C, H, W) or (N, C, H, W).
+        target: Target images. Shape (H, W), (C, H, W) or (N, C, H, W).
         data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
         reduction: Reduction over samples in batch: "mean"|"sum"|"none"
         c1: coefficient to calculate gradient similarity. Default: 140.
@@ -136,7 +134,7 @@ class MDSILoss(_Loss):
         - Input: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
         - Target: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
 
-        Both inputs are supposed to have RGB order in accordance with the original approach.
+        Both inputs are supposed to have RGB channels order in accordance with the original approach.
         Nevertheless, the method supports greyscale images, which they are converted to RGB
         by copying the grey channel 3 times.
 
@@ -169,17 +167,18 @@ class MDSILoss(_Loss):
 
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         r"""Computation of Mean Deviation Similarity Index (MDSI) as a loss function.
+        Both inputs are supposed to have RGB channels order.
+        Greyscale images converted to RGB by copying the grey channel 3 times.
 
         Args:
-            prediction: Tensor of prediction of the network. Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W),
-            channels first.
-            target: Reference tensor. Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
+            prediction: Predicted images. Shape (H, W), (C, H, W) or (N, C, H, W).
+            target: Target images. Shape (H, W), (C, H, W) or (N, C, H, W).
 
         Returns:
             Value of MDSI loss to be minimized. 0 <= MDSI loss <= 1.
 
         Note:
-            Both inputs are supposed to have RGB order in accordance with the original approach.
+            Both inputs are supposed to have RGB channels order in accordance with the original approach.
             Nevertheless, the method supports greyscale images, which are converted to RGB by copying the grey
             channel 3 times.
         """

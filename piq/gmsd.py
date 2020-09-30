@@ -21,10 +21,11 @@ from piq.functional import similarity_map, gradient_map, prewitt_filter, rgb2yiq
 def gmsd(prediction: torch.Tensor, target: torch.Tensor, reduction: Optional[str] = 'mean',
          data_range: Union[int, float] = 1., t: float = 170 / (255. ** 2)) -> torch.Tensor:
     r"""Compute Gradient Magnitude Similarity Deviation
-    Both inputs supposed to be in range [0, 1] with RGB order.
+    Inputs supposed to be in range [0, data_range] with RGB channels order for colour images.
+
     Args:
-        prediction: Tensor of shape :math:`(N, C, H, W)` holding an distorted image.
-        target: Tensor of shape :math:`(N, C, H, W)` holding an target image
+        prediction: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
+        target: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
         reduction: Specifies the reduction to apply to the output:
             ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
             ``'mean'``: the sum of the output will be divided by the number of
@@ -72,10 +73,10 @@ def gmsd(prediction: torch.Tensor, target: torch.Tensor, reduction: Optional[str
 def _gmsd(prediction: torch.Tensor, target: torch.Tensor,
           t: float = 170 / (255. ** 2), alpha: float = 0.0) -> torch.Tensor:
     r"""Compute Gradient Magnitude Similarity Deviation
-    Both inputs supposed to be in range [0, 1] with RGB order.
+    Both inputs supposed to be in range [0, 1] with RGB channels order.
     Args:
-        prediction: Tensor of shape :math:`(N, 1, H, W)` holding an distorted grayscale image.
-        target: Tensor of shape :math:`(N, 1, H, W)` holding an target grayscale image
+        prediction: Tensor with shape (N, 1, H, W).
+        target: Tensor with shape (N, 1, H, W).
         t: Constant from the reference paper numerical stability of similarity map
         alpha: Masking coefficient for similarity masks computation
 
@@ -132,10 +133,11 @@ class GMSDLoss(_Loss):
 
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         r"""Computation of Gradient Magnitude Similarity Deviation (GMSD) as a loss function.
+        Inputs supposed to be in range [0, data_range] with RGB channels order for colour images.
 
         Args:
-            prediction: Tensor of prediction of the network.
-            target: Reference tensor.
+            prediction: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
+            target: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
 
         Returns:
             Value of GMSD loss to be minimized. 0 <= GMSD loss <= 1.
@@ -151,10 +153,12 @@ def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range:
                      chromatic: bool = False, alpha: float = 0.5, beta1: float = 0.01, beta2: float = 0.32,
                      beta3: float = 15., t: float = 170) -> torch.Tensor:
     r"""Computation of Multi scale GMSD.
+    Inputs supposed to be in range [0, data_range] with RGB channels order for colour images.
+    The height and width should be at least 2 ** scales + 1.
 
     Args:
-        prediction: Tensor of prediction of the network. The height and width should be at least 2 ** scales + 1.
-        target: Reference tensor. The height and width should be at least 2 ** scales + 1.
+        prediction: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
+        target: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
         data_range: The difference between the maximum and minimum of the pixel value,
             i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
             The pixel value interval of both input and output should remain the same.
@@ -294,12 +298,12 @@ class MultiScaleGMSDLoss(_Loss):
             
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         r"""Computation of Multi Scale GMSD index as a loss function.
+        Inputs supposed to be in range [0, data_range] with RGB channels order for colour images.
+        The height and width should be at least 2 ** scales + 1.
 
         Args:
-            prediction: Tensor of prediction of the network. Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W),
-            channels first. The height and width should be at least 2 ** scales + 1.
-            target: Reference tensor. Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
-            The height and width should be at least 2 ** scales + 1.
+            prediction: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
+            target: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
 
         Returns:
             Value of MS-GMSD loss to be minimized. 0 <= MS-GMSD loss <= 1.

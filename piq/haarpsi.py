@@ -23,10 +23,10 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: Optional[str] = 'mean',
             data_range: Union[int, float] = 1., scales: int = 3, subsample: bool = True,
             c: float = 30.0, alpha: float = 4.2) -> torch.Tensor:
     r"""Compute Haar Wavelet-Based Perceptual Similarity
-    Input can by greyscale tensor of colour image with RGB channels order.
+    Inputs supposed to be in range [0, data_range] with RGB channels order for colour images.
     Args:
-        x: Tensor of shape :math:`(N, C, H, W)` holding an distorted image.
-        y: Tensor of shape :math:`(N, C, H, W)` holding an target image
+        x: Tensor with shape (H, W), (C, H, W) or (N, C, H, W) holding a distorted image.
+        y: Tensor with shape (H, W), (C, H, W) or (N, C, H, W) holding a target image.
         reduction: Specifies the reduction to apply to the output:
             ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
             ``'mean'``: the sum of the output will be divided by the number of
@@ -99,12 +99,12 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: Optional[str] = 'mean',
         coefficients_x.append(coeff_x)
         coefficients_y.append(coeff_y)
 
-    # Shape [B x {scales * 2} x H x W]
+    # Shape (N, {scales * 2}, H, W)
     coefficients_x = torch.cat(coefficients_x, dim=1)
     coefficients_y = torch.cat(coefficients_y, dim=1)
 
     # Low-frequency coefficients used as weights
-    # Shape [B x 2 x H x W]
+    # Shape (N, 2, H, W)
     weights = torch.max(torch.abs(coefficients_x[:, 4:]), torch.abs(coefficients_y[:, 4:]))
     
     # High-frequency coefficients used for similarity computation in 2 orientations (horizontal and vertical)
@@ -148,7 +148,6 @@ class HaarPSILoss(_Loss):
     each element in the input and target.
 
     The sum operation still operates over all the elements, and divides by :math:`n`.
-
     The division by :math:`n` can be avoided if one sets ``reduction = 'sum'``.
 
     Args:
@@ -165,8 +164,8 @@ class HaarPSILoss(_Loss):
         alpha: Exponent used for similarity maps weightning. See [1] for details
 
     Shape:
-        - Input: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
-        - Target: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
+        - Input:Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
+        - Target: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
 
     Examples::
 

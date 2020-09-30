@@ -176,7 +176,7 @@ class ContentLoss(_Loss):
     def get_features(self, x: torch.Tensor) -> List[torch.Tensor]:
         r"""
         Args:
-            x: torch.Tensor with shape (N, C, H, W)
+            x: Tensor with shape (N, C, H, W)
         
         Returns:
             features: List of features extracted from intermediate layers
@@ -228,7 +228,7 @@ class StyleLoss(ContentLoss):
     def gram_matrix(self, x: torch.Tensor) -> torch.Tensor:
         r"""Compute Gram matrix for batch of features.
         Args:
-            x: Tensor of shape BxCxHxW
+            x: Tensor with shape (N, C, H, W).
         """
         B, C, H, W = x.size()
         gram = []

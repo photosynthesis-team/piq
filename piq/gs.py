@@ -67,10 +67,10 @@ def relative(intervals: np.ndarray, alpha_max: float, i_max: int = 100) -> np.nd
 def lmrk_table(witnesses: np.ndarray, landmarks: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     r"""Construct an input for the gudhi.WitnessComplex function.
     Args:
-        witnesses: Array of size w x d, containing witnesses
-        landmarks: Array of size l x d, containing landmarks
+        witnesses: Array with shape (w, d), containing witnesses.
+        landmarks: Array with shape (l, d), containing landmarks.
     Returns:
-        distances: 3D array of size w x l x 2. It satisfies the property that
+        distances: 3D array with shape (w, l, 2). It satisfies the property that
             distances[i, :, :] is [idx_i, dists_i], where dists_i are the sorted distances
             from the i-th witness to each point in L and idx_i are the indices of the corresponding points
             in L, e.g., D[i, :, :] = [[0, 0.1], [1, 0.2], [3, 0.3], [2, 0.4]]
@@ -90,7 +90,7 @@ def witness(
     """Compute the persistence intervals for the dataset of features using the witness complex.
 
     Args:
-        features: Array of shape (N_samples, data_dim) representing the dataset.
+        features: Array with shape (N_samples, data_dim) representing the dataset.
         sample_size: Number of landmarks to use on each iteration.
         gamma: Parameter determining maximum persistence value. Default is `1.0 / 128 * N_imgs / 5000`
 
@@ -136,13 +136,13 @@ class GS(BaseFeatureMetric):
     But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
 
     Args:
-        predicted_features (torch.Tensor): Low-dimension representation of predicted image set.
+        predicted_features: Low-dimension representation of predicted image set.
             Shape (N_pred, encoder_dim)
-        target_features (torch.Tensor): Low-dimension representation of target image set.
+        target_features: Low-dimension representation of target image set.
             Shape (N_targ, encoder_dim)
 
     Returns:
-        score (torch.Tensor): Scalar value of the distance between image sets.
+        score: Scalar value of the distance between image sets.
 
     References:
         .. [1] Khrulkov V., Oseledets I. (2018).

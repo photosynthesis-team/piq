@@ -7,10 +7,10 @@ def rgb2lmn(x: torch.Tensor) -> torch.Tensor:
     r"""Convert a batch of RGB images to a batch of LMN images
 
     Args:
-        x: Batch of 4D (N x 3 x H x W) images in RGB colour space.
+        x: Batch of images with shape (N, 3, H, W). RGB colour space.
 
     Returns:
-        Batch of 4D (N x 3 x H x W) images in LMN colour space.
+        Batch of images with shape (N, 3, H, W). LMN colour space.
     """
     weights_rgb_to_lmn = torch.tensor([[0.06, 0.63, 0.27],
                                        [0.30, 0.04, -0.35],
@@ -23,10 +23,10 @@ def rgb2xyz(x: torch.Tensor) -> torch.Tensor:
     r"""Convert a batch of RGB images to a batch of XYZ images
 
     Args:
-        x: Batch of 4D (N x 3 x H x W) images in RGB colour space.
+        x: Batch of images with shape (N, 3, H, W). RGB colour space.
 
     Returns:
-        Batch of 4D (N x 3 x H x W) images in XYZ colour space.
+        Batch of images with shape (N, 3, H, W). XYZ colour space.
     """
     mask_below = (x <= 0.04045).to(x)
     mask_above = (x > 0.04045).to(x)
@@ -45,12 +45,12 @@ def xyz2lab(x: torch.Tensor, illuminant: str = 'D50', observer: str = '2') -> to
     r"""Convert a batch of XYZ images to a batch of LAB images
 
     Args:
-        x: Batch of 4D (N x 3 x H x W) images in XYZ colour space.
+        x: Batch of images with shape (N, 3, H, W). XYZ colour space.
         illuminant: {“A”, “D50”, “D55”, “D65”, “D75”, “E”}, optional. The name of the illuminant.
         observer: {“2”, “10”}, optional. The aperture angle of the observer.
 
     Returns:
-        Batch of 4D (N x 3 x H x W) images in LAB colour space.
+        Batch of images with shape (N, 3, H, W). LAB colour space.
     """
     epsilon = 0.008856
     kappa = 903.3
@@ -89,11 +89,11 @@ def rgb2lab(x: torch.Tensor, data_range: Union[int, float] = 255) -> torch.Tenso
     r"""Convert a batch of RGB images to a batch of LAB images
 
     Args:
-        x: Batch of 4D (N x 3 x H x W) images in RGB colour space.
+        x: Batch of images with shape (N, 3, H, W). RGB colour space.
         data_range: dynamic range of the input image.
 
     Returns:
-        Batch of 4D (N x 3 x H x W) images in LAB colour space.
+        Batch of images with shape (N, 3, H, W). LAB colour space.
     """
     return xyz2lab(rgb2xyz(x / float(data_range)))
 
@@ -102,10 +102,10 @@ def rgb2yiq(x: torch.Tensor) -> torch.Tensor:
     r"""Convert a batch of RGB images to a batch of YIQ images
 
     Args:
-        x: Batch of 4D (N x 3 x H x W) images in RGB colour space.
+        x: Batch of images with shape (N, 3, H, W). RGB colour space.
 
     Returns:
-        Batch of 4D (N x 3 x H x W) images in YIQ colour space.
+        Batch of images with shape (N, 3, H, W). YIQ colour space.
     """
     yiq_weights = torch.tensor([
         [0.299, 0.587, 0.114],
@@ -119,10 +119,10 @@ def rgb2lhm(x: torch.Tensor) -> torch.Tensor:
     r"""Convert a batch of RGB images to a batch of LHM images
 
     Args:
-        x: Batch of 4D (N x 3 x H x W) images in RGB colour space.
+        x: Batch of images with shape (N, 3, H, W). RGB colour space.
 
     Returns:
-        Batch of 4D (N x 3 x H x W) images in LHM colour space.
+        Batch of images with shape (N, 3, H, W). LHM colour space.
 
     Reference:
         https://arxiv.org/pdf/1608.07433.pdf
