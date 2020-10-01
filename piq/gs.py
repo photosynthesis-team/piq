@@ -152,8 +152,8 @@ class GS(BaseFeatureMetric):
 
     Note:
         Computation is heavily CPU dependent, adjust `num_workers` parameter according to your system configuration.
-        GS metric requiers `gudhi` library which is not installed by default. 
-        For conda, write: `conda install -c conda-forge gudhi`, 
+        GS metric requiers `gudhi` library which is not installed by default.
+        For conda, write: `conda install -c conda-forge gudhi`,
             otherwise follow installation guide: http://gudhi.gforge.inria.fr/python/latest/installation.html
 
     """
