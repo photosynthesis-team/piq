@@ -46,7 +46,7 @@ output.backward()
 
 For the second group you can extract image features using `_compute_feats` method of a class. Note, that `_compute_feats` consumes a data loader of predefined format.
 
-```
+```python
 import torch
 from  torch.utils.data import DataLoader
 from piq import FID
@@ -61,7 +61,7 @@ fid: torch.Tensor = fid_metric(first_feats, second_feats)
 If you already have image features, pre-extracted from feature extractor network,
 use class interface for score computation:
 
-```
+```python
 import torch
 from piq import FID
 
@@ -71,10 +71,8 @@ msid_metric = MSID()
 msid: torch.Tensor = msid_metric(prediction_feats, target_feats)
 ```
 
-<!-- EXAMPLES -->
-### Examples
-
-Image metrics
+<!-- IMAGE METRICS -->
+### Image metrics
 
  1. [Blind/Referenceless Image Spatial Quality Evaluator (BRISQUE)](https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf)
  2. [Content score](https://openaccess.thecvf.com/content_cvpr_2016/html/Gatys_Image_Style_Transfer_CVPR_2016_paper.html)
@@ -91,39 +89,15 @@ Image metrics
  13. [Style score](https://openaccess.thecvf.com/content_cvpr_2016/html/Gatys_Image_Style_Transfer_CVPR_2016_paper.html)
  14. [Total Variation (TV)](https://en.wikipedia.org/wiki/Total_variation)
  15. [Visual Information Fidelity (VIF)](https://live.ece.utexas.edu/research/Quality/VIF.htm)
- 16. [Visual Saliency-induced Index (VSI) score](https://ieeexplore.ieee.org/document/6873260) 
+ 16. [Visual Saliency-induced Index (VSI)](https://ieeexplore.ieee.org/document/6873260) 
 
-Feature metrics
+<!-- FEATURE METRICS -->
+### Feature metrics
 1. [Frechet Inception Distance(FID)](https://arxiv.org/abs/1706.08500)
 2. [Geometry Score (GS)](https://arxiv.org/abs/1802.02664)
 3. [Inception Score(IS)](https://arxiv.org/abs/1606.03498)
-4. [Kernel Inception Distance(KID) score](https://arxiv.org/abs/1801.01401)
-5. [Multi-Scale Intrinsic Distance (MSID) score](https://arxiv.org/abs/1905.11141) 
-
-
- If image features are not available, extract them using `_compute_feats` of `FID` class. 
- Please note that `_compute_feats` consumes a data loader of predefined format.
- 
- Use `GS` class to compute [Geometry Score]() from image features, 
- pre-extracted from some feature extractor network. Computation is heavily CPU dependent, adjust `num_workers` parameter according to your system configuration:
- 
- GS metric requiers `gudhi` library which is not installed by default. 
- If you use conda, write: `conda install -c conda-forge gudhi`, otherwise follow [installation guide](http://gudhi.gforge.inria.fr/python/latest/installation.html).
- 
-
-
- <!-- IS EXAMPLES -->
- To compute difference between IS for 2 sets of image features, use `IS` class.
- ```python
- import torch
- from piq import IS
- 
- is_metric = IS(distance='l1') 
- prediction_feats = torch.rand(10000, 1024)
- target_feats = torch.rand(10000, 1024)
- distance: torch.Tensor = is_metric(prediction_feats, target_feats)
- ```  
-
+4. [Kernel Inception Distance(KID)](https://arxiv.org/abs/1801.01401)
+5. [Multi-Scale Intrinsic Distance (MSID)](https://arxiv.org/abs/1905.11141) 
 
 ### Overview
 
