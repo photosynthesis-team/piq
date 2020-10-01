@@ -22,6 +22,7 @@ def gmsd(prediction: torch.Tensor, target: torch.Tensor, reduction: Optional[str
          data_range: Union[int, float] = 1., t: float = 170 / (255. ** 2)) -> torch.Tensor:
     r"""Compute Gradient Magnitude Similarity Deviation
     Both inputs supposed to be in range [0, 1] with RGB order.
+    Usually values of GMSD lie in [0, 0.35] interval.
     Args:
         prediction: Tensor of shape :math:`(N, C, H, W)` holding an distorted image.
         target: Tensor of shape :math:`(N, C, H, W)` holding an target image
@@ -38,6 +39,7 @@ def gmsd(prediction: torch.Tensor, target: torch.Tensor, reduction: Optional[str
         gmsd : Gradient Magnitude Similarity Deviation between given tensors.
 
     References:
+        Wufeng Xue et al. Gradient Magnitude Similarity Deviation (2013)
         https://arxiv.org/pdf/1308.3052.pdf
     """
 
@@ -250,7 +252,6 @@ class MultiScaleGMSDLoss(_Loss):
     r"""Creates a criterion that measures multi scale Gradient Magnitude Similarity Deviation
     between each element in the input :math:`x` and target :math:`y`.
 
-
     Args:
         reduction: Specifies the reduction to apply to the output:
             ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
@@ -260,13 +261,14 @@ class MultiScaleGMSDLoss(_Loss):
             i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
             The pixel value interval of both input and output should remain the same.
         scale_weights: Weights for different scales. Can contain any number of floating point values.
+            By defualt weights are initialized with values from the paper.
         chromatic: Flag to use MS-GMSDc algorithm from paper.
             It also evaluates chromatic components of the image. Default: True
         beta1: Algorithm parameter. Weight of chromatic component in the loss.
         beta2: Algorithm parameter. Small constant, see [1].
         beta3: Algorithm parameter. Small constant, see [1].
         t: Constant from the reference paper numerical stability of similarity map
-        
+
     Reference:
         [1] GRADIENT MAGNITUDE SIMILARITY DEVIATION ON MULTIPLE SCALES (2017)
             http://www.cse.ust.hk/~psander/docs/gradsim.pdf
