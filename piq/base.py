@@ -17,12 +17,14 @@ class BaseFeatureMetric(torch.nn.Module):
         _validate_features(predicted_features, target_features)
         return self.compute_metric(predicted_features, target_features)
 
+    @torch.no_grad()
     def _compute_feats(
             self,
             loader: torch.utils.data.DataLoader,
             feature_extractor: torch.nn.Module = None,
             device: str = 'cuda') -> torch.Tensor:
-        r"""Generate low-dimensional image desciptors to be used for computing MSID score.
+        r"""Generate low-dimensional image desciptors
+
         Args:
             loader: Should return dict with key `images` in it
             feature_extractor: model used to generate image features, if None use `InceptionNetV3` model.
