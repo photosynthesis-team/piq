@@ -277,7 +277,7 @@ class MultiScaleGMSDLoss(_Loss):
     def __init__(self, reduction: str = 'mean', data_range: Union[int, float] = 1.,
                  scale_weights: Optional[Union[torch.Tensor, Tuple[float, ...], List[float]]] = None,
                  chromatic: bool = False, alpha: float = 0.5, beta1: float = 0.01, beta2: float = 0.32,
-                 beta3: float = 15., t: float = 170 / (255. ** 2)) -> None:
+                 beta3: float = 15., t: float = 170) -> None:
         super().__init__()
 
         # Generic loss parameters.
