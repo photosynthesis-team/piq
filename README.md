@@ -1,6 +1,7 @@
 <div align="center">
  
-# PyTorch Image Quality
+![piq_logo](https://user-images.githubusercontent.com/15848838/95228385-ed106500-0807-11eb-8584-d3fdbdd47ac7.jpeg)
+
 [![License][license-shield]][license-url]
 [![PyPI version][pypi-version-shield]][pypi-version-url]
 [![Conda version][conda-version-shield]][conda-version-url]  
@@ -25,10 +26,8 @@ Collection of measures and metrics for image quality assessment.
 <!-- GETTING STARTED -->
 ### Getting started  
 
-All metrics can be broadly categorized into 2 groups. First group takes image or images as input, e.g PSNR, SSIM, BRISQUE. 
-Second takes list of image features, pre-extracted by some feature extractor network, e.g. IS, FID, KID.
-
-For the first group we have functional interface, which returns metric value and class interface, which allows to use any metric as a loss.
+First group of metrics takes image or images as input, e.g PSNR, SSIM, BRISQUE. 
+We have functional interface, which returns metric value and class interface, which allows to use any metric as a loss.
 
 ```python
 import torch
@@ -44,7 +43,8 @@ output: torch.Tensor = loss(prediction, target)
 output.backward()
 ```
 
-For the second group you can extract image features using `_compute_feats` method of a class. Note, that `_compute_feats` consumes a data loader of predefined format.
+Second group takes a list of image features e.g. IS, FID, KID.
+Image features can be extracted by some feature extractor network separetely, or by using `_compute_feats` method of a class. Note, that `_compute_feats` consumes a dataloader of predefined format.
 
 ```python
 import torch
@@ -58,8 +58,7 @@ second_feats = fid_metric._compute_feats(second_dl)
 fid: torch.Tensor = fid_metric(first_feats, second_feats)
 ```
 
-If you already have image features, pre-extracted from feature extractor network,
-use class interface for score computation:
+If you already have image features, use class interface for score computation:
 
 ```python
 import torch
@@ -70,6 +69,8 @@ target_feats = torch.rand(10000, 1024)
 msid_metric = MSID()
 msid: torch.Tensor = msid_metric(prediction_feats, target_feats)
 ```
+
+For a full list of examples, see [image metrics](examples/image_metrics.py) and [feature metrics](examples/feature_metrics.py) examles.
 
 <!-- IMAGE METRICS -->
 ### Image metrics
