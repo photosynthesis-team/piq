@@ -4,8 +4,8 @@ import piq
 
 @torch.no_grad()
 def main():
-    prediction_features = torch.rand(10000, 512)
-    target_features = torch.rand(10000, 512)
+    prediction_features = torch.rand(2000, 128)
+    target_features = torch.rand(2000, 128)
 
     if torch.cuda.is_available():
         # Move to GPU to make computaions faster
