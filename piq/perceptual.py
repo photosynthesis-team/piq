@@ -263,6 +263,7 @@ class LPIPS(ContentLoss):
         (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
         2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
         https://arxiv.org/abs/1801.03924
+        https://github.com/richzhang/PerceptualSimilarity
     """
     _weights_url = "https://github.com/photosynthesis-team/" + \
         "photosynthesis.metrics/releases/download/v0.4.0/lpips_weights.pt"

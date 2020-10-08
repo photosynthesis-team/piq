@@ -29,7 +29,9 @@ def inception_score(features: torch.Tensor, num_splits: int = 10):
         score, variance:
 
     Reference:
+        "A Note on the Inception Score"
         https://arxiv.org/pdf/1801.01973.pdf
+
     """
     assert len(features.shape) == 2, \
         f"Features must have shape (N_samples, encoder_dim), got {features.shape}"
