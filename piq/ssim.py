@@ -20,10 +20,11 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
          data_range: Union[int, float] = 1., reduction: str = 'mean', full: bool = False,
          k1: float = 0.01, k2: float = 0.03) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
     r"""Interface of Structural Similarity (SSIM) index.
+    Inputs supposed to be in range [0, data_range] with RGB channels order for colour images.
 
     Args:
-        x: Batch of images. Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first.
-        y: Batch of images. Required to be 2D (H, W), 3D (C,H,W) 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first.
+        x: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
+        y: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
         kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
         kernel_sigma: Sigma of normal distribution.
         data_range: Value range of input images (usually 1.0 or 255).
@@ -113,8 +114,8 @@ class SSIMLoss(_Loss):
             The pixel value interval of both input and output should remain the same.
 
     Shape:
-        - Input: Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first.
-        - Target: Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first.
+        - Input: 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
+        - Target: 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
 
     Examples::
         >>> loss = SSIMLoss()
@@ -153,10 +154,8 @@ class SSIMLoss(_Loss):
         r"""Computation of Structural Similarity (SSIM) index as a loss function.
 
         Args:
-            prediction: Tensor of prediction of the network. Required to be
-                2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first.
-            target: Reference tensor. Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2),
-                channels first.
+            prediction: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
+            target: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
 
         Returns:
             Value of SSIM loss to be minimized, i.e 1 - `ssim`. 0 <= SSIM loss <= 1. In case of 5D input tensors,
@@ -173,12 +172,12 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
                      scale_weights: Optional[Union[Tuple[float], List[float], torch.Tensor]] = None,
                      k1: float = 0.01, k2: float = 0.03) -> torch.Tensor:
     r""" Interface of Multi-scale Structural Similarity (MS-SSIM) index.
+    Inputs supposed to be in range [0, data_range] with RGB channels order for colour images.
+    The size of the image should be at least (kernel_size - 1) * 2 ** (levels - 1) + 1.
 
     Args:
-        x: Batch of images. Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first.
-            The size of the image should be (kernel_size - 1) * 2 ** (levels - 1) + 1.
-        y: Batch of images. Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first.
-            The size of the image should be (kernel_size - 1) * 2 ** (levels - 1) + 1.
+        x: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
+        y: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
         kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
         kernel_sigma: Sigma of normal distribution.
         data_range: Value range of input images (usually 1.0 or 255).
@@ -262,10 +261,8 @@ class MultiScaleSSIMLoss(_Loss):
             \operatorname{sum}(1 - MSSIM),  &  \text{if reduction} = \text{'sum'.}
         \end{cases}
 
-    :math:`x` and :math:`y` are tensors of arbitrary shapes with a total
-    of :math:`n` elements each.
-    The sum operation still operates over all the elements, and divides by :math:`n`.
-    The division by :math:`n` can be avoided if one sets ``reduction = 'sum'``.
+    The size of the image should be (kernel_size - 1) * 2 ** (levels - 1) + 1.
+    For colour images channel order is RGB.
     In case of 5D input tensors, complex value is returned as a tensor of size 2.
 
     Args:
@@ -286,10 +283,8 @@ class MultiScaleSSIMLoss(_Loss):
             The pixel value interval of both input and output should remain the same.
 
     Shape:
-        - Input: Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first.
-            The size of the image should be (kernel_size - 1) * 2 ** (levels - 1) + 1.
-        - Target: Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first.
-            The size of the image should be (kernel_size - 1) * 2 ** (levels - 1) + 1.
+        - Input: 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
+        - Target: 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
 
     Examples::
         >>> loss = MultiScaleSSIMLoss()
@@ -334,13 +329,12 @@ class MultiScaleSSIMLoss(_Loss):
 
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         r"""Computation of Multi-scale Structural Similarity (MS-SSIM) index as a loss function.
+        The size of the image should be at least (kernel_size - 1) * 2 ** (levels - 1) + 1.
+        For colour images channel order is RGB.
 
         Args:
-            prediction: Tensor of prediction of the network. Required to be
-                2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first. The size of the image
-                should be (kernel_size - 1) * 2 ** (levels - 1) + 1.
-            target: Reference tensor. Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2),
-                channels first. The size of the image should be (kernel_size - 1) * 2 ** (levels - 1) + 1.
+            prediction: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
+            target: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
 
         Returns:
             Value of MS-SSIM loss to be minimized, i.e. 1-`ms_sim`. 0 <= MS-SSIM loss <= 1. In case of 5D tensor,
@@ -359,8 +353,8 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
     r"""Calculate Structural Similarity (SSIM) index for X and Y per channel.
 
     Args:
-        x: Batch of images, (N,C,H,W).
-        y: Batch of images, (N,C,H,W).
+        x: Tensor with shape (N, C, H, W).
+        y: Tensor with shape (N, C, H, W).
         kernel: 2D Gaussian kernel.
         data_range: Value range of input images (usually 1.0 or 255).
         k1: Algorithm parameter, K1 (small constant, see [1]).
@@ -404,8 +398,8 @@ def _multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, f
     r"""Calculates Multi scale Structural Similarity (MS-SSIM) index for X and Y.
 
     Args:
-        x: Batch of images, (N,C,H,W).
-        y: Batch of images, (N,C,H,W).
+        x: Tensor with shape (N, C, H, W).
+        y: Tensor with shape (N, C, H, W).
         data_range: Value range of input images (usually 1.0 or 255).
         kernel: 2D Gaussian kernel.
         scale_weights_tensor: Weights for scaled SSIM
@@ -449,8 +443,8 @@ def _ssim_per_channel_complex(x: torch.Tensor, y: torch.Tensor, kernel: torch.Te
     r"""Calculate Structural Similarity (SSIM) index for Complex X and Y per channel.
 
     Args:
-        x: Batch of complex images, (N,C,H,W,2).
-        y: Batch of complex images, (N,C,H,W,2).
+        x: Complex tensor with shape (N, C, H, W, 2).
+        y: Complex tensor with shape (N, C, H, W, 2).
         kernel: 2-D gauss kernel.
         data_range: Value range of input images (usually 1.0 or 255).
         k1: Algorithm parameter, K1 (small constant, see [1]).
@@ -513,8 +507,8 @@ def _multi_scale_ssim_complex(x: torch.Tensor, y: torch.Tensor, data_range: Unio
     r"""Calculate Multi scale Structural Similarity (MS-SSIM) index for Complex X and Y.
 
     Args:
-        x: Batch of complex images, (N,C,H,W,2).
-        y: Batch of complex images, (N,C,H,W,2).
+        x: Complex tensor with shape (N, C, H, W, 2).
+        y: Complex tensor with shape (N, C, H, W, 2).
         data_range: Value range of input images (usually 1.0 or 255).
         kernel: 2-D gauss kernel.
         k1: Algorithm parameter, K1 (small constant, see [1]).
