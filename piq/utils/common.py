@@ -3,7 +3,7 @@ import torch
 
 
 def _adjust_dimensions(input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]):
-    r"""Expands input tensors dimensions to 4D
+    r"""Expands input tensors dimensions to 4D (N, C, H, W).
     """
     if isinstance(input_tensors, torch.Tensor):
         input_tensors = (input_tensors,)

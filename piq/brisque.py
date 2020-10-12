@@ -24,10 +24,10 @@ def brisque(x: torch.Tensor,
     r"""Interface of BRISQUE index.
 
     Args:
-        x: Batch of images. Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
+        x: Tensor with shape (H, W), (C, H, W) or (N, C, H, W). RGB channel order for colour images.
         kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
         kernel_sigma: Sigma of normal distribution.
-        data_range: Value range of input images (usually 1.0 or 255).
+        data_range: Maximum value range of input images (usually 1.0 or 255).
         reduction: Reduction over samples in batch: "mean"|"sum"|"none".
         interpolation: Interpolation to be used for scaling.
 
@@ -75,7 +75,7 @@ def brisque(x: torch.Tensor,
 
 class BRISQUELoss(_Loss):
     r"""Creates a criterion that measures the BRISQUE score for input :math:`x`.
-    :math:`x` is tensor of 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
+    :math:`x` is tensor of 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W).
     The sum operation still operates over all the elements, and divides by :math:`n`.
     The division by :math:`n` can be avoided by setting ``reduction = 'sum'``.
 
@@ -93,7 +93,7 @@ class BRISQUELoss(_Loss):
         interpolation: Interpolation to be used for scaling.
 
     Shape:
-        - Input: Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W), channels first.
+        - Input: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
 
     Examples::
         >>> loss = BRISQUELoss()
@@ -183,7 +183,7 @@ def _aggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch
 
 
 def _natural_scene_statistics(luma: torch.Tensor, kernel_size: int = 7, sigma: float = 7. / 6) -> torch.Tensor:
-    kernel = gaussian_filter(size=kernel_size, sigma=sigma).view(1, 1, kernel_size, kernel_size).to(luma)
+    kernel = gaussian_filter(kernel_size=kernel_size, sigma=sigma).view(1, 1, kernel_size, kernel_size).to(luma)
     C = 1
     mu = F.conv2d(luma, kernel, padding=kernel_size // 2)
     mu_sq = mu ** 2

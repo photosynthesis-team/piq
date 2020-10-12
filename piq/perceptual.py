@@ -76,9 +76,10 @@ EPS = 1e-10
 
 class ContentLoss(_Loss):
     r"""Creates Content loss that can be used for image style transfer or as a measure for
-    image to image tasks. Uses pretrained VGG models from torchvision.
-    By default expects input to be in range [0, 1], which is then normalized by ImageNet statistics into range [-1, 1].
-    If no normaliation is requiered, change `mean` and `std` values accordingly.
+    image to image tasks. 
+    Uses pretrained VGG models from torchvision.
+    Expects input to be in range [0, 1] or normalized with ImageNet statistics into range [-1, 1]
+
 
     Args:
         feature_extractor: Model to extract features or model name in {`vgg16`, `vgg19`}.
@@ -93,6 +94,7 @@ class ContentLoss(_Loss):
             If there is no need to normalize data, use [1., 1., 1.].
         normalize_features: If true, unit-normalize each feature in channel dimension before scaling
             and computing distance. See [2] for details.
+
     References:
         .. [1] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
         (2016). A Neural Algorithm of Artistic Style}
@@ -148,8 +150,8 @@ class ContentLoss(_Loss):
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         r"""Computation of Content loss between feature representations of prediction and target tensors.
         Args:
-            prediction: Tensor of prediction of the network.
-            target: Reference tensor.
+            prediction: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
+            target: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
         """
         _validate_input(input_tensors=(prediction, target), allow_5d=False, allow_negative=True)
         prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
@@ -177,7 +179,7 @@ class ContentLoss(_Loss):
     def get_features(self, x: torch.Tensor) -> List[torch.Tensor]:
         r"""
         Args:
-            x: torch.Tensor with shape (N, C, H, W)
+            x: Tensor with shape (N, C, H, W)
         
         Returns:
             features: List of features extracted from intermediate layers
@@ -254,7 +256,7 @@ class StyleLoss(ContentLoss):
     def gram_matrix(self, x: torch.Tensor) -> torch.Tensor:
         r"""Compute Gram matrix for batch of features.
         Args:
-            x: Tensor of shape BxCxHxW
+            x: Tensor with shape (N, C, H, W).
         """
         B, C, H, W = x.size()
         gram = []
