@@ -75,11 +75,9 @@ EPS = 1e-10
 
 
 class ContentLoss(_Loss):
-    r"""Creates Content loss that can be used for image style transfer or as a measure for
-    image to image tasks. 
+    r"""Creates Content loss that can be used for image style transfer or as a measure for image to image tasks.
     Uses pretrained VGG models from torchvision.
     Expects input to be in range [0, 1] or normalized with ImageNet statistics into range [-1, 1]
-
 
     Args:
         feature_extractor: Model to extract features or model name in {`vgg16`, `vgg19`}.
