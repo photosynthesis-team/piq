@@ -62,8 +62,8 @@ def _lanczos_m(A: np.ndarray, m: int, nv: int, rademacher: bool, starting_vector
         starting_vectors: Specified starting vectors.
 
     Returns:
-        T: A nv x m x m tensor, T[i, :, :] is the ith symmetric tridiagonal matrix.
-        V: A n x m x nv tensor, V[:, :, i] is the ith matrix with orthogonal rows.
+        T: Array with shape (nv, m, m), where T[i, :, :] is the i-th symmetric tridiagonal matrix.
+        V: Array with shape (n, m, nv) where, V[:, :, i] is the i-th matrix with orthogonal rows.
     """
     orthtol = 1e-5
     if type(starting_vectors) != np.ndarray:

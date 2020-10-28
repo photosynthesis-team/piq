@@ -24,8 +24,8 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     
 
     Args:
-        x: Batch of predicted images with shape (batch_size x channels x H x W)
-        y: Batch of target images with shape  (batch_size x channels x H x W)
+        x: Predicted images. Shape (H, W), (C, H, W) or (N, C, H, W).
+        y: Target images. Shape (H, W), (C, H, W) or (N, C, H, W).
         reduction: Reduction over samples in batch: "mean"|"sum"|"none"
         data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
         chromatic: Flag to compute FSIMc, which also takes into account chromatic components
@@ -129,7 +129,7 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     """Creates a stack of filters used for computation of phase congruensy maps
     
     Args:
-        x: Tensor with shape Bx1xHxW
+        x: Tensor with shape (N, 1, H, W).
         scales: Number of wavelets
         orientations: Number of filter orientations
         min_length: Wavelength of smallest scale filter
@@ -144,7 +144,7 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
             at which we set the noise threshold point, below which phase
             congruency values get penalized.
         """
-    B, _, H, W = x.shape
+    N, _, H, W = x.shape
 
     # Calculate the standard deviation of the angular Gaussian function
     # used to construct filters in the freq. plane.
@@ -214,7 +214,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     r"""Compute Phase Congruence for a batch of greyscale images
 
     Args:
-        x: Tensor with shape Bx1xHxW
+        x: Tensor with shape (N, 1, H, W).
         levels: Number of wavelet scales
         orientations: Number of filter orientations
         min_length: Wavelength of smallest scale filter
@@ -234,7 +234,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     """
     EPS = torch.finfo(x.dtype).eps
 
-    B, _, H, W = x.shape
+    N, _, H, W = x.shape
 
     # Fourier transform
     imagefft = torch.rfft(x, 2, onesided=False)
@@ -245,7 +245,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     filters_ifft = torch.ifft(torch.stack([filters, torch.zeros_like(filters)], dim=-1), 2)[..., 0] * math.sqrt(H * W)
     
     # Convolve image with even and odd filters
-    even_odd = torch.ifft(imagefft * filters.unsqueeze(-1), 2).view(B, orientations, scales, H, W, 2)
+    even_odd = torch.ifft(imagefft * filters.unsqueeze(-1), 2).view(N, orientations, scales, H, W, 2)
 
     # Amplitude of even & odd filter response. An = sqrt(real^2 + imag^2)
     an = torch.sqrt(torch.sum(even_odd ** 2, dim=-1))
@@ -286,7 +286,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     # The estimate of noise power is obtained by dividing the mean squared
     # energy value by the mean squared filter value
     
-    abs_eo = torch.sqrt(torch.sum(even_odd[:, :, :1, ...] ** 2, dim=-1)).reshape(B, orientations, 1, 1, H * W)
+    abs_eo = torch.sqrt(torch.sum(even_odd[:, :, :1, ...] ** 2, dim=-1)).reshape(N, orientations, 1, 1, H * W)
     median_e2n = torch.median(abs_eo ** 2, dim=-1, keepdims=True).values
 
     mean_e2n = - median_e2n / math.log(0.5)
@@ -300,7 +300,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     
     sum_an2 = torch.sum(filters_ifft ** 2, dim=-3, keepdim=True)
     
-    sum_ai_aj = torch.zeros(B, orientations, 1, H, W).to(x)
+    sum_ai_aj = torch.zeros(N, orientations, 1, H, W).to(x)
     for s in range(scales - 1):
         sum_ai_aj = sum_ai_aj + (filters_ifft[:, :, s: s + 1] * filters_ifft[:, :, s + 1:]).sum(dim=-3, keepdim=True)
             
@@ -391,8 +391,8 @@ class FSIMLoss(_Loss):
             threshold  point, below which phase congruency values get penalized.
 
     Shape:
-        - Input: Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first.
-        - Target: Required to be 2D (H, W), 3D (C,H,W), 4D (N,C,H,W) or 5D (N,C,H,W,2), channels first.
+        - Input: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
+        - Target: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
 
     Examples::
 
