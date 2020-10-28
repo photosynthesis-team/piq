@@ -133,7 +133,7 @@ class GS(BaseFeatureMetric):
     r"""Interface of Geometry Score.
     It's computed for a whole set of data and can use features from encoder instead of images itself to decrease
     computation cost. GS can compare two data distributions with different number of samples.
-    But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
+    Dimensionalities of features should match, otherwise it won't be possible to correctly compute statistics.
 
     Args:
         predicted_features (torch.Tensor): Low-dimension representation of predicted image set.
@@ -149,6 +149,13 @@ class GS(BaseFeatureMetric):
         Geometry score: A method for comparing generative adversarial networks.
         arXiv preprint, 2018.
         https://arxiv.org/abs/1802.02664
+
+    Note:
+        Computation is heavily CPU dependent, adjust `num_workers` parameter according to your system configuration.
+        GS metric requiers `gudhi` library which is not installed by default.
+        For conda, write: `conda install -c conda-forge gudhi`,
+            otherwise follow installation guide: http://gudhi.gforge.inria.fr/python/latest/installation.html
+
     """
     def __init__(self, sample_size: int = 64, num_iters: int = 1000, gamma: Optional[float] = None,
                  i_max: int = 100, num_workers: int = 4) -> None:
