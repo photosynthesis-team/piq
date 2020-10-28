@@ -276,7 +276,7 @@ def test_ssim_loss_raise_if_wrong_value_is_estimated(test_images: Tuple[torch.Te
         tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
         with tf.device('/CPU'):
             tf_ssim = torch.tensor(tf.image.ssim(tf_prediction, tf_target, max_val=255).numpy()).mean().to(device)
-        match_accuracy = 2e-5 + 1e-8
+        match_accuracy = 2e-4 + 1e-8
         assert torch.isclose(ssim_loss, 1. - tf_ssim, rtol=0, atol=match_accuracy), \
             f'The estimated value must be equal to tensorflow provided one' \
             f'(considering floating point operation error up to {match_accuracy}), ' \
