@@ -7,8 +7,8 @@ from piq.feature_extractors import InceptionV3
 
 class TestDataset(torch.utils.data.Dataset):
     def __init__(self):
-        self.data = torch.randn(15, 3, 256, 256)
-        self.mask = torch.randn(15, 3, 256, 256)
+        self.data = torch.rand(15, 3, 256, 256)
+        self.mask = torch.rand(15, 3, 256, 256)
 
     def __getitem__(self, index):
         x = self.data[index]

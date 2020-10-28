@@ -47,10 +47,10 @@ def gradient_map(x: torch.Tensor, kernels: torch.Tensor) -> torch.Tensor:
     r""" Compute gradient map for a given tensor and stack of kernels.
 
     Args:
-        x: Tensor with shape B x C x H x W
-        kernels: Stack of tensors for gradient computation with shape N x k_W x k_H
+        x: Tensor with shape (N, C, H, W).
+        kernels: Stack of tensors for gradient computation with shape (k_N, k_H, k_W)
     Returns:
-        Gradients of x per-channel with shape B x C x H x W
+        Gradients of x per-channel with shape (N, C, H, W)
     """
     padding = kernels.size(-1) // 2
     grads = torch.nn.functional.conv2d(x, kernels.to(x), padding=padding)
@@ -65,10 +65,10 @@ def pow_for_complex(base: torch.Tensor, exp: Union[int, float]) -> torch.Tensor:
     It will likely to be redundant with introduction of torch.ComplexTensor.
 
     Args:
-        base: Tensor with shape (B x C x H x W) or (B x C x H x W x 2)
+        base: Tensor with shape (N, C, H, W) or (N, C, H, W, 2).
         exp: Exponent
     Returns:
-        Complex tensor with shape (B x C x H x W x 2)
+        Complex tensor with shape (N, C, H, W, 2).
     """
     if base.dim() == 4:
         x_complex_r = base.abs()

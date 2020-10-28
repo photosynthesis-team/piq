@@ -20,13 +20,13 @@ def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
         omega_0: float = 0.021, sigma_f: float = 1.34, sigma_d: float = 145., sigma_c: float = 0.001) -> torch.Tensor:
     r"""Compute Visual Saliency-induced Index for a batch of images.
 
-    Both inputs are supposed to have RGB order in accordance with the original approach.
+    Both inputs are supposed to have RGB channels order in accordance with the original approach.
     Nevertheless, the method supports greyscale images, which they are converted to RGB by copying the grey
     channel 3 times.
 
     Args:
-        prediction: Batch of predicted images with shape (batch_size x channels x H x W)
-        target: Batch of target images with shape  (batch_size x channels x H x W)
+        prediction:  Tensor with shape (H, W), (C, H, W) or (N, C, H, W) holding a distorted image.
+        target: Tensor with shape (H, W), (C, H, W) or (N, C, H, W) holding a target image.
         reduction: Reduction over samples in batch: "mean"|"sum"|"none"
         data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
         c1: coefficient to calculate saliency component of VSI
@@ -43,8 +43,8 @@ def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
         VSI: Index of similarity between two images. Usually in [0, 1] interval.
 
     Shape:
-            - Input: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
-            - Target: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
+        - Input:  Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
+        - Target: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
     Note:
         The original method supports only RGB image.
         See https://ieeexplore.ieee.org/document/6873260 for details.
@@ -141,10 +141,10 @@ class VSILoss(_Loss):
         sigma_c: coefficient to get SDSP
 
     Shape:
-        - Input: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
-        - Target: Required to be 2D (H,W), 3D (C,H,W), 4D (N,C,H,W), channels first.
+        - Input: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
+        - Target: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
 
-        Both inputs are supposed to have RGB order in accordance with the original approach.
+        Both inputs are supposed to have RGB channels order in accordance with the original approach.
         Nevertheless, the method supports greyscale images, which they are converted to RGB
         by copying the grey channel 3 times.
 
@@ -186,7 +186,7 @@ class VSILoss(_Loss):
             Value of VSI loss to be minimized. 0 <= VSI loss <= 1.
 
         Note:
-            Both inputs are supposed to have RGB order in accordance with the original approach.
+            Both inputs are supposed to have RGB channels order in accordance with the original approach.
             Nevertheless, the method supports greyscale images, which they are converted to RGB by copying the grey
             channel 3 times.
         """
