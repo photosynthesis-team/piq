@@ -131,17 +131,19 @@ class InceptionV3(nn.Module):
         for param in self.parameters():
             param.requires_grad = requires_grad
 
-    def forward(self, inp: torch.autograd.Variable) -> List[torch.autograd.Variable]:
+    def forward(self, x: torch.Tensor) -> List[torch.Tensor]:
         r"""Get Inception feature maps
 
         Args:
-            inp: Input tensor of shape Bx3xHxW. Values are expected to be in range (0, 1).
+            x: Batch of images with shape (N, 3, H, W). RGB colour order.
+                Values are expected to be in range (0, 1).
 
         Returns:
             List of torch.autograd.Variable, corresponding to the selected output block, sorted ascending by index.
         """
         outp = []
-        x = inp
+        assert (x.min() >= 0) and (x.max() <= 1), \
+            "Input tensor should be normalized in (0, 1) range."
 
         if self.resize_input:
             x = F.interpolate(x,

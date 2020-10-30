@@ -3,7 +3,7 @@ import torch
 
 
 def _adjust_dimensions(input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]):
-    r"""Expands input tensors dimensions to 4D
+    r"""Expands input tensors dimensions to 4D (N, C, H, W).
     """
     if isinstance(input_tensors, torch.Tensor):
         input_tensors = (input_tensors,)
@@ -28,6 +28,7 @@ def _adjust_dimensions(input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, to
 def _validate_input(
         input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]],
         allow_5d: bool,
+        allow_negative: bool = False,
         kernel_size: Optional[int] = None,
         scale_weights: Union[Optional[Tuple[float]], Optional[List[float]], Optional[torch.Tensor]] = None) -> None:
 
@@ -43,9 +44,10 @@ def _validate_input(
         assert isinstance(tensor, torch.Tensor), f'Expected input to be torch.Tensor, got {type(tensor)}.'
         assert min_n_dim <= tensor.dim() <= max_n_dim, \
             f'Input images must be {min_n_dim}D - {max_n_dim}D tensors, got images of shape {tensor.size()}.'
-        assert torch.all(tensor >= 0), 'Expected input tensor greater or equal 0'
+        if not allow_negative:
+            assert torch.all(tensor >= 0), 'All tensor values should be greater or equal than 0'
         if tensor.dim() == 5:
-            assert tensor.size(-1) == 2, f'Expected Complex 5D tensor with (N,C,H,W,2) size, got {tensor.size()}'
+            assert tensor.size(-1) == 2, f'Expected Complex 5D tensor with (N, C, H, W, 2) size, got {tensor.size()}'
 
     if len(input_tensors) == 2:
         assert input_tensors[0].size() == input_tensors[1].size(), \

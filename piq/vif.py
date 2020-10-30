@@ -34,11 +34,11 @@ def vif_p(prediction: torch.Tensor, target: torch.Tensor, sigma_n_sq: float = 2.
           data_range: Union[int, float] = 1.0, reduction: str = 'mean') -> torch.Tensor:
     r"""Compute Visiual Information Fidelity in **pixel** domain for a batch of images.
     This metric isn't symmetric, so make sure to place arguments in correct order.
+    Both inputs supposed to have RGB channels order.
 
-    Both inputs supposed to have RGB order.
     Args:
-        prediction: Batch of predicted images with shape (batch_size x channels x H x W)
-        target: Batch of target images with shape  (batch_size x channels x H x W)
+        prediction: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
+        target: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
         sigma_n_sq: HVS model parameter (variance of the visual noise).
         data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
         reduction: Reduction over samples in batch: "mean"|"sum"|"none"

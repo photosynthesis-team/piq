@@ -12,17 +12,18 @@ def psnr(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1.0,
     Supports both greyscale and color images with RGB channel order.
 
     Args:
-        x: Batch of predicted images with shape (batch_size x channels x H x W)
-        y: Batch of target images with shape  (batch_size x channels x H x W)
+        x: Predicted images. Shape (H, W), (C, H, W) or (N, C, H, W).
+        y: Target images. Shape (H, W), (C, H, W) or (N, C, H, W).
         data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
         reduction: Reduction over samples in batch: "mean"|"sum"|"none"
         convert_to_greyscale: Convert RGB image to YCbCr format and computes PSNR
             only on luminance channel if `True`. Compute on all 3 channels otherwise.
-        
+
     Returns:
         PSNR: Index of similarity betwen two images.
-    Note:
-        Implementaition is based on Wikepedia https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio
+
+    References:
+        https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio
     """
     _validate_input((x, y), allow_5d=False)
     x, y = _adjust_dimensions(input_tensors=(x, y))

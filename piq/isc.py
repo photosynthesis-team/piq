@@ -29,7 +29,9 @@ def inception_score(features: torch.Tensor, num_splits: int = 10):
         score, variance:
 
     Reference:
+        "A Note on the Inception Score"
         https://arxiv.org/pdf/1801.01973.pdf
+
     """
     assert len(features.shape) == 2, \
         f"Features must have shape (N_samples, encoder_dim), got {features.shape}"
@@ -58,10 +60,10 @@ class IS(BaseFeatureMetric):
     IS is computed separatly for predicted and target features and expects raw InceptionV3 model logits as inputs.
 
     Args:
-        predicted_features (torch.Tensor): Low-dimension representation of predicted image set.
-            Required to have shape (N_pred, encoder_dim)
-        target_features (torch.Tensor): Low-dimension representation of target image set.
-            Required to have shape (N_targ, encoder_dim)
+        predicted_features: Low-dimension representation of predicted image set.
+            Shape (N_pred, encoder_dim).
+        target_features: Low-dimension representation of target image set.
+            Shape (N_targ, encoder_dim).
 
     Returns:
         distance(predicted_score, target_score): L1 or L2 distance between scores.

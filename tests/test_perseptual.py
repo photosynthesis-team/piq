@@ -77,7 +77,7 @@ def test_content_loss_supports_custom_extractor(prediction: torch.Tensor, target
     "prediction,target,expectation,value",
     [
         (torch.rand(2, 3, 96, 96, 2), torch.rand(2, 3, 96, 96, 2), pytest.raises(AssertionError), None),
-        (torch.randn(2, 3, 96, 96), torch.randn(2, 3, 96, 96), pytest.raises(AssertionError), None),
+        (torch.randn(2, 3, 96, 96), torch.randn(2, 3, 96, 96), raise_nothing(), None),
         (torch.zeros(2, 3, 96, 96), torch.zeros(2, 3, 96, 96), raise_nothing(), 0.0),
         (torch.ones(2, 3, 96, 96), torch.ones(2, 3, 96, 96), raise_nothing(), 0.0),
         (torch.rand(2, 3, 28, 28), torch.rand(2, 3, 28, 28), pytest.raises(RuntimeError), None),
