@@ -7,7 +7,7 @@ Credits:
     https://live.ece.utexas.edu/research/Quality/index_algorithms.htm BRISQUE
     https://github.com/bukalapak/pybrisque
 """
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 import warnings
 import torch
 from torch.nn.modules.loss import _Loss
@@ -191,7 +191,7 @@ def _natural_scene_statistics(luma: torch.Tensor, kernel_size: int = 7, sigma: f
     std = ((std - mu_sq).abs().sqrt())
 
     luma_nrmlzd = (luma - mu) / (std + C)
-    features = []
+    features: List = []
     alpha, sigma = _ggd_parameters(luma_nrmlzd)
     features.extend((alpha, sigma.pow(2)))
 

@@ -172,9 +172,9 @@ class KID(BaseFeatureMetric):
             var_at_m: Optional[int] = None,
             average: bool = False,
             n_subsets: int = 50,
-            subset_size: int = 1000,
+            subset_size: Optional[int] = 1000,
             ret_var: bool = False
-    ) -> torch.Tensor:
+    ) -> None:
         r"""
         Creates a criterion that measures Kernel Inception Distance (polynomial MMD) for two datasets of images.
 

@@ -220,7 +220,7 @@ def sdsp(x: torch.Tensor, data_range: Union[int, float] = 255, omega_0: float = 
     x_ifft_real = torch.ifft(x_fft * lg, 2)[..., 0]
     s_f = x_ifft_real.pow(2).sum(dim=1, keepdim=True).sqrt()
 
-    coordinates = torch.stack((get_meshgrid(size_to_use)), dim=0).to(x)
+    coordinates = torch.stack([get_meshgrid(size_to_use)], dim=0).to(x)
     coordinates = coordinates * size_to_use[0] + 1
     s_d = torch.exp(-torch.sum(coordinates ** 2, dim=0) / sigma_d ** 2).view(1, 1, *size_to_use)
 

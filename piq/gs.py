@@ -43,8 +43,7 @@ def relative(intervals: np.ndarray, alpha_max: float, i_max: int = 100) -> np.nd
         rlt[0] = 1.0
         return rlt
 
-    persistence_intervals_ext = persistence_intervals + [[0, alpha_max]]
-    persistence_intervals_ext = np.array(persistence_intervals_ext)
+    persistence_intervals_ext = np.array(persistence_intervals + [[0, alpha_max]])
     persistence_intervals = np.array(persistence_intervals)
 
     # Change in the value of beta_1 may happen only at the boundary points

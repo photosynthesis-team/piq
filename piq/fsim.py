@@ -6,7 +6,7 @@ References:
 """
 import math
 import functools
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 
 import torch
 from torch.nn.modules.loss import _Loss
@@ -177,7 +177,7 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     lp = _lowpassfilter(size=(H, W), cutoff=.45, n=15)
 
     # Construct the radial filter components...
-    log_gabor = []
+    log_gabor: List = []
     for s in range(scales):
         wavelength = min_length * mult ** s
         omega_0 = 1.0 / wavelength
@@ -187,7 +187,7 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
         log_gabor.append(gabor_filter)
 
     # Then construct the angular filter components...
-    spread = []
+    spread: List = []
     for o in range(orientations):
         angl = o * math.pi / orientations
 
@@ -287,7 +287,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     # energy value by the mean squared filter value
     
     abs_eo = torch.sqrt(torch.sum(even_odd[:, :, :1, ...] ** 2, dim=-1)).reshape(N, orientations, 1, 1, H * W)
-    median_e2n = torch.median(abs_eo ** 2, dim=-1, keepdims=True).values
+    median_e2n = torch.median(abs_eo ** 2, dim=-1, keepdim=True).values
 
     mean_e2n = - median_e2n / math.log(0.5)
 
@@ -337,7 +337,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     return result_pc.unsqueeze(1)
 
 
-def _lowpassfilter(size: Union[int, Tuple[int, int]], cutoff: float, n: int) -> torch.Tensor:
+def _lowpassfilter(size: Tuple[int, int], cutoff: float, n: int) -> torch.Tensor:
     r"""
     Constructs a low-pass Butterworth filter.
     Args:

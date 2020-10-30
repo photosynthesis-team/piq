@@ -10,7 +10,7 @@ References:
     2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
     https://arxiv.org/abs/1801.03924
 """
-from typing import List, Union, Callable, Tuple
+from typing import List, Union, Callable, Iterable
 
 import torch
 import torch.nn as nn
@@ -104,7 +104,7 @@ class ContentLoss(_Loss):
         https://arxiv.org/abs/1801.03924
     """
 
-    def __init__(self, feature_extractor: Union[str, Callable] = "vgg16", layers: Tuple[str] = ("relu3_3", ),
+    def __init__(self, feature_extractor: Union[str, Callable] = "vgg16", layers: Iterable[str] = ("relu3_3", ),
                  weights: List[Union[float, torch.Tensor]] = [1.], replace_pooling: bool = False,
                  distance: str = "mse", reduction: str = "mean", mean: List[float] = IMAGENET_MEAN,
                  std: List[float] = IMAGENET_STD, normalize_features: bool = False) -> None:
