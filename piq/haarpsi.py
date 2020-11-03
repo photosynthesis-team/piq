@@ -19,7 +19,7 @@ from piq.utils import _adjust_dimensions, _validate_input
 from piq.functional import similarity_map, rgb2yiq, haar_filter
 
 
-def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: Optional[str] = 'mean',
+def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
             data_range: Union[int, float] = 1., scales: int = 3, subsample: bool = True,
             c: float = 30.0, alpha: float = 4.2) -> torch.Tensor:
     r"""Compute Haar Wavelet-Based Perceptual Similarity

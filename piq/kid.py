@@ -79,8 +79,8 @@ def _mmd2_and_variance(
         diag_X = torch.diagonal(K_XX)
         diag_Y = torch.diagonal(K_YY)
 
-        sum_diag_X = diag_X.sum()
-        sum_diag_Y = diag_Y.sum()
+        sum_diag_X = torch.sum(diag_X)
+        sum_diag_Y = torch.sum(diag_Y)
 
         sum_diag2_X = _sqn(diag_X)
         sum_diag2_Y = _sqn(diag_Y)

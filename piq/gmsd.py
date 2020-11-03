@@ -9,7 +9,7 @@ Reference:
 
 """
 import torch
-from typing import Optional, Union, Tuple, List
+from typing import Optional, Union, Tuple, List, cast
 
 import torch.nn.functional as F
 from torch.nn.modules.loss import _Loss
@@ -150,7 +150,7 @@ class GMSDLoss(_Loss):
 
 def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range: Union[int, float] = 1.,
                      reduction: str = 'mean',
-                     scale_weights: Optional[Union[List[float], torch.Tensor]] = None,
+                     scale_weights: Optional[Union[torch.Tensor, Tuple[float, ...], List[float]]] = None,
                      chromatic: bool = False, alpha: float = 0.5, beta1: float = 0.01, beta2: float = 0.32,
                      beta3: float = 15., t: float = 170) -> torch.Tensor:
     r"""Computation of Multi scale GMSD.
@@ -184,10 +184,11 @@ def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range:
 
     # Values from the paper
     if scale_weights is None:
-        scale_weights: torch.Tensor = torch.tensor([0.096, 0.596, 0.289, 0.019])
+        scale_weights = torch.tensor([0.096, 0.596, 0.289, 0.019])
     else:
         # Normalize scale weights
-        scale_weights: torch.Tensor = torch.tensor(scale_weights) / torch.tensor(scale_weights).sum()
+        scale_weights = torch.tensor(scale_weights) / torch.tensor(scale_weights).sum()
+    scale_weights = cast(torch.Tensor, scale_weights).to(prediction)
 
     # Check that input is big enough
     num_scales = scale_weights.size(0)
@@ -204,7 +205,6 @@ def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range:
         prediction = rgb2yiq(prediction)
         target = rgb2yiq(target)
 
-    scale_weights = scale_weights.to(prediction)
     ms_gmds = []
     for scale in range(num_scales):
         if scale > 0:
