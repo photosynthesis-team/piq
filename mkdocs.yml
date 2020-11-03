@@ -1,0 +1,10 @@
+site_name: PyTorch Image Quality
+site_description: 'Documentation of PyTorch Image Quality (PIQ) library - a collection of metrics and measures for image2image tasks'
+site_author: 'Photosynthesis Team'
+docs_dir: docs/
+repo_name: 'photosynthesis-team/piq'
+repo_url: 'https://github.com/photosynthesis-team/piq'
+nav:
+    - Home: index.md
+theme:
+  name: 'material'
