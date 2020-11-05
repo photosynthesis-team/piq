@@ -7,10 +7,10 @@ https://arxiv.org/pdf/1802.02664.pdf
 from typing import Optional, Tuple
 from multiprocessing import Pool
 
-from scipy.spatial.distance import cdist
-
 import torch
+import gudhi
 import numpy as np
+from scipy.spatial.distance import cdist
 
 from piq.base import BaseFeatureMetric
 
@@ -97,18 +97,6 @@ def witness(
     Returns
         A list of persistence intervals and the maximal persistence value.
     """
-    # Install gudhi only if needed
-    try:
-        import gudhi
-    except ImportError as e:
-        import six
-        error = e.__class__(
-            "You are likely missing your GUDHI installation, "
-            "you should visit http://gudhi.gforge.inria.fr/python/latest/installation.html "
-            "for further instructions.\nIf you use conda, you can use\nconda install -c conda-forge gudhi"
-        )
-        six.raise_from(error, e)
-
     N = features.shape[0]
     if gamma is None:
         gamma = 1.0 / 128 * N / 5000
