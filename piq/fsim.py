@@ -6,7 +6,7 @@ References:
 """
 import math
 import functools
-from typing import Union, Tuple, List
+from typing import Union, Tuple
 
 import torch
 from torch.nn.modules.loss import _Loss
@@ -177,7 +177,7 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     lp = _lowpassfilter(size=(H, W), cutoff=.45, n=15)
 
     # Construct the radial filter components...
-    log_gabor: List = []
+    log_gabor = []
     for s in range(scales):
         wavelength = min_length * mult ** s
         omega_0 = 1.0 / wavelength
@@ -187,7 +187,7 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
         log_gabor.append(gabor_filter)
 
     # Then construct the angular filter components...
-    spread: List = []
+    spread = []
     for o in range(orientations):
         angl = o * math.pi / orientations
 

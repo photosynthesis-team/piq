@@ -54,7 +54,7 @@ def xyz2lab(x: torch.Tensor, illuminant: str = 'D50', observer: str = '2') -> to
     """
     epsilon = 0.008856
     kappa = 903.3
-    illuminants: Dict = \
+    illuminants: Dict[str, Dict] = \
         {"A": {'2': (1.098466069456375, 1, 0.3558228003436005),
                '10': (1.111420406956693, 1, 0.3519978321919493)},
          "D50": {'2': (0.9642119944211994, 1, 0.8251882845188288),
