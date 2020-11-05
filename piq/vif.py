@@ -118,7 +118,7 @@ def vif_p(prediction: torch.Tensor, target: torch.Tensor, sigma_n_sq: float = 2.
         prediction_vif = prediction_vif + torch.sum(pred_vif_scale, dim=[1, 2, 3])
         target_vif = target_vif + torch.sum(torch.log10(1.0 + sigma_trgt_sq / sigma_n_sq), dim=[1, 2, 3])
 
-    score = (prediction_vif + EPS) / (target_vif + EPS)
+    score: torch.Tensor = (prediction_vif + EPS) / (target_vif + EPS)
 
     # Reduce if needed
     if reduction == 'none':

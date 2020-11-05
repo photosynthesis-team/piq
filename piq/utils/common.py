@@ -1,8 +1,8 @@
-from typing import Optional, Union, Tuple, List
+from typing import Optional, Union, Tuple, List, Iterable
 import torch
 
 
-def _adjust_dimensions(input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]):
+def _adjust_dimensions(input_tensors: Union[torch.Tensor, Iterable[torch.Tensor]]):
     r"""Expands input tensors dimensions to 4D (N, C, H, W).
     """
     if isinstance(input_tensors, torch.Tensor):
@@ -26,7 +26,7 @@ def _adjust_dimensions(input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, to
 
 
 def _validate_input(
-        input_tensors: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]],
+        input_tensors: Union[torch.Tensor, Iterable[torch.Tensor]],
         allow_5d: bool,
         allow_negative: bool = False,
         kernel_size: Optional[int] = None,

@@ -63,7 +63,7 @@ def test_ssim_measure_is_one_for_equal_tensors(target: torch.Tensor, device: str
     measure = ssim(prediction, target, data_range=1., reduction='none')
     assert torch.allclose(measure, torch.ones_like(measure)), f'If equal tensors are passed SSIM must be equal to 1 ' \
                                                               f'(considering floating point error up to 1 * 10^-6), '\
-                                                              f'got {measure + 1}'
+                                                              f'got {measure}'
 
 
 @pytest.mark.parametrize(
@@ -88,7 +88,7 @@ def test_ssim_measure_is_less_or_equal_to_one(ones_zeros_4d_5d: Tuple[torch.Tens
     ones = ones_zeros_4d_5d[0].to(device)
     zeros = ones_zeros_4d_5d[1].to(device)
     measure = ssim(ones, zeros, data_range=1., reduction='none')
-    assert (measure <= 1).all(), f'SSIM must be <= 1, got {measure}'
+    assert torch.less_equal(measure, 1).all(), f'SSIM must be <= 1, got {measure}'
 
 
 def test_ssim_raises_if_tensors_have_different_shapes(prediction_target_4d_5d: Tuple[torch.Tensor,
