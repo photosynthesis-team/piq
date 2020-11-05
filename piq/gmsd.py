@@ -9,7 +9,7 @@ Reference:
 
 """
 import torch
-from typing import Optional, Union, Tuple, List
+from typing import Optional, Union, Tuple, List, cast
 
 import torch.nn.functional as F
 from torch.nn.modules.loss import _Loss
@@ -18,7 +18,7 @@ from piq.utils import _adjust_dimensions, _validate_input
 from piq.functional import similarity_map, gradient_map, prewitt_filter, rgb2yiq
 
 
-def gmsd(prediction: torch.Tensor, target: torch.Tensor, reduction: Optional[str] = 'mean',
+def gmsd(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
          data_range: Union[int, float] = 1., t: float = 170 / (255. ** 2)) -> torch.Tensor:
     r"""Compute Gradient Magnitude Similarity Deviation
     Inputs supposed to be in range [0, data_range] with RGB channels order for colour images.
@@ -185,11 +185,10 @@ def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range:
     # Values from the paper
     if scale_weights is None:
         scale_weights = torch.tensor([0.096, 0.596, 0.289, 0.019])
-    elif isinstance(scale_weights, torch.Tensor):
-        scale_weights = scale_weights / scale_weights.sum()
     else:
         # Normalize scale weights
         scale_weights = torch.tensor(scale_weights) / torch.tensor(scale_weights).sum()
+    scale_weights = cast(torch.Tensor, scale_weights).to(prediction)
 
     # Check that input is big enough
     num_scales = scale_weights.size(0)
@@ -206,7 +205,6 @@ def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range:
         prediction = rgb2yiq(prediction)
         target = rgb2yiq(target)
 
-    scale_weights = scale_weights.to(prediction)
     ms_gmds = []
     for scale in range(num_scales):
         if scale > 0:

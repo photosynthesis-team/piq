@@ -1,5 +1,6 @@
 r"""Custom layers used in metrics computations"""
 import torch
+from typing import Optional
 
 from piq.functional import hann_filter
 
@@ -16,7 +17,7 @@ class L2Pool2d(torch.nn.Module):
         self.stride = stride
         self.padding = padding
 
-        self.kernel = None
+        self.kernel: Optional[torch.Tensor] = None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.kernel is None:

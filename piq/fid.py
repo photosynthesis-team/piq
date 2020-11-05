@@ -178,9 +178,9 @@ class FID(BaseFeatureMetric):
         --   : The Frechet Distance.
         """
         # GPU -> CPU
-        m_pred, s_pred = _compute_statistics(predicted_features.detach().type(torch.float64))
-        m_targ, s_targ = _compute_statistics(target_features.detach().type(torch.float64))
+        m_pred, s_pred = _compute_statistics(predicted_features.detach().to(dtype=torch.float64))
+        m_targ, s_targ = _compute_statistics(target_features.detach().to(dtype=torch.float64))
 
         score = _compute_fid(m_pred, s_pred, m_targ, s_targ)
 
-        return score.type(torch.float32)
+        return score.to(dtype=torch.float32)

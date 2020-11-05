@@ -1,7 +1,7 @@
 r"""Implemetation of Multi-scale Evaluation metric, based on paper
  https://arxiv.org/abs/1905.11141 and author's repository https://github.com/xgfs/msid
 """
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import torch
 import numpy as np
@@ -46,7 +46,7 @@ def _laplacian_sparse(matrix: np.ndarray, normalized: bool = True) -> np.ndarray
     return eye(matrix.shape[0]) - row_sum_sqrt.dot(matrix).dot(row_sum_sqrt)
 
 
-def _lanczos_m(A: np.ndarray, m: int, nv: int, rademacher: bool, starting_vectors: np.ndarray = None) \
+def _lanczos_m(A: np.ndarray, m: int, nv: int, rademacher: bool, starting_vectors: Optional[np.ndarray] = None) \
         -> Tuple[np.ndarray, np.ndarray]:
     r"""Lanczos algorithm computes symmetric m x m tridiagonal matrix T and matrix V with orthogonal rows
         constituting the basis of the Krylov subspace K_m(A, x),
@@ -66,7 +66,7 @@ def _lanczos_m(A: np.ndarray, m: int, nv: int, rademacher: bool, starting_vector
         V: Array with shape (n, m, nv) where, V[:, :, i] is the i-th matrix with orthogonal rows.
     """
     orthtol = 1e-5
-    if type(starting_vectors) != np.ndarray:
+    if starting_vectors is None:
         if rademacher:
             starting_vectors = np.sign(np.random.randn(A.shape[0], nv))
         else:
