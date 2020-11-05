@@ -16,3 +16,4 @@ from .fsim import fsim, FSIMLoss
 from .vsi import vsi, VSILoss
 from .mdsi import mdsi, MDSILoss
 from .haarpsi import haarpsi, HaarPSILoss
+from .pieapp import PieAPP
