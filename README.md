@@ -70,7 +70,7 @@ msid_metric = MSID()
 msid: torch.Tensor = msid_metric(prediction_feats, target_feats)
 ```
 
-For a full list of examples, see [image metrics](examples/image_metrics.py) and [feature metrics](examples/feature_metrics.py) examles.
+For a full list of examples, see [image metrics](examples/image_metrics.py) and [feature metrics](examples/feature_metrics.py) examples.
 
 <!-- IMAGE METRICS -->
 ### Image metrics
