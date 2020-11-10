@@ -5,7 +5,7 @@ References:
     (2018). PieAPP: Perceptual Image-Error Assessment through Pairwise Preference
     https://arxiv.org/abs/1806.02067
 """
-from typing import List, Union, Callable, Tuple
+from typing import List, Union
 
 import torch
 import torch.nn as nn
@@ -25,19 +25,19 @@ class PieAPPModel(nn.Module):
         super().__init__()
 
         self.features = features
-        self.pool = nn.MaxPool2d(2,2)
+        self.pool = nn.MaxPool2d(2, 2)
         self.flatten = nn.Flatten(start_dim=1)
 
         self.conv1 = nn.Conv2d(3, features, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(features, features, kernel_size=3, padding=1)
-        self.conv3 = nn.Conv2d(features, features, kernel_size=3,padding=1)
+        self.conv3 = nn.Conv2d(features, features, kernel_size=3, padding=1)
         self.conv4 = nn.Conv2d(features, features * 2, kernel_size=3, padding=1)
         self.conv5 = nn.Conv2d(features * 2, features * 2, kernel_size=3, padding=1)
         self.conv6 = nn.Conv2d(features * 2, features * 2, kernel_size=3, padding=1)
         self.conv7 = nn.Conv2d(features * 2, features * 4, kernel_size=3, padding=1)
         self.conv8 = nn.Conv2d(features * 4, features * 4, kernel_size=3, padding=1)
         self.conv9 = nn.Conv2d(features * 4, features * 4, kernel_size=3, padding=1)
-        self.conv10 = nn.Conv2d(features *4, features * 8, kernel_size=3, padding=1)
+        self.conv10 = nn.Conv2d(features * 4, features * 8, kernel_size=3, padding=1)
         self.conv11 = nn.Conv2d(features * 8, features * 8, kernel_size=3, padding=1)
 
         self.fc1_score = nn.Linear(in_features=120832, out_features=512, bias=True)
@@ -47,7 +47,7 @@ class PieAPPModel(nn.Module):
         self.ref_score_subtract = nn.Linear(in_features=1, out_features=1, bias=True)
 
         # Term for numerical stability
-        self.EPS = 1e-6 
+        self.EPS = 1e-6
 
     def forward(self, x: torch.Tensor) -> List[torch.Tensor]:
         r"""
@@ -57,7 +57,7 @@ class PieAPPModel(nn.Module):
         assert x.shape[2] == x.shape[3] == self.features, \
             f"Expected square input with shape {self.features, self.features}"
 
-        #conv1 -> relu -> conv2 -> relu -> pool -> conv3 -> relu
+        # conv1 -> relu -> conv2 -> relu -> pool -> conv3 -> relu
         x3 = F.relu(self.conv3(self.pool(F.relu(self.conv2(F.relu(self.conv1(x)))))))
         # conv4 -> relu -> pool -> conv5 -> relu
         x5 = F.relu(self.conv5(self.pool(F.relu(self.conv4(x3)))))
@@ -68,7 +68,7 @@ class PieAPPModel(nn.Module):
         # conv10 -> relu -> pool1-> conv11 -> relU
         x11 = self.flatten(F.relu(self.conv11(self.pool(F.relu(self.conv10(x9))))))
         # flatten and concatenate
-        features = torch.cat((self.flatten(x3),self.flatten(x5),self.flatten(x7),self.flatten(x9), x11), dim=1)
+        features = torch.cat((self.flatten(x3), self.flatten(x5), self.flatten(x7), self.flatten(x9), x11), dim=1)
         return features, x11
 
     def compute_difference(self, features_diff, weights_diff):
@@ -113,12 +113,19 @@ class PieAPP(_Loss):
     # TODO: Load weights to release and change this link
     _weights_url = "https://web.ece.ucsb.edu/~ekta/projects/PieAPPv0.1/weights/PieAPPv0.1.pth"
 
-    def __init__(self, reduction: str = "mean", data_range: Union[int, float] = 1.0, stride: int = 32, replace_pooling: bool = False) -> None:
+    def __init__(
+        self,
+        reduction: str = "mean",
+        data_range: Union[int, float] = 1.0,
+        stride: int = 32,
+        replace_pooling: bool = False
+    ) -> None:
         super().__init__()
         
         # Load weights and initialize model
         weights = torch.hub.load_state_dict_from_url(self._weights_url, progress=False)
-        weights['ref_score_subtract.weight'] = weights['ref_score_subtract.weight'].unsqueeze(1) # Fix small bug in original weights
+        # Fix small bug in original weights
+        weights['ref_score_subtract.weight'] = weights['ref_score_subtract.weight'].unsqueeze(1)
         self.model = PieAPPModel(features=64)
 #         print(self.model)
         self.model.load_state_dict(weights)
@@ -149,13 +156,15 @@ class PieAPP(_Loss):
         prediction_features, prediction_weights = self.get_features(prediction)
         target_features, target_weights = self.get_features(target)
 
-        distances, weights = self.model.compute_difference(target_features - prediction_features, target_weights - prediction_weights)
+        distances, weights = self.model.compute_difference(
+            target_features - prediction_features,
+            target_weights - prediction_weights
+        )
 
         # Shape (N, NUM_PATCHES)
         distances = distances.reshape(N, -1)
         weights = weights.reshape(N, -1)
-        
-        
+
         # Scale scores, then average across patches
         loss = torch.stack([(d * w).sum() / w.sum() for d, w in zip(distances, weights)])
 

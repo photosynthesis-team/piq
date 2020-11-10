@@ -87,7 +87,7 @@ def pow_for_complex(base: torch.Tensor, exp: Union[int, float]) -> torch.Tensor:
 
 
 def crop_patches(x: torch.Tensor, size=64, stride=32) -> torch.Tensor:
-    r"""Crop tensor with images into small patches 
+    r"""Crop tensor with images into small patches
     Args:
         images: Tensor with shape (N, C, H, W)
         size: Size of a square patch
