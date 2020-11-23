@@ -16,4 +16,4 @@ jobs:
       - name: Deploy docs
         uses: snk4tr/mkdocs-deploy-gh-pages@master
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

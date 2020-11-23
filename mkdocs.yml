@@ -6,4 +6,4 @@ repo_url: 'https://github.com/photosynthesis-team/piq'
 nav:
     - Home: index.md
     - NotAbout: not_about.md
-theme: 'readthedocs'
+theme: readthedocs
