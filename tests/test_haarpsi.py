@@ -10,9 +10,9 @@ def test_haarpsi_to_be_one_for_identical_inputs(input_tensors: Tuple[torch.Tenso
     prediction, _ = input_tensors
     index = haarpsi(prediction.to(device), prediction.to(device), data_range=1., reduction='none')
     index_255 = haarpsi(prediction.to(device) * 255, prediction.to(device) * 255, data_range=255, reduction='none')
-    assert torch.allclose(index, torch.ones_like(index, device=device)), \
+    assert torch.allclose(index, torch.ones_like(index, device=device), atol=1e-5), \
         f'Expected index to be equal 1, got {index}'
-    assert torch.allclose(index_255, torch.ones_like(index_255, device=device)), \
+    assert torch.allclose(index_255, torch.ones_like(index_255, device=device), atol=1e-5), \
         f'Expected index to be equal 1, got {index_255}'
 
 

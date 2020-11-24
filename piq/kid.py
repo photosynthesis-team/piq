@@ -79,8 +79,8 @@ def _mmd2_and_variance(
         diag_X = torch.diagonal(K_XX)
         diag_Y = torch.diagonal(K_YY)
 
-        sum_diag_X = diag_X.sum()
-        sum_diag_Y = diag_Y.sum()
+        sum_diag_X = torch.sum(diag_X)
+        sum_diag_Y = torch.sum(diag_Y)
 
         sum_diag2_X = _sqn(diag_X)
         sum_diag2_Y = _sqn(diag_Y)
@@ -172,9 +172,9 @@ class KID(BaseFeatureMetric):
             var_at_m: Optional[int] = None,
             average: bool = False,
             n_subsets: int = 50,
-            subset_size: int = 1000,
+            subset_size: Optional[int] = 1000,
             ret_var: bool = False
-    ) -> torch.Tensor:
+    ) -> None:
         r"""
         Creates a criterion that measures Kernel Inception Distance (polynomial MMD) for two datasets of images.
 

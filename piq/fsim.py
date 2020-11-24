@@ -287,7 +287,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     # energy value by the mean squared filter value
     
     abs_eo = torch.sqrt(torch.sum(even_odd[:, :, :1, ...] ** 2, dim=-1)).reshape(N, orientations, 1, 1, H * W)
-    median_e2n = torch.median(abs_eo ** 2, dim=-1, keepdims=True).values
+    median_e2n = torch.median(abs_eo ** 2, dim=-1, keepdim=True).values
 
     mean_e2n = - median_e2n / math.log(0.5)
 
@@ -337,7 +337,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     return result_pc.unsqueeze(1)
 
 
-def _lowpassfilter(size: Union[int, Tuple[int, int]], cutoff: float, n: int) -> torch.Tensor:
+def _lowpassfilter(size: Tuple[int, int], cutoff: float, n: int) -> torch.Tensor:
     r"""
     Constructs a low-pass Butterworth filter.
     Args:

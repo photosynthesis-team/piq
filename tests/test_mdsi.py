@@ -66,7 +66,7 @@ def test_mdsi_loss(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str
 
 
 @pytest.mark.parametrize("combination", ['sum', 'mult'])
-def test_mdsi_loss_compare_with_matlab(input_images_score: Tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict],
+def test_mdsi_loss_compare_with_matlab(input_images_score: Tuple[torch.Tensor, torch.Tensor, torch.Tensor],
                                        combination: str, device: str) -> None:
     prediction, target, target_value = input_images_score
     target_value = target_value[combination]
