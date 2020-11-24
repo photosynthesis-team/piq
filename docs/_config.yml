@@ -13,3 +13,4 @@ url: "" # the base hostname & protocol for your site, e.g. http://example.com
 #theme: minima
 #plugins:
 #  - jekyll-feed
+theme: jekyll-theme-minimal
