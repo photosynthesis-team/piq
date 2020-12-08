@@ -142,8 +142,9 @@ class InceptionV3(nn.Module):
             List of torch.autograd.Variable, corresponding to the selected output block, sorted ascending by index.
         """
         outp = []
-        assert (x.min() >= 0) and (x.max() <= 1), \
-            "Input tensor should be normalized in (0, 1) range."
+        range = (0, 1) if self.normalize_input else (-1, 1)
+        assert (x.min() >= range[0]) and (x.max() <= range[1]), \
+            f"Input tensor should be normalized in ({range[0]}, {range[0]}) range (noramlize_mode = {self.normalize_mode})."
 
         if self.resize_input:
             x = F.interpolate(x,
