@@ -42,11 +42,11 @@ def _sqrtm_newton_schulz(matrix: torch.Tensor, num_iters: int = 100) -> Tuple[to
     dim = matrix.size(0)
     norm_of_matrix = matrix.norm(p='fro')
     Y = matrix.div(norm_of_matrix)
-    I = torch.eye(dim, dim, device=matrix.device)
-    Z = torch.eye(dim, dim, device=matrix.device)
+    I = torch.eye(dim, dim, device=matrix.device, dtype=matrix.dtype)
+    Z = torch.eye(dim, dim, device=matrix.device, dtype=matrix.dtype)
 
     s_matrix = torch.empty_like(matrix)
-    error = torch.empty(1, device=matrix.device)
+    error = torch.empty(1, device=matrix.device, dtype=matrix.dtype)
 
     for _ in range(num_iters):
         T = 0.5 * (3.0 * I - Z.mm(Y))
@@ -84,7 +84,7 @@ def _compute_fid(mu1: torch.Tensor, sigma1: torch.Tensor, mu2: torch.Tensor, sig
     # Product might be almost singular
     if not torch.isfinite(covmean).all():
         print(f'FID calculation produces singular product; adding {eps} to diagonal of cov estimates')
-        offset = torch.eye(sigma1.size(0), device=mu1.device) * eps
+        offset = torch.eye(sigma1.size(0), device=mu1.device, dtype=mu1.dtype) * eps
         covmean, _ = _sqrtm_newton_schulz((sigma1 + offset).mm(sigma2 + offset))
 
     tr_covmean = torch.trace(covmean)
