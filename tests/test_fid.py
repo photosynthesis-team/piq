@@ -7,7 +7,6 @@ from piq.feature_extractors import InceptionV3
 
 class TestDataset(torch.utils.data.Dataset):
     def __init__(self, input_range=(0.0, 1.0)):
-        # self.data = torch.rand(15, 3, 256, 256)
         self.data = torch.FloatTensor(15, 3, 256, 256).uniform_(*input_range)
         self.mask = torch.rand(15, 3, 256, 256)
 
