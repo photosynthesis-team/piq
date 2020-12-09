@@ -136,7 +136,8 @@ class InceptionV3(nn.Module):
 
         Args:
             x: Batch of images with shape (N, 3, H, W). RGB colour order.
-                Values are expected to be in range (0, 1).
+                Values are expected to be in range (0, 1) if `normalize_input` is True,
+                and in range (-1, 1) otherwise.
 
         Returns:
             List of torch.autograd.Variable, corresponding to the selected output block, sorted ascending by index.

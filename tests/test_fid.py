@@ -1,8 +1,14 @@
 import pytest
 import torch
+from contextlib import contextmanager
 
 from piq import FID
 from piq.feature_extractors import InceptionV3
+
+
+@contextmanager
+def raise_nothing():
+    yield
 
 
 class TestDataset(torch.utils.data.Dataset):
@@ -43,60 +49,35 @@ def features_prediction_constant() -> torch.Tensor:
 
 # ================== Test class: `FID` ==================
 def test_initialization() -> None:
-    try:
-        FID()
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred: {e}")
+    FID()
 
 
-def test_forward(features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor, ) -> None:
-    try:
-        fid = FID()
-        fid(features_target_normal, features_prediction_normal)
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred: {e}")
+def test_forward(features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor, device: str) -> None:
+    fid = FID()
+    fid(features_target_normal.to(device), features_prediction_normal.to(device))
 
 
-def test_compute_feats_cpu() -> None:
-    try:
-        dataset = TestDataset()
-        loader = torch.utils.data.DataLoader(
-            dataset,
-            batch_size=3,
-            num_workers=2,
-        )
-        fid = FID()
-        model = InceptionV3()
-        fid._compute_feats(loader, model, device='cpu')
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred: {e}")
+def test_compute_feats(device: str) -> None:
+    dataset = TestDataset()
+    loader = torch.utils.data.DataLoader(
+        dataset,
+        batch_size=3,
+        num_workers=2,
+    )
+    fid = FID()
+    model = InceptionV3()
+    fid._compute_feats(loader, model, device=device)
 
 
-@pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test on GPU if there is no GPU.')
-def test_compute_feats_cuda() -> None:
-    try:
-        dataset = TestDataset()
-        loader = torch.utils.data.DataLoader(
-            dataset,
-            batch_size=3,
-            num_workers=2,
-        )
-        fid = FID()
-        model = InceptionV3()
-        fid._compute_feats(loader, model, device='cuda')
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred: {e}")
-
-
-@pytest.mark.parametrize("input_range,normalize_input,is_correct",
+@pytest.mark.parametrize("input_range,normalize_input,expectation",
                          [
-                             ((0.0, 1.0), True, True),
-                             ((-1.0, 1.0), False, True),
-                             ((-1.0, 1.0), True, False),
-                             ((-10.0, 10.0), False, False)
+                             ((0.0, 1.0), True, raise_nothing()),
+                             ((-1.0, 1.0), False, raise_nothing()),
+                             ((-1.0, 1.0), True, pytest.raises(AssertionError)),
+                             ((-10.0, 10.0), False, pytest.raises(AssertionError))
                          ])
-def test_inception_input_range(input_range, normalize_input, is_correct) -> None:
-    try:
+def test_inception_input_range(input_range, normalize_input, expectation) -> None:
+    with expectation:
         dataset = TestDataset(input_range)
         loader = torch.utils.data.DataLoader(
             dataset,
@@ -105,10 +86,4 @@ def test_inception_input_range(input_range, normalize_input, is_correct) -> None
         )
         fid = FID()
         model = InceptionV3(normalize_input=normalize_input)
-        if is_correct:
-            fid._compute_feats(loader, model, device='cpu')
-        else:
-            with pytest.raises(Exception):
-                fid._compute_feats(loader, model, device='cpu')
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred: {e}")
+        fid._compute_feats(loader, model, device='cpu')
