@@ -136,14 +136,16 @@ class InceptionV3(nn.Module):
 
         Args:
             x: Batch of images with shape (N, 3, H, W). RGB colour order.
-                Values are expected to be in range (0, 1).
+                Values are expected to be in range (0, 1) if `normalize_input` is True,
+                and in range (-1, 1) otherwise.
 
         Returns:
             List of torch.autograd.Variable, corresponding to the selected output block, sorted ascending by index.
         """
         outp = []
-        assert (x.min() >= 0) and (x.max() <= 1), \
-            "Input tensor should be normalized in (0, 1) range."
+        input_range = (0, 1) if self.normalize_input else (-1, 1)
+        assert (x.min() >= input_range[0]) and (x.max() <= input_range[1]), \
+            f"Input tensor should be normalized in ({input_range[0]}, {input_range[0]}) range."
 
         if self.resize_input:
             x = F.interpolate(x,
