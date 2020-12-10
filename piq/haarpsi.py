@@ -50,7 +50,7 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
             https://github.com/rgcda/haarpsi
     """
 
-    _validate_input(input_tensors=(x, y), allow_5d=False, scale_weights=None)
+    _validate_input(input_tensors=(x, y), allow_5d=False, scale_weights=None, data_range=data_range)
     x, y = _adjust_dimensions(input_tensors=(x, y))
 
     # Assert minimal image size
@@ -60,8 +60,8 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
                          f'Kernel size: {kernel_size}')
 
     # Scale images to [0, 255] range as in the paper
-    x = x * 255.0 / float(data_range)
-    y = y * 255.0 / float(data_range)
+    x = x / float(data_range) * 255
+    y = y / float(data_range) * 255
 
     num_channels = x.size(1)
     # Convert RGB to YIQ color space https://en.wikipedia.org/wiki/YIQ
