@@ -19,7 +19,7 @@ from piq.functional import crop_patches
 class PieAPPModel(nn.Module):
     """Model used for PieAPP score computation
     Args:
-        num_feautes: Base feature size, which is multiplied by 2 every 2 blocks
+        num_features: Base feature size, which is multiplied by 2 every 2 blocks
     """
     def __init__(self, features=64):
         super().__init__()
@@ -51,8 +51,9 @@ class PieAPPModel(nn.Module):
 
     def forward(self, x: torch.Tensor) -> List[torch.Tensor]:
         r"""
+        Forward pass batch of square patches with shape  (N, C, features, features)
         Returns:
-            ... add later
+            
         """
         assert x.shape[2] == x.shape[3] == self.features, \
             f"Expected square input with shape {self.features, self.features}"
@@ -83,41 +84,44 @@ class PieAPPModel(nn.Module):
         # Get scores: fc1_score -> relu -> fc2_score
         # 0.01 is the sigmoid coefficient
         distances = self.ref_score_subtract(0.01 * self.fc2_score(F.relu(self.fc1_score(features_diff))))
-#         print("scores", scores.shape)
 
         weights = self.fc2_weight(F.relu(self.fc1_weight(weights_diff))) + self.EPS
-#         print("weights", weights.shape)
         return distances, weights
 
 
 class PieAPP(_Loss):
     r"""
-
-    Expects input to be in range [0, 1] with no normalization.
+    Implementation of Perceptual Image-Error Assessment through Pairwise Preference.
+    
+    Expects input to be in range [0, 1] with no normalization and RGB channel order.
+    Input images are croped into smaller patches and final score is mean of patch scores.
+    
 
     Args:
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
-        stride: ...
-        replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See [3] for details. EXPERIMETNAL
+        reduction: Reduction over samples in batch: "mean"|"sum"|"none".
+        data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
+        stride: Step between cropped patches. Smaller values lead to better quality, 
+            but cause higher memory consumption. Default: 27 (`sparse` sampling in original implementation)
+        replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See [3] for details.
 
     References:
         .. [1] Ekta Prashnani, Hong Cai, Yasamin Mostofi, Pradeep Sen
-        (2018). PieAPP: Perceptual Image-Error Assessment through Pairwise Preference
-        https://arxiv.org/abs/1806.02067
+            (2018). PieAPP: Perceptual Image-Error Assessment through Pairwise Preference
+            https://arxiv.org/abs/1806.02067
         .. [2] https://github.com/prashnani/PerceptualImageError
         .. [3] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
-        (2016). A Neural Algorithm of Artistic Style}
-        Association for Research in Vision and Ophthalmology (ARVO)
-        https://arxiv.org/abs/1508.06576
+            (2016). A Neural Algorithm of Artistic Style}
+            Association for Research in Vision and Ophthalmology (ARVO)
+            https://arxiv.org/abs/1508.06576
     """
-    # TODO: Load weights to release and change this link
+    # TODO(zakajd) 10/12/2020: Load weights to release and change this link
     _weights_url = "https://web.ece.ucsb.edu/~ekta/projects/PieAPPv0.1/weights/PieAPPv0.1.pth"
 
     def __init__(
         self,
         reduction: str = "mean",
         data_range: Union[int, float] = 1.0,
-        stride: int = 32,
+        stride: int = 27,
         replace_pooling: bool = False
     ) -> None:
         super().__init__()
@@ -127,7 +131,6 @@ class PieAPP(_Loss):
         # Fix small bug in original weights
         weights['ref_score_subtract.weight'] = weights['ref_score_subtract.weight'].unsqueeze(1)
         self.model = PieAPPModel(features=64)
-#         print(self.model)
         self.model.load_state_dict(weights)
 
         if replace_pooling:
@@ -152,7 +155,7 @@ class PieAPP(_Loss):
 
         N, C, _, _ = prediction.shape
 
-        self.model.to(prediction)
+        self.model.to(device=prediction.device)
         prediction_features, prediction_weights = self.get_features(prediction)
         target_features, target_weights = self.get_features(target)
 
@@ -183,13 +186,12 @@ class PieAPP(_Loss):
         Returns:
             features: List of features extracted from intermediate layers
         """
-        # Scale input
-        x = x * 255 / float(self.data_range)
+        # Rescale to [0, 255] range on which models was trained
+        x = (x / float(self.data_range)) * 255
 
         x_patches = crop_patches(x, size=64, stride=self.stride)
 
         features, weights = self.model(x_patches)
-        # TODO: Optionally normalize features
         return features, weights
 
     def replace_pooling(self, module: torch.nn.Module) -> torch.nn.Module:
