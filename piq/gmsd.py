@@ -43,9 +43,11 @@ def gmsd(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean'
         https://arxiv.org/pdf/1308.3052.pdf
     """
 
-    _validate_input(input_tensors=(prediction, target), allow_5d=False, scale_weights=None)
+    _validate_input(
+        input_tensors=(prediction, target), allow_5d=False, scale_weights=None, data_range=data_range)
     prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
 
+    # Rescale to [0, 1] range    
     prediction = prediction / float(data_range)
     target = target / float(data_range)
 
@@ -179,7 +181,8 @@ def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range:
     Returns:
         Value of MS-GMSD. 0 <= GMSD loss <= 1.
     """
-    _validate_input(input_tensors=(prediction, target), allow_5d=False, scale_weights=scale_weights)
+    _validate_input(
+        input_tensors=(prediction, target), allow_5d=False, scale_weights=scale_weights, data_range=data_range)
     prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
 
     # Values from the paper
@@ -197,8 +200,9 @@ def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range:
     if prediction.size(-1) < min_size or prediction.size(-2) < min_size:
         raise ValueError(f'Invalid size of the input images, expected at least {min_size}x{min_size}.')
 
-    prediction = prediction * 255 / float(data_range)
-    target = target * 255 / float(data_range)
+    # Rescale to [0, 255] range
+    prediction = prediction / float(data_range) * 255
+    target = target / float(data_range) * 255
 
     num_channels = prediction.size(1)
     if num_channels == 3:

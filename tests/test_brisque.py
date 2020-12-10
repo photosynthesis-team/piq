@@ -69,7 +69,7 @@ def test_brisque_for_special_cases(input: torch.Tensor, expectation: Any, device
 def test_brisque_supports_different_data_ranges(x_rgb: torch.Tensor, data_range, device: str) -> None:
     x_scaled = (x_rgb * data_range).type(torch.uint8)
     loss_scaled = brisque(x_scaled.to(device), data_range=data_range)
-    loss = brisque(x_scaled.to(device) / float(data_range))
+    loss = brisque(x_scaled.to(device) / float(data_range), data_range=1.0)
     diff = torch.abs(loss_scaled - loss)
     assert diff <= 1e-5, f'Result for same tensor with different data_range should be the same, got {diff}'
 
