@@ -5,7 +5,7 @@ References:
     (2018). PieAPP: Perceptual Image-Error Assessment through Pairwise Preference
     https://arxiv.org/abs/1806.02067
 """
-from typing import List, Union
+from typing import Union, Tuple
 
 import torch
 import torch.nn as nn
@@ -49,7 +49,7 @@ class PieAPPModel(nn.Module):
         # Term for numerical stability
         self.EPS = 1e-6
 
-    def forward(self, x: torch.Tensor) -> List[torch.Tensor]:
+    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         r"""
         Forward pass batch of square patches with shape  (N, C, features, features)
         Returns:
@@ -100,7 +100,7 @@ class PieAPP(_Loss):
     Args:
         reduction: Reduction over samples in batch: "mean"|"sum"|"none".
         data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
-        stride: Step between cropped patches. Smaller values lead to better quality, 
+        stride: Step between cropped patches. Smaller values lead to better quality,
             but cause higher memory consumption. Default: 27 (`sparse` sampling in original implementation)
         replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See [3] for details.
 
@@ -178,7 +178,7 @@ class PieAPP(_Loss):
                 'sum': loss.sum
                 }[self.reduction](dim=0)
 
-    def get_features(self, x: torch.Tensor) -> List[torch.Tensor]:
+    def get_features(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         r"""
         Args:
             x: Tensor with shape (N, C, H, W)
