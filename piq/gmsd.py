@@ -184,7 +184,11 @@ def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range:
     _validate_input(
         input_tensors=(prediction, target), allow_5d=False, scale_weights=scale_weights, data_range=data_range)
     prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
-
+    
+    # Rescale to [0, 255] range
+    prediction = prediction / float(data_range) * 255
+    target = target / float(data_range) * 255
+    
     # Values from the paper
     if scale_weights is None:
         scale_weights = torch.tensor([0.096, 0.596, 0.289, 0.019])
@@ -199,10 +203,6 @@ def multi_scale_gmsd(prediction: torch.Tensor, target: torch.Tensor, data_range:
 
     if prediction.size(-1) < min_size or prediction.size(-2) < min_size:
         raise ValueError(f'Invalid size of the input images, expected at least {min_size}x{min_size}.')
-
-    # Rescale to [0, 255] range
-    prediction = prediction / float(data_range) * 255
-    target = target / float(data_range) * 255
 
     num_channels = prediction.size(1)
     if num_channels == 3:
