@@ -82,7 +82,7 @@ def test_fsim_fails_for_incorrect_data_range(prediction: torch.Tensor, target: t
     prediction_scaled = (prediction * 255).type(torch.uint8)
     target_scaled = (target * 255).type(torch.uint8)
     with pytest.raises(AssertionError):
-        loss = fsim(prediction_scaled.to(device), target_scaled.to(device), data_range=1.0)
+        fsim(prediction_scaled.to(device), target_scaled.to(device), data_range=1.0)
         
 
 def test_fsim_simmular_to_matlab_implementation():
@@ -139,4 +139,3 @@ def test_fsim_loss_computes_grad(prediction: torch.Tensor, target: torch.Tensor,
     loss_value = FSIMLoss()(prediction, target)
     loss_value.backward()
     assert prediction.grad is not None, 'Expected non None gradient of leaf variable'
-

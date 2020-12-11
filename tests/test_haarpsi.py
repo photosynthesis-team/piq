@@ -64,7 +64,8 @@ def test_haarpsi_fails_for_incorrect_data_range(prediction: torch.Tensor, target
     prediction_scaled = (prediction * 255).type(torch.uint8)
     target_scaled = (target * 255).type(torch.uint8)
     with pytest.raises(AssertionError):
-        loss = haarpsi(prediction_scaled.to(device), target_scaled.to(device), data_range=1.0)
+        haarpsi(prediction_scaled.to(device), target_scaled.to(device), data_range=1.0)
+
 
 def test_haarpsi_compare_with_matlab(device: str) -> None:
     prediction = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1)

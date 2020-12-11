@@ -57,7 +57,6 @@ def test_gmsd_raises_if_tensors_have_different_types(target: torch.Tensor, devic
             gmsd(wrong_type_prediction, target.to(device))
 
 
-
 @pytest.mark.parametrize(
     "data_range", [128, 255],
 )
@@ -80,7 +79,7 @@ def test_gmsd_fails_for_incorrect_data_range(prediction: torch.Tensor, target: t
     prediction_scaled = (prediction * 255).type(torch.uint8)
     target_scaled = (target * 255).type(torch.uint8)
     with pytest.raises(AssertionError):
-        loss = gmsd(prediction_scaled.to(device), target_scaled.to(device), data_range=1.0)
+        gmsd(prediction_scaled.to(device), target_scaled.to(device), data_range=1.0)
         
 
 def test_gmsd_supports_greyscale_tensors(device: str) -> None:
@@ -184,12 +183,14 @@ def test_multi_scale_gmsd_supports_different_data_ranges(
     assert diff <= 1e-6, f'Result for same tensor with different data_range should be the same, got {diff}'
 
 
-def test_multi_scale_gmsd_fails_for_incorrect_data_range(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+def test_multi_scale_gmsd_fails_for_incorrect_data_range(
+        prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
     # Scale to [0, 255]
     prediction_scaled = (prediction * 255).type(torch.uint8)
     target_scaled = (target * 255).type(torch.uint8)
     with pytest.raises(AssertionError):
-        loss = multi_scale_gmsd(prediction_scaled.to(device), target_scaled.to(device), data_range=1.0)
+        multi_scale_gmsd(prediction_scaled.to(device), target_scaled.to(device), data_range=1.0)
+
 
 def test_multi_scale_gmsd_supports_greyscale_tensors(device: str) -> None:
     target = torch.ones(2, 1, 96, 96)

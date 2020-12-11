@@ -26,7 +26,7 @@ def target_1d() -> torch.Tensor:
 
 
 # ================== Test function: `vif_p` ==================
-def test_vif_p(input_tensors: Tuple[torch.Tensor,torch.Tensor], device: str) -> None:
+def test_vif_p(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
     prediction, target = input_tensors
     vif_p(prediction.to(device), target.to(device), data_range=1.)
 

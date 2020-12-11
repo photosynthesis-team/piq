@@ -87,8 +87,8 @@ def test_brisque_loss_if_works_with_grey(x_grey: torch.Tensor, device: str) -> N
     x_grey_grad.requires_grad_()
     loss_value = BRISQUELoss()(x_grey_grad)
     loss_value.backward()
-    assert torch.isfinite(x_grey_grad.grad).all(), f'Expected non None gradient of leaf variable, ' \
-                                                            f'got {x_grey_grad.grad}'
+    assert torch.isfinite(x_grey_grad.grad).all(), \
+        f'Expected non None gradient of leaf variable, got {x_grey_grad.grad}'
 
 
 def test_brisque_loss_if_works_with_rgb(x_rgb: torch.Tensor, device: str) -> None:
@@ -96,8 +96,8 @@ def test_brisque_loss_if_works_with_rgb(x_rgb: torch.Tensor, device: str) -> Non
     x_rgb_grad.requires_grad_()
     loss_value = BRISQUELoss()(x_rgb_grad)
     loss_value.backward()
-    assert torch.isfinite(x_rgb_grad.grad).all(), 'Expected non None gradient of leaf variable, ' \
-                                                           f'got {x_rgb_grad.grad}'
+    assert torch.isfinite(x_rgb_grad.grad).all(), \
+        f'Expected non None gradient of leaf variable, got {x_rgb_grad.grad}'
 
 
 def test_brisque_loss_raises_if_wrong_reduction(x_grey: torch.Tensor, device: str) -> None:
@@ -107,4 +107,3 @@ def test_brisque_loss_raises_if_wrong_reduction(x_grey: torch.Tensor, device: st
     for mode in [None, 'n', 2]:
         with pytest.raises(KeyError):
             BRISQUELoss(reduction=mode)(x_grey.to(device))
-

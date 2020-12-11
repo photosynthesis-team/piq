@@ -197,6 +197,7 @@ def test_ssim_fails_for_incorrect_data_range(prediction: torch.Tensor, target: t
     with pytest.raises(AssertionError):
         ssim(prediction_scaled.to(device), target_scaled.to(device), data_range=1.0)
 
+
 # ================== Test class: `SSIMLoss` ==================
 def test_ssim_loss_grad(prediction_target_4d_5d: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
     prediction = prediction_target_4d_5d[0].to(device)
@@ -427,7 +428,7 @@ def test_multi_scale_ssim_raise_if_wrong_value_is_estimated(test_images: Tuple[t
 )
 def test_multi_scale_ssim_supports_different_data_ranges(
         prediction_target_4d_5d: Tuple[torch.Tensor, torch.Tensor], data_range, device: str) -> None:
-    prediction, target = input_tensors
+    prediction, target = prediction_target_4d_5d
     prediction_scaled = (prediction * data_range).type(torch.uint8)
     target_scaled = (target * data_range).type(torch.uint8)
 
@@ -441,7 +442,8 @@ def test_multi_scale_ssim_supports_different_data_ranges(
     assert diff <= 1e-6, f'Result for same tensor with different data_range should be the same, got {diff}'
 
 
-def test_multi_scale_ssim_fails_for_incorrect_data_range(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+def test_multi_scale_ssim_fails_for_incorrect_data_range(
+        prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
     # Scale to [0, 255]
     prediction_scaled = (prediction * 255).type(torch.uint8)
     target_scaled = (target * 255).type(torch.uint8)

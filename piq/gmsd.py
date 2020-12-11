@@ -47,7 +47,7 @@ def gmsd(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean'
         input_tensors=(prediction, target), allow_5d=False, scale_weights=None, data_range=data_range)
     prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
 
-    # Rescale to [0, 1] range    
+    # Rescale to [0, 1] range
     prediction = prediction / float(data_range)
     target = target / float(data_range)
 

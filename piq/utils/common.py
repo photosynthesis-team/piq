@@ -53,7 +53,6 @@ def _validate_input(
             assert data_range >= tensor.max(), \
                 f'Data range should be greater or equal to maximum tensor value, got {data_range} and {tensor.max()}.'
 
-
     if len(input_tensors) == 2:
         assert input_tensors[0].size() == input_tensors[1].size(), \
             f'Input images must have the same dimensions, got {input_tensors[0].size()} and {input_tensors[1].size()}.'
@@ -67,7 +66,6 @@ def _validate_input(
             scale_weights = torch.tensor(scale_weights)
         assert (scale_weights.dim() == 1), \
             f'Scale weights must be one dimensional, got {scale_weights.dim()}.'
-
 
 
 def _validate_features(x: torch.Tensor, y: torch.Tensor) -> None:
