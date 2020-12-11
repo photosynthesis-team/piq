@@ -51,6 +51,9 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
         input_tensors=(x, y), allow_5d=True, kernel_size=kernel_size, scale_weights=None, data_range=data_range)
     x, y = _adjust_dimensions(input_tensors=(x, y))
 
+    x = x.type(torch.float32)
+    y = y.type(torch.float32)
+        
     # x = x / float(data_range)
     # y = y / float(data_range)
 
@@ -214,6 +217,8 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
     )
     x, y = _adjust_dimensions(input_tensors=(x, y))
 
+    x = x.type(torch.float32)
+    y = y.type(torch.float32)
     # x = x / float(data_range)
     # y = y / float(data_range)
 
@@ -567,3 +572,4 @@ def _multi_scale_ssim_complex(x: torch.Tensor, y: torch.Tensor, data_range: Unio
     msssim_val_imag = msssim_val_abs * torch.sin(msssim_val_deg)
     msssim_val = torch.stack((msssim_val_real, msssim_val_imag), dim=-1).mean(dim=1)
     return msssim_val
+

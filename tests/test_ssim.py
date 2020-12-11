@@ -66,21 +66,20 @@ def test_ssim_measure_is_one_for_equal_tensors(target: torch.Tensor, device: str
                                                               f'got {measure}'
 
 
-@pytest.mark.parametrize(
-    "reduction,full,expectation",
-    [('mean', False, raise_nothing()),
-     ('sum', False, raise_nothing()),
-     ('none', False, raise_nothing()),
-     ('none', True, raise_nothing()),
-     ('reduction', False, pytest.raises(KeyError))]
-)
-def test_ssim_reduction_and_full(reduction: str, full: bool, expectation: Any,
-                                 prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+def test_ssim_reduction(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+    for mode in ['mean', 'sum', 'none']:
+        ssim(prediction.to(device), target.to(device), reduction=mode)
+
+    for mode in [None, 'n', 2]:
+        with pytest.raises(KeyError):
+            ssim(prediction.to(device), target.to(device), reduction=mode)
+            
+
+def test_ssim_returns_full(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
     prediction = prediction.to(device)
     target = target.to(device)
-    with expectation:
-        ssim(prediction, target, data_range=1., reduction=reduction, full=full)
-
+    assert len(ssim(prediction, target, full=True)) == 2, "Expected 2 output values, got 1"
+        
 
 def test_ssim_measure_is_less_or_equal_to_one(ones_zeros_4d_5d: Tuple[torch.Tensor, torch.Tensor],
                                               device: str) -> None:
@@ -88,7 +87,7 @@ def test_ssim_measure_is_less_or_equal_to_one(ones_zeros_4d_5d: Tuple[torch.Tens
     ones = ones_zeros_4d_5d[0].to(device)
     zeros = ones_zeros_4d_5d[1].to(device)
     measure = ssim(ones, zeros, data_range=1., reduction='none')
-    assert torch.less_equal(measure, 1).all(), f'SSIM must be <= 1, got {measure}'
+    assert torch.le(measure, 1).all(), f'SSIM must be <= 1, got {measure}'
 
 
 def test_ssim_raises_if_tensors_have_different_shapes(prediction_target_4d_5d: Tuple[torch.Tensor,
@@ -575,3 +574,4 @@ def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated(test_images: Li
             f'The estimated value must be equal to tensorflow provided one' \
             f'(considering floating point operation error up to {match_accuracy}), ' \
             f'got difference {(piq_ms_ssim_loss - 1. + tf_ms_ssim).abs()}'
+
