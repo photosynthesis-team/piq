@@ -107,6 +107,7 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     score = GM * PC * pc_max
     
     if chromatic:
+        assert num_channels == 3, "Chromatic component can be computed only for RGB images!"
         S_I = similarity_map(x_i, y_i, T3)
         S_Q = similarity_map(x_q, y_q, T4)
         score = score * torch.abs(S_I * S_Q) ** lmbda
