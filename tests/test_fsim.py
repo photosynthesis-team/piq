@@ -35,7 +35,7 @@ def target_grey() -> torch.Tensor:
 # ================== Test function: `fsim` ==================
 def test_fsim_forward(input_tensors, device: str) -> None:
     prediction, target = input_tensors
-    fsim(prediction.to(device), target.to(device))
+    fsim(prediction.to(device), target.to(device), chromatic=False)
 
 
 @pytest.mark.parametrize("chromatic", [False, True])
@@ -48,7 +48,7 @@ def test_fsim_symmetry(prediction: torch.Tensor, target: torch.Tensor, chromatic
 @pytest.mark.parametrize(
     "chromatic,expectation",
     [(False, raise_nothing()),
-     (True, raise_nothing())])
+     (True, pytest.raises(AssertionError))])
 def test_fsim_chromatic_raises_for_greyscale(
         prediction_grey: torch.Tensor, target_grey: torch.Tensor, chromatic: bool, expectation: Any) -> None:
     with expectation:
