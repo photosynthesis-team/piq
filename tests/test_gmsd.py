@@ -127,16 +127,24 @@ def test_gmsd_loss_raises_if_tensors_have_different_types(target: torch.Tensor, 
             GMSDLoss()(wrong_type_prediction, target.to(device))
 
 
-def test_gmsd_loss_supports_different_data_ranges(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
-    prediction_255 = (prediction * 255).type(torch.uint8)
-    target_255 = (target * 255).type(torch.uint8)
-    loss = GMSDLoss()
-    measure = loss(prediction.to(device), target.to(device))
+@pytest.mark.parametrize(
+    "data_range", [128, 255],
+)
+def test_gmsd_loss_supports_different_data_ranges(
+        prediction: torch.Tensor, target: torch.Tensor, data_range, device: str) -> None:
 
-    loss_255 = GMSDLoss(data_range=255)
-    measure_255 = loss_255(prediction_255.to(device), target_255.to(device))
-    diff = torch.abs(measure_255 - measure)
-    assert diff <= 1e-4, f'Result for same tensor with different data_range should be the same, got {diff}'
+    prediction_scaled = (prediction * data_range).type(torch.uint8)
+    target_scaled = (target * data_range).type(torch.uint8)
+    loss_scaled = GMSDLoss(data_range=data_range)
+    measure_scaled = loss_scaled(prediction_scaled.to(device), target_scaled.to(device))
+
+    loss = GMSDLoss()
+    measure = loss(
+        prediction_scaled.to(device) / float(data_range),
+        target_scaled.to(device) / float(data_range),
+    )
+    diff = torch.abs(measure_scaled - measure)
+    assert diff <= 1e-6, f'Result for same tensor with different data_range should be the same, got {diff}'
 
 
 def test_gmsd_loss_supports_greyscale_tensors(device: str) -> None:

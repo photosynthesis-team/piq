@@ -438,7 +438,7 @@ def test_multi_scale_ssim_supports_different_data_ranges(
         data_range=1.0
     )
     diff = torch.abs(measure_scaled - measure)
-    assert diff <= 1e-6, f'Result for same tensor with different data_range should be the same, got {diff}'
+    assert (diff <= 1e-6).all(), f'Result for same tensor with different data_range should be the same, got {diff}'
 
 
 def test_multi_scale_ssim_fails_for_incorrect_data_range(
@@ -574,4 +574,3 @@ def test_multi_scale_ssim_loss_raise_if_wrong_value_is_estimated(test_images: Li
             f'The estimated value must be equal to tensorflow provided one' \
             f'(considering floating point operation error up to {match_accuracy}), ' \
             f'got difference {(piq_ms_ssim_loss - 1. + tf_ms_ssim).abs()}'
-
