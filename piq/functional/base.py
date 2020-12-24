@@ -93,6 +93,8 @@ def crop_patches(x: torch.Tensor, size=64, stride=32) -> torch.Tensor:
         size: Size of a square patch
         stride: Step between patches
     """
+    assert (x.shape[2] >= size) and (x.shape[3] >= size), \
+        f"Images must be bigger than patch size. Got ({x.shape[2], x.shape[3]}) and ({size}, {size})"
     channels = x.shape[1]
     patches = x.unfold(1, channels, channels).unfold(2, size, stride).unfold(3, size, stride)
     patches = patches.reshape(-1, channels, size, size)
