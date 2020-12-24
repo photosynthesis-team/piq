@@ -19,7 +19,7 @@ def test_pieapp_loss_forward(prediction: torch.Tensor, target: torch.Tensor, dev
 
 def test_pieapp_computes_grad(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
     prediction.requires_grad_()
-    loss_value = PieAPP()(prediction.to(device), target.to(device))
+    loss_value = PieAPP(enable_grad=True)(prediction.to(device), target.to(device))
     loss_value.backward()
     assert prediction.grad is not None, 'Expected non None gradient of leaf variable'
 

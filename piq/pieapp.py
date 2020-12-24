@@ -18,27 +18,27 @@ from piq.functional import crop_patches
 
 class PieAPPModel(nn.Module):
     """Model used for PieAPP score computation
-    Args:
-        num_features: Base feature size, which is multiplied by 2 every 2 blocks
     """
-    def __init__(self, features=64):
+    # Base feature size, which is multiplied by 2 every 2 blocks
+    FEATURES = 64
+    
+    def __init__(self):
         super().__init__()
 
-        self.features = features
         self.pool = nn.MaxPool2d(2, 2)
         self.flatten = nn.Flatten(start_dim=1)
 
-        self.conv1 = nn.Conv2d(3, features, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(features, features, kernel_size=3, padding=1)
-        self.conv3 = nn.Conv2d(features, features, kernel_size=3, padding=1)
-        self.conv4 = nn.Conv2d(features, features * 2, kernel_size=3, padding=1)
-        self.conv5 = nn.Conv2d(features * 2, features * 2, kernel_size=3, padding=1)
-        self.conv6 = nn.Conv2d(features * 2, features * 2, kernel_size=3, padding=1)
-        self.conv7 = nn.Conv2d(features * 2, features * 4, kernel_size=3, padding=1)
-        self.conv8 = nn.Conv2d(features * 4, features * 4, kernel_size=3, padding=1)
-        self.conv9 = nn.Conv2d(features * 4, features * 4, kernel_size=3, padding=1)
-        self.conv10 = nn.Conv2d(features * 4, features * 8, kernel_size=3, padding=1)
-        self.conv11 = nn.Conv2d(features * 8, features * 8, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv2d(3, self.FEATURES, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(self.FEATURES, self.FEATURES, kernel_size=3, padding=1)
+        self.conv3 = nn.Conv2d(self.FEATURES, self.FEATURES, kernel_size=3, padding=1)
+        self.conv4 = nn.Conv2d(self.FEATURES, self.FEATURES * 2, kernel_size=3, padding=1)
+        self.conv5 = nn.Conv2d(self.FEATURES * 2, self.FEATURES * 2, kernel_size=3, padding=1)
+        self.conv6 = nn.Conv2d(self.FEATURES * 2, self.FEATURES * 2, kernel_size=3, padding=1)
+        self.conv7 = nn.Conv2d(self.FEATURES * 2, self.FEATURES * 4, kernel_size=3, padding=1)
+        self.conv8 = nn.Conv2d(self.FEATURES * 4, self.FEATURES * 4, kernel_size=3, padding=1)
+        self.conv9 = nn.Conv2d(self.FEATURES * 4, self.FEATURES * 4, kernel_size=3, padding=1)
+        self.conv10 = nn.Conv2d(self.FEATURES * 4, self.FEATURES * 8, kernel_size=3, padding=1)
+        self.conv11 = nn.Conv2d(self.FEATURES * 8, self.FEATURES * 8, kernel_size=3, padding=1)
 
         self.fc1_score = nn.Linear(in_features=120832, out_features=512, bias=True)
         self.fc2_score = nn.Linear(in_features=512, out_features=1, bias=True)
@@ -51,12 +51,16 @@ class PieAPPModel(nn.Module):
 
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         r"""
-        Forward pass batch of square patches with shape  (N, C, features, features)
+        Forward pass a batch of square patches with shape  (N, C, FEATURES, FEATURES)
+
         Returns:
-            
+            features: Concatenation of model features from different scales
+            x11: Outputs of the last convolutional layer used as weights
         """
-        assert x.shape[2] == x.shape[3] == self.features, \
-            f"Expected square input with shape {self.features, self.features}"
+        _validate_input(input_tensors=x, allow_5d=False, allow_negative=False)
+        x = _adjust_dimensions(input_tensors=x)
+        assert x.shape[2] == x.shape[3] == self.FEATURES, \
+            f"Expected square input with shape {self.FEATURES, self.FEATURES}, got {x.shape}"
 
         # conv1 -> relu -> conv2 -> relu -> pool -> conv3 -> relu
         x3 = F.relu(self.conv3(self.pool(F.relu(self.conv2(F.relu(self.conv1(x)))))))
@@ -75,8 +79,8 @@ class PieAPPModel(nn.Module):
     def compute_difference(self, features_diff, weights_diff):
         r"""
         Args:
-            features_diff: Tensor of shape (N * NUM_PATCHES, C_1)
-            features_diff: Tensor of shape (N * NUM_PATCHES, C_2)
+            features_diff: Tensor of shape (N, C_1)
+            weights_diff: Tensor of shape (N, C_2)
         Returns:
             distances
             weights
@@ -94,25 +98,21 @@ class PieAPP(_Loss):
     Implementation of Perceptual Image-Error Assessment through Pairwise Preference.
     
     Expects input to be in range [0, 1] with no normalization and RGB channel order.
-    Input images are croped into smaller patches and final score is mean of patch scores.
-    
+    Input images are croped into smaller patches. Score for each individual image is mean of it's patch scores.
 
     Args:
         reduction: Reduction over samples in batch: "mean"|"sum"|"none".
         data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
         stride: Step between cropped patches. Smaller values lead to better quality,
             but cause higher memory consumption. Default: 27 (`sparse` sampling in original implementation)
-        replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See [3] for details.
-
+        enable_grad: Flag to compute gradients. Usefull when PieAPP used as a loss. Default: False.
+    
     References:
         .. [1] Ekta Prashnani, Hong Cai, Yasamin Mostofi, Pradeep Sen
             (2018). PieAPP: Perceptual Image-Error Assessment through Pairwise Preference
             https://arxiv.org/abs/1806.02067
         .. [2] https://github.com/prashnani/PerceptualImageError
-        .. [3] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
-            (2016). A Neural Algorithm of Artistic Style}
-            Association for Research in Vision and Ophthalmology (ARVO)
-            https://arxiv.org/abs/1508.06576
+
     """
     # TODO(zakajd) 10/12/2020: Load weights to release and change this link
     _weights_url = "https://web.ece.ucsb.edu/~ekta/projects/PieAPPv0.1/weights/PieAPPv0.1.pth"
@@ -122,7 +122,7 @@ class PieAPP(_Loss):
         reduction: str = "mean",
         data_range: Union[int, float] = 1.0,
         stride: int = 27,
-        replace_pooling: bool = False
+        enable_grad: bool = False
     ) -> None:
         super().__init__()
         
@@ -130,11 +130,8 @@ class PieAPP(_Loss):
         weights = torch.hub.load_state_dict_from_url(self._weights_url, progress=False)
         # Fix small bug in original weights
         weights['ref_score_subtract.weight'] = weights['ref_score_subtract.weight'].unsqueeze(1)
-        self.model = PieAPPModel(features=64)
+        self.model = PieAPPModel()
         self.model.load_state_dict(weights)
-
-        if replace_pooling:
-            self.model = self.replace_pooling(self.model)
 
         # Disable gradients
         for param in self.model.parameters():
@@ -143,6 +140,7 @@ class PieAPP(_Loss):
         self.data_range = data_range
         self.reduction = reduction
         self.stride = stride
+        self.enable_grad = enable_grad
 
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         r"""Computation of PieAPP  between feature representations of prediction and target tensors.
@@ -164,7 +162,6 @@ class PieAPP(_Loss):
             target_weights - prediction_weights
         )
 
-        # Shape (N, NUM_PATCHES)
         distances = distances.reshape(N, -1)
         weights = weights.reshape(N, -1)
 
@@ -188,18 +185,8 @@ class PieAPP(_Loss):
         """
         # Rescale to [0, 255] range on which models was trained
         x = (x / float(self.data_range)) * 255
-
         x_patches = crop_patches(x, size=64, stride=self.stride)
 
-        features, weights = self.model(x_patches)
+        with torch.autograd.set_grad_enabled(self.enable_grad):
+            features, weights = self.model(x_patches)
         return features, weights
-
-    def replace_pooling(self, module: torch.nn.Module) -> torch.nn.Module:
-        r"""Turn All MaxPool layers into AveragePool"""
-        module_output = module
-        if isinstance(module, torch.nn.MaxPool2d):
-            module_output = torch.nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
-            
-        for name, child in module.named_children():
-            module_output.add_module(name, self.replace_pooling(child))
-        return module_output
