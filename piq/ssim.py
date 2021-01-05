@@ -56,8 +56,8 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
     kernel = gaussian_filter(kernel_size, kernel_sigma).repeat(x.size(1), 1, 1, 1).to(y)
     _compute_ssim_per_channel = _ssim_per_channel_complex if x.dim() == 5 else _ssim_per_channel
     ssim_map, cs_map = _compute_ssim_per_channel(x=x, y=y, kernel=kernel, data_range=data_range, k1=k1, k2=k2)
-    ssim_val = ssim_map.mean(1)
-    cs = cs_map.mean(1)
+    ssim_val = ssim_map.mean(dim=(1, 2, 3))
+    cs = cs_map.mean(dim=(1, 2, 3))
 
     if reduction != 'none':
         reduction_operation = {'mean': torch.mean,
@@ -362,7 +362,8 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
             Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
 
     Returns:
-        Full Value of Structural Similarity (SSIM) index.
+        ssim_map: Tensor with shape (N, C, H, W) containing SSIM values
+        cs_map: Tensor with shape (N, C, H, W) containing CS values
     """
 
     if x.size(-1) < kernel.size(-1) or x.size(-2) < kernel.size(-2):
@@ -387,10 +388,7 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
     # Set alpha = beta = gamma = 1.
     cs_map = (2 * sigma12 + c2) / (sigma1_sq + sigma2_sq + c2)
     ssim_map = ((2 * mu1_mu2 + c1) / (mu1_sq + mu2_sq + c1)) * cs_map
-
-    ssim_val = ssim_map.mean(dim=(-1, -2))
-    cs = cs_map.mean(dim=(-1, -2))
-    return ssim_val, cs
+    return ssim_map, cs_map
 
 
 def _multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float], kernel: torch.Tensor,
@@ -425,7 +423,11 @@ def _multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, f
             x = F.avg_pool2d(x, kernel_size=2, padding=0)
             y = F.avg_pool2d(y, kernel_size=2, padding=0)
 
-        ssim_val, cs = _ssim_per_channel(x, y, kernel=kernel, data_range=data_range, k1=k1, k2=k2)
+        ssim_map, cs_map = _ssim_per_channel(x, y, kernel=kernel, data_range=data_range, k1=k1, k2=k2)
+
+        # Average among spatial dimensions
+        ssim_val = ssim_map.mean(dim=(2, 3))
+        cs = cs_map.mean(dim=(2, 3))
         mcs.append(cs)
 
     # mcs, (level, batch)
@@ -452,7 +454,8 @@ def _ssim_per_channel_complex(x: torch.Tensor, y: torch.Tensor, kernel: torch.Te
             Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
 
     Returns:
-        Full Value of Complex Structural Similarity (SSIM) index.
+        ssim_map: Tensor with shape (N, C, H, W, 2) containing complex SSIM values
+        cs_map: Tensor with shape (N, C, H, W, 2) containing complex CS values
     """
     n_channels = x.size(1)
     if x.size(-2) < kernel.size(-1) or x.size(-3) < kernel.size(-2):
@@ -495,10 +498,7 @@ def _ssim_per_channel_complex(x: torch.Tensor, y: torch.Tensor, kernel: torch.Te
     ssim_map = (mu1_mu2 * 2 + c1 * compensation) / (mu1_sq.unsqueeze(-1) + mu2_sq.unsqueeze(-1) + c1 * compensation)
     ssim_map = ssim_map * cs_map
 
-    ssim_val = ssim_map.mean(dim=(-2, -3))
-    cs = cs_map.mean(dim=(-2, -3))
-
-    return ssim_val, cs
+    return ssim_map, cs_map
 
 
 def _multi_scale_ssim_complex(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float],
@@ -543,7 +543,11 @@ def _multi_scale_ssim_complex(x: torch.Tensor, y: torch.Tensor, data_range: Unio
             x = torch.stack((x_real, x_imag), dim=-1)
             y = torch.stack((y_real, y_imag), dim=-1)
 
-        ssim_val, cs = _ssim_per_channel_complex(x, y, kernel=kernel, data_range=data_range, k1=k1, k2=k2)
+        ssim_map, cs_map = _ssim_per_channel_complex(x, y, kernel=kernel, data_range=data_range, k1=k1, k2=k2)
+
+        # Average among spatial dimensions
+        ssim_val = ssim_map.mean(dim=(2, 3))
+        cs = cs_map.mean(dim=(2, 3))
         mcs.append(cs)
 
     # mcs, (level, batch)
