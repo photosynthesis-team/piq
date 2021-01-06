@@ -9,7 +9,6 @@ import functools
 from typing import Union, Tuple
 
 import torch
-import torch.fft
 import torch.nn.functional as F
 
 from torch.nn.modules.loss import _Loss

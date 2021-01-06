@@ -120,6 +120,11 @@ def main():
     vsi_loss: torch.Tensor = piq.VSILoss(data_range=1.)(prediction, target)
     print(f"VSI index: {vsi_index.item():0.4f}, loss: {vsi_loss.item():0.4f}")
 
+    # To compute SR-SIM score as a measure, use lower case function from the library:
+    srsim_index: torch.Tensor = piq.srsim(prediction, target, data_range=1.)
+    # In order to use VSI as a loss function, use corresponding PyTorch module:
+    srsim_loss: torch.Tensor = piq.SRSIMLoss(data_range=1.)(prediction, target)
+    print(f"SR-SIM index: {srsim_index.item():0.4f}, loss: {srsim_loss.item():0.4f}")
 
 if __name__ == '__main__':
     main()

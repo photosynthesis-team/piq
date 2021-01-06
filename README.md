@@ -90,7 +90,8 @@ For a full list of examples, see [image metrics](examples/image_metrics.py) and 
  13. [Style score](https://openaccess.thecvf.com/content_cvpr_2016/html/Gatys_Image_Style_Transfer_CVPR_2016_paper.html)
  14. [Total Variation (TV)](https://en.wikipedia.org/wiki/Total_variation)
  15. [Visual Information Fidelity (VIF)](https://live.ece.utexas.edu/research/Quality/VIF.htm)
- 16. [Visual Saliency-induced Index (VSI)](https://ieeexplore.ieee.org/document/6873260) 
+ 16. [Visual Saliency-induced Index (VSI)](https://ieeexplore.ieee.org/document/6873260)
+ 17. [Spectral Residual based Similarity (SR-SIM)](https://ieeexplore.ieee.org/document/6467149)
 
 <!-- FEATURE METRICS -->
 ### Feature metrics
