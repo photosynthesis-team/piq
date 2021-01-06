@@ -108,7 +108,7 @@ def srsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     # Compute SR-SIM
     SVRS = similarity_map(svrs_x, svrs_y, C1)
     GM = similarity_map(grad_map_x, grad_map_y, C2)
-    svrs_max = torch.maximum(svrs_x, svrs_y)
+    svrs_max = torch.where(svrs_x > svrs_y, svrs_x, svrs_y)
     score = SVRS * (GM ** alpha) * svrs_max
 
     if chromatic:
@@ -156,12 +156,13 @@ def _spectral_residual_visual_saliency(x: torch.Tensor, scale: float = 0.25, ker
     # Downsize image
     in_img = imresize(x, scale=scale)
 
-    # Fourier transform (complex number)
-    imagefft = torch.view_as_complex(torch.rfft(in_img, 2, onesided=False))
+    # Fourier transform (use complex format [a,b] instead of a + ib
+    # because torch autograd does not support the latter)
+    imagefft = torch.rfft(in_img, 2, onesided=False)
 
-    # Compute log amplitude and angle of fourier transform
-    log_amplitude = torch.log(imagefft.abs() + eps)
-    phase = imagefft.angle()
+    # Compute log of absolute value and angle of fourier transform
+    log_amplitude = torch.log(imagefft.pow(2).sum(dim=-1).sqrt() + eps)
+    phase = torch.atan2(imagefft[..., 1], imagefft[..., 0] + eps)
 
     # Compute spectral residual using average filtering
     assert kernel_size%2==1 and gaussian_size%2==1, 'Kernel size must be odd'
@@ -178,9 +179,8 @@ def _spectral_residual_visual_saliency(x: torch.Tensor, scale: float = 0.25, ker
         kernel_size=kernel_size,
         stride=1)
     # Saliency map
-    saliency_map = torch.abs(torch.fft.ifftn(
-        torch.exp(spectral_residual) * (torch.cos(phase) + 1j * torch.sin(phase))
-        )) ** 2
+    compx = torch.stack((torch.exp(spectral_residual) * torch.cos(phase), torch.exp(spectral_residual) * torch.sin(phase)), -1)
+    saliency_map = torch.abs(torch.ifft(compx, 2)[..., 0]) ** 2
 
     # After effect for SR-SIM
     # Apply gaussian blur
@@ -266,11 +266,11 @@ class SRSIMLoss(_Loss):
         return 1 - torch.clamp(score, 0, 1)
 
 
-if __name__ == "__main__":
-    from skimage.io import imread
+# if __name__ == "__main__":
+#     from skimage.io import imread
 
-    # Greyscale images
-    goldhill = torch.Tensor(imread("temp/i01.bmp")).permute(2,0,1)
-    goldhill_jpeg = torch.Tensor(imread("temp/i01_01_5.bmp")).permute(2,0,1)
-    score = srsim(goldhill, goldhill_jpeg, data_range=255, chromatic=True, reduction='none')
-    print(score.numpy())
+#     # Greyscale images
+#     goldhill = torch.Tensor(imread("temp/i01.bmp")).permute(2,0,1)
+#     goldhill_jpeg = torch.Tensor(imread("temp/i01_01_5.bmp")).permute(2,0,1)
+#     score = srsim(goldhill, goldhill_jpeg, data_range=255, chromatic=False, reduction='none')
+#     print(score.numpy())

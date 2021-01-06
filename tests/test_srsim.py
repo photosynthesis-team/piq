@@ -64,24 +64,6 @@ def test_srsim_chromatic(device: str) -> None:
                                                           f'got diff{predicted_score - target_score}'
 
 # ================== Test class: `srsimLoss` =================
-# def test_fsim_loss_reduction(prediction: torch.Tensor, target: torch.Tensor) -> None:
-#     loss = SRSIMLoss(reduction='mean')
-#     measure = loss(prediction, target)
-#     assert measure.dim() == 0, f'FSIM with `mean` reduction must return 1 number, got {len(measure)}'
-
-#     loss = SRSIMLoss(reduction='sum')
-#     measure = loss(prediction, target)
-#     assert measure.dim() == 0, f'FSIM with `mean` reduction must return 1 number, got {len(measure)}'
-
-#     loss = SRSIMLoss(reduction='none')
-#     measure = loss(prediction, target)
-#     assert len(measure) == prediction.size(0), \
-#         f'FSIM with `none` reduction must have length equal to number of images, got {len(measure)}'
-
-#     loss = SRSIMLoss(reduction='random string')
-#     with pytest.raises(KeyError):
-#         loss(prediction, target)
-
 def test_srsim_loss(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
     prediction, target = input_tensors
     prediction.requires_grad_()
@@ -90,11 +72,10 @@ def test_srsim_loss(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: st
     assert torch.isfinite(prediction.grad).all(), \
         f'Expected finite gradient values after back propagation, got {prediction.grad}'
 
-
-# def test_srsim_loss_zero_for_equal_input(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
-#     prediction, _ = input_tensors
-#     target = prediction.clone()
-#     prediction.requires_grad_()
-#     loss = SRSIMLoss(data_range=1.)(prediction.to(device), target.to(device))
-#     assert torch.isclose(loss, torch.zeros_like(loss)), \
-#         f'Expected loss equals zero for identical inputs, got {loss}'
+def test_srsim_loss_zero_for_equal_input(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
+    prediction, _ = input_tensors
+    target = prediction.clone()
+    prediction.requires_grad_()
+    loss = SRSIMLoss(data_range=1.)(prediction.to(device), target.to(device))
+    assert torch.isclose(loss, torch.zeros_like(loss)), \
+        f'Expected loss equals zero for identical inputs, got {loss}'
