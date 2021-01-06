@@ -37,29 +37,74 @@ def test_srsim_zeros_ones_inputs(device: str) -> None:
     assert torch.isfinite(srsim_zeros_ones).all(), \
         f'Expected finite value for zeros and ones tensos, got {srsim_zeros_ones}'
 
+def test_ssim_raises_if_bigger_kernel(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
+    # kernels bigger than image * scale
+    prediction = torch.rand(1, 3, 50, 50, device=device)
+    target = torch.rand(1, 3, 50, 50, device=device)
+    with pytest.raises(ValueError):
+        srsim(prediction, target, kernel_size=15)
+    with pytest.raises(ValueError):
+        srsim(prediction, target, gaussian_size=15)
+    assert torch.isfinite(srsim(prediction, target, kernel_size=15, scale=0.5)).all()
+    assert torch.isfinite(srsim(prediction, target, gaussian_size=15, scale=0.5)).all()
+    assert torch.isfinite(srsim(prediction, target)).all()
+
+def test_srsim_supports_different_data_ranges(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+    prediction_255 = (prediction * 255).type(torch.uint8)
+    target_255 = (target * 255).type(torch.uint8)
+    measure_255 = srsim(prediction_255.to(device), target_255.to(device), data_range=255)
+    measure = srsim((prediction_255 / 255.).to(device), (target_255 / 255.).to(device))
+
+    diff = torch.abs(measure_255 - measure)
+    assert diff <= 1e-6, f'Result for same tensor with different data_range should be the same, got {diff}'
+
+def test_srsim_modes(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+    for reduction in ['mean', 'sum', 'none']:
+        srsim(prediction.to(device), target.to(device), reduction=reduction)
+
+    for reduction in ['DEADBEEF', 'random']:
+        with pytest.raises(KeyError):
+            srsim(prediction.to(device), target.to(device), reduction=reduction)
 
 def test_srsim_compare_with_matlab(device: str) -> None:
     # Greyscale image
     prediction = torch.tensor(imread('tests/assets/goldhill.gif'))
     target = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'))
-    predicted_score = srsim(prediction.to(device), target.to(device), data_range=255, reduction='none')
+    # odd kernel (exactly same as matlab)
+    predicted_score = srsim(prediction.to(device), target.to(device), gaussian_size=9, data_range=255, reduction='none')
     target_score = torch.tensor([0.94623509]).to(predicted_score) # from matlab code
     assert torch.allclose(predicted_score, target_score), f'Expected result similar to MATLAB,' \
+                                                          f'got diff{predicted_score - target_score}'
+    # even kernel (a bit different as matlab)
+    predicted_score = srsim(prediction.to(device), target.to(device), data_range=255, reduction='none')
+    target_score = torch.tensor([0.94652679]).to(predicted_score) # from matlab code
+    assert torch.allclose(predicted_score, target_score, rtol=2e-05), f'Expected result similar to MATLAB,' \
                                                           f'got diff{predicted_score - target_score}'
     # RBG image
     prediction = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1)
     target = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1)
-    predicted_score = srsim(prediction.to(device), target.to(device), data_range=255, reduction='none')
+    # odd kernel (exactly same as matlab)
+    predicted_score = srsim(prediction.to(device), target.to(device), gaussian_size=9, data_range=255, reduction='none')
     target_score = torch.tensor([0.96667468]).to(predicted_score) # from matlab code
     assert torch.allclose(predicted_score, target_score), f'Expected result similar to MATLAB,' \
                                                           f'got diff{predicted_score - target_score}'
+    # even kernel (a bit different as matlab)
+    predicted_score = srsim(prediction.to(device), target.to(device), data_range=255, reduction='none')
+    target_score = torch.tensor([0.9659730]).to(predicted_score) # from matlab code
+    assert torch.allclose(predicted_score, target_score, rtol=2e-05), f'Expected result similar to MATLAB,' \
+                                                          f'got diff{predicted_score - target_score}'
 
 def test_srsim_chromatic(device: str) -> None:
+    # Greyscale image
+    prediction = torch.tensor(imread('tests/assets/goldhill.gif'))
+    target = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'))
+    with pytest.raises(ValueError):
+        srsim(prediction.to(device), target.to(device), data_range=255, chromatic=True, reduction='none')
     # RBG image
     prediction = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1)
     target = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1)
     predicted_score = srsim(prediction.to(device), target.to(device), data_range=255, chromatic=True, reduction='none')
-    target_score = torch.tensor([0.9553047]).to(predicted_score)
+    target_score = torch.tensor([0.9546513]).to(predicted_score)
     assert torch.allclose(predicted_score, target_score), f'Expected result for chromatic version,' \
                                                           f'got diff{predicted_score - target_score}'
 

@@ -17,16 +17,12 @@ from torch.nn.modules.loss import _Loss
 from piq.utils import _adjust_dimensions, _validate_input
 from piq.functional import ifftshift, get_meshgrid, similarity_map, gradient_map, \
                             scharr_filter, gaussian_filter, rgb2yiq, imresize
-from sklearn.metrics import mean_absolute_error
-import cv2
-import numpy as np
-from scipy import ndimage, signal
-from numpy.fft import fft2, ifft2
+
 
 def srsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
          data_range: Union[int, float] = 1.0, chromatic: bool = False,
          scale: float = 0.25, kernel_size: int = 3, sigma: float = 3.8,
-         gaussian_size: int = 9) -> torch.Tensor:
+         gaussian_size: int = 10) -> torch.Tensor:
     r"""Compute Spectral Residual based Similarity for a batch of images.
 
     Args:
@@ -84,6 +80,8 @@ def srsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         y_q = y_yiq[:, 2:]
 
     else:
+        if chromatic:
+            raise ValueError('Chromatic component can be computed only for RGB images!')
         x_lum = x
         y_lum = y
 
@@ -112,8 +110,6 @@ def srsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     score = SVRS * (GM ** alpha) * svrs_max
 
     if chromatic:
-        assert x.size(1) == 3, "Chromatic component can be computed only for RGB images!"
-
         # Constants from FSIM paper, use same method for color image
         T3, T4, lmbda = 200, 200, 0.03
 
@@ -135,7 +131,7 @@ def srsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
 
 
 def _spectral_residual_visual_saliency(x: torch.Tensor, scale: float = 0.25, kernel_size: int = 3,
-                      sigma: float = 3.8, gaussian_size: int = 9) -> torch.Tensor:
+                      sigma: float = 3.8, gaussian_size: int = 10) -> torch.Tensor:
     r"""Compute Spectral Residual Visual Saliency
     Credits X. Hou and L. Zhang, CVPR 07, 2007
     Reference:
@@ -152,6 +148,10 @@ def _spectral_residual_visual_saliency(x: torch.Tensor, scale: float = 0.25, ker
 
     """
     eps = torch.finfo(x.dtype).eps
+    for kernel in kernel_size, gaussian_size:
+        if x.size(-1)*scale < kernel or x.size(-2)*scale < kernel:
+            raise ValueError(f'Kernel size can\'t be greater than actual input size. Input size: {x.size()} x {scale}. '
+                            f'Kernel size: {kernel}')
 
     # Downsize image
     in_img = imresize(x, scale=scale)
@@ -165,7 +165,6 @@ def _spectral_residual_visual_saliency(x: torch.Tensor, scale: float = 0.25, ker
     phase = torch.atan2(imagefft[..., 1], imagefft[..., 0] + eps)
 
     # Compute spectral residual using average filtering
-    assert kernel_size%2==1 and gaussian_size%2==1, 'Kernel size must be odd'
     padding = kernel_size // 2
     if padding:
         up_pad = (kernel_size - 1) // 2
@@ -174,17 +173,22 @@ def _spectral_residual_visual_saliency(x: torch.Tensor, scale: float = 0.25, ker
         spectral_residual = F.pad(log_amplitude, pad=pad_to_use, mode='replicate') # replicate padding before average filtering
     else:
         spectral_residual = log_amplitude
-    spectral_residual = log_amplitude - F.avg_pool2d(
-        spectral_residual,
-        kernel_size=kernel_size,
-        stride=1)
+
+    spectral_residual = log_amplitude - F.avg_pool2d(spectral_residual, kernel_size=kernel_size, stride=1)
     # Saliency map
-    compx = torch.stack((torch.exp(spectral_residual) * torch.cos(phase), torch.exp(spectral_residual) * torch.sin(phase)), -1)
+    compx = torch.stack(( # representation of complex exp(spectral_residual + j * phase)
+        torch.exp(spectral_residual) * torch.cos(phase),
+        torch.exp(spectral_residual) * torch.sin(phase)), -1)
     saliency_map = torch.abs(torch.ifft(compx, 2)[..., 0]) ** 2
 
     # After effect for SR-SIM
     # Apply gaussian blur
-    kernel = gaussian_filter(gaussian_size, sigma).view(1, 1, gaussian_size, gaussian_size).to(saliency_map)
+    kernel = gaussian_filter(gaussian_size, sigma)
+    if gaussian_size%2==0: # matlab pads upper and lower borders with 0s for even kernels
+        kernel = torch.cat((torch.zeros(1, 1, gaussian_size), kernel), 1)
+        kernel = torch.cat((torch.zeros(1, gaussian_size+1, 1), kernel), 2)
+        gaussian_size += 1
+    kernel = kernel.view(1, 1, gaussian_size, gaussian_size).to(saliency_map)
     saliency_map = F.conv2d(saliency_map, kernel, padding=(gaussian_size-1)//2)
 
     # normalize between [0, 1]
@@ -234,7 +238,7 @@ class SRSIMLoss(_Loss):
         """
     def __init__(self, reduction: str = 'mean', data_range: Union[int, float] = 1., chromatic: bool = False,
                  scale: float = 0.25, kernel_size: int = 3, sigma: float = 3.8,
-                 gaussian_size: int = 9) -> None:
+                 gaussian_size: int = 10) -> None:
         super().__init__()
         self.data_range = data_range
         self.reduction = reduction
@@ -264,13 +268,3 @@ class SRSIMLoss(_Loss):
 
         # Make sure value to be in [0, 1] range and convert to loss
         return 1 - torch.clamp(score, 0, 1)
-
-
-# if __name__ == "__main__":
-#     from skimage.io import imread
-
-#     # Greyscale images
-#     goldhill = torch.Tensor(imread("temp/i01.bmp")).permute(2,0,1)
-#     goldhill_jpeg = torch.Tensor(imread("temp/i01_01_5.bmp")).permute(2,0,1)
-#     score = srsim(goldhill, goldhill_jpeg, data_range=255, chromatic=False, reduction='none')
-#     print(score.numpy())
