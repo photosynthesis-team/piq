@@ -169,12 +169,9 @@ def test_lpips_loss_forward_for_special_cases(
         prediction: torch.Tensor, target: torch.Tensor, expectation: Any, value: float) -> None:
     loss = LPIPS()
     with expectation:
-        if value is None:
-            loss(prediction, target)
-        else:
-            loss_value = loss(prediction, target)
-            assert torch.isclose(loss_value, torch.tensor(value), atol=1e-6), \
-                f'Expected loss value to be equal to target value. Got {loss_value} and {value}'
+        loss_value = loss(prediction, target)
+        assert torch.isclose(loss_value, torch.tensor(value), atol=1e-6), \
+            f'Expected loss value to be equal to target value. Got {loss_value} and {value}'
 
 
 # ================== Test class: `DISTS` ==================
@@ -201,12 +198,9 @@ def test_dists_loss_forward_for_special_cases(
         prediction: torch.Tensor, target: torch.Tensor, expectation: Any, value: float) -> None:
     loss = DISTS()
     with expectation:
-        if value is None:
-            loss(prediction, target)
-        else:
-            loss_value = loss(prediction, target)
-            assert torch.isclose(loss_value, torch.tensor(value), atol=1e-6), \
-                f'Expected loss value to be equal to target value. Got {loss_value} and {value}'
+        loss_value = loss(prediction, target)
+        assert torch.isclose(loss_value, torch.tensor(value), atol=1e-6), \
+            f'Expected loss value to be equal to target value. Got {loss_value} and {value}'
 
 
 def test_dists_simmilar_to_official_implementation() -> None:
