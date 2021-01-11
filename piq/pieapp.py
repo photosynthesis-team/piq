@@ -115,7 +115,7 @@ class PieAPP(_Loss):
 
     """
     # TODO(zakajd) 10/12/2020: Load weights to release and change this link
-    _weights_url = "https://web.ece.ucsb.edu/~ekta/projects/PieAPPv0.1/weights/PieAPPv0.1.pth"
+    _weights_url = "https://github.com/photosynthesis-team/piq/releases/download/v0.5.2/PieAPPv0.1.pth"
 
     def __init__(
         self,
