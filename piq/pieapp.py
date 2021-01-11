@@ -17,8 +17,7 @@ from piq.functional import crop_patches
 
 
 class PieAPPModel(nn.Module):
-    """Model used for PieAPP score computation
-    """
+    r""" Model used for PieAPP score computation """
     # Base feature size, which is multiplied by 2 every 2 blocks
     FEATURES = 64
     
@@ -40,6 +39,10 @@ class PieAPPModel(nn.Module):
         self.conv10 = nn.Conv2d(self.FEATURES * 4, self.FEATURES * 8, kernel_size=3, padding=1)
         self.conv11 = nn.Conv2d(self.FEATURES * 8, self.FEATURES * 8, kernel_size=3, padding=1)
 
+        # TODO: Reconsider this (hardcoded) implementation as soon as dataset used for PieAPP model training is released
+        # Check out project repo: https://github.com/prashnani/PerceptualImageError
+        # and project web site http://civc.ucsb.edu/graphics/Papers/CVPR2018_PieAPP/
+        # for updates on that.
         self.fc1_score = nn.Linear(in_features=120832, out_features=512, bias=True)
         self.fc2_score = nn.Linear(in_features=512, out_features=1, bias=True)
         self.fc1_weight = nn.Linear(in_features=2048, out_features=512)
@@ -76,7 +79,8 @@ class PieAPPModel(nn.Module):
         features = torch.cat((self.flatten(x3), self.flatten(x5), self.flatten(x7), self.flatten(x9), x11), dim=1)
         return features, x11
 
-    def compute_difference(self, features_diff, weights_diff):
+    def compute_difference(self, features_diff: torch.Tensor, weights_diff: torch.Tensor) \
+            -> Tuple[torch.Tensor, torch.Tensor]:
         r"""
         Args:
             features_diff: Tensor of shape (N, C_1)
@@ -114,7 +118,6 @@ class PieAPP(_Loss):
         .. [2] https://github.com/prashnani/PerceptualImageError
 
     """
-    # TODO(zakajd) 10/12/2020: Load weights to release and change this link
     _weights_url = "https://github.com/photosynthesis-team/piq/releases/download/v0.5.2/PieAPPv0.1.pth"
 
     def __init__(
@@ -143,7 +146,9 @@ class PieAPP(_Loss):
         self.enable_grad = enable_grad
 
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        r"""Computation of PieAPP  between feature representations of prediction and target tensors.
+        r"""
+        Computation of PieAPP  between feature representations of prediction and target tensors.
+
         Args:
             prediction: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
             target: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
@@ -182,6 +187,7 @@ class PieAPP(_Loss):
         
         Returns:
             features: List of features extracted from intermediate layers
+            weights
         """
         # Rescale to [0, 255] range on which models was trained
         x = (x / float(self.data_range)) * 255
@@ -189,4 +195,5 @@ class PieAPP(_Loss):
 
         with torch.autograd.set_grad_enabled(self.enable_grad):
             features, weights = self.model(x_patches)
+
         return features, weights
