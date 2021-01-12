@@ -1,5 +1,6 @@
 r"""Filters for gradient computation, bluring, etc."""
 import torch
+import numpy as np
 
 
 def haar_filter(kernel_size: int) -> torch.Tensor:
@@ -40,6 +41,16 @@ def gaussian_filter(kernel_size: int, sigma: float) -> torch.Tensor:
 
     g /= g.sum()
     return g.unsqueeze(0)
+
+
+def binomial_filter(kernel_size: int) -> torch.Tensor:
+    r"""Creates 2D normalized binomial filter
+    Returns:
+        kernel: Tensor with shape (1, kernel_size, kernel_size)
+    """
+    window = np.poly1d([0.5, 0.5]) ** (kernel_size - 1)
+    kernel = window.c[:, None] * window.c[None, :]
+    return torch.tensor(kernel).view(1, kernel_size, kernel_size)
 
 
 # Gradient operator kernels
