@@ -70,7 +70,7 @@ msid_metric = MSID()
 msid: torch.Tensor = msid_metric(prediction_feats, target_feats)
 ```
 
-For a full list of examples, see [image metrics](examples/image_metrics.py) and [feature metrics](examples/feature_metrics.py) examles.
+For a full list of examples, see [image metrics](examples/image_metrics.py) and [feature metrics](examples/feature_metrics.py) examples.
 
 <!-- IMAGE METRICS -->
 ### Image metrics
@@ -86,11 +86,12 @@ For a full list of examples, see [image metrics](examples/image_metrics.py) and 
  9. [Multi-Scale Structural Similarity (MS-SSIM)](https://ieeexplore.ieee.org/document/1292216)
  10. [Multi-Scale Gradient Magnitude Similarity Deviation (MS-GMSD)](http://www.cse.ust.hk/~psander/docs/gradsim.pdf)
  11. [Peak Signal-to-Noise Ratio (PSNR)](https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio)
- 12. [Structural Similarity (SSIM)](https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf)
- 13. [Style score](https://openaccess.thecvf.com/content_cvpr_2016/html/Gatys_Image_Style_Transfer_CVPR_2016_paper.html)
- 14. [Total Variation (TV)](https://en.wikipedia.org/wiki/Total_variation)
- 15. [Visual Information Fidelity (VIF)](https://live.ece.utexas.edu/research/Quality/VIF.htm)
- 16. [Visual Saliency-induced Index (VSI)](https://ieeexplore.ieee.org/document/6873260) 
+ 12. [Perceptual Image-Error Assessment through Pairwise Preference (PieAPP)](https://arxiv.org/abs/1806.02067)
+ 13. [Structural Similarity (SSIM)](https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf)
+ 14. [Style score](https://openaccess.thecvf.com/content_cvpr_2016/html/Gatys_Image_Style_Transfer_CVPR_2016_paper.html)
+ 15. [Total Variation (TV)](https://en.wikipedia.org/wiki/Total_variation)
+ 16. [Visual Information Fidelity (VIF)](https://live.ece.utexas.edu/research/Quality/VIF.htm)
+ 17. [Visual Saliency-induced Index (VSI)](https://ieeexplore.ieee.org/document/6873260) 
 
 <!-- FEATURE METRICS -->
 ### Feature metrics
