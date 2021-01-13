@@ -59,9 +59,9 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         raise ValueError(f'Kernel size can\'t be greater than actual input size. Input size: {x.size()}. '
                          f'Kernel size: {kernel_size}')
 
-    # Scale images to [0, 255] range as in the paper
-    x = x / float(data_range) * 255
-    y = y / float(data_range) * 255
+    # Rescale images
+    x = x / data_range * 255
+    y = y / data_range * 255
 
     num_channels = x.size(1)
     # Convert RGB to YIQ color space https://en.wikipedia.org/wiki/YIQ

@@ -55,8 +55,8 @@ def mdsi(prediction: torch.Tensor, target: torch.Tensor, data_range: Union[int, 
         warnings.warn('The original MDSI supports only RGB images. The input images were converted to RGB by copying '
                       'the grey channel 3 times.')
 
-    prediction = prediction / float(data_range) * 255
-    target = target / float(data_range) * 255
+    prediction = prediction / data_range * 255
+    target = target / data_range * 255
 
     # Averaging image if the size is large enough
     kernel_size = max(1, round(min(prediction.size()[-2:]) / 256))

@@ -51,7 +51,7 @@ def brisque(x: torch.Tensor,
     _validate_input(input_tensors=x, allow_5d=False, kernel_size=kernel_size, data_range=data_range)
     x = _adjust_dimensions(input_tensors=x)
 
-    x = x / float(data_range) * 255
+    x = x / data_range * 255
 
     if x.size(1) == 3:
         x = rgb2yiq(x)[:, :1]
