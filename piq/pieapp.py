@@ -101,7 +101,7 @@ class PieAPP(_Loss):
     r"""
     Implementation of Perceptual Image-Error Assessment through Pairwise Preference.
     
-    Expects input to be in range [0, 1] with no normalization and RGB channel order.
+    Expects input to be in range [0, `data_range`] with no normalization and RGB channel order.
     Input images are croped into smaller patches. Score for each individual image is mean of it's patch scores.
 
     Args:
@@ -153,10 +153,15 @@ class PieAPP(_Loss):
             prediction: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
             target: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
         """
-        _validate_input(input_tensors=(prediction, target), allow_5d=False, allow_negative=True)
+        _validate_input(
+            input_tensors=(prediction, target), allow_5d=False, allow_negative=True, data_range=self.data_range)
         prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
 
-        N, C, _, _ = prediction.shape
+        N, _, _, _ = prediction.shape
+
+        # Rescale
+        prediction = prediction / self.data_range
+        target = target / self.data_range
 
         self.model.to(device=prediction.device)
         prediction_features, prediction_weights = self.get_features(prediction)
