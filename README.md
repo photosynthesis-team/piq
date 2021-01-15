@@ -146,17 +146,11 @@ Please see the [contribution guide](CONTRIBUTING.md) for more information.
 
 
 <!-- CONTACT -->
-#### Contact
+#### Contacts
 
-**Sergey Kastryulin** - [@snk4tr](https://github.com/snk4tr) - `snk4tr@gmail.com`
-
-<!-- ACKNOWLEDGEMENTS -->
-#### Acknowledgements
-
-* **Pavel Parunin** - [@PavelParunin](https://github.com/ParuninPavel) - idea proposal and development
-* **Djamil Zakirov** - [@zakajd](https://github.com/zakajd) - development
-* **Denis Prokopenko** - [@denproc](https://github.com/denproc) - development
-
+**Sergey Kastryulin** - [@snk4tr](https://github.com/snk4tr) - `snk4tr@gmail.com`  
+**Djamil Zakirov** - [@zakajd](https://github.com/zakajd) - `djamilzak@gmail.com`  
+**Denis Prokopenko** - [@denproc](https://github.com/denproc) - `d.prokopenko@outlook.com`
 
 
 <!-- MARKDOWN LINKS & IMAGES -->
