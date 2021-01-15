@@ -61,10 +61,10 @@ def test_pieapp_simmilar_to_official_implementation() -> None:
 def test_pieapp_supports_different_data_ranges(
         input_tensors: Tuple[torch.Tensor, torch.Tensor], data_range, device: str) -> None:
     x, y = input_tensors
-    x_scaled = (x * data_range).type(torch.uint8)
-    y_scaled = (y * data_range).type(torch.uint8)
+    x_scaled = x * data_range
+    y_scaled = y * data_range
 
-    measure_scaled = PieAPP(data_range=255, stride=27)(x_scaled.to(device), y_scaled.to(device))
+    measure_scaled = PieAPP(data_range=data_range, stride=27)(x_scaled.to(device), y_scaled.to(device))
     measure = PieAPP(data_range=1.0, stride=27)(
         x_scaled.to(device) / data_range,
         y_scaled.to(device) / data_range,
