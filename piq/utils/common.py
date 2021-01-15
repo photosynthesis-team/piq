@@ -30,7 +30,8 @@ def _validate_input(
         allow_5d: bool,
         allow_negative: bool = False,
         kernel_size: Optional[int] = None,
-        scale_weights: Union[Optional[Tuple[float]], Optional[List[float]], Optional[torch.Tensor]] = None) -> None:
+        scale_weights: Union[Optional[Tuple[float]], Optional[List[float]], Optional[torch.Tensor]] = None,
+        data_range: Optional[Union[float, int]] = None) -> None:
 
     if isinstance(input_tensors, torch.Tensor):
         input_tensors = (input_tensors,)
@@ -48,6 +49,9 @@ def _validate_input(
             assert torch.all(tensor >= 0), 'All tensor values should be greater or equal than 0'
         if tensor.dim() == 5:
             assert tensor.size(-1) == 2, f'Expected Complex 5D tensor with (N, C, H, W, 2) size, got {tensor.size()}'
+        if data_range is not None:
+            assert data_range >= tensor.max(), \
+                f'Data range should be greater or equal to maximum tensor value, got {data_range} and {tensor.max()}.'
 
     if len(input_tensors) == 2:
         assert input_tensors[0].size() == input_tensors[1].size(), \

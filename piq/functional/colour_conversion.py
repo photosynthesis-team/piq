@@ -95,7 +95,7 @@ def rgb2lab(x: torch.Tensor, data_range: Union[int, float] = 255) -> torch.Tenso
     Returns:
         Batch of images with shape (N, 3, H, W). LAB colour space.
     """
-    return xyz2lab(rgb2xyz(x / float(data_range)))
+    return xyz2lab(rgb2xyz(x / data_range))
 
 
 def rgb2yiq(x: torch.Tensor) -> torch.Tensor:

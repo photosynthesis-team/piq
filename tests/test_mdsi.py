@@ -46,6 +46,33 @@ def test_mdsi_combination(input_tensors: Tuple[torch.Tensor, torch.Tensor], devi
             mdsi(prediction=prediction.to(device), target=target.to(device), data_range=1., combination=combination)
 
 
+@pytest.mark.parametrize(
+    "data_range", [128, 255],
+)
+def test_mdsi_supports_different_data_ranges(
+        input_tensors: Tuple[torch.Tensor, torch.Tensor], data_range, device: str) -> None:
+    prediction, target = input_tensors
+    prediction_scaled = (prediction * data_range).type(torch.uint8)
+    target_scaled = (target * data_range).type(torch.uint8)
+
+    measure_scaled = mdsi(prediction_scaled.to(device), target_scaled.to(device), data_range=data_range)
+    measure = mdsi(
+        prediction_scaled.to(device) / float(data_range),
+        target_scaled.to(device) / float(data_range),
+        data_range=1.0
+    )
+    diff = torch.abs(measure_scaled - measure)
+    assert diff <= 1e-6, f'Result for same tensor with different data_range should be the same, got {diff}'
+
+
+def test_mdsi_fails_for_incorrect_data_range(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+    # Scale to [0, 255]
+    prediction_scaled = (prediction * 255).type(torch.uint8)
+    target_scaled = (target * 255).type(torch.uint8)
+    with pytest.raises(AssertionError):
+        mdsi(prediction_scaled.to(device), target_scaled.to(device), data_range=1.0)
+        
+
 @pytest.mark.parametrize("combination", ['sum', 'mult'])
 def test_mdsi_compare_with_matlab(input_images_score: Tuple[torch.Tensor, torch.Tensor, torch.Tensor],
                                   combination: str, device: str) -> None:

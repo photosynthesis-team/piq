@@ -25,7 +25,7 @@ def psnr(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1.0,
     References:
         https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio
     """
-    _validate_input((x, y), allow_5d=False)
+    _validate_input((x, y), allow_5d=False, data_range=data_range)
     x, y = _adjust_dimensions(input_tensors=(x, y))
 
     # Constant for numerical stability
