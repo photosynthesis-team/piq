@@ -1,5 +1,6 @@
 import torch
 import pytest
+from typing import Tuple
 from skimage.metrics import peak_signal_noise_ratio
 
 from piq import psnr
@@ -16,47 +17,43 @@ def target() -> torch.Tensor:
 
 
 # ================== Test function: `psnr` ==================
-def test_psnr_works_for_colour_images(prediction: torch.Tensor, target: torch.Tensor) -> None:
-    psnr(prediction, target, data_range=1.0)
+def test_psnr(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
+    prediction, target = input_tensors
+    psnr(prediction.to(device), target.to(device), data_range=1.0)
 
 
-@pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test if there is no GPU.')
-def test_psnr_works_for_colour_images_on_gpu(prediction: torch.Tensor, target: torch.Tensor) -> None:
-    prediction = prediction.cuda()
-    target = target.cuda()
-    psnr(prediction, target, data_range=1.0)
+@pytest.mark.parametrize(
+    "data_range", [128, 255],
+)
+def test_psnr_supports_different_data_ranges(
+        input_tensors: Tuple[torch.Tensor, torch.Tensor], data_range, device: str) -> None:
+    prediction, target = input_tensors
+    prediction_scaled = (prediction * data_range).type(torch.uint8)
+    target_scaled = (target * data_range).type(torch.uint8)
+
+    measure_scaled = psnr(prediction_scaled.to(device), target_scaled.to(device), data_range=data_range)
+    measure = psnr(
+        prediction_scaled.to(device) / float(data_range),
+        target_scaled.to(device) / float(data_range),
+        data_range=1.0
+    )
+    diff = torch.abs(measure_scaled - measure)
+    assert diff <= 1e-6, f'Result for same tensor with different data_range should be the same, got {diff}'
 
 
-def test_psnr_works_for_greyscale_images() -> None:
-    prediction = torch.rand(4, 1, 256, 256)
-    target = torch.rand(4, 1, 256, 256)
-    psnr(prediction, target, data_range=1.0)
-
-
-@pytest.mark.skipif(not torch.cuda.is_available(), reason='No need to run test if there is no GPU.')
-def test_psnr_works_for_greyscale_images_on_gpu() -> None:
-    prediction = torch.rand(4, 1, 256, 256).cuda()
-    target = torch.rand(4, 1, 256, 256).cuda()
-    psnr(prediction, target, data_range=1.0)
-
-
+def test_psnr_fails_for_incorrect_data_range(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+    # Scale to [0, 255]
+    prediction_scaled = (prediction * 255).type(torch.uint8)
+    target_scaled = (target * 255).type(torch.uint8)
+    with pytest.raises(AssertionError):
+        psnr(prediction_scaled.to(device), target_scaled.to(device), data_range=1.0)
+        
+        
 def test_psnr_works_for_zero_tensors() -> None:
     prediction = torch.zeros(4, 3, 256, 256)
     target = torch.zeros(4, 3, 256, 256)
     measure = psnr(prediction, target, data_range=1.0)
     assert torch.isclose(measure, torch.tensor(80.))
-
-
-def test_psnr_works_for_3d_tensors() -> None:
-    prediction = torch.rand(3, 256, 256)
-    target = torch.rand(3, 256, 256)
-    psnr(prediction, target, data_range=1.0)
-
-
-def test_psnr_works_for_2d_tensors() -> None:
-    prediction = torch.rand(256, 256)
-    target = torch.rand(256, 256)
-    psnr(prediction, target, data_range=1.0)
 
 
 def test_psnr_big_for_identical_images(prediction: torch.Tensor) -> None:

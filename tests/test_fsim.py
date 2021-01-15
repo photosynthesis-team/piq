@@ -75,6 +75,31 @@ def test_fsim_for_special_cases(x: torch.Tensor, y: torch.Tensor, expectation: A
                 f'Expected loss value to be equal to target value. Got {score} and {value}'
 
 
+@pytest.mark.parametrize(
+    "data_range", [128, 255],
+)
+def test_fsim_supports_different_data_ranges(
+        prediction: torch.Tensor, target: torch.Tensor, data_range, device: str) -> None:
+    prediction_scaled = (prediction * data_range).type(torch.uint8)
+    target_scaled = (target * data_range).type(torch.uint8)
+    measure_scaled = fsim(prediction_scaled.to(device), target_scaled.to(device), data_range=data_range)
+    measure = fsim(
+        prediction_scaled.to(device) / float(data_range),
+        target_scaled.to(device) / float(data_range),
+        data_range=1.0
+    )
+    diff = torch.abs(measure_scaled - measure)
+    assert diff <= 1e-5, f'Result for same tensor with different data_range should be the same, got {diff}'
+
+
+def test_fsim_fails_for_incorrect_data_range(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+    # Scale to [0, 255]
+    prediction_scaled = (prediction * 255).type(torch.uint8)
+    target_scaled = (target * 255).type(torch.uint8)
+    with pytest.raises(AssertionError):
+        fsim(prediction_scaled.to(device), target_scaled.to(device), data_range=1.0)
+        
+
 def test_fsim_simmular_to_matlab_implementation():
     # Greyscale images
     goldhill = torch.tensor(imread('tests/assets/goldhill.gif'))

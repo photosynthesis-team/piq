@@ -58,8 +58,8 @@ def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
                       'the grey channel 3 times.')
 
     # Scale to [0, 255] range to match scale of constant
-    prediction = prediction * 255. / float(data_range)
-    target = target * 255. / float(data_range)
+    prediction = prediction * 255. / data_range
+    target = target * 255. / data_range
 
     vs_prediction = sdsp(prediction, data_range=255, omega_0=omega_0,
                          sigma_f=sigma_f, sigma_d=sigma_d, sigma_c=sigma_c)
@@ -209,7 +209,7 @@ def sdsp(x: torch.Tensor, data_range: Union[int, float] = 255, omega_0: float = 
     Returns:
         torch.Tensor: Visual saliency map
     """
-    x = x * 255. / float(data_range)
+    x = x / data_range * 255
     size = x.size()
     size_to_use = (256, 256)
     x = interpolate(input=x, size=size_to_use, mode='bilinear', align_corners=False)

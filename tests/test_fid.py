@@ -66,7 +66,7 @@ def test_compute_feats(device: str) -> None:
     )
     fid = FID()
     model = InceptionV3()
-    fid._compute_feats(loader, model, device=device)
+    fid.compute_feats(loader, model, device=device)
 
 
 @pytest.mark.parametrize("input_range,normalize_input,expectation",
@@ -86,4 +86,4 @@ def test_inception_input_range(input_range, normalize_input, expectation) -> Non
         )
         fid = FID()
         model = InceptionV3(normalize_input=normalize_input)
-        fid._compute_feats(loader, model, device='cpu')
+        fid.compute_feats(loader, model, device='cpu')
