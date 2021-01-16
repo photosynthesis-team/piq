@@ -5,6 +5,7 @@ References:
     (2018). PieAPP: Perceptual Image-Error Assessment through Pairwise Preference
     https://arxiv.org/abs/1806.02067
 """
+import warnings
 from typing import Union, Tuple
 
 import torch
@@ -101,7 +102,7 @@ class PieAPP(_Loss):
     r"""
     Implementation of Perceptual Image-Error Assessment through Pairwise Preference.
     
-    Expects input to be in range [0, 1] with no normalization and RGB channel order.
+    Expects input to be in range [0, `data_range`] with no normalization and RGB channel order.
     Input images are croped into smaller patches. Score for each individual image is mean of it's patch scores.
 
     Args:
@@ -153,10 +154,16 @@ class PieAPP(_Loss):
             prediction: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
             target: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
         """
-        _validate_input(input_tensors=(prediction, target), allow_5d=False, allow_negative=True)
+        _validate_input(
+            input_tensors=(prediction, target), allow_5d=False, allow_negative=True, data_range=self.data_range)
         prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
 
         N, C, _, _ = prediction.shape
+        if C == 1:
+            prediction = prediction.repeat(1, 3, 1, 1)
+            target = target.repeat(1, 3, 1, 1)
+            warnings.warn('The original PieAPP supports only RGB images.'
+                          'The input images were converted to RGB by copying the grey channel 3 times.')
 
         self.model.to(device=prediction.device)
         prediction_features, prediction_weights = self.get_features(prediction)
@@ -190,7 +197,7 @@ class PieAPP(_Loss):
             weights
         """
         # Rescale to [0, 255] range on which models was trained
-        x = (x / float(self.data_range)) * 255
+        x = x / self.data_range * 255
         x_patches = crop_patches(x, size=64, stride=self.stride)
 
         with torch.autograd.set_grad_enabled(self.enable_grad):

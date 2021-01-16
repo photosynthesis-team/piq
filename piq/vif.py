@@ -52,16 +52,15 @@ def vif_p(prediction: torch.Tensor, target: torch.Tensor, sigma_n_sq: float = 2.
         See https://live.ece.utexas.edu/research/Quality/VIF.htm for details.
         
     """
-    _validate_input((prediction, target), allow_5d=False)
+    _validate_input((prediction, target), allow_5d=False, data_range=data_range)
     prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
 
     min_size = 41
     if prediction.size(-1) < min_size or prediction.size(-2) < min_size:
         raise ValueError(f'Invalid size of the input images, expected at least {min_size}x{min_size}.')
 
-    if data_range == 255:
-        prediction = prediction / 255.
-        target = target / 255.
+    prediction = prediction / data_range
+    target = target / data_range
 
     # Convert RGB image to YCbCr and take luminance: Y = 0.299 R + 0.587 G + 0.114 B
     num_channels = prediction.size(1)
