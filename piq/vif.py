@@ -136,7 +136,7 @@ class VIFLoss(_Loss):
         Colour images are expected to have RGB channel order.
         Order of inputs is important! First tensor must contain distorted images, second reference images.
         Args:
-            x: Tensor of distorted images with shape (H, W), (C, H, W) or (N, C, H, W). 
+            x: Tensor of distorted images with shape (H, W), (C, H, W) or (N, C, H, W).
             y: Tensor of target images with shape (H, W), (C, H, W) or (N, C, H, W).
         Returns:
             Value of VIF loss to be minimized. 0 <= VIFLoss <= 1.

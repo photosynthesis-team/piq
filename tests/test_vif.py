@@ -3,6 +3,7 @@ import pytest
 from typing import Tuple
 
 from piq import VIFLoss, vif_p
+from skimage.io import imread
 
 
 @pytest.fixture(scope='module')
@@ -93,7 +94,7 @@ def test_vif_simmular_to_matlab_implementation():
 
     score = vif_p(i1_01_5, I01, data_range=255, chromatic=False, reduction='none')
 
-    # Colour images are not supported by original MATLAB code. Here is result after taking luminance channel from YIQ colour space
+    # RGB images are not supported by MATLAB code. Here is result for luminance channel taken from YIQ colour space
     score_baseline = torch.tensor(0.3147)
 
     assert torch.isclose(score, score_baseline), \
