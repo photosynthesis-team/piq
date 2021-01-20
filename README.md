@@ -123,12 +123,14 @@ For a full list of examples, see [image metrics](examples/image_metrics.py) and 
 ### Benchmark
 
 As part of our library we provide code to benchmark all metrics on a set of common Mean Opinon Scores databases.
-Currently only [TID2013][tid2013] and [KADID10k][kadid10k] are supported. You need to download them separately and provide valid path to folder as an argument to the script.
+Currently only [TID2013][tid2013] and [KADID10k][kadid10k] are supported. You need to download them separately and provide path to images as an argument to the script.
 
 Here is an example how to evaluate SSIM and MS-SSIM metrics on TID2013 dataset:
-`python3 tests/results_benchmark.py --dataset tid2013 --metrics SSIM MS-SSIM --path ~/datasets/tid2013 --batch_size 16`
+```bash
+python3 tests/results_benchmark.py --dataset tid2013 --metrics SSIM MS-SSIM --path ~/datasets/tid2013 --batch_size 16
+```
 
-We report [Spearman's rank correlation coefficient](https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient) (SRCC) and [Kendall rank correlation coefficient](https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient) (KRCC). We do not report [Pearson linear correlation coefficient](https://en.wikipedia.org/wiki/Pearson_correlation_coefficient) because it's highly dependent on fitting method and is biased towards simple examples.
+We report [Spearman's rank correlation coefficient](https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient) (SRCC) and [Kendall rank correlation coefficient](https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient) (KRCC). We do not report [Pearson linear correlation coefficient](https://en.wikipedia.org/wiki/Pearson_correlation_coefficient) (PLCC) because it's highly dependent on fitting method and is biased towards simple examples.
 
 `c` means chromatic version.
 
@@ -156,27 +158,6 @@ We report [Spearman's rank correlation coefficient](https://en.wikipedia.org/wik
 |  PieAPP | 0.8355 / 0.6495 | 0.875 / 0.710 [source][dists]     | 0.8655 / 0.6758 |     -   /    -   |
 |  DISTS  | 0.7077 / 0.5212 | 0.830 / 0.639 [source][dists]     | 0.8137 / 0.6254 |     -   /    -   |
 
-
-Links
-|    TV   | 1937 | [Total Variation](https://en.wikipedia.org/wiki/Total_variation)                                     |
-|   PSNR  |   -  | [Peak Signal-to-Noise Ratio](https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio)               |
-|   SSIM  | 2003 | [Structural Similarity](https://en.wikipedia.org/wiki/Structural_similarity)                         |
-| MS-SSIM | 2004 | [Multi-Scale Structural Similarity](https://ieeexplore.ieee.org/abstract/document/1292216/)          |
-|   VIFp  | 2006 | [Visual Information Fidelity](https://ieeexplore.ieee.org/document/1576816)                          |
-|   FSIM  | 2011 | [Feature Similarity Index Measure](https://ieeexplore.ieee.org/document/5705575)                     |
-| IW-PSNR | 2011 | [Information Weighted PSNR](https://ece.uwaterloo.ca/~z70wang/publications/IWSSIM.pdf)               |
-| IW-SSIM | 2011 | [Information Weighted SSIM](https://ece.uwaterloo.ca/~z70wang/publications/IWSSIM.pdf)               |
-| SR-SIM  | 2012 | [Spectral Residual Based Similarity](https://sse.tongji.edu.cn/linzhang/ICIP12/ICIP-SR-SIM.pdf)      |
-|   GMSD  | 2013 | [Gradient Magnitude Similarity Deviation](https://arxiv.org/abs/1308.3052)                           |
-|   VSI   | 2014 | [Visual Saliency-induced Index](https://ieeexplore.ieee.org/document/6873260)                        |
-| Content | 2016 | [Content Score](https://arxiv.org/abs/1508.06576)                                                    |
-|  Style  | 2016 | [Style Score](https://arxiv.org/abs/1508.06576)                                                      |
-| HaarPSI | 2016 | [Haar Perceptual Similarity Index](https://arxiv.org/abs/1607.06140)                                 |
-|   MDSI  | 2016 | [Mean Deviation Similarity Index](https://arxiv.org/abs/1608.07433)                                  |
-| MS-GMSD | 2017 | [Multi-Scale Gradient Magnitude Similiarity Deviation](https://ieeexplore.ieee.org/document/7952357) |
-|  LPIPS  | 2018 | [Learned Perceptual Image Patch Similarity](https://arxiv.org/abs/1801.03924)                        |
-|  PieAPP | 2018 | [Perceptual Image-Error Assessment through Pairwise Preference](https://arxiv.org/abs/1806.02067)    |
-|  DISTS  | 2020 | [Deep Image Structure and Texture Similarity](https://arxiv.org/abs/2004.07728)                      |
 
 ### Overview
 
