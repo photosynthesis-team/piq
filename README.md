@@ -8,7 +8,6 @@
 ![CI testing][ci-testing]
 [![codecov][codecov-shield]][codecov-url]  
 [![Quality Gate Status][quality-gate-status-shield]][quality-gate-status-url]
-[![Reliability Rating][reliability-rating-badge]][reliability-rating-url]
 </div>
 
 <!-- ABOUT THE PROJECT -->
@@ -79,23 +78,25 @@ For a full list of examples, see [image metrics](examples/image_metrics.py) and 
 
 | Acronym | Year | Metric                                                                                               |
 |:-------:|:----:|------------------------------------------------------------------------------------------------------|
-|    -    | 2016 | [Content score](https://arxiv.org/abs/1508.06576)                                                    |
-|    -    | 2016 | [Style score](https://arxiv.org/abs/1508.06576)                                                      |
-|  DISTS  | ? | [Deep Image Structure and Texture Similarity](https://arxiv.org/abs/2004.07728)                      |
-|  FSIM   | ? | [Feature Similarity Index Measure](https://www4.comp.polyu.edu.hk/~cslzhang/IQA/TIP_IQA_FSIM. pdf)      |
-|   GMSD  | 2013 | [Gradient Magnitude Similarity Deviation](https://arxiv.org/abs/1308.3052)                           |
-| HaarPSI | 2018 | [Haar Perceptual Similarity Index](https://arxiv.org/abs/1607.06140)                                 |
-|  LPIPS  | 2018 | [Learned Perceptual Image Patch Similarity](https://arxiv.org/abs/1801.03924)                        |
-|   MDSI  | 2016 | [Mean Deviation Similarity Index](https://arxiv.org/abs/1608.07433)                                  |
-| MS-SSIM | 2004 | [Multi-Scale Structural Similarity](https://ieeexplore.ieee.org/abstract/document/1292216/)          |
-| MS-GMSD | 2017 | [Multi-Scale Gradient Magnitude Similiarity Deviation](https://ieeexplore.ieee.org/document/7952357) |
-|   PSNR  |   ?  | [Peak Signal-to-Noise Ratio](https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio)               |
 |    TV   | 1937 | [Total Variation](https://en.wikipedia.org/wiki/Total_variation)                                     |
-|   SSIM  | 2004 | [Structural Similarity](https://en.wikipedia.org/wiki/Structural_similarity)                         |
+|   PSNR  |   -  | [Peak Signal-to-Noise Ratio](https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio)               |
+|   SSIM  | 2003 | [Structural Similarity](https://en.wikipedia.org/wiki/Structural_similarity)                         |
+| MS-SSIM | 2004 | [Multi-Scale Structural Similarity](https://ieeexplore.ieee.org/abstract/document/1292216/)          |
+|   VIFp  | 2006 | [Visual Information Fidelity](https://ieeexplore.ieee.org/document/1576816)                          |
+|   FSIM  | 2011 | [Feature Similarity Index Measure](https://ieeexplore.ieee.org/document/5705575)                     |
+| IW-PSNR | 2011 | [Information Weighted PSNR](https://ece.uwaterloo.ca/~z70wang/publications/IWSSIM.pdf)               |
+| IW-SSIM | 2011 | [Information Weighted SSIM](https://ece.uwaterloo.ca/~z70wang/publications/IWSSIM.pdf)               |
+| SR-SIM  | 2012 | [Spectral Residual Based Similarity](https://sse.tongji.edu.cn/linzhang/ICIP12/ICIP-SR-SIM.pdf)      |
 |   GMSD  | 2013 | [Gradient Magnitude Similarity Deviation](https://arxiv.org/abs/1308.3052)                           |
-| PieAPP | ? | [Perceptual Image-Error Assessment through Pairwise Preference](https://arxiv.org/abs/1806.02067)        |
-| VIFp | ? | [Visual Information Fidelity](https://live.ece.utexas.edu/research/Quality/VIF.htm)            |
-| VSI | ? | [Visual Saliency-induced Index](https://ieeexplore.ieee.org/document/6873260)        |
+|   VSI   | 2014 | [Visual Saliency-induced Index](https://ieeexplore.ieee.org/document/6873260)                        |
+|    -    | 2016 | [Content Score](https://arxiv.org/abs/1508.06576)                                                    |
+|    -    | 2016 | [Style Score](https://arxiv.org/abs/1508.06576)                                                      |
+| HaarPSI | 2016 | [Haar Perceptual Similarity Index](https://arxiv.org/abs/1607.06140)                                 |
+|   MDSI  | 2016 | [Mean Deviation Similarity Index](https://arxiv.org/abs/1608.07433)                                  |
+| MS-GMSD | 2017 | [Multi-Scale Gradient Magnitude Similiarity Deviation](https://ieeexplore.ieee.org/document/7952357) |
+|  LPIPS  | 2018 | [Learned Perceptual Image Patch Similarity](https://arxiv.org/abs/1801.03924)                        |
+|  PieAPP | 2018 | [Perceptual Image-Error Assessment through Pairwise Preference](https://arxiv.org/abs/1806.02067)    |
+|  DISTS  | 2020 | [Deep Image Structure and Texture Similarity](https://arxiv.org/abs/2004.07728)                      |
 
 
 ### No Reference metrics
@@ -109,40 +110,51 @@ For a full list of examples, see [image metrics](examples/image_metrics.py) and 
 <!-- FEATURE METRICS -->
 ### Feature metrics
 
-| Acronym | Year | Metric                                                                                               |
-|:-------:|:----:|------------------------------------------------------------------------------------------------------|
-| FID | ? | [Frechet Inception Distance](https://arxiv.org/abs/1706.08500)  |
-| GS  | ? | [Geometry Score](https://arxiv.org/abs/1802.02664) | 
-|  IS  |  ? | [Inception Score](https://arxiv.org/abs/1606.03498) |
-|  KID |  ? | [Kernel Inception Distance](https://arxiv.org/abs/1801.01401)
-| MSID | ?  | [Multi-Scale Intrinsic Distance](https://arxiv.org/abs/1905.11141) |
+|Acronym| Year | Metric                                                            |
+|:-----:|:----:|-------------------------------------------------------------------|
+| IS    | 2016 | [Inception Score](https://arxiv.org/abs/1606.03498)               |
+| FID   | 2017 | [Frechet Inception Distance](https://arxiv.org/abs/1706.08500)    |
+| GS    | 2018 | [Geometry Score](https://arxiv.org/abs/1802.02664)                | 
+| KID   | 2018 | [Kernel Inception Distance](https://arxiv.org/abs/1801.01401)     |
+| MSID  | 2019 | [Multi-Scale Intrinsic Distance](https://arxiv.org/abs/1905.11141)|
 
 
 
 ### Benchmark
 
-`c` means chromatic version of metric.
+As part of our library we provide code to benchmark all metrics on a set of common Mean Opinon Scores databases.
+Currently only [TID2013](http://www.ponomarenko.info/tid2013) and [KADID10k](http://database.mmsp-kn.de/kadid-10k-database.html) are supported. You need to download them separately and provide valid path to folder as an argument to the script.
 
-| Acronym | TID2013<br />SRCC / KRCC (piq) | TID2013 <br />SRCC / KRCC (orig)  | KADID10k<br /> SRCC / KRCC (piq) | KADID10k<br /> SRCC / KRCC (original) |
+Here is an example how to evaluate SSIM and MS-SSIM metrics on TID2013 dataset:
+`python3 tests/results_benchmark.py --dataset tid2013 --metrics SSIM MS-SSIM --path ~/datasets/tid2013 --batch_size 16`
+
+We report [Spearman's rank correlation coefficient](https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient) (SRCC) and [Kendall rank correlation coefficient](https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient) (KRCC). We do not report [Pearson linear correlation coefficient](https://en.wikipedia.org/wiki/Pearson_correlation_coefficient) because it's highly dependent on fitting method and is biased towards simple examples.
+
+`c` means chromatic version.
+
+| Acronym | TID2013<br />SRCC / KRCC (piq) | TID2013 <br />SRCC / KRCC | KADID10k<br /> SRCC / KRCC (piq) | KADID10k<br /> SRCC / KRCC |
 |:-------:|:----:|:----:|:----:|:----:|
-| PSNR | 0.6869 / 0.4958 | 0.687 / 0.496 [source](link) |
-| IW-PSNR | 0.6869 / 0.4958 | 0.687 / 0.496 [source](link) |
-| SSIM | 0.6869 / 0.4958 | 0.687 / 0.496 [source](link) |
-| MS-SSIM | 0.6869 / 0.4958 | 0.687 / 0.496 [source](link) |
-| IW-SSIM | 0.6869 / 0.4958 | 0.687 / 0.496 [source](link) |
-| SR-SIM | 0.6869 / 0.4958 | 0.687 / 0.496 [source](link) |
-| VIFp | 0.6869 / 0.4958 | 0.687 / 0.496 [source](link) |
-| GMSD | 0.6869 / 0.4958 | 0.687 / 0.496 [source](link) |
-| MS-GMSD | 0.6869 / 0.4958 | 0.687 / 0.496 [source](link) |
-| MS-GMSDc | 0.6869 / 0.4958 | 0.687 / 0.496 [source](link) |
-| FSIM| 0.6869 / 0.4958 | 0.687 / 0.496 [source](link) |
-| FSIMc | 0.6869 / 0.4958 | 0.687 / 0.496 [source](link) |
-| VSI | 0.6869 / 0.4958 | 0.687 / 0.496 [source](link) |
-| MDSI | 0.6869 / 0.4958 | 0.687 / 0.496 [source](link) |
-| HaarPSI | 0.6869 / 0.4958 | 0.687 / 0.496 [source](link) |
-| LPIPS-VGG | 0.6869 / 0.4958 | 0.687 / 0.496 [source](link) |
-| PieAPP | 0.6869 / 0.4958 | 0.687 / 0.496 [source](link) |
-| DISTS | 0.6869 / 0.4958 | 0.687 / 0.496 [source](link) |
+| PSNR | 0.6869 / 0.4958 | 0.687 / 0.496 [source](tid2013paper) | + 
+| SSIM | 0.5544 / 0.3883 | 0.637 / 0.464 [source](link) | + 
+| MS-SSIM | 0.7983 / 0.5965 | 0.787 / 0.608 [source](link) | + 
+| VIFp | 0.6102 / 0.4579 | 0.610 / 0.457 [source](link) | !!! SRCC 0.4531 KRCC 0.3161
+| FSIM| 0.8015 / 0.6289 | 0.801 / 0.630 [source](link) | +
+| FSIMc | 0.8509 / 0.6665  | 0.851 / 0.667  [source](link) |
+| IW-PSNR | - / - | 0.687 / 0.496 [source](link) |
+| IW-SSIM | - / - | 0.7779 / 0.5977 [source](link) |
+| SR-SIM | - / - | 0.8076 / 0.6406 [source](link) |
+| SR-SIMc | - / - | - / - [source](link) |
+| GMSD | 0.8038 / 0.6334 | 0.8030 / 0.6352 [source](link) | + 
+| VSI | 0.8949 / 0.7159 | 0.8965 / 0.7183 [source](link) | + 
+| Content Score |
+| Style Score | 
+| HaarPSI | 0.8732 / 0.6923 | 0.8732 / 0.6923 [source](link) |
+| MDSI | 0.8899 / 0.7123 | 0.8899 / 0.7123 [source](link) | + 
+| MS-GMSD | 0.8121 / 0.6455 |0.8139 / 0.6467 [source](link) | + 
+| MS-GMSDc | 0.8875 / 0.7105 | 0.687 / 0.496 [source](link) | + 
+| LPIPS-VGG | 0.6696 / 0.4970 | 0.670 / 0.497 [source](link) | + 
+| PieAPP | 0.8355 / 0.6495 | 0.875 / 0.710 [source](link) | + 
+| DISTS | 0.7077 / 0.5212 | 0.830 / 0.639 [source](link) | + 
 
 
 ### Overview
