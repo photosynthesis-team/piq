@@ -76,6 +76,30 @@ def test_vif_fails_for_incorrect_data_range(prediction: torch.Tensor, target: to
         vif_p(prediction_scaled.to(device), target_scaled.to(device), data_range=1.0)
 
 
+def test_vif_simmular_to_matlab_implementation():
+    # Greyscale images
+    goldhill = torch.tensor(imread('tests/assets/goldhill.gif'))
+    goldhill_jpeg = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'))
+
+    score = vif_p(goldhill_jpeg, goldhill, data_range=255, reduction='none')
+    score_baseline = torch.tensor(0.2665)
+
+    assert torch.isclose(score, score_baseline), \
+        f'Expected PyTorch score to be equal to MATLAB prediction. Got {score} and {score_baseline}'
+
+    # RGB images
+    I01 = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1)
+    i1_01_5 = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1)
+
+    score = vif_p(i1_01_5, I01, data_range=255, chromatic=False, reduction='none')
+
+    # Colour images are not supported by original MATLAB code. Here is result after taking luminance channel from YIQ colour space
+    score_baseline = torch.tensor(0.3147)
+
+    assert torch.isclose(score, score_baseline), \
+        f'Expected PyTorch score to be equal to MATLAB prediction. Got {score} and {score_baseline}'
+
+
 # ================== Test class: `VIFLoss` ==================
 def test_vif_loss_forward(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
     loss = VIFLoss()
