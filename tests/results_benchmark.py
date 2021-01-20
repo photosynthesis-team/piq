@@ -1,18 +1,17 @@
-"""Code for computation of PLCC, SRCC and KRCC between 
+"""Code for computation of PLCC, SRCC and KRCC between
     PIQ metrics predictions and ground truth scores from MOS databases.
 """
 import argparse
 import functools
+from typing import List, Callable
 
 import piq
-import torch
 import tqdm
-from scipy.stats import pearsonr, spearmanr, kendalltau
-from pathlib import Path
-import numpy as np
+import torch
 import pandas as pd
+from pathlib import Path
 from skimage.io import imread
-from typing import Optional, List, Callable
+from scipy.stats import spearmanr, kendalltau
 
 
 METRICS = {
@@ -20,17 +19,20 @@ METRICS = {
     "PSNR": functools.partial(piq.psnr, reduction='none'),
     "SSIM": functools.partial(piq.ssim, reduction='none'),
     "MS-SSIM": functools.partial(piq.multi_scale_ssim, reduction='none'),
-    "VIFp": functools.partial(piq.vif_p, reduction='none'), 
-    "GMSD": functools.partial(piq.gmsd, reduction='none'),  
+    "VIFp": functools.partial(piq.vif_p, reduction='none'),
+    "GMSD": functools.partial(piq.gmsd, reduction='none'),
     "MS-GMSD": functools.partial(piq.multi_scale_gmsd, reduction='none'),
     "MS-GMSDc": functools.partial(piq.multi_scale_gmsd, chromatic=True, reduction='none'),
     "FSIM": functools.partial(piq.fsim, chromatic=False, reduction='none'),
     "FSIMc": functools.partial(piq.fsim, chromatic=True, reduction='none'),
-    "VSI": functools.partial(piq.vsi, reduction='none'),  
+    "VSI": functools.partial(piq.vsi, reduction='none'),
+    "HaarPSI": functools.partial(piq.haarpsi, reduction='none'),
     "MDSI": functools.partial(piq.mdsi, reduction='none'),
     "LPIPS-vgg": piq.LPIPS(replace_pooling=False, reduction='none'),
     "DISTS": piq.DISTS(reduction='none'),
     "PieAPP": piq.PieAPP(reduction='none'),
+    "Content": piq.ContentLoss(reduction='none'),
+    "Style": piq.StyleLoss(reduction='none'),
 
     # No Reference
     "BRISQUE": functools.partial(piq.brisque, reduction='none')
@@ -108,7 +110,7 @@ def eval_metric(loader: torch.utils.data.DataLoader, metric: Callable, device: s
     Args:
         loader: PyTorch dataloader that returns batch of distorted images, reference images and scores.
         metric: Should support `metric(x, y)` or `metric(x)` call.
-        device: Computation device. 
+        device: Computation device.
 
     Returns:
         gt_scores: Ground truth values
@@ -140,7 +142,7 @@ def main(dataset_name: str, path: Path, metrics: List, batch_size: int, device: 
     for name in metrics:
         gt_scores, metric_scores = eval_metric(loader, METRICS[name], device=device)
         print(f"{name}: SRCC {abs(spearmanr(gt_scores, metric_scores)[0]):0.4f}",
-                      f"KRCC {abs(kendalltau(gt_scores, metric_scores)[0]):0.4f}")
+              f"KRCC {abs(kendalltau(gt_scores, metric_scores)[0]):0.4f}")
 
 
 if __name__ == "__main__":
@@ -156,7 +158,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print(f"Parameters used for benchmark: {args}")
     main(
-        dataset_name=args.dataset, 
+        dataset_name=args.dataset,
         path=args.path,
         metrics=args.metrics,
         batch_size=args.batch_size,
