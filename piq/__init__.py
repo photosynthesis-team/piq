@@ -1,4 +1,4 @@
-__version__ = "0.5.2"
+__version__ = "0.5.4"
 
 from .ssim import ssim, multi_scale_ssim, SSIMLoss, MultiScaleSSIMLoss
 from .msid import MSID

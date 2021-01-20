@@ -119,7 +119,7 @@ class PieAPP(_Loss):
         .. [2] https://github.com/prashnani/PerceptualImageError
 
     """
-    _weights_url = "https://github.com/photosynthesis-team/piq/releases/download/v0.5.2/PieAPPv0.1.pth"
+    _weights_url = "https://github.com/photosynthesis-team/piq/releases/download/v0.5.4/PieAPPv0.1.pth"
 
     def __init__(
         self,
