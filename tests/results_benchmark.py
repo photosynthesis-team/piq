@@ -120,7 +120,7 @@ def eval_metric(loader: torch.utils.data.DataLoader, metric: Callable, device: s
     gt_scores = []
     metric_scores = []
 
-    for (distorted_images, reference_images, scores) in tqdm.tqdm(loader):
+    for (distorted_images, reference_images, scores) in tqdm.tqdm(loader, ncols=50):
         distorted_images, reference_images = distorted_images.to(device), reference_images.to(device)
         gt_scores.append(scores.cpu())
 
@@ -139,8 +139,8 @@ def main(dataset_name: str, path: Path, metrics: List, batch_size: int, device: 
 
     for name in metrics:
         gt_scores, metric_scores = eval_metric(loader, METRICS[name], device=device)
-        print(f"{name}: SRCC {spearmanr(gt_scores, metric_scores)[0]:0.4f}",
-                      f"KRCC {kendalltau(gt_scores, metric_scores)[0]:0.4f}")
+        print(f"{name}: SRCC {abs(spearmanr(gt_scores, metric_scores)[0]):0.4f}",
+                      f"KRCC {abs(kendalltau(gt_scores, metric_scores)[0]):0.4f}")
 
 
 if __name__ == "__main__":
