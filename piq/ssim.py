@@ -57,6 +57,12 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
     x = x / data_range
     y = y / data_range
 
+    # Averagepool image if the size is large enough
+    F = max(1, round(min(x.size()[-2:]) / 256))
+
+    x = F.avg_pool2d(x, kernel_size=F)
+    y = F.avg_pool2d(y, kernel_size=F)
+
     kernel = gaussian_filter(kernel_size, kernel_sigma).repeat(x.size(1), 1, 1, 1).to(y)
     _compute_ssim_per_channel = _ssim_per_channel_complex if x.dim() == 5 else _ssim_per_channel
     ssim_map, cs_map = _compute_ssim_per_channel(x=x, y=y, kernel=kernel, data_range=data_range, k1=k1, k2=k2)
