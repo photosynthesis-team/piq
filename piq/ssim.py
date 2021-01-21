@@ -53,7 +53,7 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
 
     x = x.type(torch.float32)
     y = y.type(torch.float32)
-        
+
     x = x / data_range
     y = y / data_range
 
@@ -203,30 +203,28 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
     c1 = k1 ** 2
     c2 = k2 ** 2
     n_channels = x.size(1)
-    mu1 = F.conv2d(x, weight=kernel, stride=1, padding=0, groups=n_channels)
-    mu2 = F.conv2d(y, weight=kernel, stride=1, padding=0, groups=n_channels)
+    mu_x = F.conv2d(x, weight=kernel, stride=1, padding=0, groups=n_channels)
+    mu_y = F.conv2d(y, weight=kernel, stride=1, padding=0, groups=n_channels)
 
-    mu1_sq = mu1 ** 2
-    mu2_sq = mu2 ** 2
-    mu1_mu2 = mu1 * mu2
+    mu_xx = mu_x ** 2
+    mu_yy = mu_y ** 2
+    mu_xy = mu_x * mu_y
 
-    compensation = 1.0
-    sigma1_sq = compensation * (F.conv2d(x * x, weight=kernel, stride=1, padding=0, groups=n_channels) - mu1_sq)
-    sigma2_sq = compensation * (F.conv2d(y * y, weight=kernel, stride=1, padding=0, groups=n_channels) - mu2_sq)
-    sigma12 = compensation * (F.conv2d(x * y, weight=kernel, stride=1, padding=0, groups=n_channels) - mu1_mu2)
+    sigma_xx = F.conv2d(x ** 2, weight=kernel, stride=1, padding=0, groups=n_channels) - mu_xx
+    sigma_yy= F.conv2d(y ** 2, weight=kernel, stride=1, padding=0, groups=n_channels) - mu_yy
+    sigma_xy = F.conv2d(x * y, weight=kernel, stride=1, padding=0, groups=n_channels) - mu_xy
 
-    # # Contrast sensitivity (CS) with alpha = beta = gamma = 1.
-    # cs = (2. * sigma_xy + c2) / (sigma_xx + sigma_yy + c2)
+    # Contrast sensitivity (CS) with alpha = beta = gamma = 1.
+    cs = (2. * sigma_xy + c2) / (sigma_xx + sigma_yy + c2)
 
-    # # Structural similarity (SSIM)
-    # ss = (2. * mu_xy + c1) / (mu_xx + mu_yy + c1) * cs
+    # Structural similarity (SSIM)
+    ssim = (2. * mu_xy + c1) / (mu_xx + mu_yy + c1) * cs
 
-    
     cs_map = (2 * sigma12 + c2) / (sigma1_sq + sigma2_sq + c2)
     ssim_map = ((2 * mu1_mu2 + c1) / (mu1_sq + mu2_sq + c1)) * cs_map
 
-    ssim_val = ssim_map.mean(dim=(-1, -2))
-    cs = cs_map.mean(dim=(-1, -2))
+    ssim_val = ssim.mean(dim=(-1, -2))
+    cs = cs.mean(dim=(-1, -2))
     return ssim_val, cs
 
 
