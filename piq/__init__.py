@@ -17,3 +17,4 @@ from .vsi import vsi, VSILoss
 from .mdsi import mdsi, MDSILoss
 from .haarpsi import haarpsi, HaarPSILoss
 from .pieapp import PieAPP
+from .iw_ssim import information_weighted_ssim, InformationWeightedSSIMLoss

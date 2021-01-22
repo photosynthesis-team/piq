@@ -53,6 +53,16 @@ def binomial_filter(kernel_size: int) -> torch.Tensor:
     return torch.tensor(kernel).view(1, kernel_size, kernel_size)
 
 
+def average_filter(kernel_size: int) -> torch.Tensor:
+    r"""Creates 2D normalized average filter
+    Returns:
+        kernel: Tensor with shape (1, kernel_size, kernel_size)
+    """
+    window = torch.ones(kernel_size) / kernel_size
+    kernel = window[:, None] * window[None, :]
+    return kernel.unsqueeze(0)
+
+
 # Gradient operator kernels
 def scharr_filter() -> torch.Tensor:
     r"""Utility function that returns a normalized 3x3 Scharr kernel in X direction
