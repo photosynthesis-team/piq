@@ -158,7 +158,7 @@ def test_ssim_raise_if_wrong_value_is_estimated(test_images: Tuple[torch.Tensor,
                                                 device: str) -> None:
     for prediction, target in test_images:
         piq_ssim = ssim(prediction.to(device), target.to(device), kernel_size=11, kernel_sigma=1.5, data_range=255,
-                        reduction='none')
+                        reduction='none', downsample=False)
         tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
         tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
         with tf.device('/CPU'):
@@ -295,15 +295,40 @@ def test_ssim_loss_raises_if_kernel_size_greater_than_image(prediction_target_4d
 
 def test_ssim_loss_raise_if_wrong_value_is_estimated(test_images: Tuple[torch.Tensor, torch.Tensor],
                                                      device: str) -> None:
-    for prediction, target in test_images:
-        ssim_loss = SSIMLoss(kernel_size=11, kernel_sigma=1.5, data_range=255, reduction='mean')(prediction.to(device),
-                                                                                                 target.to(device))
-        tf_prediction = tf.convert_to_tensor(prediction.permute(0, 2, 3, 1).numpy())
-        tf_target = tf.convert_to_tensor(target.permute(0, 2, 3, 1).numpy())
+    for x, y in test_images:
+        ssim_loss = SSIMLoss(
+            kernel_size=11, kernel_sigma=1.5, data_range=255, downsample=False)(x.to(device), y.to(device))
+        tf_x = tf.convert_to_tensor(x.permute(0, 2, 3, 1).numpy())
+        tf_y = tf.convert_to_tensor(y.permute(0, 2, 3, 1).numpy())
         with tf.device('/CPU'):
-            tf_ssim = torch.tensor(tf.image.ssim(tf_prediction, tf_target, max_val=255).numpy()).mean().to(device)
+            tf_ssim = torch.tensor(tf.image.ssim(tf_x, tf_y, max_val=255).numpy()).mean().to(device)
         match_accuracy = 2e-4 + 1e-8
         assert torch.isclose(ssim_loss, 1. - tf_ssim, rtol=0, atol=match_accuracy), \
             f'The estimated value must be equal to tensorflow provided one' \
             f'(considering floating point operation error up to {match_accuracy}), ' \
             f'got difference {(ssim_loss - 1. + tf_ssim).abs()}'
+
+
+def test_ssim_simmular_to_matlab_implementation():
+    # Greyscale images
+    goldhill = torch.tensor(imread('tests/assets/goldhill.gif'))
+    goldhill_jpeg = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'))
+
+    score = ssim(goldhill_jpeg, goldhill, data_range=255, reduction='none')
+    # Output of http://www.cns.nyu.edu/~lcv/ssim/ssim.m
+    score_baseline = torch.tensor(0.8202)
+
+    assert torch.isclose(score, score_baseline, atol=1e-4), \
+        f'Expected PyTorch score to be equal to MATLAB prediction. Got {score} and {score_baseline}'
+
+    # RGB images
+    I01 = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1)
+    i1_01_5 = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1)
+
+    score = ssim(i1_01_5, I01, data_range=255, reduction='none')
+    # Output of http://www.cns.nyu.edu/~lcv/ssim/ssim.m
+    # score_baseline = torch.tensor(0.7820)
+    score_baseline = torch.tensor(0.7842)
+
+    assert torch.isclose(score, score_baseline, atol=1e-2), \
+        f'Expected PyTorch score to be equal to MATLAB prediction. Got {score} and {score_baseline}'

@@ -6,7 +6,7 @@ https://github.com/VainF/pytorch-msssim
 and implementation of one of pull requests to the PyTorch by Kangfu Mei (@MKFMIKU):
 https://github.com/pytorch/pytorch/pull/22289/files
 """
-from typing import Tuple, Union
+from typing import Tuple, Union, List
 
 import torch
 import torch.nn.functional as F
@@ -18,9 +18,10 @@ from piq.functional import gaussian_filter
 
 def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: float = 1.5,
          data_range: Union[int, float] = 1., reduction: str = 'mean', full: bool = False,
-         k1: float = 0.01, k2: float = 0.03) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+         downsample: bool = True, k1: float = 0.01, k2: float = 0.03) -> List[torch.Tensor]:
     r"""Interface of Structural Similarity (SSIM) index.
-    Inputs supposed to be in range [0, data_range] with RGB channels order for colour images.
+    Inputs supposed to be in range [0, data_range].
+    To match performance with skimage and tensorflow set `downsample` = True.
 
     Args:
         x: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
@@ -31,6 +32,7 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
         reduction: Specifies the reduction to apply to the output:
             ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
         full: Return cs map or not.
+        downsample: Perform average pool before SSIM computation. Default: True
         k1: Algorithm parameter, K1 (small constant, see [1]).
         k2: Algorithm parameter, K2 (small constant, see [1]).
             Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
@@ -59,9 +61,9 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
 
     # Averagepool image if the size is large enough
     f = max(1, round(min(x.size()[-2:]) / 256))
-
-    x = F.avg_pool2d(x, kernel_size=f)
-    y = F.avg_pool2d(y, kernel_size=f)
+    if (f > 1) and downsample:
+        x = F.avg_pool2d(x, kernel_size=f)
+        y = F.avg_pool2d(y, kernel_size=f)
 
     kernel = gaussian_filter(kernel_size, kernel_sigma).repeat(x.size(1), 1, 1, 1).to(y)
     _compute_ssim_per_channel = _ssim_per_channel_complex if x.dim() == 5 else _ssim_per_channel
@@ -76,7 +78,7 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
         cs = reduction_operation[reduction](cs, dim=0)
 
     if full:
-        return ssim_val, cs
+        return [ssim_val, cs]
 
     return ssim_val
 
@@ -84,6 +86,8 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
 class SSIMLoss(_Loss):
     r"""Creates a criterion that measures the structural similarity index error between
     each element in the input :math:`x` and target :math:`y`.
+
+    To match performance with skimage and tensorflow set `downsample` = True.
 
     The unreduced (i.e. with :attr:`reduction` set to ``'none'``) loss can be described as:
 
@@ -104,7 +108,7 @@ class SSIMLoss(_Loss):
 
     :math:`x` and :math:`y` are tensors of arbitrary shapes with a total
     of :math:`n` elements each.
-
+    
     The sum operation still operates over all the elements, and divides by :math:`n`.
     The division by :math:`n` can be avoided if one sets ``reduction = 'sum'``.
     In case of 5D input tensors, complex value is returned as a tensor of size 2.
@@ -115,6 +119,7 @@ class SSIMLoss(_Loss):
         kernel_sigma: Standard deviation for Gaussian kernel.
         k1: Coefficient related to c1 in the above equation.
         k2: Coefficient related to c2 in the above equation.
+        downsample: Perform average pool before SSIM computation. Default: True
         reduction: Specifies the reduction to apply to the output:
             ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
             ``'mean'``: the sum of the output will be divided by the number of
@@ -145,7 +150,7 @@ class SSIMLoss(_Loss):
     __constants__ = ['kernel_size', 'k1', 'k2', 'sigma', 'kernel', 'reduction']
 
     def __init__(self, kernel_size: int = 11, kernel_sigma: float = 1.5, k1: float = 0.01, k2: float = 0.03,
-                 reduction: str = 'mean', data_range: Union[int, float] = 1.) -> None:
+                 downsample: bool = True, reduction: str = 'mean', data_range: Union[int, float] = 1.) -> None:
         super().__init__()
 
         # Generic loss parameters.
@@ -156,23 +161,24 @@ class SSIMLoss(_Loss):
         self.kernel_sigma = kernel_sigma
         self.k1 = k1
         self.k2 = k2
+        self.downsample = downsample
         self.data_range = data_range
 
     def forward(self,
-                prediction: torch.Tensor,
-                target: torch.Tensor) -> torch.Tensor:
+                x: torch.Tensor,
+                y: torch.Tensor) -> torch.Tensor:
         r"""Computation of Structural Similarity (SSIM) index as a loss function.
 
         Args:
-            prediction: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
-            target: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
+            x: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
+            y: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
 
         Returns:
             Value of SSIM loss to be minimized, i.e 1 - `ssim`. 0 <= SSIM loss <= 1. In case of 5D input tensors,
             complex value is returned as a tensor of size 2.
         """
 
-        score = ssim(x=prediction, y=target, kernel_size=self.kernel_size, kernel_sigma=self.kernel_sigma,
+        score = ssim(x=x, y=y, kernel_size=self.kernel_size, kernel_sigma=self.kernel_sigma, downsample=self.downsample,
                      data_range=self.data_range, reduction=self.reduction, full=False, k1=self.k1, k2=self.k2)
         return torch.ones_like(score) - score
 

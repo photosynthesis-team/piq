@@ -188,6 +188,32 @@ def test_multi_scale_ssim_fails_for_incorrect_data_range(
         multi_scale_ssim(prediction_scaled.to(device), target_scaled.to(device), data_range=1.0)
 
 
+def test_multi_scale_ssim_simmular_to_matlab_implementation():
+    # Greyscale images
+    goldhill = torch.tensor(imread('tests/assets/goldhill.gif'))
+    goldhill_jpeg = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'))
+
+    score = multi_scale_ssim(goldhill_jpeg, goldhill, data_range=255, reduction='none')
+    # Output of https://ece.uwaterloo.ca/~z70wang/research/iwssim/msssim.zip
+    score_baseline = torch.tensor(0.9012)
+
+    assert torch.isclose(score, score_baseline, atol=1e-4), \
+        f'Expected PyTorch score to be equal to MATLAB prediction. Got {score} and {score_baseline}'
+
+    # RGB images
+    I01 = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1)
+    i1_01_5 = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1)
+
+    score = multi_scale_ssim(i1_01_5, I01, data_range=255, reduction='none')
+    # Output of https://ece.uwaterloo.ca/~z70wang/research/iwssim/msssim.zip
+    # Original implementations supports only grey images. Reported is mean of 3 channel values
+    score_baseline = torch.tensor(0.8800)
+
+    # Results are slightly different due to strange handling of multichannel images in MATLAB
+    assert torch.isclose(score, score_baseline, atol=1e-4), \
+        f'Expected PyTorch score to be equal to MATLAB prediction. Got {score} and {score_baseline}'
+
+
 # ================== Test class: `MultiScaleSSIMLoss` ==================
 def test_multi_scale_ssim_loss_grad(prediction_target_4d_5d: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
     prediction = prediction_target_4d_5d[0].to(device)
