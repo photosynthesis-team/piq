@@ -48,11 +48,10 @@ def brisque(x: torch.Tensor,
                       f'More info is available at https://github.com/photosynthesis-team/piq/pull/79 and'
                       f'https://github.com/pytorch/pytorch/issues/38869.')
 
-    _validate_input(input_tensors=x, allow_5d=False, kernel_size=kernel_size)
+    _validate_input(input_tensors=x, allow_5d=False, kernel_size=kernel_size, data_range=data_range)
     x = _adjust_dimensions(input_tensors=x)
 
-    assert data_range >= x.max(), f'Expected data range greater or equal maximum value, got {data_range} and {x.max()}.'
-    x = x * 255. / data_range
+    x = x / data_range * 255
 
     if x.size(1) == 3:
         x = rgb2yiq(x)[:, :1]

@@ -18,7 +18,7 @@ class BaseFeatureMetric(torch.nn.Module):
         return self.compute_metric(predicted_features, target_features)
 
     @torch.no_grad()
-    def _compute_feats(
+    def compute_feats(
             self,
             loader: torch.utils.data.DataLoader,
             feature_extractor: torch.nn.Module = None,

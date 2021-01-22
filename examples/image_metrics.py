@@ -88,6 +88,10 @@ def main():
     # To compute PSNR as a measure, use lower case function from the library.
     psnr_index = piq.psnr(prediction, target, data_range=1., reduction='none')
     print(f"PSNR index: {psnr_index.item():0.4f}")
+    
+    # To compute PieAPP as a loss function, use corresponding PyTorch module:
+    pieapp_loss: torch.Tensor = piq.PieAPP(reduction='none', stride=32)(prediction, target)
+    print(f"PieAPP loss: {pieapp_loss.item():0.4f}")
 
     # To compute SSIM index as a measure, use lower case function from the library:
     ssim_index = piq.ssim(prediction, target, data_range=1.)

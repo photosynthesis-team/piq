@@ -106,7 +106,7 @@ def test_compute_feats_cpu() -> None:
         )
         metric = MSID()
         model = InceptionV3()
-        metric._compute_feats(loader, model, device='cpu')
+        metric.compute_feats(loader, model, device='cpu')
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
@@ -122,6 +122,6 @@ def test_compute_feats_cuda() -> None:
         )
         metric = MSID()
         model = InceptionV3()
-        metric._compute_feats(loader, model, device='cuda')
+        metric.compute_feats(loader, model, device='cuda')
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")

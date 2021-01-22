@@ -16,8 +16,8 @@ def main():
     fid: torch.Tensor = piq.FID()(prediction_features, target_features)
     print(f"FID: {fid:0.4f}")
 
-    # If image features are not available, extract them using _compute_feats of FID class.
-    # Please note that _compute_feats consumes a data loader of predefined format.
+    # If image features are not available, extract them using compute_feats of FID class.
+    # Please note that compute_feats consumes a data loader of predefined format.
 
     # Use GS class to compute Geometry Score from image features, pre-extracted from some feature extractor network.
     # Computation is heavily CPU dependent, adjust num_workers parameter according to your system configuration.

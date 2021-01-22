@@ -66,21 +66,20 @@ def test_ssim_measure_is_one_for_equal_tensors(target: torch.Tensor, device: str
                                                               f'got {measure}'
 
 
-@pytest.mark.parametrize(
-    "reduction,full,expectation",
-    [('mean', False, raise_nothing()),
-     ('sum', False, raise_nothing()),
-     ('none', False, raise_nothing()),
-     ('none', True, raise_nothing()),
-     ('reduction', False, pytest.raises(KeyError))]
-)
-def test_ssim_reduction_and_full(reduction: str, full: bool, expectation: Any,
-                                 prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+def test_ssim_reduction(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+    for mode in ['mean', 'sum', 'none']:
+        ssim(prediction.to(device), target.to(device), reduction=mode)
+
+    for mode in [None, 'n', 2]:
+        with pytest.raises(KeyError):
+            ssim(prediction.to(device), target.to(device), reduction=mode)
+            
+
+def test_ssim_returns_full(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
     prediction = prediction.to(device)
     target = target.to(device)
-    with expectation:
-        ssim(prediction, target, data_range=1., reduction=reduction, full=full)
-
+    assert len(ssim(prediction, target, full=True)) == 2, "Expected 2 output values, got 1"
+        
 
 def test_ssim_measure_is_less_or_equal_to_one(ones_zeros_4d_5d: Tuple[torch.Tensor, torch.Tensor],
                                               device: str) -> None:
@@ -88,7 +87,7 @@ def test_ssim_measure_is_less_or_equal_to_one(ones_zeros_4d_5d: Tuple[torch.Tens
     ones = ones_zeros_4d_5d[0].to(device)
     zeros = ones_zeros_4d_5d[1].to(device)
     measure = ssim(ones, zeros, data_range=1., reduction='none')
-    assert torch.less_equal(measure, 1).all(), f'SSIM must be <= 1, got {measure}'
+    assert torch.le(measure, 1).all(), f'SSIM must be <= 1, got {measure}'
 
 
 def test_ssim_raises_if_tensors_have_different_shapes(prediction_target_4d_5d: Tuple[torch.Tensor,
@@ -169,6 +168,33 @@ def test_ssim_raise_if_wrong_value_is_estimated(test_images: Tuple[torch.Tensor,
             f'The estimated value must be equal to tensorflow provided one' \
             f'(considering floating point operation error up to {match_accuracy}), ' \
             f'got difference {(piq_ssim - tf_ssim).abs()}'
+
+
+@pytest.mark.parametrize(
+    "data_range", [128, 255],
+)
+def test_ssim_supports_different_data_ranges(
+        input_tensors: Tuple[torch.Tensor, torch.Tensor], data_range, device: str) -> None:
+    prediction, target = input_tensors
+    prediction_scaled = (prediction * data_range).type(torch.uint8)
+    target_scaled = (target * data_range).type(torch.uint8)
+
+    measure_scaled = ssim(prediction_scaled.to(device), target_scaled.to(device), data_range=data_range)
+    measure = ssim(
+        prediction_scaled.to(device) / float(data_range),
+        target_scaled.to(device) / float(data_range),
+        data_range=1.0
+    )
+    diff = torch.abs(measure_scaled - measure)
+    assert diff <= 1e-6, f'Result for same tensor with different data_range should be the same, got {diff}'
+
+
+def test_ssim_fails_for_incorrect_data_range(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+    # Scale to [0, 255]
+    prediction_scaled = (prediction * 255).type(torch.uint8)
+    target_scaled = (target * 255).type(torch.uint8)
+    with pytest.raises(AssertionError):
+        ssim(prediction_scaled.to(device), target_scaled.to(device), data_range=1.0)
 
 
 # ================== Test class: `SSIMLoss` ==================
@@ -394,6 +420,34 @@ def test_multi_scale_ssim_raise_if_wrong_value_is_estimated(test_images: Tuple[t
             f'The estimated value must be equal to tensorflow provided one' \
             f'(considering floating point operation error up to {match_accuracy}), ' \
             f'got difference {(piq_ms_ssim - tf_ms_ssim).abs()}'
+
+
+@pytest.mark.parametrize(
+    "data_range", [128, 255],
+)
+def test_multi_scale_ssim_supports_different_data_ranges(
+        prediction_target_4d_5d: Tuple[torch.Tensor, torch.Tensor], data_range, device: str) -> None:
+    prediction, target = prediction_target_4d_5d
+    prediction_scaled = (prediction * data_range).type(torch.uint8)
+    target_scaled = (target * data_range).type(torch.uint8)
+
+    measure_scaled = multi_scale_ssim(prediction_scaled.to(device), target_scaled.to(device), data_range=data_range)
+    measure = multi_scale_ssim(
+        prediction_scaled.to(device) / float(data_range),
+        target_scaled.to(device) / float(data_range),
+        data_range=1.0
+    )
+    diff = torch.abs(measure_scaled - measure)
+    assert (diff <= 1e-6).all(), f'Result for same tensor with different data_range should be the same, got {diff}'
+
+
+def test_multi_scale_ssim_fails_for_incorrect_data_range(
+        prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+    # Scale to [0, 255]
+    prediction_scaled = (prediction * 255).type(torch.uint8)
+    target_scaled = (target * 255).type(torch.uint8)
+    with pytest.raises(AssertionError):
+        multi_scale_ssim(prediction_scaled.to(device), target_scaled.to(device), data_range=1.0)
 
 
 # ================== Test class: `MultiScaleSSIMLoss` ==================
