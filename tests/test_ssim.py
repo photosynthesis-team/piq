@@ -307,4 +307,3 @@ def test_ssim_loss_raise_if_wrong_value_is_estimated(test_images: Tuple[torch.Te
             f'The estimated value must be equal to tensorflow provided one' \
             f'(considering floating point operation error up to {match_accuracy}), ' \
             f'got difference {(ssim_loss - 1. + tf_ssim).abs()}'
-

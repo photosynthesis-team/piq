@@ -16,6 +16,7 @@ from piq.utils import _adjust_dimensions, _validate_input
 from piq.functional import gaussian_filter
 from piq.ssim import _ssim_per_channel, _ssim_per_channel_complex
 
+
 def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: float = 1.5,
                      data_range: Union[int, float] = 1., reduction: str = 'mean',
                      scale_weights: Optional[Union[Tuple[float], List[float], torch.Tensor]] = None,

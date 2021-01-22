@@ -6,7 +6,7 @@ https://github.com/VainF/pytorch-msssim
 and implementation of one of pull requests to the PyTorch by Kangfu Mei (@MKFMIKU):
 https://github.com/pytorch/pytorch/pull/22289/files
 """
-from typing import List, Optional, Tuple, Union
+from typing import Tuple, Union
 
 import torch
 import torch.nn.functional as F
@@ -58,10 +58,10 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
     y = y / data_range
 
     # Averagepool image if the size is large enough
-    F = max(1, round(min(x.size()[-2:]) / 256))
+    f = max(1, round(min(x.size()[-2:]) / 256))
 
-    x = F.avg_pool2d(x, kernel_size=F)
-    y = F.avg_pool2d(y, kernel_size=F)
+    x = F.avg_pool2d(x, kernel_size=f)
+    y = F.avg_pool2d(y, kernel_size=f)
 
     kernel = gaussian_filter(kernel_size, kernel_sigma).repeat(x.size(1), 1, 1, 1).to(y)
     _compute_ssim_per_channel = _ssim_per_channel_complex if x.dim() == 5 else _ssim_per_channel
@@ -177,7 +177,6 @@ class SSIMLoss(_Loss):
         return torch.ones_like(score) - score
 
 
-
 def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
                       data_range: Union[float, int] = 1., k1: float = 0.01,
                       k2: float = 0.03) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
@@ -211,19 +210,16 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
     mu_xy = mu_x * mu_y
 
     sigma_xx = F.conv2d(x ** 2, weight=kernel, stride=1, padding=0, groups=n_channels) - mu_xx
-    sigma_yy= F.conv2d(y ** 2, weight=kernel, stride=1, padding=0, groups=n_channels) - mu_yy
+    sigma_yy = F.conv2d(y ** 2, weight=kernel, stride=1, padding=0, groups=n_channels) - mu_yy
     sigma_xy = F.conv2d(x * y, weight=kernel, stride=1, padding=0, groups=n_channels) - mu_xy
 
     # Contrast sensitivity (CS) with alpha = beta = gamma = 1.
     cs = (2. * sigma_xy + c2) / (sigma_xx + sigma_yy + c2)
 
     # Structural similarity (SSIM)
-    ssim = (2. * mu_xy + c1) / (mu_xx + mu_yy + c1) * cs
+    ss = (2. * mu_xy + c1) / (mu_xx + mu_yy + c1) * cs
 
-    cs_map = (2 * sigma12 + c2) / (sigma1_sq + sigma2_sq + c2)
-    ssim_map = ((2 * mu1_mu2 + c1) / (mu1_sq + mu2_sq + c1)) * cs_map
-
-    ssim_val = ssim.mean(dim=(-1, -2))
+    ssim_val = ss.mean(dim=(-1, -2))
     cs = cs.mean(dim=(-1, -2))
     return ssim_val, cs
 
