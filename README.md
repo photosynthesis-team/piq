@@ -1,13 +1,9 @@
-<div align="center">
+<div align="center">  
 
-![piq_logo](https://user-images.githubusercontent.com/15848838/95228385-ed106500-0807-11eb-8584-d3fdbdd47ac7.jpeg)
+![piq_logo](https://user-images.githubusercontent.com/15848838/95228385-ed106500-0807-11eb-8584-d3fdbdd47ac7.jpeg) 
 
-[![PyPI version][pypi-version-shield]][pypi-version-url]
-[![Conda version][conda-version-shield]][conda-version-url]  
-![CI flake-8 style check][ci-flake-8-style-check-shield]
-![CI testing][ci-testing]
-[![codecov][codecov-shield]][codecov-url]  
-[![Quality Gate Status][quality-gate-status-shield]][quality-gate-status-url]
+[![PyPI version][pypi-version-shield]][pypi-version-url] [![Conda version][conda-version-shield]][conda-version-url] ![CI flake-8 style check][ci-flake-8-style-check-shield] ![CI testing][ci-testing] [![codecov][codecov-shield]][codecov-url] [![Quality Gate Status][quality-gate-status-shield]][quality-gate-status-url]
+
 </div>
 
 <!-- ABOUT THE PROJECT -->
