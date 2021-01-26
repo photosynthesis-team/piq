@@ -18,7 +18,7 @@ import torch
 
 from piq.functional import rgb2yiq, binomial_filter, average_filter
 
-def iw_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: float = 1.5,
+def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: float = 1.5,
              data_range: Union[int, float] = 1., reduction: str = 'mean',
              scale_weights: torch.Tensor = None,
              k1: float = 0.01, k2: float = 0.03) -> torch.Tensor:
@@ -187,3 +187,6 @@ def info_content_weight(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 3):
 
 
     return None
+
+class InformationWeightedSSIMLoss():
+    pass
