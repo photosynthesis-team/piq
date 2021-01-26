@@ -1,16 +1,9 @@
-<div align="center">
+<div align="center">  
 
-![piq_logo](https://user-images.githubusercontent.com/15848838/95228385-ed106500-0807-11eb-8584-d3fdbdd47ac7.jpeg)
+![piq_logo](https://user-images.githubusercontent.com/15848838/95228385-ed106500-0807-11eb-8584-d3fdbdd47ac7.jpeg) 
 
-[![License][license-shield]][license-url]
-[![PyPI version][pypi-version-shield]][pypi-version-url]
-[![Conda version][conda-version-shield]][conda-version-url]  
-![CI flake-8 style check][ci-flake-8-style-check-shield]
-![CI testing][ci-testing]
-[![codecov][codecov-shield]][codecov-url]  
-[![Quality Gate Status][quality-gate-status-shield]][quality-gate-status-url]
-[![Maintainability Rating][maintainability-raiting-shield]][maintainability-raiting-url]
-[![Reliability Rating][reliability-rating-badge]][reliability-rating-url]
+[![PyPI version][pypi-version-shield]][pypi-version-url] [![Conda version][conda-version-shield]][conda-version-url] ![CI flake-8 style check][ci-flake-8-style-check-shield] ![CI testing][ci-testing] [![codecov][codecov-shield]][codecov-url] [![Quality Gate Status][quality-gate-status-shield]][quality-gate-status-url]
+
 </div>
 
 <!-- ABOUT THE PROJECT -->
@@ -77,33 +70,90 @@ msid: torch.Tensor = msid_metric(prediction_feats, target_feats)
 For a full list of examples, see [image metrics](examples/image_metrics.py) and [feature metrics](examples/feature_metrics.py) examples.
 
 <!-- IMAGE METRICS -->
-### Image metrics
+### Full Reference metrics
 
-1. [Blind/Referenceless Image Spatial Quality Evaluator (BRISQUE)](https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf)
-2. [Content score](https://openaccess.thecvf.com/content_cvpr_2016/html/Gatys_Image_Style_Transfer_CVPR_2016_paper.html)
-3. [Deep Image Structure and Texture Similarity measure (DISTS)](https://arxiv.org/abs/2004.07728)
-4. [Feature Similarity Index Measure (FSIM)](https://www4.comp.polyu.edu.hk/~cslzhang/IQA/TIP_IQA_FSIM.pdf)
-5. [Gradient Magnitude Similarity Deviation (GMSD)](https://arxiv.org/pdf/1308.3052.pdf)
-6. [Haar Wavelet-Based Perceptual Similarity Index (HaarPSI)](http://www.math.uni-bremen.de/cda/HaarPSI/publications/HaarPSI_preprint_v4.pdf)
-7. [Learned Perceptual Image Patch Similarity measure (LPIPS)](https://arxiv.org/abs/1801.03924)
-8. [Mean Deviation Similarity Index (MDSI)](https://ieeexplore.ieee.org/abstract/document/7556976/)
-9. [Multi-Scale Structural Similarity (MS-SSIM)](https://ieeexplore.ieee.org/document/1292216)
-10. [Multi-Scale Gradient Magnitude Similarity Deviation (MS-GMSD)](http://www.cse.ust.hk/~psander/docs/gradsim.pdf)
-11. [Peak Signal-to-Noise Ratio (PSNR)](https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio)
-12. [Perceptual Image-Error Assessment through Pairwise Preference (PieAPP)](https://arxiv.org/abs/1806.02067)
-13. [Structural Similarity (SSIM)](https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf)
-14. [Style score](https://openaccess.thecvf.com/content_cvpr_2016/html/Gatys_Image_Style_Transfer_CVPR_2016_paper.html)
-15. [Total Variation (TV)](https://en.wikipedia.org/wiki/Total_variation)
-16. [Visual Information Fidelity (VIF)](https://live.ece.utexas.edu/research/Quality/VIF.htm)
-17. [Visual Saliency-induced Index (VSI)](https://ieeexplore.ieee.org/document/6873260)
+| Acronym | Year | Metric                                                                                               |
+|:-------:|:----:|------------------------------------------------------------------------------------------------------|
+|    TV   | 1937 | [Total Variation](https://en.wikipedia.org/wiki/Total_variation)                                     |
+|   PSNR  |   -  | [Peak Signal-to-Noise Ratio](https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio)               |
+|   SSIM  | 2003 | [Structural Similarity](https://en.wikipedia.org/wiki/Structural_similarity)                         |
+| MS-SSIM | 2004 | [Multi-Scale Structural Similarity](https://ieeexplore.ieee.org/abstract/document/1292216/)          |
+|   VIFp  | 2004 | [Visual Information Fidelity](https://ieeexplore.ieee.org/document/1576816)                          |
+|   FSIM  | 2011 | [Feature Similarity Index Measure](https://ieeexplore.ieee.org/document/5705575)                     |
+| IW-PSNR | 2011 | [Information Weighted PSNR](https://ece.uwaterloo.ca/~z70wang/publications/IWSSIM.pdf)               |
+| IW-SSIM | 2011 | [Information Weighted SSIM](https://ece.uwaterloo.ca/~z70wang/publications/IWSSIM.pdf)               |
+| SR-SIM  | 2012 | [Spectral Residual Based Similarity](https://sse.tongji.edu.cn/linzhang/ICIP12/ICIP-SR-SIM.pdf)      |
+|   GMSD  | 2013 | [Gradient Magnitude Similarity Deviation](https://arxiv.org/abs/1308.3052)                           |
+|   VSI   | 2014 | [Visual Saliency-induced Index](https://ieeexplore.ieee.org/document/6873260)                        |
+|    -    | 2016 | [Content Score](https://arxiv.org/abs/1508.06576)                                                    |
+|    -    | 2016 | [Style Score](https://arxiv.org/abs/1508.06576)                                                      |
+| HaarPSI | 2016 | [Haar Perceptual Similarity Index](https://arxiv.org/abs/1607.06140)                                 |
+|   MDSI  | 2016 | [Mean Deviation Similarity Index](https://arxiv.org/abs/1608.07433)                                  |
+| MS-GMSD | 2017 | [Multi-Scale Gradient Magnitude Similiarity Deviation](https://ieeexplore.ieee.org/document/7952357) |
+|  LPIPS  | 2018 | [Learned Perceptual Image Patch Similarity](https://arxiv.org/abs/1801.03924)                        |
+|  PieAPP | 2018 | [Perceptual Image-Error Assessment through Pairwise Preference](https://arxiv.org/abs/1806.02067)    |
+|  DISTS  | 2020 | [Deep Image Structure and Texture Similarity][dists]                      |
+
+
+### No Reference metrics
+
+| Acronym | Year | Metric                                                                                               |
+|:-------:|:----:|------------------------------------------------------------------------------------------------------|
+| BRISQUE | 2012 | [Blind/Referenceless Image Spatial Quality Evaluator](https://ieeexplore.ieee.org/document/6272356)  |
+
+
 
 <!-- FEATURE METRICS -->
 ### Feature metrics
-1. [Frechet Inception Distance(FID)](https://arxiv.org/abs/1706.08500)
-2. [Geometry Score (GS)](https://arxiv.org/abs/1802.02664)
-3. [Inception Score(IS)](https://arxiv.org/abs/1606.03498)
-4. [Kernel Inception Distance(KID)](https://arxiv.org/abs/1801.01401)
-5. [Multi-Scale Intrinsic Distance (MSID)](https://arxiv.org/abs/1905.11141)
+
+|Acronym| Year | Metric                                                            |
+|:-----:|:----:|-------------------------------------------------------------------|
+| IS    | 2016 | [Inception Score](https://arxiv.org/abs/1606.03498)               |
+| FID   | 2017 | [Frechet Inception Distance](https://arxiv.org/abs/1706.08500)    |
+| GS    | 2018 | [Geometry Score](https://arxiv.org/abs/1802.02664)                | 
+| KID   | 2018 | [Kernel Inception Distance](https://arxiv.org/abs/1801.01401)     |
+| MSID  | 2019 | [Multi-Scale Intrinsic Distance](https://arxiv.org/abs/1905.11141)|
+
+
+
+### Benchmark
+
+As part of our library we provide code to benchmark all metrics on a set of common Mean Opinon Scores databases.
+Currently only [TID2013][tid2013] and [KADID10k][kadid10k] are supported. You need to download them separately and provide path to images as an argument to the script.
+
+Here is an example how to evaluate SSIM and MS-SSIM metrics on TID2013 dataset:
+```bash
+python3 tests/results_benchmark.py --dataset tid2013 --metrics SSIM MS-SSIM --path ~/datasets/tid2013 --batch_size 16
+```
+
+We report [Spearman's rank correlation coefficient](https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient) (SRCC) and [Kendall rank correlation coefficient](https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient) (KRCC). We do not report [Pearson linear correlation coefficient](https://en.wikipedia.org/wiki/Pearson_correlation_coefficient) (PLCC) because it's highly dependent on fitting method and is biased towards simple examples.
+
+`c` means chromatic version.
+
+| Acronym |TID2013<br />SRCC / KRCC (piq)| TID2013<br />SRCC / KRCC | KADID10k<br /> SRCC / KRCC (piq) | KADID10k<br /> SRCC / KRCC |
+|:-------:|:---------------:|:---------------------------------:|:---------------:|:-------------------------------:|
+|   PSNR  | 0.6869 / 0.4958 | 0.687 / 0.496  [source][tid2013]  | 0.6757 / 0.4876 |     -   /    -   |
+|   SSIM  | 0.5544 / 0.3883 | 0.637 / 0.464  [source][tid2013]  | 0.6329 / 0.4571 | 0.718 / 0.532 [source][kadid10k]|
+| MS-SSIM | 0.7983 / 0.5965 | 0.787 / 0.608  [source][tid2013]  | 0.8020 / 0.6088 | 0.802 / 0.609 [source][kadid10k]|
+|   VIFp  | 0.6102 / 0.4579 | 0.610 / 0.457  [source][tid2013]  | 0.6500 / 0.4770 | 0.650 / 0.477 [source][kadid10k]|
+|   FSIM  | 0.8015 / 0.6289 | 0.801 / 0.630  [source][tid2013]  | 0.8294 / 0.6390 | 0.829 / 0.639 [source][kadid10k]|
+|   FSIMc | 0.8509 / 0.6665 | 0.851 / 0.667  [source][tid2013]  | 0.8537 / 0.6650 | 0.854 / 0.665 [source][kadid10k]|
+| IW-PSNR |    -   /    -   | 0.6913 /   -   [source][eval2019] |    -   /    -   |     -   /    -   |
+| IW-SSIM |    -   /    -   | 0.7779 / 0.5977 [source][eval2019]|    -   /    -   |     -   /    -   |
+| SR-SIM  |    -   /    -   | 0.8076 / 0.6406 [source][eval2019]|    -   /    -   | 0.839 / 0.652 [source][kadid10k]|
+| SR-SIMc |    -   /    -   |    -   /    -                     |    -   /    -   |     -   /    -   |
+|   GMSD  | 0.8038 / 0.6334 | 0.8030 / 0.6352 [source](GMSD)    | 0.8474 / 0.6640 | 0.847 / 0.664 [source][kadid10k]|
+|   VSI   | 0.8949 / 0.7159 | 0.8965 / 0.7183 [source][eval2019]| 0.8780 / 0.6899 | 0.861 / 0.678 [source][kadid10k]|
+| Content | 0.7049 / 0.5173 |    -   /    -                     | 0.7237 / 0.5326 |     -   /    -   |
+|  Style  | 0.5384 / 0.3720 |    -   /    -                     | 0.6470 / 0.4646 |     -   /    -   |
+| HaarPSI | 0.8732 / 0.6923 | 0.8732 / 0.6923 [source](HaarPSI) | 0.8849 / 0.6995 | 0.885 / 0.699 [source][kadid10k]|
+|   MDSI  | 0.8899 / 0.7123 | 0.8899 / 0.7123 [source](MDSI)    | 0.8853 / 0.7023 | 0.885 / 0.702 [source][kadid10k]|
+| MS-GMSD | 0.8121 / 0.6455 |0.8139 / 0.6467 [source](MS-GMSD)  | 0.8523 / 0.6692 |     -   /    -   |
+| MS-GMSDc| 0.8875 / 0.7105 | 0.687 / 0.496 [source](MS-GMSD)   | 0.8697 / 0.6831 |     -   /    -   |
+|LPIPS-VGG| 0.6696 / 0.4970 | 0.670 / 0.497 [source][dists]     | 0.7201 / 0.5313 |     -   /    -   |
+|  PieAPP | 0.8355 / 0.6495 | 0.875 / 0.710 [source][dists]     | 0.8655 / 0.6758 |     -   /    -   |
+|  DISTS  | 0.7077 / 0.5212 | 0.830 / 0.639 [source][dists]     | 0.8137 / 0.6254 |     -   /    -   |
+
 
 ### Overview
 
@@ -156,7 +206,6 @@ Please see the [contribution guide](CONTRIBUTING.md) for more information.
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 [license-shield]: https://img.shields.io/badge/License-Apache%202.0-blue.svg
-[license-url]: https://github.com/photosynthesis-team/piq/blob/master/LICENSE
 [ci-flake-8-style-check-shield]: https://github.com/photosynthesis-team/piq/workflows/flake-8%20style%20check/badge.svg
 [ci-testing]: https://github.com/photosynthesis-team/piq/workflows/testing/badge.svg
 [pypi-version-shield]: https://badge.fury.io/py/piq.svg
@@ -165,9 +214,11 @@ Please see the [contribution guide](CONTRIBUTING.md) for more information.
 [conda-version-url]: https://anaconda.org/photosynthesis-team/piq
 [quality-gate-status-shield]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_photosynthesis.metrics&metric=alert_status
 [quality-gate-status-url]: https://sonarcloud.io/dashboard?id=photosynthesis-team_photosynthesis.metrics
-[maintainability-raiting-shield]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_photosynthesis.metrics&metric=sqale_rating
-[maintainability-raiting-url]: https://sonarcloud.io/dashboard?id=photosynthesis-team_photosynthesis.metrics
-[reliability-rating-badge]: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_photosynthesis.metrics&metric=reliability_rating
-[reliability-rating-url]:https://sonarcloud.io/dashboard?id=photosynthesis-team_photosynthesis.metrics
+
 [codecov-shield]:https://codecov.io/gh/photosynthesis-team/piq/branch/master/graph/badge.svg
 [codecov-url]:https://codecov.io/gh/photosynthesis-team/piq
+
+[tid2013]:http://www.ponomarenko.info/tid2013.htm
+[kadid10k]:http://database.mmsp-kn.de/kadid-10k-database.html
+[eval2019]:https://ieeexplore.ieee.org/abstract/document/8847307
+[dists]:https://arxiv.org/abs/2004.07728
