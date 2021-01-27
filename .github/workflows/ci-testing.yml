@@ -42,7 +42,9 @@ jobs:
                       tensorflow \
                       libsvm \
                       pybrisque \
-                      scikit-image
+                      scikit-image \
+                      pandas \
+                      tqdm
           pip install --upgrade scipy
       - name: Test with pytest
         run: |
