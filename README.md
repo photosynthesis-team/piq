@@ -14,7 +14,7 @@ Collection of measures and metrics for image quality assessment.
 - Extensive user input validation. You code will not crash in the middle of the training.
 - Fast (GPU computations available) and reliable.
 - Most metrics can be backpropagated for model optimization.
-- Supports python 3.6-3.8.
+- Supports python 3.6-3.8. 
 
 
 <!-- GETTING STARTED -->
