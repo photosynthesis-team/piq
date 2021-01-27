@@ -17,6 +17,10 @@ Collection of measures and metrics for image quality assessment.
 - Supports python 3.6-3.8.
 
 
+<!-- DOCUMENTATION -->
+### Documentation
+The [documentation](piq.readthedocs.io) is generated using [Sphinx](https://www.sphinx-doc.org/) framework and updated in a timely manner.
+
 <!-- GETTING STARTED -->
 ### Getting started
 
