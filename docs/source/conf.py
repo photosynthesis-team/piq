@@ -19,7 +19,7 @@ import piq
 
 # -- Project information -----------------------------------------------------
 
-project = 'PyTorch Image Quality (PIQ)'
+project = 'PIQ'
 copyright = '2021, Photosynthesis Team'
 author = 'Photosynthesis Team'
 

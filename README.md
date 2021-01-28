@@ -7,6 +7,8 @@
 </div>
 
 <!-- ABOUT THE PROJECT -->
+> PIQ (PyTorch Image Quality) is not endorsed by Facebook, Inc.;
+> PyTorch, the PyTorch logo and any related marks are trademarks of Facebook, Inc.
 
 Collection of measures and metrics for image quality assessment.
 - Unified interface, which is easy to use and extend.
