@@ -1,6 +1,7 @@
 Overview
 ========
 
+`PIQ (PyTorch Image Quality) <https://github.com/photosynthesis-team/piq>`_ is a collection of measures and metrics for image quality assessment.
 PIQ helps you to concentrate on your experiments without the boilerplate code.
 The library contains a set of measures and metrics that is continually getting extended.
 For measures/metrics that can be used as loss functions, corresponding PyTorch modules are implemented.

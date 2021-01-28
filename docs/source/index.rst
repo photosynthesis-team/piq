@@ -7,13 +7,14 @@ PIQ Documentation
 =========================================
 .. image:: https://user-images.githubusercontent.com/22414094/106116361-df8a3c80-6162-11eb-83df-f5838110e614.png
     :alt: piq_logo
+    :target: https://github.com/photosynthesis-team/piq
 
 .. note::
    PIQ (PyTorch Image Quality) is not endorsed by Facebook, Inc.
 
    PyTorch, the PyTorch logo and any related marks are trademarks of Facebook, Inc.
 
-PIQ (PyTorch Image Quality) is a collection of measures and metrics for image quality assessment.
+`PIQ (PyTorch Image Quality) <https://github.com/photosynthesis-team/piq>`_ is a collection of measures and metrics for image quality assessment.
 PIQ allows integrating most popular image quality metric for you ``torch`` project.
 
 .. toctree::

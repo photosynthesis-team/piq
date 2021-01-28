@@ -18,7 +18,7 @@ If you use ``conda``, you can install it with:
 
 git
 ^^^^^^^^^^^^^^^^^^^^^
-If you want to use the latest features straight from the master, clone the `PIQ repo <https://github.com/photosynthesis-team/piq>`_:
+If you want to use the latest features straight from the master, clone `PIQ repo <https://github.com/photosynthesis-team/piq>`_:
 ::
 
    git clone https://github.com/photosynthesis-team/piq.git

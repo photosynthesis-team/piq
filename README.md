@@ -1,6 +1,6 @@
 <div align="center">  
 
-![piq_logo](https://user-images.githubusercontent.com/22414094/106116361-df8a3c80-6162-11eb-83df-f5838110e614.png) 
+[![piq_logo][piq-logo]][github-piq-url]
 
 [![PyPI version][pypi-version-shield]][pypi-version-url] [![Conda version][conda-version-shield]][conda-version-url] ![CI flake-8 style check][ci-flake-8-style-check-shield] ![CI testing][ci-testing] [![codecov][codecov-shield]][codecov-url] [![Quality Gate Status][quality-gate-status-shield]][quality-gate-status-url]
 
@@ -211,6 +211,8 @@ Please see the [contribution guide](CONTRIBUTING.md) for more information.
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[github-piq-url]: https://github.com/photosynthesis-team/piq
+[piq-logo]: https://user-images.githubusercontent.com/22414094/106116361-df8a3c80-6162-11eb-83df-f5838110e614.png
 [license-shield]: https://img.shields.io/badge/License-Apache%202.0-blue.svg
 [ci-flake-8-style-check-shield]: https://github.com/photosynthesis-team/piq/workflows/flake-8%20style%20check/badge.svg
 [ci-testing]: https://github.com/photosynthesis-team/piq/workflows/testing/badge.svg
