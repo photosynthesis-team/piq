@@ -1,6 +1,6 @@
 <div align="center">  
 
-![piq_logo](https://user-images.githubusercontent.com/15848838/95228385-ed106500-0807-11eb-8584-d3fdbdd47ac7.jpeg) 
+![piq_logo](https://user-images.githubusercontent.com/22414094/106116361-df8a3c80-6162-11eb-83df-f5838110e614.png) 
 
 [![PyPI version][pypi-version-shield]][pypi-version-url] [![Conda version][conda-version-shield]][conda-version-url] ![CI flake-8 style check][ci-flake-8-style-check-shield] ![CI testing][ci-testing] [![codecov][codecov-shield]][codecov-url] [![Quality Gate Status][quality-gate-status-shield]][quality-gate-status-url]
 

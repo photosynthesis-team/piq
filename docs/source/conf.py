@@ -11,6 +11,8 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import piq
+import datetime
+year = datetime.datetime.today().year
 # import sphinx_rtd_theme
 # $import os
 # import sys
@@ -20,7 +22,7 @@ import piq
 # -- Project information -----------------------------------------------------
 
 project = 'PIQ'
-copyright = '2021, Photosynthesis Team'
+copyright = f'2020 - {year}, Photosynthesis Team'
 author = 'Photosynthesis Team'
 
 # The full version, including alpha/beta/rc tags
