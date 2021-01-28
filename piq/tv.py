@@ -63,7 +63,7 @@ class TVLoss(_Loss):
 
     .. math::
         TV(x) = \sum_{N}\sum_{H, W, C}(|x_{:, :, i+1, j} - x_{:, :, i, j}| +
-        |x_{:, :, i, j+1} - x_{:, :, i, j}|) $$
+        |x_{:, :, i, j+1} - x_{:, :, i, j}|)
 
     where :math:`N` is the batch size, `C` is the channel size.
 
@@ -75,6 +75,7 @@ class TVLoss(_Loss):
             elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``
     Shape:
         - Input: Required to be 2D (H, W), 3D (C,H,W) or 4D (N,C,H,W)
+
     Examples::
 
         >>> loss = TVLoss()

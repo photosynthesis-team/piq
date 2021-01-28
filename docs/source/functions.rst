@@ -1,5 +1,5 @@
 PIQ Functional Interface
-=========
+========================
 
 Full Reference Metrics
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -46,7 +46,7 @@ Haar Perceptual Similarity Index (HaarPSI)
 No Reference Metrics
 ^^^^^^^^^^^^^^^^^^^^
 Blind/Referenceless Image Spatial Quality Evaluator (BRISQUE)
-'''''''
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 .. autofunction:: piq.brisque
 
 Feature Metrics

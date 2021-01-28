@@ -1,5 +1,5 @@
 PIQ Class Interface
-===========
+===================
 
 Full Reference Metrics
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -83,7 +83,7 @@ Content Score
 No Reference Metrics
 ^^^^^^^^^^^^^^^^^^^^
 Blind/Referenceless Image Spatial Quality Evaluator (BRISQUE)
-'''''''
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 .. autoclass:: piq.BRISQUELoss
     :members:
 

@@ -45,6 +45,15 @@ def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
     Shape:
         - Input:  Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
         - Target: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
+
+    References:
+        .. [1] Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P.
+           (2004). Image quality assessment: From error visibility to
+           structural similarity. IEEE Transactions on Image Processing,
+           13, 600-612.
+           https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
+           DOI:`10.1109/TIP.2003.819861`
+
     Note:
         The original method supports only RGB image.
         See https://ieeexplore.ieee.org/document/6873260 for details.
@@ -162,7 +171,7 @@ class VSILoss(_Loss):
            structural similarity. IEEE Transactions on Image Processing,
            13, 600-612.
            https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
-           :DOI:`10.1109/TIP.2003.819861`
+           DOI:`10.1109/TIP.2003.819861`
     """
     def __init__(self, reduction: str = 'mean', c1: float = 1.27, c2: float = 386., c3: float = 130.,
                  alpha: float = 0.4, beta: float = 0.02, data_range: Union[int, float] = 1.,

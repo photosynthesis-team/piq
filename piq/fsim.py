@@ -405,8 +405,8 @@ class FSIMLoss(_Loss):
 
     References:
         .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
-        https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
-        """
+           https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
+    """
     def __init__(self, reduction: str = 'mean', data_range: Union[int, float] = 1., chromatic: bool = True,
                  scales: int = 4, orientations: int = 4, min_length: int = 6, mult: int = 2,
                  sigma_f: float = 0.55, delta_theta: float = 1.2, k: float = 2.0) -> None:
