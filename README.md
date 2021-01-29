@@ -201,6 +201,25 @@ We appreciate all your contributions. If you plan to:
 Please see the [contribution guide](CONTRIBUTING.md) for more information.
 
 
+<!-- CITATION -->
+### Citation
+
+If you use PIQ in your project, please, cite it as follows.
+
+```tex
+@misc{piq,
+  title={{PyTorch Image Quality}: Metrics and Measure for Image Quality Assessment},
+  url={https://github.com/photosynthesis-team/piq},
+  note={Open-source software available at https://github.com/photosynthesis-team/piq},
+  author={
+    Sergey Kastryulin and
+    Djamil Zakirov and
+    Denis Prokopenko},
+  year={2019},
+}
+```
+
+
 <!-- CONTACT -->
 #### Contacts
 
