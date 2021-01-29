@@ -61,7 +61,6 @@ If you use PyTorch Image Quality (PIQ) in your project, please, cite it as follo
       note={Open-source software available at https://github.com/photosynthesis-team/piq},
       author={Sergey Kastryulin and Djamil Zakirov and Denis Prokopenko},
       year={2019}
-      doi= {10.5281/zenodo.4478655},
    }
 
 Indices and tables
