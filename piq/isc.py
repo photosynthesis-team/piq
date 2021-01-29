@@ -28,9 +28,9 @@ def inception_score(features: torch.Tensor, num_splits: int = 10):
     Returns:
         score, variance:
 
-    Reference:
-        "A Note on the Inception Score"
-        https://arxiv.org/pdf/1801.01973.pdf
+    References:
+        .. [1] "A Note on the Inception Score"
+           https://arxiv.org/pdf/1801.01973.pdf
 
     """
     assert len(features.shape) == 2, \
@@ -68,8 +68,8 @@ class IS(BaseFeatureMetric):
     Returns:
         distance(predicted_score, target_score): L1 or L2 distance between scores.
 
-    Reference:
-        https://arxiv.org/pdf/1801.01973.pdf
+    References:
+        .. [1] https://arxiv.org/pdf/1801.01973.pdf
     """
     def __init__(self, num_splits: int = 10, distance: str = 'l1') -> None:
         r"""

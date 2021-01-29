@@ -152,7 +152,7 @@ class MDSILoss(_Loss):
            IEEE Ieee Access,
            4, 5579--5590.
            https://ieeexplore.ieee.org/abstract/document/7556976/,
-           :DOI:`10.1109/ACCESS.2016.2604042`
+           DOI:`10.1109/ACCESS.2016.2604042`
     """
     def __init__(self, data_range: Union[int, float] = 1., reduction: str = 'mean',
                  c1: float = 140., c2: float = 55., c3: float = 550., alpha: float = 0.6,

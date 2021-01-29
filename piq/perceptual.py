@@ -95,13 +95,13 @@ class ContentLoss(_Loss):
 
     References:
         .. [1] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
-        (2016). A Neural Algorithm of Artistic Style}
-        Association for Research in Vision and Ophthalmology (ARVO)
-        https://arxiv.org/abs/1508.06576
+           (2016). A Neural Algorithm of Artistic Style}
+           Association for Research in Vision and Ophthalmology (ARVO)
+           https://arxiv.org/abs/1508.06576
         .. [2] Zhang, Richard and Isola, Phillip and Efros, et al.
-        (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
-        2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
-        https://arxiv.org/abs/1801.03924
+           (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
+           2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
+           https://arxiv.org/abs/1801.03924
     """
 
     def __init__(self, feature_extractor: Union[str, torch.nn.Module] = "vgg16", layers: Iterable[str] = ("relu3_3", ),
@@ -236,13 +236,13 @@ class StyleLoss(ContentLoss):
             and computing distance. See [2] for details.
     References:
         .. [1] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
-        (2016). A Neural Algorithm of Artistic Style}
-        Association for Research in Vision and Ophthalmology (ARVO)
-        https://arxiv.org/abs/1508.06576
+           (2016). A Neural Algorithm of Artistic Style}
+           Association for Research in Vision and Ophthalmology (ARVO)
+           https://arxiv.org/abs/1508.06576
         .. [2] Zhang, Richard and Isola, Phillip and Efros, et al.
-        (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
-        2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
-        https://arxiv.org/abs/1801.03924
+           (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
+           2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
+           https://arxiv.org/abs/1801.03924
     """
 
     def compute_distance(self, prediction_features: torch.Tensor, target_features: torch.Tensor):
@@ -282,14 +282,14 @@ class LPIPS(ContentLoss):
             If there is no need to normalize data, use [1., 1., 1.].
     References:
         .. [1] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
-        (2016). A Neural Algorithm of Artistic Style}
-        Association for Research in Vision and Ophthalmology (ARVO)
-        https://arxiv.org/abs/1508.06576
+           (2016). A Neural Algorithm of Artistic Style}
+           Association for Research in Vision and Ophthalmology (ARVO)
+           https://arxiv.org/abs/1508.06576
         .. [2] Zhang, Richard and Isola, Phillip and Efros, et al.
-        (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
-        2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
-        https://arxiv.org/abs/1801.03924
-        https://github.com/richzhang/PerceptualSimilarity
+           (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
+           2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
+           https://arxiv.org/abs/1801.03924
+           https://github.com/richzhang/PerceptualSimilarity
     """
     _weights_url = "https://github.com/photosynthesis-team/" + \
         "photosynthesis.metrics/releases/download/v0.4.0/lpips_weights.pt"
@@ -318,8 +318,8 @@ class DISTS(ContentLoss):
             If there is no need to normalize data, use [1., 1., 1.].
     References:
         .. [1] Keyan Ding, Kede Ma, Shiqi Wang, Eero P. Simoncelli
-        (2020). Image Quality Assessment: Unifying Structure and Texture Similarity.
-        https://arxiv.org/abs/2004.07728
+           (2020). Image Quality Assessment: Unifying Structure and Texture Similarity.
+           https://arxiv.org/abs/2004.07728
         .. [2] https://github.com/dingkeyan93/DISTS
     """
     _weights_url = "https://github.com/photosynthesis-team/piq/releases/download/v0.4.1/dists_weights.pt"

@@ -1,12 +1,14 @@
 <div align="center">  
 
-![piq_logo](https://user-images.githubusercontent.com/15848838/95228385-ed106500-0807-11eb-8584-d3fdbdd47ac7.jpeg) 
+[![piq_logo][piq-logo]][github-piq-url]
 
 [![PyPI version][pypi-version-shield]][pypi-version-url] [![Conda version][conda-version-shield]][conda-version-url] ![CI flake-8 style check][ci-flake-8-style-check-shield] ![CI testing][ci-testing] [![codecov][codecov-shield]][codecov-url] [![Quality Gate Status][quality-gate-status-shield]][quality-gate-status-url]
 
 </div>
 
 <!-- ABOUT THE PROJECT -->
+> PyTorch Image Quality (PIQ) is not endorsed by Facebook, Inc.;
+> PyTorch, the PyTorch logo and any related marks are trademarks of Facebook, Inc.
 
 Collection of measures and metrics for image quality assessment.
 - Unified interface, which is easy to use and extend.
@@ -16,6 +18,10 @@ Collection of measures and metrics for image quality assessment.
 - Most metrics can be backpropagated for model optimization.
 - Supports python 3.6-3.8.
 
+
+<!-- DOCUMENTATION -->
+### Documentation
+The [documentation](https://piq.readthedocs.io) is generated using [Sphinx](https://www.sphinx-doc.org/) framework and updated in a timely manner.
 
 <!-- GETTING STARTED -->
 ### Getting started
@@ -224,6 +230,8 @@ If you use PIQ in your project, please, cite it as follows.
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[github-piq-url]: https://github.com/photosynthesis-team/piq
+[piq-logo]: https://user-images.githubusercontent.com/22414094/106116361-df8a3c80-6162-11eb-83df-f5838110e614.png
 [license-shield]: https://img.shields.io/badge/License-Apache%202.0-blue.svg
 [ci-flake-8-style-check-shield]: https://github.com/photosynthesis-team/piq/workflows/flake-8%20style%20check/badge.svg
 [ci-testing]: https://github.com/photosynthesis-team/piq/workflows/testing/badge.svg

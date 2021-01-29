@@ -40,7 +40,7 @@ def brisque(x: torch.Tensor,
 
     References:
         .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
-        https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
+           https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
     """
     if '1.5.0' in torch.__version__:
         warnings.warn(f'BRISQUE does not support back propagation due to bug in torch={torch.__version__}.'
@@ -107,7 +107,7 @@ class BRISQUELoss(_Loss):
 
     References:
         .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
-        https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
+           https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
     """
     def __init__(self, kernel_size: int = 7, kernel_sigma: float = 7 / 6,
                  data_range: Union[int, float] = 1., reduction: str = 'mean',

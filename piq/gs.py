@@ -133,16 +133,15 @@ class GS(BaseFeatureMetric):
 
     References:
         .. [1] Khrulkov V., Oseledets I. (2018).
-        Geometry score: A method for comparing generative adversarial networks.
-        arXiv preprint, 2018.
-        https://arxiv.org/abs/1802.02664
+           Geometry score: A method for comparing generative adversarial networks.
+           arXiv preprint, 2018.
+           https://arxiv.org/abs/1802.02664
 
     Note:
         Computation is heavily CPU dependent, adjust `num_workers` parameter according to your system configuration.
         GS metric requiers `gudhi` library which is not installed by default.
         For conda, write: `conda install -c conda-forge gudhi`,
-            otherwise follow installation guide: http://gudhi.gforge.inria.fr/python/latest/installation.html
-
+        otherwise follow installation guide: http://gudhi.gforge.inria.fr/python/latest/installation.html
     """
     def __init__(self, sample_size: int = 64, num_iters: int = 1000, gamma: Optional[float] = None,
                  i_max: int = 100, num_workers: int = 4) -> None:
@@ -167,11 +166,11 @@ class GS(BaseFeatureMetric):
 
     def compute_metric(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
         r"""Implements Algorithm 2 from the paper.
+
         Args:
-            predicted_features: Samples from data distribution.
-                Shape (N_samples, data_dim).
-            target_features: Samples from data distribution.
-                Shape (N_samples, data_dim).
+            predicted_features: Samples from data distribution. Shape (N_samples, data_dim).
+            target_features: Samples from data distribution. Shape (N_samples, data_dim).
+
         Returns:
             score: Scalar value of the distance between distributions.
         """
