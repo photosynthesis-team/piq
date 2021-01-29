@@ -1,6 +1,6 @@
 Installation
 ------------
-PIQ can be installed using ``pip``, ``conda`` or ``git``.
+`PyTorch Image Quality (PIQ) <https://github.com/photosynthesis-team/piq>`_ can be installed using ``pip``, ``conda`` or ``git``.
 
 pip
 ^^^^^^^^^^^^^^^^^^^^^^
