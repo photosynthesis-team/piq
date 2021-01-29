@@ -202,7 +202,7 @@ Please see the [contribution guide](CONTRIBUTING.md) for more information.
 @misc{piq,
   title={{PyTorch Image Quality}: Metrics and Measure for Image Quality Assessment},
   url={https://github.com/photosynthesis-team/piq},
-  note={Open source software available from https://github.com/photosynthesis-team/piq},
+  note={Open-source software available at https://github.com/photosynthesis-team/piq},
   author={
     Sergey Kastryulin and
     Djamil Zakirov and
