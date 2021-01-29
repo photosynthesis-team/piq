@@ -198,6 +198,8 @@ Please see the [contribution guide](CONTRIBUTING.md) for more information.
 <!-- CITATION -->
 ### Citation
 
+If you use PIQ in your project, please, cite it as follows.
+
 ```tex
 @misc{piq,
   title={{PyTorch Image Quality}: Metrics and Measure for Image Quality Assessment},
