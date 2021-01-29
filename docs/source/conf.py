@@ -21,8 +21,8 @@ year = datetime.datetime.today().year
 
 # -- Project information -----------------------------------------------------
 
-project = 'PIQ'
-copyright = f'2020 - {year}, Photosynthesis Team'
+project = 'PyTorch Image Quality (PIQ)'
+copyright = f'2019 - {year}, Photosynthesis Team'
 author = 'Photosynthesis Team'
 
 # The full version, including alpha/beta/rc tags
