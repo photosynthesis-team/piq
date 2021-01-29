@@ -355,12 +355,12 @@ class MSID(BaseFeatureMetric):
             m: Lanczos steps in SLQ.
             niters: Number of starting random vectors for SLQ.
             rademacher: True to use Rademacher distribution,
-                False - standard normal for random vectors in Hutchinson.
+            False - standard normal for random vectors in Hutchinson.
             msid_mode: 'l2' to compute the l2 norm of the distance between `msid1` and `msid2`;
-                    'max' to find the maximum abosulute difference between two descriptors over temperature
+            'max' to find the maximum abosulute difference between two descriptors over temperature
             normalized_laplacian: if True, use normalized Laplacian.
             normalize: 'empty' for average heat kernel (corresponds to the empty graph normalization of NetLSD),
-                    'complete' for the complete, 'er' for erdos-renyi normalization, 'none' for no normalization
+            'complete' for the complete, 'er' for erdos-renyi normalization, 'none' for no normalization
 
         Returns:
             score: Scalar value of the distance between distributions.

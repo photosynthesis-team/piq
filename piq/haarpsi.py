@@ -28,12 +28,12 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         x: Tensor with shape (H, W), (C, H, W) or (N, C, H, W) holding a distorted image.
         y: Tensor with shape (H, W), (C, H, W) or (N, C, H, W) holding a target image.
         reduction: Specifies the reduction to apply to the output:
-            ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
-            ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed.
+        ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
+        ``'mean'``: the sum of the output will be divided by the number of
+        elements in the output, ``'sum'``: the output will be summed.
         data_range: The difference between the maximum and minimum of the pixel value,
-            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
-            The pixel value interval of both input and output should remain the same.
+        i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
+        The pixel value interval of both input and output should remain the same.
         scales: Number of Haar wavelets used for image decomposition.
         subsample: Flag to apply average pooling before HaarPSI computation. See [1] for details.
         c: Constant from the paper. See [1] for details
@@ -43,11 +43,11 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         HaarPSI : Wavelet-Based Perceptual Similarity between two tensors
     
     References:
-        [1] R. Reisenhofer, S. Bosse, G. Kutyniok & T. Wiegand (2017)
-            'A Haar Wavelet-Based Perceptual Similarity Index for Image Quality Assessment'
-            http://www.math.uni-bremen.de/cda/HaarPSI/publications/HaarPSI_preprint_v4.pdf
-        [2] Code from authors on MATLAB and Python
-            https://github.com/rgcda/haarpsi
+        .. [1] R. Reisenhofer, S. Bosse, G. Kutyniok & T. Wiegand (2017)
+           'A Haar Wavelet-Based Perceptual Similarity Index for Image Quality Assessment'
+           http://www.math.uni-bremen.de/cda/HaarPSI/publications/HaarPSI_preprint_v4.pdf
+        .. [2] Code from authors on MATLAB and Python
+           https://github.com/rgcda/haarpsi
     """
 
     _validate_input(input_tensors=(x, y), allow_5d=False, scale_weights=None, data_range=data_range)
@@ -177,8 +177,8 @@ class HaarPSILoss(_Loss):
 
     References:
         .. [1] R. Reisenhofer, S. Bosse, G. Kutyniok & T. Wiegand (2017)
-            'A Haar Wavelet-Based Perceptual Similarity Index for Image Quality Assessment'
-            http://www.math.uni-bremen.de/cda/HaarPSI/publications/HaarPSI_preprint_v4.pdf
+           'A Haar Wavelet-Based Perceptual Similarity Index for Image Quality Assessment'
+           http://www.math.uni-bremen.de/cda/HaarPSI/publications/HaarPSI_preprint_v4.pdf
     """
     def __init__(self, reduction: Optional[str] = 'mean', data_range: Union[int, float] = 1.,
                  scales: int = 3, subsample: bool = True, c: float = 30.0, alpha: float = 4.2) -> None:

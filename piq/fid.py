@@ -158,9 +158,9 @@ class FID(BaseFeatureMetric):
 
     References:
         .. [1] Heusel M. et al. (2017).
-        Gans trained by a two time-scale update rule converge to a local nash equilibrium.
-        Advances in neural information processing systems,
-        https://arxiv.org/abs/1706.08500
+           Gans trained by a two time-scale update rule converge to a local nash equilibrium.
+           Advances in neural information processing systems,
+           https://arxiv.org/abs/1706.08500
     """
 
     def compute_metric(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
