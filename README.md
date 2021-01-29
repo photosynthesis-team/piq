@@ -195,6 +195,23 @@ We appreciate all your contributions. If you plan to:
 Please see the [contribution guide](CONTRIBUTING.md) for more information.
 
 
+<!-- CITATION -->
+### Citation
+
+```tex
+@misc{piq,
+  title={{PyTorch Image Quality}: Metrics and Measure for Image Quality Assessment},
+  url={https://github.com/photosynthesis-team/piq},
+  note={Open source software available from https://github.com/photosynthesis-team/piq},
+  author={
+    Sergey Kastryulin and
+    Djamil Zakirov and
+    Denis Prokopenko},
+  year={2019},
+}
+```
+
+
 <!-- CONTACT -->
 #### Contacts
 
