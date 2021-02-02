@@ -214,7 +214,7 @@ class SRSIMLoss(_Loss):
         data_range: The difference between the maximum and minimum of the pixel value,
             i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
             The pixel value interval of both input and output should remain the same.
-        chromatic: Flag to compute FSIMc, which also takes into account chromatic components
+        chromatic: Flag to compute SRSIMc, which also takes into account chromatic components
         scale: Resizing factor used in saliency map computation
         kernel_size: Kernel size of average blur filter used in saliency map computation
         sigma: Sigma of gaussian filter applied on saliency map
@@ -262,7 +262,7 @@ class SRSIMLoss(_Loss):
         Returns:
             Value of SR-SIM loss to be minimized. 0 <= SR-SIM <= 1.
         """
-        # All checks are done inside fsim function
+        # All checks are done inside srsim function
         score = self.srsim(prediction, target)
 
         # Make sure value to be in [0, 1] range and convert to loss
