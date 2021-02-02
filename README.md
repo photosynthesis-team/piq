@@ -91,6 +91,7 @@ For a full list of examples, see [image metrics](examples/image_metrics.py) and 
  14. [Total Variation (TV)](https://en.wikipedia.org/wiki/Total_variation)
  15. [Visual Information Fidelity (VIF)](https://live.ece.utexas.edu/research/Quality/VIF.htm)
  16. [Visual Saliency-induced Index (VSI)](https://ieeexplore.ieee.org/document/6873260) 
+ 17. [DCT Subbands Similarity](http://sipl.eelabs.technion.ac.il/wp-content/uploads/sites/6/2016/09/paper15-Image-Quality-Assessment-Based-on-DCT-Subband-Similarity.pdf)
 
 <!-- FEATURE METRICS -->
 ### Feature metrics

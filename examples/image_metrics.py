@@ -36,6 +36,12 @@ def main():
     dists_loss = piq.DISTS(reduction='none')(prediction, target)
     print(f"DISTS: {dists_loss.item():0.4f}")
 
+    # To compute DSS as a measure, use lower case function from the library
+    dss_index: torch.Tensor = piq.dss(prediction, target, data_range=1., reduction='none')
+    # In order to use DSS as a loss function, use corresponding PyTorch module
+    dss_loss = piq.DSSLoss(data_range=1., reduction='none')(prediction, target)
+    print(f"DSS index: {dss_index.item():0.4f}, loss: {dss_loss.item():0.4f}")
+
     # To compute FSIM as a measure, use lower case function from the library
     fsim_index: torch.Tensor = piq.fsim(prediction, target, data_range=1., reduction='none')
     # In order to use FSIM as a loss function, use corresponding PyTorch module
