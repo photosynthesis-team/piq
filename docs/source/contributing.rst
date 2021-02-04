@@ -35,7 +35,9 @@ Building Documentation
 ''''''''''''''''''''''
 
 To build the documentation locally:
+
 1. Build and install PIQ
+
 2. Install prerequisites
 
 .. code-block:: bash
