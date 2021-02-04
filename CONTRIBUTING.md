@@ -4,6 +4,14 @@
 
 Use [GitHub Issues](https://github.com/photosynthesis-team/piq/issues) for bug reports and feature requests.
 
+### Code Style
+
+Please follow [Google Python style guide](http://google.github.io/styleguide/pyguide.html) as a guidance on your code
+style decisions. 
+The code will be checked with [flake-8 linter](http://flake8.pycqa.org/en/latest/) during the CI pipeline. 
+Standard PyCharm formatter and style checker appears to be more than enough in practice. 
+Use [commitizen](https://github.com/commitizen/cz-cli) commit style where possible for simplification of understanding
+of performed changes.
 
 ### Developing PIQ
 
@@ -42,20 +50,10 @@ To build the documentation locally:
     ```bash
     open your_piq_folder/docs/build/html/index.html
     ```
-#### Submitting changes for review
+#### Submitting Changes for Review
 
 It is helpful when submitting a PR that changes the docs to provide a rendered version of the result. If your change is
 small, you can add a screenshot of the changed docs to your PR.
-
-
-### Code Style
-
-Please follow [Google Python style guide](http://google.github.io/styleguide/pyguide.html) as a guidance on your code
-style decisions. 
-The code will be checked with [flake-8 linter](http://flake8.pycqa.org/en/latest/) during the CI pipeline. 
-Standard PyCharm formatter and style checker appears to be more than enough in practice. 
-Use [commitizen](https://github.com/commitizen/cz-cli) commit style where possible for simplification of understanding
-of performed changes.
 
 ### Get in Touch
 

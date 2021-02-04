@@ -56,7 +56,7 @@ To build the documentation locally:
 
     open your_piq_folder/docs/build/html/index.html
 
-Submitting changes for review
+Submitting Changes for Review
 '''''''''''''''''''''''''''''
 
 It is helpful when submitting a PR that changes the docs to provide a rendered version of the result. If your change is
