@@ -57,4 +57,7 @@ Standard PyCharm formatter and style checker appears to be more than enough in p
 Use [commitizen](https://github.com/commitizen/cz-cli) commit style where possible for simplification of understanding
 of performed changes.
 
-Feel free to reach out to one of contributors if you have any questions.
+### Get in Touch
+
+Feel free to reach out to [one of contributors](https://github.com/photosynthesis-team/piq#contacts)
+if you have any questions.
