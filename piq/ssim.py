@@ -1,5 +1,61 @@
 r""" This module implements Structural Similarity (SSIM) index in PyTorch.
 
+    Description:
+        Suppose $x$ and $y$ are two non-negative image signals, which have been aligned with each other (e.g., spatial patches extracted from each image). If considered one of the signals to have perfect quality, then the similarity measure can serve as a quantitative measure-ment of the quality of the second signal. The system separates the task of similarity measurement into three comparisons:  luminance, contrast and structure.  First, the luminance of each signal is compared. Assuming discrete signals, this is estimated as the mean intensity:
+        $$
+        \mu_y=\frac{1}{N}\sum_{i = 1}^{n}x_i. \qquad (1)
+        $$
+        The luminance comparison function $l(x,y)$ is then a function of $\mu_x$ and $\mu_y$, and remove the mean intensity from the signal. In discrete form, the resulting signal $x−\mu_x$ corresponds to the projection of vector $x$ on to the hyperplane defined by
+        $$
+        \sum_{i = 1}^{n}x_i=0. \qquad (2)
+        $$
+        The standard deviation (the square root of variance) as an estimate of the signal contrast. An unbiased estimatein discrete form is given by
+        $$
+        \sigma_{x}=\left(\frac{1}{N-1} \sum_{i=1}^{N}\left(x_{i}-\mu_{x}\right)^{2}\right)^{1 / 2} \qquad (3)
+        $$
+        The contrast comparison $c(x,y)$ is then the comparison of $\sigma_{x}$ and $\sigma_y$. Third, the signal is normalized (divided) by its own standard deviation, so that the two signals being compared have unit standard deviation. The structure comparison $s(x,y)$ is conducted on these normalized signals $(x−\mu_{x})/\sigma_{x}$ and $(y−\mu_{y})/\sigma_{y}$.
+        Finally, the three components are combined to yield anoverall similarity measure:
+        $$
+        S(x,y) =f(l(x,y), c(x,y), s(x,y)). \qquad (4)
+        $$
+        An important point is that the three components are relatively independent. For example, the change of luminance and/or contrast will not affect the structures of images. In order to complete the definition of the similarity measure in Eq.  (4), needs to define the three functions $l(x,y),c(x,y),s(x,y)$, as well as the combination function $f(·)$.  We also would like the similarity measure to satisfy the following conditions:
+        1. Symmetry: $S(x,y) =S(y,x)$;
+        2. Boundedness: $S(x,y)\leq 1$;
+        3. Unique maximum: $S(x,y) = 1$ if and only if $x=y$(indiscrete representations, $x_{i}=y_i$ for all $i= 1,2,···, N$).
+
+        For luminance comparison defined
+        $$
+        l(x,y) =\frac{2\mu_x\mu_y+C_1}{{\mu_x}^2+{\mu_y}^2+C_1} \qquad (5)
+        $$
+        where the constant $C_1$ is included to avoid instability when {\mu_x}^2+{\mu_y}^2 is very close to zero. Specifically,  choose $$C_1= {(K_1L)}^2, \qquad (6)$$
+        where $L$ is the dynamic range of the pixel values (255 for 8-bit grayscale images), and $K_1 \ll 1$ is a small constant. Similar considerations also apply to contrast comparisonand structure comparison described later. Eq. (5) is easily seen to obey the three properties listed above. Equation (5) is also qualitatively consistent with We-ber’s law, which has been widely used to model light adaptation (also called luminance masking) in the HVS. According to Weber’s law, the magnitude of a just-noticeable luminance change $\Delta I$ is approximately proportional to the background luminance $I$ for a wide range of luminance values. In other words, the HVS is sensitive to therelative luminance change, and not the absolute luminance change. Letting $R$ represent the size of luminance change relativ eto background luminance, we rewrite the luminance of the distorted signal as $\mu_y= (1 +R)\mu_x$. Substituting this into Eq. (5) gives 
+        $$
+        l(x,y) =\frac{2(1 +R)}{1 + {(1 +R)}^2+C_1/{\mu_x}^2} \qquad (7)
+        $$
+        If we assume $C_1$ is small enough (relative to ${\mu_x}^2$) to beignored, then $l(x,y)$ is a function only of $R$, qualitatively consistent with Weber’s law. The contrast comparison function takes a similar form:
+        $$
+        c(x,y) =\frac {2\sigma_x\sigma_y+C_2} {{\sigma_x}^2+{\sigma_y}^2+C_2}, \qquad (8)
+        $$
+        where $C_2= (K_2L)^2$, and $K_2 \ll 1$. This definition againsatisfies the three properties listed above.  An importantfeature of this function is that with the same amount of contrast change $\Delta\sigma=\sigma_y−\sigma_x$, this measure is less sensitive to the case of high base contrast $\sigma_x$ than low base contrast. This is consistent with the contrast masking feature of the HVS.
+
+        Structure comparison is conducted after luminance subtraction and variance normalization.  Specifically, associate the two unit vectors $(x−\mu_x)/\sigma_x$ and $(y−\mu_y)/\sigma_y$, each lying in the hyperplane defined by Eq. (2), with thestructure of the two images. The correlation (inner product) between these is a simple and effective measure toquantify the structural similarity. Notice that the corre-lation between $(x−\mu_x)/\sigma_x$ and $(y−\mu_y)/\sigma_y$ is equivalent to the correlation coefficient between $x$ and $y$. Thus, wedefine the structure comparison function as follows:
+        $$
+        s(x,y) =\frac {\sigma_{xy}+C_3}{\sigma_x\sigma_y+C_3}. \qquad (9)
+        $$
+        As in the luminance and contrast measures, we have introduced a small constant in both denominator and numerator.  In discrete form, $\sigma_{xy}$ can be estimated as:
+        $$
+        \sigma_{xy}=\frac{1}{N−1N}\sum_{i = 1}^{n}(x_i−\mu_x)(y_i−\nu_y). \qquad (10)
+        $$
+        Geometrically, the correlation coefficient corresponds to the cosine of the angle between the vectors $x−\mu_x$ and $y−\nu_y$. Note also that $s(x,y)$ can take on negative values. Finally, combine the three comparisons of Eqs. (5),(8) and (9) and name the resulting similarity measure the **Structural SIMilarity (SSIM)** index between signals $x$ and $y$:
+        $$
+        SSIM(x,y) = {[l(x,y)]}^{\alpha}·{[c(x,y)]}^{\beta}·{[s(x,y)]}^{\gamma}, \qquad (11)
+        $$
+        where $\alpha >0$, $\beta >0$ and $\gamma >0$ are parameters used to adjust the relative importance of the three components. It is easy to verify that this definition satisfies the three conditions given above. In order to simplify the expression,  set $\alpha = \beta = \gamma = 1$ and $C_3=C_2/2$. This results in a specific form of the SSIM index:
+        $$
+        \operatorname{SSIM}(\mathrm{x}, \mathrm{y})=\frac{\left(2 \mu_{x} \mu_{y}+C_{1}\right)\left(2 \sigma_{x y}+C_{2}\right)}{\left(\mu_{x}^{2}+\mu_{y}^{2}+C_{1}\right)\left(\sigma_{x}^{2}+\sigma_{y}^{2}+C_{2}\right)} \qquad (12)
+        $$
+
+
 Implementation of classes and functions from this module are inspired by Gongfan Fang's (@VainF) implementation:
 https://github.com/VainF/pytorch-msssim
 
