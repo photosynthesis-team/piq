@@ -88,9 +88,9 @@ def mdsi(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1., r
 
     cs_total = (2 * (x_lhm[:, 1:2] * y_lhm[:, 1:2] +
                      x_lhm[:, 2:] * y_lhm[:, 2:]) + c3) / (x_lhm[:, 1:2] ** 2 +
-                                                                         y_lhm[:, 1:2] ** 2 +
-                                                                         x_lhm[:, 2:] ** 2 +
-                                                                         y_lhm[:, 2:] ** 2 + c3)
+                                                           y_lhm[:, 1:2] ** 2 +
+                                                           x_lhm[:, 2:] ** 2 +
+                                                           y_lhm[:, 2:] ** 2 + c3)
 
     if combination == 'sum':
         gcs = (alpha * gs_total + (1 - alpha) * cs_total)
@@ -154,6 +154,7 @@ class MDSILoss(_Loss):
            https://ieeexplore.ieee.org/abstract/document/7556976/,
            DOI:`10.1109/ACCESS.2016.2604042`
     """
+
     def __init__(self, data_range: Union[int, float] = 1., reduction: str = 'mean',
                  c1: float = 140., c2: float = 55., c3: float = 550., alpha: float = 0.6,
                  rho: float = 1., q: float = 0.25, o: float = 0.25, combination: str = 'sum',

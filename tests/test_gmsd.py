@@ -18,6 +18,7 @@ def x() -> torch.Tensor:
 def y() -> torch.Tensor:
     return torch.rand(2, 3, 96, 96)
 
+
 x_image = [
     torch.tensor(imread('tests/assets/goldhill_jpeg.gif'), dtype=torch.float32).unsqueeze(0).unsqueeze(0),
     torch.tensor(imread('tests/assets/i01_01_5.bmp'), dtype=torch.float32).permute(2, 0, 1).unsqueeze(0)
@@ -79,7 +80,7 @@ def test_gmsd_fails_for_incorrect_data_range(x, y, device: str) -> None:
     y_scaled = (y * 255).type(torch.uint8)
     with pytest.raises(AssertionError):
         gmsd(x_scaled.to(device), y_scaled.to(device), data_range=1.0)
-        
+
 
 def test_gmsd_supports_greyscale_tensors(device: str) -> None:
     y = torch.ones(2, 1, 96, 96)
@@ -101,7 +102,7 @@ def test_gmsd_compare_with_matlab(input_images_score: Tuple[torch.Tensor, torch.
     x, y, y_value = input_images_score
     score = gmsd(x=x.to(device), y=y.to(device), data_range=255)
     assert torch.isclose(score, y_value.to(score)), f'The estimated value must be equal to MATLAB provided one, ' \
-                                                         f'got {score.item():.8f}, while MATLAB equals {y_value}'
+                                                    f'got {score.item():.8f}, while MATLAB equals {y_value}'
 
 
 # ================== Test class: `GMSDLoss` ==================
@@ -235,7 +236,7 @@ def test_multi_scale_gmsd_loss_forward_backward(x, y, device: str) -> None:
     loss_value = MultiScaleGMSDLoss(chromatic=True)(x.to(device), y.to(device))
     loss_value.backward()
     assert torch.isfinite(x.grad).all(), LEAF_VARIABLE_ERROR_MESSAGE
-    
+
 
 def test_multi_scale_gmsd_loss_zero_for_equal_tensors(x, device: str) -> None:
     loss = MultiScaleGMSDLoss()

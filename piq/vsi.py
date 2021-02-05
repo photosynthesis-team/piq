@@ -71,9 +71,9 @@ def vsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean', data_range: U
     y = y * 255. / data_range
 
     vs_x = sdsp(x, data_range=255, omega_0=omega_0,
-                         sigma_f=sigma_f, sigma_d=sigma_d, sigma_c=sigma_c)
+                sigma_f=sigma_f, sigma_d=sigma_d, sigma_c=sigma_c)
     vs_y = sdsp(y, data_range=255, omega_0=omega_0, sigma_f=sigma_f,
-                     sigma_d=sigma_d, sigma_c=sigma_c)
+                sigma_d=sigma_d, sigma_c=sigma_c)
 
     # Convert to LMN colour space
     x_lmn = rgb2lmn(x)
@@ -173,6 +173,7 @@ class VSILoss(_Loss):
            https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
            DOI:`10.1109/TIP.2003.819861`
     """
+
     def __init__(self, reduction: str = 'mean', c1: float = 1.27, c2: float = 386., c3: float = 130.,
                  alpha: float = 0.4, beta: float = 0.02, data_range: Union[int, float] = 1.,
                  omega_0: float = 0.021, sigma_f: float = 1.34, sigma_d: float = 145., sigma_c: float = 0.001) -> None:

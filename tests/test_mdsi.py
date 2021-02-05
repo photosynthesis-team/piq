@@ -71,7 +71,7 @@ def test_mdsi_fails_for_incorrect_data_range(x, y, device: str) -> None:
     y_scaled = (y * 255).type(torch.uint8)
     with pytest.raises(AssertionError):
         mdsi(x_scaled.to(device), y_scaled.to(device), data_range=1.0)
-        
+
 
 @pytest.mark.parametrize("combination", ['sum', 'mult'])
 def test_mdsi_compare_with_matlab(input_images_score: Tuple[torch.Tensor, torch.Tensor, torch.Tensor],
@@ -80,7 +80,7 @@ def test_mdsi_compare_with_matlab(input_images_score: Tuple[torch.Tensor, torch.
     y_value = y_value[combination]
     score = mdsi(x=x.to(device), y=y.to(device), data_range=255, combination=combination)
     assert torch.isclose(score, y_value.to(score)), f'The estimated value must be equal to MATLAB provided one, ' \
-                                                         f'got {score.item():.8f}, while MATLAB equals {y_value}'
+                                                    f'got {score.item():.8f}, while MATLAB equals {y_value}'
 
 
 # ================== Test function: `MDSILoss` ==================
@@ -101,6 +101,6 @@ def test_mdsi_loss_compare_with_matlab(input_images_score: Tuple[torch.Tensor, t
     score = MDSILoss(data_range=255, combination=combination)(x=x.to(device), y=y.to(device))
     score.backward()
     assert torch.isclose(score, 1. - y_value.to(score)), f'The estimated value must be equal to MATLAB ' \
-                                                              f'provided one, got {score.item():.8f}, ' \
-                                                              f'while MATLAB equals {1. - y_value}'
+                                                         f'provided one, got {score.item():.8f}, ' \
+                                                         f'while MATLAB equals {1. - y_value}'
     assert torch.isfinite(x.grad).all(), f'Expected finite gradient values, got {x.grad}'
