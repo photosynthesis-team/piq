@@ -25,33 +25,33 @@ def logits_to_score_scipy(logits, num_splits=10):
 
 
 @pytest.fixture(scope='module')
-def features_target_normal() -> torch.Tensor:
+def features_y_normal() -> torch.Tensor:
     m = torch.distributions.Normal(0, 5)
     return m.sample((1000, 20))
 
 
 @pytest.fixture(scope='module')
-def features_prediction_normal() -> torch.Tensor:
+def features_x_normal() -> torch.Tensor:
     m = torch.distributions.Normal(0, 5)
     return m.sample((1000, 20))
 
 
 @pytest.fixture(scope='module')
-def features_prediction_beta() -> torch.Tensor:
+def features_x_beta() -> torch.Tensor:
     m = torch.distributions.Beta(2, 2)
     return m.sample((1000, 20))
 
 
 # ================== Test function: `inception_score` ==================
-def test_inception_score_returns_two_values(features_target_normal: torch.Tensor) -> None:
-    result = inception_score(features_target_normal)
+def test_inception_score_returns_two_values(features_y_normal) -> None:
+    result = inception_score(features_y_normal)
     assert len(result) == 2, \
         f'Expected to get score and variance, got {result}'
 
 
-def test_inception_score_equal_to_scipy_version(features_target_normal: torch.Tensor) -> None:
-    score, var = inception_score(features_target_normal)
-    score_scipy, var_scipy = torch.tensor(logits_to_score_scipy(features_target_normal))
+def test_inception_score_equal_to_scipy_version(features_y_normal) -> None:
+    score, var = inception_score(features_y_normal)
+    score_scipy, var_scipy = torch.tensor(logits_to_score_scipy(features_y_normal))
     mean_diff = abs(score - score_scipy)
     var_diff = abs(var - var_scipy)
     assert (mean_diff <= 1e-4) and (var_diff <= 0.5), \
@@ -75,19 +75,19 @@ def test_inception_score_on_cifar10_train_equals_to_paper_value() -> None:
     model = torchvision.models.inception_v3(pretrained=True, transform_input=False).cuda()
     model.eval()
 
-    target_features = []
+    y_features = []
     with torch.no_grad():
         upsample = torch.nn.Upsample(size=(299, 299), mode='bilinear')
         for i, batch in enumerate(loader):
             images, labels = batch
             output = model(upsample(images).cuda())
-            target_features.append(output)
+            y_features.append(output)
             # Take only 10000 images, to make everything faster
             if i == 100:
                 break
 
-    target_features = torch.cat(target_features, dim=0)
-    mean, variance = inception_score(target_features)
+    y_features = torch.cat(y_features, dim=0)
+    mean, variance = inception_score(y_features)
     # # Values from paper https://arxiv.org/pdf/1801.01973.pdf
     # # CIFAR10 train: 9.737±0.148
     mean_diff, var_diff = abs(mean - 9.737), abs(variance - 0.148)
@@ -104,25 +104,25 @@ def test_initialization() -> None:
 
 
 def test_forward(
-        features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor,) -> None:
+        features_y_normal, features_x_normal,) -> None:
     try:
         metric = IS()
-        metric(features_target_normal, features_prediction_normal)
+        metric(features_y_normal, features_x_normal)
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
 def test_similar_for_same_distribution(
-        features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor) -> None:
+        features_y_normal, features_x_normal) -> None:
     metric = IS(distance='l1')
-    diff = metric(features_prediction_normal, features_target_normal)
+    diff = metric(features_x_normal, features_y_normal)
     assert diff <= 1.0, \
         f'For same distributions IS difference should be small, got {diff}'
 
 
 def test_differs_for_notsimular_distributions(
-        features_prediction_beta: torch.Tensor, features_target_normal: torch.Tensor) -> None:
+        features_x_beta, features_y_normal) -> None:
     metric = IS(distance='l1')
-    diff = metric(features_prediction_beta, features_target_normal)
+    diff = metric(features_x_beta, features_y_normal)
     assert diff >= 5.0, \
         f'For different distributions IS diff should be big, got {diff}'

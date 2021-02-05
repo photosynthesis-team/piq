@@ -15,7 +15,7 @@ import functools
 import warnings
 
 
-def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean', data_range: Union[int, float] = 1.,
+def vsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean', data_range: Union[int, float] = 1.,
         c1: float = 1.27, c2: float = 386., c3: float = 130., alpha: float = 0.4, beta: float = 0.02,
         omega_0: float = 0.021, sigma_f: float = 1.34, sigma_d: float = 145., sigma_c: float = 0.001) -> torch.Tensor:
     r"""Compute Visual Saliency-induced Index for a batch of images.
@@ -25,8 +25,8 @@ def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
     channel 3 times.
 
     Args:
-        prediction:  Tensor with shape (H, W), (C, H, W) or (N, C, H, W) holding a distorted image.
-        target: Tensor with shape (H, W), (C, H, W) or (N, C, H, W) holding a target image.
+        x:  Tensor with shape (H, W), (C, H, W) or (N, C, H, W) holding a distorted image.
+        y: Tensor with shape (H, W), (C, H, W) or (N, C, H, W) holding a target image.
         reduction: Reduction over samples in batch: "mean"|"sum"|"none"
         data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
         c1: coefficient to calculate saliency component of VSI
@@ -58,29 +58,29 @@ def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
         The original method supports only RGB image.
         See https://ieeexplore.ieee.org/document/6873260 for details.
     """
-    _validate_input(input_tensors=(prediction, target), allow_5d=False)
-    prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
-    if prediction.size(1) == 1:
-        prediction = prediction.repeat(1, 3, 1, 1)
-        target = target.repeat(1, 3, 1, 1)
+    _validate_input(input_tensors=(x, y), allow_5d=False)
+    x, y = _adjust_dimensions(input_tensors=(x, y))
+    if x.size(1) == 1:
+        x = x.repeat(1, 3, 1, 1)
+        y = y.repeat(1, 3, 1, 1)
         warnings.warn('The original VSI supports only RGB images. The input images were converted to RGB by copying '
                       'the grey channel 3 times.')
 
     # Scale to [0, 255] range to match scale of constant
-    prediction = prediction * 255. / data_range
-    target = target * 255. / data_range
+    x = x * 255. / data_range
+    y = y * 255. / data_range
 
-    vs_prediction = sdsp(prediction, data_range=255, omega_0=omega_0,
+    vs_x = sdsp(x, data_range=255, omega_0=omega_0,
                          sigma_f=sigma_f, sigma_d=sigma_d, sigma_c=sigma_c)
-    vs_target = sdsp(target, data_range=255, omega_0=omega_0, sigma_f=sigma_f,
+    vs_y = sdsp(y, data_range=255, omega_0=omega_0, sigma_f=sigma_f,
                      sigma_d=sigma_d, sigma_c=sigma_c)
 
     # Convert to LMN colour space
-    prediction_lmn = rgb2lmn(prediction)
-    target_lmn = rgb2lmn(target)
+    x_lmn = rgb2lmn(x)
+    y_lmn = rgb2lmn(y)
 
     # Averaging image if the size is large enough
-    kernel_size = max(1, round(min(vs_prediction.size()[-2:]) / 256))
+    kernel_size = max(1, round(min(vs_x.size()[-2:]) / 256))
     padding = kernel_size // 2
 
     if padding:
@@ -88,27 +88,27 @@ def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
         bottom_pad = (kernel_size - 1) // 2
         pad_to_use = [upper_pad, bottom_pad, upper_pad, bottom_pad]
         mode = 'replicate'
-        vs_prediction = pad(vs_prediction, pad=pad_to_use, mode=mode)
-        vs_target = pad(vs_target, pad=pad_to_use, mode=mode)
-        prediction_lmn = pad(prediction_lmn, pad=pad_to_use, mode=mode)
-        target_lmn = pad(target_lmn, pad=pad_to_use, mode=mode)
+        vs_x = pad(vs_x, pad=pad_to_use, mode=mode)
+        vs_y = pad(vs_y, pad=pad_to_use, mode=mode)
+        x_lmn = pad(x_lmn, pad=pad_to_use, mode=mode)
+        y_lmn = pad(y_lmn, pad=pad_to_use, mode=mode)
 
-    vs_prediction = avg_pool2d(vs_prediction, kernel_size=kernel_size)
-    vs_target = avg_pool2d(vs_target, kernel_size=kernel_size)
+    vs_x = avg_pool2d(vs_x, kernel_size=kernel_size)
+    vs_y = avg_pool2d(vs_y, kernel_size=kernel_size)
 
-    prediction_lmn = avg_pool2d(prediction_lmn, kernel_size=kernel_size)
-    target_lmn = avg_pool2d(target_lmn, kernel_size=kernel_size)
+    x_lmn = avg_pool2d(x_lmn, kernel_size=kernel_size)
+    y_lmn = avg_pool2d(y_lmn, kernel_size=kernel_size)
 
     # Calculate gradient map
-    kernels = torch.stack([scharr_filter(), scharr_filter().transpose(1, 2)]).to(prediction_lmn)
-    gm_prediction = gradient_map(prediction_lmn[:, :1], kernels)
-    gm_target = gradient_map(target_lmn[:, :1], kernels)
+    kernels = torch.stack([scharr_filter(), scharr_filter().transpose(1, 2)]).to(x_lmn)
+    gm_x = gradient_map(x_lmn[:, :1], kernels)
+    gm_y = gradient_map(y_lmn[:, :1], kernels)
 
     # Calculate all similarity maps
-    s_vs = similarity_map(vs_prediction, vs_target, c1)
-    s_gm = similarity_map(gm_prediction, gm_target, c2)
-    s_m = similarity_map(prediction_lmn[:, 1:2], target_lmn[:, 1:2], c3)
-    s_n = similarity_map(prediction_lmn[:, 2:], target_lmn[:, 2:], c3)
+    s_vs = similarity_map(vs_x, vs_y, c1)
+    s_gm = similarity_map(gm_x, gm_y, c2)
+    s_m = similarity_map(x_lmn[:, 1:2], y_lmn[:, 1:2], c3)
+    s_n = similarity_map(x_lmn[:, 2:], y_lmn[:, 2:], c3)
     s_c = s_m * s_n
 
     s_c_complex = [s_c.abs(), torch.atan2(torch.zeros_like(s_c), s_c)]
@@ -116,7 +116,7 @@ def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
     s_c_real_pow = s_c_complex_pow[0] * torch.cos(s_c_complex_pow[1])
 
     s = s_vs * s_gm.pow(alpha) * s_c_real_pow
-    vs_max = torch.max(vs_prediction, vs_target)
+    vs_max = torch.max(vs_x, vs_y)
 
     eps = torch.finfo(vs_max.dtype).eps
     output = s * vs_max
@@ -160,9 +160,9 @@ class VSILoss(_Loss):
     Examples::
 
         >>> loss = VSILoss()
-        >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
-        >>> target = torch.rand(3, 3, 256, 256)
-        >>> output = loss(prediction, target)
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
         >>> output.backward()
 
     References:
@@ -184,12 +184,12 @@ class VSILoss(_Loss):
             vsi, c1=c1, c2=c2, c3=c3, alpha=alpha, beta=beta, omega_0=omega_0,
             sigma_f=sigma_f, sigma_d=sigma_d, sigma_c=sigma_c, data_range=data_range, reduction=reduction)
 
-    def forward(self, prediction, target):
+    def forward(self, x, y):
         r"""Computation of VSI as a loss function.
 
         Args:
-            prediction: Tensor of prediction of the network.
-            target: Reference tensor.
+            x: Tensor of prediction of the network.
+            y: Reference tensor.
 
         Returns:
             Value of VSI loss to be minimized. 0 <= VSI loss <= 1.
@@ -200,7 +200,7 @@ class VSILoss(_Loss):
             channel 3 times.
         """
 
-        return 1. - self.vsi(prediction=prediction, target=target)
+        return 1. - self.vsi(x=x, y=y)
 
 
 def sdsp(x: torch.Tensor, data_range: Union[int, float] = 255, omega_0: float = 0.021, sigma_f: float = 1.34,

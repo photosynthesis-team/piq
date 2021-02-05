@@ -123,9 +123,9 @@ class SSIMLoss(_Loss):
 
     Examples::
         >>> loss = SSIMLoss()
-        >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
-        >>> target = torch.rand(3, 3, 256, 256)
-        >>> output = loss(prediction, target)
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
         >>> output.backward()
 
     References:
@@ -152,21 +152,19 @@ class SSIMLoss(_Loss):
         self.k2 = k2
         self.data_range = data_range
 
-    def forward(self,
-                prediction: torch.Tensor,
-                target: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         r"""Computation of Structural Similarity (SSIM) index as a loss function.
 
         Args:
-            prediction: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
-            target: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
+            x: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
+            y: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
 
         Returns:
             Value of SSIM loss to be minimized, i.e 1 - `ssim`. 0 <= SSIM loss <= 1. In case of 5D input tensors,
             complex value is returned as a tensor of size 2.
         """
 
-        score = ssim(x=prediction, y=target, kernel_size=self.kernel_size, kernel_sigma=self.kernel_sigma,
+        score = ssim(x=x, y=y, kernel_size=self.kernel_size, kernel_sigma=self.kernel_sigma,
                      data_range=self.data_range, reduction=self.reduction, full=False, k1=self.k1, k2=self.k2)
         return torch.ones_like(score) - score
 
@@ -337,21 +335,21 @@ class MultiScaleSSIMLoss(_Loss):
         self.k2 = k2
         self.data_range = data_range
 
-    def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         r"""Computation of Multi-scale Structural Similarity (MS-SSIM) index as a loss function.
         The size of the image should be at least (kernel_size - 1) * 2 ** (levels - 1) + 1.
         For colour images channel order is RGB.
 
         Args:
-            prediction: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
-            target: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
+            x: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
+            y: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
 
         Returns:
             Value of MS-SSIM loss to be minimized, i.e. 1-`ms_sim`. 0 <= MS-SSIM loss <= 1. In case of 5D tensor,
             complex value is returned as a tensor of size 2.
         """
 
-        score = multi_scale_ssim(x=prediction, y=target, kernel_size=self.kernel_size, kernel_sigma=self.kernel_sigma,
+        score = multi_scale_ssim(x=x, y=y, kernel_size=self.kernel_size, kernel_sigma=self.kernel_sigma,
                                  data_range=self.data_range, reduction=self.reduction, scale_weights=self.scale_weights,
                                  k1=self.k1, k2=self.k2)
         return torch.ones_like(score) - score

@@ -12,30 +12,29 @@ def raise_nothing():
     yield
 
 
-def test_pieapp_loss_forward(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+def test_pieapp_loss_forward(x, y, device: str) -> None:
     loss = PieAPP()
-    loss(prediction.to(device), target.to(device))
+    loss(x.to(device), y.to(device))
 
 
-def test_pieapp_computes_grad(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
-    prediction.requires_grad_()
-    loss_value = PieAPP(enable_grad=True)(prediction.to(device), target.to(device))
+def test_pieapp_computes_grad(x, y, device: str) -> None:
+    x.requires_grad_()
+    loss_value = PieAPP(enable_grad=True)(x.to(device), y.to(device))
     loss_value.backward()
-    assert prediction.grad is not None, 'Expected non None gradient of leaf variable'
+    assert x.grad is not None, 'Expected non None gradient of leaf variable'
 
 
 @pytest.mark.parametrize(
-    "prediction,target,expectation,value",
+    "x, y, expectation,value",
     [
         (torch.zeros(2, 3, 96, 96), torch.zeros(2, 3, 96, 96), raise_nothing(), 0.0),
         (torch.ones(2, 3, 96, 96), torch.ones(2, 3, 96, 96), raise_nothing(), 0.0),
     ],
 )
-def test_pieapp_loss_forward_for_special_cases(
-        prediction: torch.Tensor, target: torch.Tensor, expectation: Any, value: float) -> None:
+def test_pieapp_loss_forward_for_special_cases(x, y, expectation: Any, value: float) -> None:
     loss = PieAPP()
     with expectation:
-        loss_value = loss(prediction, target)
+        loss_value = loss(x, y)
         assert torch.isclose(loss_value, torch.tensor(value), atol=1e-6), \
             f'Expected loss value to be equal to target value. Got {loss_value} and {value}'
 
@@ -73,9 +72,9 @@ def test_pieapp_supports_different_data_ranges(
     assert diff <= 1e-6, f'Result for same tensor with different data_range should be the same, got {diff}'
 
 
-def test_pieapp_fails_for_incorrect_data_range(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+def test_pieapp_fails_for_incorrect_data_range(x, y, device: str) -> None:
     # Scale to [0, 255]
-    prediction_scaled = (prediction * 255).type(torch.uint8)
-    target_scaled = (target * 255).type(torch.uint8)
+    x_scaled = (x * 255).type(torch.uint8)
+    y_scaled = (y * 255).type(torch.uint8)
     with pytest.raises(AssertionError):
-        PieAPP(data_range=1.0, stride=27)(prediction_scaled.to(device), target_scaled.to(device))
+        PieAPP(data_range=1.0, stride=27)(x_scaled.to(device), y_scaled.to(device))
