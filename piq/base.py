@@ -1,7 +1,7 @@
 import torch
 
 from piq.feature_extractors import InceptionV3
-from piq.utils import _validate_features
+from piq.utils import _validate_input
 
 
 class BaseFeatureMetric(torch.nn.Module):
@@ -14,6 +14,7 @@ class BaseFeatureMetric(torch.nn.Module):
 
     def forward(self, x_features: torch.Tensor, y_features: torch.Tensor) -> torch.Tensor:
         # Sanity check for input
+        _validate_input([x_features, y_features], dim_range=(2, 2))
         _validate_features(x_features, y_features)
         return self.compute_metric(x_features, y_features)
 
@@ -57,5 +58,9 @@ class BaseFeatureMetric(torch.nn.Module):
 
         return torch.cat(total_feats, dim=0)
 
+<<<<<<< HEAD
     def compute_metric(self, x_features: torch.Tensor, y_features: torch.Tensor) -> torch.Tensor:
+=======
+    def compute_metric(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+>>>>>>> feature/validation: Simplify validation. Delete adjust dimensions
         raise NotImplementedError("This function should be defined for each children class")

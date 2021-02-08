@@ -32,13 +32,6 @@ def _sqrtm_newton_schulz(matrix: torch.Tensor, num_iters: int = 100) -> Tuple[to
         Square root of matrix
         Error
     """
-    expected_num_dims = 2
-    if matrix.dim() != expected_num_dims:
-        raise ValueError(f'Input dimension equals {matrix.dim()}, expected {expected_num_dims}')
-
-    if num_iters <= 0:
-        raise ValueError(f'Number of iteration equals {num_iters}, expected greater than 0')
-
     dim = matrix.size(0)
     norm_of_matrix = matrix.norm(p='fro')
     Y = matrix.div(norm_of_matrix)
@@ -149,8 +142,13 @@ class FID(BaseFeatureMetric):
     But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
 
     Args:
+<<<<<<< HEAD
         x_features: Low-dimension representation of predicted image set :math:`x`. Shape (N_x, encoder_dim)
         y_features: Low-dimension representation of target image set :math:`y`. Shape (N_y, encoder_dim)
+=======
+        x: Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
+        y: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
+>>>>>>> feature/validation: Simplify validation. Delete adjust dimensions
 
     Returns:
         score: Scalar value of the distance between image sets features.
@@ -165,8 +163,8 @@ class FID(BaseFeatureMetric):
 
     def compute_metric(self, x_features: torch.Tensor, y_features: torch.Tensor) -> torch.Tensor:
         r"""
-        Fits multivariate Gaussians: X ~ N(mu_1, sigm_1) and Y ~ N(mu_2, sigm_2) to image stacks.
-        Then computes FID as d^2 = ||mu_1 - mu_2||^2 + Tr(sigm_1 + sigm_2 - 2*sqrt(sigm_1*sigm_2)).
+        Fits multivariate Gaussians: X ~ N(mu_x, sigma_x) and Y ~ N(mu_y, sigma_y) to image stacks.
+        Then computes FID as d^2 = ||mu_x - mu_y||^2 + Tr(sigma_x + sigma_y - 2*sqrt(sigma_x * sigma_y)).
 
         Args:
             x_features: Samples from data distribution.
@@ -183,4 +181,4 @@ class FID(BaseFeatureMetric):
 
         score = _compute_fid(mu_x, sigma_x, mu_y, sigma_y)
 
-        return score.to(dtype=torch.float32)
+        return score

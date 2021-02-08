@@ -2,86 +2,48 @@ from typing import Optional, Union, Tuple, List, Iterable
 import torch
 
 
-def _adjust_dimensions(input_tensors: Union[torch.Tensor, Iterable[torch.Tensor]]):
-    r"""Expands input tensors dimensions to 4D (N, C, H, W).
-    """
-    if isinstance(input_tensors, torch.Tensor):
-        input_tensors = (input_tensors,)
-
-    resized_tensors = []
-    for tensor in input_tensors:
-        tmp = tensor.clone()
-        if tmp.dim() == 2:
-            tmp = tmp.unsqueeze(0)
-        if tmp.dim() == 3:
-            tmp = tmp.unsqueeze(0)
-        if tmp.dim() != 4 and tmp.dim() != 5:
-            raise ValueError(f'Expected 2, 3, 4 or 5 dimensions (got {tensor.dim()})')
-        resized_tensors.append(tmp)
-
-    if len(resized_tensors) == 1:
-        return resized_tensors[0]
-
-    return tuple(resized_tensors)
-
-
 def _validate_input(
-        input_tensors: Union[torch.Tensor, Iterable[torch.Tensor]],
-        allow_5d: bool,
-        allow_negative: bool = False,
-        kernel_size: Optional[int] = None,
-        scale_weights: Union[Optional[Tuple[float]], Optional[List[float]], Optional[torch.Tensor]] = None,
-        data_range: Optional[Union[float, int]] = None) -> None:
+    tensors: List[torch.Tensor],
+    dim_range: Tuple[int, int] = (0, -1),
+    data_range: Tuple[float, float] = (0., -1.),
+) -> None:
+    r"""Check input to satisfy requirements
+    """
 
-    if isinstance(input_tensors, torch.Tensor):
-        input_tensors = (input_tensors,)
+    if not _debug():
+        return
 
-    assert isinstance(input_tensors, tuple)
-    assert 0 < len(input_tensors) < 3, f'Expected one or two input tensors, got {len(input_tensors)}'
+    x = tensors[0]
 
-    min_n_dim = 2
-    max_n_dim = 5 if allow_5d else 4
-    for tensor in input_tensors:
-        assert isinstance(tensor, torch.Tensor), f'Expected input to be torch.Tensor, got {type(tensor)}.'
-        assert min_n_dim <= tensor.dim() <= max_n_dim, \
-            f'Input images must be {min_n_dim}D - {max_n_dim}D tensors, got images of shape {tensor.size()}.'
-        if not allow_negative:
-            assert torch.all(tensor >= 0), 'All tensor values should be greater or equal than 0'
-        if tensor.dim() == 5:
-            assert tensor.size(-1) == 2, f'Expected Complex 5D tensor with (N, C, H, W, 2) size, got {tensor.size()}'
-        if data_range is not None:
-            assert data_range >= tensor.max(), \
-                f'Data range should be greater or equal to maximum tensor value, got {data_range} and {tensor.max()}.'
+    for t in tensors:
+        assert t.device == x.device, f'Expected tensors to be on {x.device}, got {t.device}'
+        assert t.size() == x.size(), f'Expected tensors with same size, got {t.size()} and {x.size()}'
 
-    if len(input_tensors) == 2:
-        assert input_tensors[0].size() == input_tensors[1].size(), \
-            f'Input images must have the same dimensions, got {input_tensors[0].size()} and {input_tensors[1].size()}.'
+        if dim_range[0] == dim_range[1]:
+            assert t.dim() == dim_range[0], f'Expected number of dimensions to be {dim_range[0]}, got {t.dim()}'
+        elif dim_range[0] < dim_range[1]:
+            assert dim_range[0] <= t.dim() <= dim_range[1], \
+                f'Expected number of dimensions to be between {dim_range[0]} and {dim_range[1]}, got {t.dim()}'
 
-    if kernel_size is not None:
-        assert kernel_size % 2 == 1, f'Kernel size must be odd, got {kernel_size}.'
-    if scale_weights is not None:
-        assert isinstance(scale_weights, (list, tuple, torch.Tensor)), \
-            f'Scale weights must be of type list, tuple or torch.Tensor, got {type(scale_weights)}.'
-        if isinstance(scale_weights, (list, tuple)):
-            scale_weights = torch.tensor(scale_weights)
-        assert (scale_weights.dim() == 1), \
-            f'Scale weights must be one dimensional, got {scale_weights.dim()}.'
+        if data_range[0] < data_range[1]:
+            assert data_range[0] <= t.min(), \
+                f'Expected values to be greater or equal to {data_range[0]}, got {t.min()}'
+            assert t.max() <= data_range[1], \
+                f'Expected values to be lower or equal to {data_range[1]}, got {t.max()}'    
 
 
-def _validate_features(x: torch.Tensor, y: torch.Tensor) -> None:
-    r"""Check, that computed features satisfy metric requirements.
+def _reduce(x: torch.Tensor, reduction: str = 'mean') -> torch.Tensor:
+    r"""Reduce input in batch dimension if needed. 
 
     Args:
-        x : Low-dimensional representation of images :math:`x`.
-        y : Low-dimensional representation of images :math:`y`.
+        x: Tensor with shape (N, *).
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default: ``'mean'``
     """
-    assert torch.is_tensor(x) and torch.is_tensor(y), \
-        f"Both features should be torch.Tensors, got {type(x)} and {type(y)}"
-    assert x.dim() == 2, \
-        f"x features must have shape (N_samples, encoder_dim), got {x.shape}"
-    assert y.dim() == 2, \
-        f"y features must have shape  (N_samples, encoder_dim), got {y.shape}"
-    assert x.size(1) == y.size(1), \
-        f"Features dimensionalities should match, otherwise it won't be possible to correctly compute statistics. \
-            Got {x.size(1)} and {y.size(1)}"
-    assert x.device == y.device, "Both tensors should be on the same device"
+
+    if reduction == 'mean':
+        return x.mean(dim=0)
+    elif reduction == 'sum':
+        return x.sum(dim=0)
+    else:
+        return x
