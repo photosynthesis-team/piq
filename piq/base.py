@@ -1,7 +1,7 @@
 import torch
 
 from piq.feature_extractors import InceptionV3
-from piq.utils import _validate_features
+from piq.utils import _validate_input
 
 
 class BaseFeatureMetric(torch.nn.Module):
@@ -12,10 +12,9 @@ class BaseFeatureMetric(torch.nn.Module):
     def __init__(self) -> None:
         super(BaseFeatureMetric, self).__init__()
 
-    def forward(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
-        # Sanity check for input
-        _validate_features(predicted_features, target_features)
-        return self.compute_metric(predicted_features, target_features)
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        _validate_input([x, y], dim_range=(2, 2))
+        return self.compute_metric(x, y)
 
     @torch.no_grad()
     def compute_feats(
@@ -57,5 +56,5 @@ class BaseFeatureMetric(torch.nn.Module):
 
         return torch.cat(total_feats, dim=0)
 
-    def compute_metric(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+    def compute_metric(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError("This function should be defined for each children class")

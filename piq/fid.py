@@ -32,13 +32,6 @@ def _sqrtm_newton_schulz(matrix: torch.Tensor, num_iters: int = 100) -> Tuple[to
         Square root of matrix
         Error
     """
-    expected_num_dims = 2
-    if matrix.dim() != expected_num_dims:
-        raise ValueError(f'Input dimension equals {matrix.dim()}, expected {expected_num_dims}')
-
-    if num_iters <= 0:
-        raise ValueError(f'Number of iteration equals {num_iters}, expected greater than 0')
-
     dim = matrix.size(0)
     norm_of_matrix = matrix.norm(p='fro')
     Y = matrix.div(norm_of_matrix)
@@ -149,8 +142,8 @@ class FID(BaseFeatureMetric):
     But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
 
     Args:
-        predicted_features: Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
-        target_features: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
+        x: Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
+        y: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
 
     Returns:
         score: Scalar value of the distance between image sets features.
@@ -163,24 +156,23 @@ class FID(BaseFeatureMetric):
         https://arxiv.org/abs/1706.08500
     """
 
-    def compute_metric(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+    def compute_metric(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         r"""
-        Fits multivariate Gaussians: X ~ N(mu_1, sigm_1) and Y ~ N(mu_2, sigm_2) to image stacks.
-        Then computes FID as d^2 = ||mu_1 - mu_2||^2 + Tr(sigm_1 + sigm_2 - 2*sqrt(sigm_1*sigm_2)).
+        Fits multivariate Gaussians: X ~ N(mu_x, sigma_x) and Y ~ N(mu_y, sigma_y) to image stacks.
+        Then computes FID as d^2 = ||mu_x - mu_y||^2 + Tr(sigma_x + sigma_y - 2*sqrt(sigma_x * sigma_y)).
 
         Args:
-            predicted_features: Samples from data distribution.
-                Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1.
-            target_features: Samples from data distribution.
-                Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1
+            x: Samples from data distribution.
+                Shape (N_samples, data_dim) TODO: Rewrite this
+            y: Samples from data distribution.
+                Shape (N_samples, data_dim)
 
         Returns:
         --   : The Frechet Distance.
         """
-        # GPU -> CPU
-        m_pred, s_pred = _compute_statistics(predicted_features.detach().to(dtype=torch.float64))
-        m_targ, s_targ = _compute_statistics(target_features.detach().to(dtype=torch.float64))
+        mu_x, sigma_x = _compute_statistics(x.to(dtype=torch.float64))
+        mu_y, sigma_y = _compute_statistics(y.to(dtype=torch.float64))
 
-        score = _compute_fid(m_pred, s_pred, m_targ, s_targ)
+        score = _compute_fid(mu_x, sigma_x, mu_y, sigma_y)
 
-        return score.to(dtype=torch.float32)
+        return score

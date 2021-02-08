@@ -13,7 +13,7 @@ import torch
 from torch.nn.modules.loss import _Loss
 from torch.utils.model_zoo import load_url
 import torch.nn.functional as F
-from piq.utils import _adjust_dimensions, _validate_input
+from piq.utils import _validate_input, _reduce
 from piq.functional import rgb2yiq, gaussian_filter
 
 
@@ -24,11 +24,12 @@ def brisque(x: torch.Tensor,
     r"""Interface of BRISQUE index.
 
     Args:
-        x: Tensor with shape (H, W), (C, H, W) or (N, C, H, W). RGB channel order for colour images.
+        x: An input tensor with (N, 3, H, W) shape. RGB channel order for colour images.
         kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
         kernel_sigma: Sigma of normal distribution.
         data_range: Maximum value range of input images (usually 1.0 or 255).
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none".
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default: ``'mean'``
         interpolation: Interpolation to be used for scaling.
 
     Returns:
@@ -48,8 +49,7 @@ def brisque(x: torch.Tensor,
                       f'More info is available at https://github.com/photosynthesis-team/piq/pull/79 and'
                       f'https://github.com/pytorch/pytorch/issues/38869.')
 
-    _validate_input(input_tensors=x, allow_5d=False, kernel_size=kernel_size, data_range=data_range)
-    x = _adjust_dimensions(input_tensors=x)
+    _validate_input([x, ], dim_range=(4, 4), data_range=(0, data_range))
 
     x = x / data_range * 255
 
@@ -64,17 +64,13 @@ def brisque(x: torch.Tensor,
     features = torch.cat(features, dim=-1)
     scaled_features = _scale_features(features)
     score = _score_svr(scaled_features)
-    if reduction == 'none':
-        return score
 
-    return {'mean': score.mean,
-            'sum': score.sum
-            }[reduction](dim=0)
+    return _reduce(score, reduction)
 
 
 class BRISQUELoss(_Loss):
     r"""Creates a criterion that measures the BRISQUE score for input :math:`x`.
-    :math:`x` is tensor of 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W).
+    :math:`x` is 4D tensor (N, C, H, W).
     The sum operation still operates over all the elements, and divides by :math:`n`.
     The division by :math:`n` can be avoided by setting ``reduction = 'sum'``.
 
@@ -85,20 +81,17 @@ class BRISQUELoss(_Loss):
         data_range: The difference between the maximum and minimum of the pixel value,
             i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
             The pixel value interval of both input and output should remain the same.
-        reduction: Specifies the reduction to apply to the output:
-            ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
-            ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``.
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default: ``'mean'``
         interpolation: Interpolation to be used for scaling.
 
     Shape:
-        - Input: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
+        - Input: Required to be (N, C, H, W). RGB channel order for colour images.
 
     Examples::
         >>> loss = BRISQUELoss()
-        >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
-        >>> target = torch.rand(3, 3, 256, 256)
-        >>> output = loss(prediction)
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> output = loss(x)
         >>> output.backward()
 
     Note:
@@ -119,16 +112,16 @@ class BRISQUELoss(_Loss):
         self.data_range = data_range
         self.interpolation = interpolation
 
-    def forward(self, prediction: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         r"""Computation of BRISQUE score as a loss function.
 
         Args:
-            prediction: Tensor of prediction of the network.
+            x: An input tensor with (N, 3, H, W) shape.
 
         Returns:
             Value of BRISQUE loss to be minimized.
         """
-        return brisque(prediction, reduction=self.reduction, kernel_size=self.kernel_size,
+        return brisque(x, reduction=self.reduction, kernel_size=self.kernel_size,
                        kernel_sigma=self.kernel_sigma, data_range=self.data_range, interpolation=self.interpolation)
 
 
