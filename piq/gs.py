@@ -4,7 +4,7 @@ https://github.com/KhrulkovV/geometry-score
 See paper for details:
 https://arxiv.org/pdf/1802.02664.pdf
 """
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 from multiprocessing import Pool
 
 import torch
@@ -83,8 +83,7 @@ def lmrk_table(witnesses: np.ndarray, landmarks: np.ndarray) -> Tuple[np.ndarray
     return distances, max_dist
 
 
-def witness(
-        features: np.ndarray, sample_size: int = 64, gamma: Optional[float] = None) \
+def witness(features: np.ndarray, sample_size: int = 64, gamma: Optional[float] = None) \
         -> Tuple[np.ndarray, np.ndarray]:
     """Compute the persistence intervals for the dataset of features using the witness complex.
 
@@ -123,10 +122,10 @@ class GS(BaseFeatureMetric):
     Dimensionalities of features should match, otherwise it won't be possible to correctly compute statistics.
 
     Args:
-        predicted_features: Low-dimension representation of predicted image set.
-            Shape (N_pred, encoder_dim)
-        target_features: Low-dimension representation of target image set.
-            Shape (N_targ, encoder_dim)
+        x_features: Low-dimension representation of predicted image set :math:`x`.
+            Shape (N_x, encoder_dim)
+        y_features: Low-dimension representation of target image set :math:`y`.
+            Shape (N_y, encoder_dim)
 
     Returns:
         score: Scalar value of the distance between image sets.
@@ -143,6 +142,7 @@ class GS(BaseFeatureMetric):
         For conda, write: `conda install -c conda-forge gudhi`,
         otherwise follow installation guide: http://gudhi.gforge.inria.fr/python/latest/installation.html
     """
+
     def __init__(self, sample_size: int = 64, num_iters: int = 1000, gamma: Optional[float] = None,
                  i_max: int = 100, num_workers: int = 4) -> None:
         r"""
@@ -164,30 +164,30 @@ class GS(BaseFeatureMetric):
         self.i_max = i_max
         self.num_workers = num_workers
 
-    def compute_metric(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+    def compute_metric(self, x_features: torch.Tensor, y_features: torch.Tensor) -> torch.Tensor:
         r"""Implements Algorithm 2 from the paper.
 
         Args:
-            predicted_features: Samples from data distribution. Shape (N_samples, data_dim).
-            target_features: Samples from data distribution. Shape (N_samples, data_dim).
+            x_features: Samples from data distribution. Shape (N_samples, data_dim).
+            y_features: Samples from data distribution. Shape (N_samples, data_dim).
 
         Returns:
             score: Scalar value of the distance between distributions.
         """
         with Pool(self.num_workers) as p:
-            self.features = predicted_features.detach().cpu().numpy()
+            self.features = x_features.detach().cpu().numpy()
             pool_results = p.map(self._relative_living_times, range(self.num_iters))
-            mean_rlt_predicted = np.vstack(pool_results).mean(axis=0)
+            mean_rlt_x = np.vstack(pool_results).mean(axis=0)
 
-            self.features = target_features.detach().cpu().numpy()
+            self.features = y_features.detach().cpu().numpy()
             pool_results = p.map(self._relative_living_times, range(self.num_iters))
-            mean_rlt_target = np.vstack(pool_results).mean(axis=0)
+            mean_rlt_y = np.vstack(pool_results).mean(axis=0)
 
-        score = np.sum((mean_rlt_predicted - mean_rlt_target) ** 2)
+        score = np.sum((mean_rlt_x - mean_rlt_y) ** 2)
 
-        return torch.tensor(score, device=predicted_features.device) * 1000
+        return torch.tensor(score, device=x_features.device) * 1000
 
-    def _relative_living_times(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _relative_living_times(self, idx: int) -> Union[np.ndarray, np.ndarray, np.ndarray]:
         r"""Implements Algorithm 1 for two samples of landmarks.
     
         Args:
@@ -197,8 +197,6 @@ class GS(BaseFeatureMetric):
             An array of size (i_max, ) containing RLT(i, 1, X, L)
             for randomly sampled landmarks.
         """
-        intervals, alpha_max = witness(
-            self.features, sample_size=self.sample_size, gamma=self.gamma)
+        intervals, alpha_max = witness(self.features, sample_size=self.sample_size, gamma=self.gamma)
         rlt = relative(intervals, alpha_max, i_max=self.i_max)
-
         return rlt

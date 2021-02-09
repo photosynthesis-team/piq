@@ -170,9 +170,9 @@ class HaarPSILoss(_Loss):
     Examples::
 
         >>> loss = HaarPSILoss()
-        >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
-        >>> target = torch.rand(3, 3, 256, 256)
-        >>> output = loss(prediction, target)
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
         >>> output.backward()
 
     References:
@@ -190,15 +190,15 @@ class HaarPSILoss(_Loss):
             haarpsi, scales=scales, subsample=subsample, c=c, alpha=alpha,
             data_range=data_range, reduction=reduction)
 
-    def forward(self, prediction, target):
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         r"""Computation of HaarPSI as a loss function.
 
         Args:
-            prediction: Tensor of prediction of the network.
-            target: Reference tensor.
+            x: Tensor of predictions of the network.
+            y: Reference tensor.
 
         Returns:
             Value of HaarPSI loss to be minimized. 0 <= HaarPSI loss <= 1.
         """
 
-        return 1. - self.haarpsi(x=prediction, y=target)
+        return 1. - self.haarpsi(x=x, y=y)

@@ -34,13 +34,13 @@ as a loss function.
 import torch
 from piq import ssim, SSIMLoss
 
-prediction = torch.rand(4, 3, 256, 256, requires_grad=True)
-target = torch.rand(4, 3, 256, 256)
+x = torch.rand(4, 3, 256, 256, requires_grad=True)
+y = torch.rand(4, 3, 256, 256)
 
-ssim_index: torch.Tensor = ssim(prediction, target, data_range=1.)
+ssim_index: torch.Tensor = ssim(x, y, data_range=1.)
 
 loss = SSIMLoss(data_range=1.)
-output: torch.Tensor = loss(prediction, target)
+output: torch.Tensor = loss(x, y)
 output.backward()
 ```
 
@@ -65,12 +65,12 @@ If you already have image features, use the class interface for score computatio
 
 ```python
 import torch
-from piq import FID
+from piq import MSID
 
-prediction_feats = torch.rand(10000, 1024)
-target_feats = torch.rand(10000, 1024)
+x_feats = torch.rand(10000, 1024)
+y_feats = torch.rand(10000, 1024)
 msid_metric = MSID()
-msid: torch.Tensor = msid_metric(prediction_feats, target_feats)
+msid: torch.Tensor = msid_metric(x_feats, y_feats)
 ```
 
 For a full list of examples, see [image metrics](examples/image_metrics.py) and [feature metrics](examples/feature_metrics.py) examples.

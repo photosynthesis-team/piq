@@ -96,9 +96,9 @@ class BRISQUELoss(_Loss):
 
     Examples::
         >>> loss = BRISQUELoss()
-        >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
-        >>> target = torch.rand(3, 3, 256, 256)
-        >>> output = loss(prediction)
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x)
         >>> output.backward()
 
     Note:
@@ -119,16 +119,16 @@ class BRISQUELoss(_Loss):
         self.data_range = data_range
         self.interpolation = interpolation
 
-    def forward(self, prediction: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         r"""Computation of BRISQUE score as a loss function.
 
         Args:
-            prediction: Tensor of prediction of the network.
+            x: Tensor of prediction of the network.
 
         Returns:
             Value of BRISQUE loss to be minimized.
         """
-        return brisque(prediction, reduction=self.reduction, kernel_size=self.kernel_size,
+        return brisque(x, reduction=self.reduction, kernel_size=self.kernel_size,
                        kernel_sigma=self.kernel_sigma, data_range=self.data_range, interpolation=self.interpolation)
 
 

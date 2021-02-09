@@ -21,11 +21,12 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
          mult: int = 2, sigma_f: float = 0.55, delta_theta: float = 1.2,
          k: float = 2.0) -> torch.Tensor:
     r"""Compute Feature Similarity Index Measure for a batch of images.
-    
 
     Args:
-        x: Predicted images. Shape (H, W), (C, H, W) or (N, C, H, W).
-        y: Target images. Shape (H, W), (C, H, W) or (N, C, H, W).
+        x: Predicted images set :math:`x`.
+            Shape (H, W), (C, H, W) or (N, C, H, W).
+        y: Target images set :math:`y`.
+            Shape (H, W), (C, H, W) or (N, C, H, W).
         reduction: Reduction over samples in batch: "mean"|"sum"|"none"
         data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
         chromatic: Flag to compute FSIMc, which also takes into account chromatic components
@@ -42,7 +43,7 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         
     Returns:
         FSIM: Index of similarity betwen two images. Usually in [0, 1] interval.
-            Can be bigger than 1 for predicted images with higher contrast than the original ones.
+            Can be bigger than 1 for predicted (x) images with higher contrast than the original ones.
     Note:
         This implementation is based on the original MATLAB code.
         https://www4.comp.polyu.edu.hk/~cslzhang/IQA/FSIM/FSIM.htm
@@ -216,7 +217,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
 
     Args:
         x: Tensor with shape (N, 1, H, W).
-        levels: Number of wavelet scales
+        scales: Number of wavelet scales
         orientations: Number of filter orientations
         min_length: Wavelength of smallest scale filter
         mult: Scaling factor between successive filters
@@ -341,6 +342,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
 def _lowpassfilter(size: Tuple[int, int], cutoff: float, n: int) -> torch.Tensor:
     r"""
     Constructs a low-pass Butterworth filter.
+
     Args:
         size: Tuple with heigth and width of filter to construct
         cutoff: Cutoff frequency of the filter in (0, 0.5()
@@ -398,9 +400,9 @@ class FSIMLoss(_Loss):
     Examples::
 
         >>> loss = FSIMLoss()
-        >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
-        >>> target = torch.rand(3, 3, 256, 256)
-        >>> output = loss(prediction, target)
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
         >>> output.backward()
 
     References:
@@ -429,16 +431,17 @@ class FSIMLoss(_Loss):
             k=k,
         )
 
-    def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         r"""Computation of FSIM as a loss function.
+
         Args:
-            prediction: Tensor of prediction of the network.
-            target: Reference tensor.
+            x: Tensor of prediction of the network.
+            y: Reference tensor.
         Returns:
             Value of FSIM loss to be minimized. 0 <= FSIM <= 1.
         """
         # All checks are done inside fsim function
-        score = self.fsim(prediction, target)
+        score = self.fsim(x, y)
 
         # Make sure value to be in [0, 1] range and convert to loss
         return 1 - torch.clamp(score, 0, 1)

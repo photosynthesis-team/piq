@@ -21,49 +21,49 @@ class TestDataset(torch.utils.data.Dataset):
 
 
 @pytest.fixture(scope='module')
-def prediction() -> torch.Tensor:
+def x() -> torch.Tensor:
     return torch.rand(3, 3, 256, 256)
 
 
 @pytest.fixture(scope='module')
-def target() -> torch.Tensor:
+def y() -> torch.Tensor:
     return torch.rand(3, 3, 256, 256)
 
 
 @pytest.fixture(scope='module')
-def features_target_normal() -> torch.Tensor:
+def features_y_normal() -> torch.Tensor:
     return torch.rand(1000, 20)
 
 
 @pytest.fixture(scope='module')
-def features_prediction_normal() -> torch.Tensor:
+def features_x_normal() -> torch.Tensor:
     return torch.rand(1000, 20)
 
 
 @pytest.fixture(scope='module')
-def features_prediction_beta() -> torch.Tensor:
+def features_x_beta() -> torch.Tensor:
     m = torch.distributions.Beta(torch.FloatTensor([2]), torch.FloatTensor([2]))
     return m.sample([1000, 20]).squeeze()
 
 
 @pytest.fixture(scope='module')
-def features_prediction_constant() -> torch.Tensor:
+def features_x_constant() -> torch.Tensor:
     return torch.ones(1000, 20)
 
 
 # ================== Test class: `MSID` ==================
-def test_fails_for_different_dimensions(features_target_normal: torch.Tensor) -> None:
-    features_prediction_normal = torch.rand(1000, 21)
+def test_fails_for_different_dimensions(features_y_normal) -> None:
+    features_x_normal = torch.rand(1000, 21)
     metric = MSID()
     with pytest.raises(AssertionError):
-        metric(features_target_normal, features_prediction_normal)
+        metric(features_y_normal, features_x_normal)
 
 
-def test_compute_msid_works_for_different_number_of_images_in_stack(features_target_normal: torch.Tensor) -> None:
-    features_prediction_normal = torch.rand(1001, 20)
+def test_compute_msid_works_for_different_number_of_images_in_stack(features_y_normal) -> None:
+    features_x_normal = torch.rand(1001, 20)
     metric = MSID()
     try:
-        metric(features_target_normal, features_prediction_normal)
+        metric(features_y_normal, features_x_normal)
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 
@@ -76,22 +76,18 @@ def test_initialization() -> None:
 
 
 @pytest.mark.skip(reason="Sometimes it doesn't work.")
-def test_msid_is_smaller_for_equal_tensors(
-        features_target_normal: torch.Tensor,
-        features_prediction_normal: torch.Tensor,
-        features_prediction_constant: torch.Tensor
-) -> None:
+def test_msid_is_smaller_for_equal_tensors(features_y_normal, features_x_normal, features_x_constant) -> None:
     metric = MSID()
-    measure = metric(features_target_normal, features_prediction_normal)
-    measure_constant = metric(features_target_normal, features_prediction_normal)
+    measure = metric(features_y_normal, features_x_normal)
+    measure_constant = metric(features_y_normal, features_x_normal)
     assert measure <= measure_constant, \
         f'MSID should be smaller for samples from the same distribution, got {measure} and {measure_constant}'
 
 
-def test_forward(features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor, ) -> None:
+def test_forward(features_y_normal, features_x_normal, ) -> None:
     try:
         metric = MSID()
-        metric(features_target_normal, features_prediction_normal)
+        metric(features_y_normal, features_x_normal)
     except Exception as e:
         pytest.fail(f"Unexpected error occurred: {e}")
 

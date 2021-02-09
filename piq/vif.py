@@ -29,7 +29,7 @@ def vif_p(x: torch.Tensor, y: torch.Tensor, sigma_n_sq: float = 2.0,
         
     Returns:
         VIF: Index of similarity betwen two images. Usually in [0, 1] interval.
-            Can be bigger than 1 for predicted images with higher contrast than original one.
+            Can be bigger than 1 for predicted (x) images with higher contrast than original one.
     Note:
         In original paper this method was used for bands in discrete wavelet decomposition.
         Later on authors released code to compute VIF approximation in pixel domain.
@@ -115,7 +115,7 @@ def vif_p(x: torch.Tensor, y: torch.Tensor, sigma_n_sq: float = 2.0,
 
 class VIFLoss(_Loss):
     r"""Creates a criterion that measures the Visual Information Fidelity loss
-    between predicted and target image. In order to be considered as a loss,
+    between predicted (x) and target (y) image. In order to be considered as a loss,
     value `1 - clip(VIF, min=0, max=1)` is returned.
     """
 
@@ -142,8 +142,7 @@ class VIFLoss(_Loss):
             Value of VIF loss to be minimized. 0 <= VIFLoss <= 1.
         """
         # All checks are done in vif_p function
-        score = vif_p(
-            x, y, sigma_n_sq=self.sigma_n_sq, data_range=self.data_range, reduction=self.reduction)
+        score = vif_p(x, y, sigma_n_sq=self.sigma_n_sq, data_range=self.data_range, reduction=self.reduction)
 
         # Make sure value to be in [0, 1] range and convert to loss
         loss = 1 - torch.clamp(score, 0, 1)
