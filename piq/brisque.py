@@ -92,9 +92,12 @@ class BRISQUELoss(_Loss):
         >>> loss = BRISQUELoss()
         >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
 <<<<<<< HEAD
+<<<<<<< HEAD
         >>> y = torch.rand(3, 3, 256, 256)
 =======
 >>>>>>> feature/validation: Simplify validation. Delete adjust dimensions
+=======
+>>>>>>> 142a9e055d3314817601ff8baca82ffe9b18dd0b
         >>> output = loss(x)
         >>> output.backward()
 

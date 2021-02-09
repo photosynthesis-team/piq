@@ -12,11 +12,17 @@ class BaseFeatureMetric(torch.nn.Module):
     def __init__(self) -> None:
         super(BaseFeatureMetric, self).__init__()
 
+<<<<<<< HEAD
     def forward(self, x_features: torch.Tensor, y_features: torch.Tensor) -> torch.Tensor:
         # Sanity check for input
         _validate_input([x_features, y_features], dim_range=(2, 2))
         _validate_features(x_features, y_features)
         return self.compute_metric(x_features, y_features)
+=======
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        _validate_input([x, y], dim_range=(2, 2))
+        return self.compute_metric(x, y)
+>>>>>>> 142a9e055d3314817601ff8baca82ffe9b18dd0b
 
     @torch.no_grad()
     def compute_feats(
@@ -59,8 +65,12 @@ class BaseFeatureMetric(torch.nn.Module):
         return torch.cat(total_feats, dim=0)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     def compute_metric(self, x_features: torch.Tensor, y_features: torch.Tensor) -> torch.Tensor:
 =======
     def compute_metric(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
 >>>>>>> feature/validation: Simplify validation. Delete adjust dimensions
+=======
+    def compute_metric(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+>>>>>>> 142a9e055d3314817601ff8baca82ffe9b18dd0b
         raise NotImplementedError("This function should be defined for each children class")

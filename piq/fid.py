@@ -143,12 +143,17 @@ class FID(BaseFeatureMetric):
 
     Args:
 <<<<<<< HEAD
+<<<<<<< HEAD
         x_features: Low-dimension representation of predicted image set :math:`x`. Shape (N_x, encoder_dim)
         y_features: Low-dimension representation of target image set :math:`y`. Shape (N_y, encoder_dim)
 =======
         x: Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
         y: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
 >>>>>>> feature/validation: Simplify validation. Delete adjust dimensions
+=======
+        x: Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
+        y: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
+>>>>>>> 142a9e055d3314817601ff8baca82ffe9b18dd0b
 
     Returns:
         score: Scalar value of the distance between image sets features.
@@ -161,23 +166,39 @@ class FID(BaseFeatureMetric):
            https://arxiv.org/abs/1706.08500
     """
 
+<<<<<<< HEAD
     def compute_metric(self, x_features: torch.Tensor, y_features: torch.Tensor) -> torch.Tensor:
+=======
+    def compute_metric(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+>>>>>>> 142a9e055d3314817601ff8baca82ffe9b18dd0b
         r"""
         Fits multivariate Gaussians: X ~ N(mu_x, sigma_x) and Y ~ N(mu_y, sigma_y) to image stacks.
         Then computes FID as d^2 = ||mu_x - mu_y||^2 + Tr(sigma_x + sigma_y - 2*sqrt(sigma_x * sigma_y)).
 
         Args:
+<<<<<<< HEAD
             x_features: Samples from data distribution.
                 Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1.
             y_features: Samples from data distribution.
                 Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1
+=======
+            x: Samples from data distribution.
+                Shape (N_samples, data_dim) TODO: Rewrite this
+            y: Samples from data distribution.
+                Shape (N_samples, data_dim)
+>>>>>>> 142a9e055d3314817601ff8baca82ffe9b18dd0b
 
         Returns:
         --   : The Frechet Distance.
         """
+<<<<<<< HEAD
         # GPU -> CPU
         mu_x, sigma_x = _compute_statistics(x_features.detach().to(dtype=torch.float64))
         mu_y, sigma_y = _compute_statistics(y_features.detach().to(dtype=torch.float64))
+=======
+        mu_x, sigma_x = _compute_statistics(x.to(dtype=torch.float64))
+        mu_y, sigma_y = _compute_statistics(y.to(dtype=torch.float64))
+>>>>>>> 142a9e055d3314817601ff8baca82ffe9b18dd0b
 
         score = _compute_fid(mu_x, sigma_x, mu_y, sigma_y)
 
