@@ -12,7 +12,7 @@ import torch
 import torch.nn.functional as F
 from torch.nn.modules.loss import _Loss
 
-from piq.utils import _adjust_dimensions, _validate_input
+from piq.utils import _validate_input, _reduce
 from piq.functional import gaussian_filter
 
 
@@ -23,13 +23,13 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
     Inputs supposed to be in range [0, data_range] with RGB channels order for colour images.
 
     Args:
-        x: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
-        y: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
+        x: An input tensor. Shape :math:`(N, C, H, W)` or :math:`(N, C, H, W, 2)`.
+        y: A target tensor. Shape :math:`(N, C, H, W)` or :math:`(N, C, H, W, 2)`.
         kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
         kernel_sigma: Sigma of normal distribution.
-        data_range: Value range of input images (usually 1.0 or 255).
-        reduction: Specifies the reduction to apply to the output:
-            ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
+        data_range: Maximum value range of images (usually 1.0 or 255).
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         full: Return cs map or not.
         k1: Algorithm parameter, K1 (small constant, see [1]).
         k2: Algorithm parameter, K2 (small constant, see [1]).
@@ -47,9 +47,7 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
            https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
            DOI: `10.1109/TIP.2003.819861`
     """
-    _validate_input(
-        input_tensors=(x, y), allow_5d=True, kernel_size=kernel_size, scale_weights=None, data_range=data_range)
-    x, y = _adjust_dimensions(input_tensors=(x, y))
+    _validate_input([x, y], dim_range=(4, 5), data_range=(0, data_range))
 
     x = x.type(torch.float32)
     y = y.type(torch.float32)
@@ -63,11 +61,8 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
     ssim_val = ssim_map.mean(1)
     cs = cs_map.mean(1)
 
-    if reduction != 'none':
-        reduction_operation = {'mean': torch.mean,
-                               'sum': torch.sum}
-        ssim_val = reduction_operation[reduction](ssim_val, dim=0)
-        cs = reduction_operation[reduction](cs, dim=0)
+    ssim_val = _reduce(ssim_val, reduction)
+    cs = _reduce(cs, reduction)
 
     if full:
         return ssim_val, cs
@@ -109,17 +104,10 @@ class SSIMLoss(_Loss):
         kernel_sigma: Standard deviation for Gaussian kernel.
         k1: Coefficient related to c1 in the above equation.
         k2: Coefficient related to c2 in the above equation.
-        reduction: Specifies the reduction to apply to the output:
-            ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
-            ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``
-        data_range: The difference between the maximum and minimum of the pixel value,
-            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
-            The pixel value interval of both input and output should remain the same.
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        data_range: Maximum value range of images (usually 1.0 or 255).
 
-    Shape:
-        - Input: 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
-        - Target: 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
 
     Examples::
         >>> loss = SSIMLoss()
@@ -156,8 +144,8 @@ class SSIMLoss(_Loss):
         r"""Computation of Structural Similarity (SSIM) index as a loss function.
 
         Args:
-            x: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
-            y: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
+            x: An input tensor. Shape :math:`(N, C, H, W)` or :math:`(N, C, H, W, 2)`.
+            y: A target tensor. Shape :math:`(N, C, H, W)` or :math:`(N, C, H, W, 2)`.
 
         Returns:
             Value of SSIM loss to be minimized, i.e 1 - `ssim`. 0 <= SSIM loss <= 1. In case of 5D input tensors,
@@ -178,13 +166,13 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
     The size of the image should be at least (kernel_size - 1) * 2 ** (levels - 1) + 1.
 
     Args:
-        x: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
-        y: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
+        x: An input tensor. Shape :math:`(N, C, H, W)` or :math:`(N, C, H, W, 2)`.
+        y: A target tensor. Shape :math:`(N, C, H, W)` or :math:`(N, C, H, W, 2)`.
         kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
         kernel_sigma: Sigma of normal distribution.
-        data_range: Value range of input images (usually 1.0 or 255).
-        reduction: Specifies the reduction to apply to the output:
-            ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
+        data_range: Maximum value range of images (usually 1.0 or 255).
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         scale_weights: Weights for different scales.
             If None, default weights from the paper [1] will be used.
             Default weights: (0.0448, 0.2856, 0.3001, 0.2363, 0.1333).
@@ -209,11 +197,7 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
            https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
            DOI: `10.1109/TIP.2003.819861`
     """
-    _validate_input(
-        input_tensors=(x, y), allow_5d=True, kernel_size=kernel_size,
-        scale_weights=scale_weights, data_range=data_range
-    )
-    x, y = _adjust_dimensions(input_tensors=(x, y))
+    _validate_input([x, y], dim_range=(4, 5), data_range=(0, data_range))
 
     x = x.type(torch.float32)
     y = y.type(torch.float32)
@@ -239,12 +223,7 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
         k1=k1,
         k2=k2
     )
-
-    if reduction == 'none':
-        return msssim_val
-
-    return {'mean': torch.mean,
-            'sum': torch.sum}[reduction](msssim_val, dim=0)
+    return _reduce(msssim_val, reduction)
 
 
 class MultiScaleSSIMLoss(_Loss):
@@ -282,17 +261,9 @@ class MultiScaleSSIMLoss(_Loss):
         scale_weights:  Weights for different scales.
             If None, default weights from the paper [1] will be used.
             Default weights: (0.0448, 0.2856, 0.3001, 0.2363, 0.1333).
-        reduction: Specifies the reduction to apply to the output:
-            ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
-            ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``
-        data_range: The difference between the maximum and minimum of the pixel value,
-            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
-            The pixel value interval of both input and output should remain the same.
-
-    Shape:
-        - Input: 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
-        - Target: 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        data_range: Maximum value range of images (usually 1.0 or 255).
 
     Examples::
         >>> loss = MultiScaleSSIMLoss()
@@ -341,8 +312,8 @@ class MultiScaleSSIMLoss(_Loss):
         For colour images channel order is RGB.
 
         Args:
-            x: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
-            y: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
+            x: An input tensor. Shape :math:`(N, C, H, W)` or :math:`(N, C, H, W, 2)`.
+            y: A target tensor. Shape :math:`(N, C, H, W)` or :math:`(N, C, H, W, 2)`.
 
         Returns:
             Value of MS-SSIM loss to be minimized, i.e. 1-`ms_sim`. 0 <= MS-SSIM loss <= 1. In case of 5D tensor,
@@ -361,10 +332,10 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
     r"""Calculate Structural Similarity (SSIM) index for X and Y per channel.
 
     Args:
-        x: Tensor with shape (N, C, H, W).
-        y: Tensor with shape (N, C, H, W).
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
+        y: A target tensor. Shape :math:`(N, C, H, W)`.
         kernel: 2D Gaussian kernel.
-        data_range: Value range of input images (usually 1.0 or 255).
+        data_range: Maximum value range of images (usually 1.0 or 255).
         k1: Algorithm parameter, K1 (small constant, see [1]).
         k2: Algorithm parameter, K2 (small constant, see [1]).
             Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
@@ -406,9 +377,9 @@ def _multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, f
     r"""Calculates Multi scale Structural Similarity (MS-SSIM) index for X and Y.
 
     Args:
-        x: Tensor with shape (N, C, H, W).
-        y: Tensor with shape (N, C, H, W).
-        data_range: Value range of input images (usually 1.0 or 255).
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
+        y: A target tensor. Shape :math:`(N, C, H, W)`.
+        data_range: Maximum value range of images (usually 1.0 or 255).
         kernel: 2D Gaussian kernel.
         scale_weights_tensor: Weights for scaled SSIM
         k1: Algorithm parameter, K1 (small constant, see [1]).
@@ -451,10 +422,10 @@ def _ssim_per_channel_complex(x: torch.Tensor, y: torch.Tensor, kernel: torch.Te
     r"""Calculate Structural Similarity (SSIM) index for Complex X and Y per channel.
 
     Args:
-        x: Complex tensor with shape (N, C, H, W, 2).
-        y: Complex tensor with shape (N, C, H, W, 2).
+        x: An input tensor. Shape :math:`(N, C, H, W, 2)`.
+        y: A target tensor. Shape :math:`(N, C, H, W, 2)`.
         kernel: 2-D gauss kernel.
-        data_range: Value range of input images (usually 1.0 or 255).
+        data_range: Maximum value range of images (usually 1.0 or 255).
         k1: Algorithm parameter, K1 (small constant, see [1]).
         k2: Algorithm parameter, K2 (small constant, see [1]).
             Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
@@ -515,9 +486,9 @@ def _multi_scale_ssim_complex(x: torch.Tensor, y: torch.Tensor, data_range: Unio
     r"""Calculate Multi scale Structural Similarity (MS-SSIM) index for Complex X and Y.
 
     Args:
-        x: Complex tensor with shape (N, C, H, W, 2).
-        y: Complex tensor with shape (N, C, H, W, 2).
-        data_range: Value range of input images (usually 1.0 or 255).
+        x: An input tensor. Shape :math:`(N, C, H, W, 2)`.
+        y: A target tensor. Shape :math:`(N, C, H, W, 2)`.
+        data_range: Maximum value range of images (usually 1.0 or 255).
         kernel: 2-D gauss kernel.
         k1: Algorithm parameter, K1 (small constant, see [1]).
         k2: Algorithm parameter, K2 (small constant, see [1]).

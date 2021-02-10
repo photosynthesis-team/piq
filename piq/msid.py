@@ -293,10 +293,8 @@ class MSID(BaseFeatureMetric):
     number of samples or different dimensionalities.
 
     Args:
-        x_features: Low-dimension representation of predicted image set `x`.
-            Shape (N_x, encoder_dim)
-        y_features: Low-dimension representation of target image set `y`.
-            Shape (N_y, encoder_dim)
+        x_features: Samples from data distribution. Shape :math:`(N_x, D)`
+        y_features: Samples from data distribution. Shape :math:`(N_y, D)`
 
     Returns:
         score: Scalar value of the distance between image sets features.
@@ -337,8 +335,8 @@ class MSID(BaseFeatureMetric):
 
         r"""Compute MSID score between two sets of samples.
         Args:
-            x_features: Samples from data distribution. Shape (N_samples, data_dim).
-            y_features: Samples from data distribution. Shape (N_samples, data_dim).
+            x_features: Samples from data distribution. Shape :math:`(N_x, D)`
+            y_features: Samples from data distribution. Shape :math:`(N_y, D)`
             ts: Temperature values.
             k: Number of neighbours for graph construction.
             m: Lanczos steps in SLQ.

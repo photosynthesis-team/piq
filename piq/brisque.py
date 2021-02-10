@@ -22,12 +22,13 @@ def brisque(x: torch.Tensor,
             data_range: Union[int, float] = 1., reduction: str = 'mean',
             interpolation: str = 'nearest') -> torch.Tensor:
     r"""Interface of BRISQUE index.
+    Supports greyscale and colour images with RGB channel order.
 
     Args:
-        x: An input tensor with (N, 3, H, W) shape. RGB channel order for colour images.
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
         kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
         kernel_sigma: Sigma of normal distribution.
-        data_range: Maximum value range of input images (usually 1.0 or 255).
+        data_range: Maximum value range of images (usually 1.0 or 255).
         reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default: ``'mean'``
         interpolation: Interpolation to be used for scaling.
@@ -78,9 +79,7 @@ class BRISQUELoss(_Loss):
         kernel_size: By default, the mean and covariance of a pixel is obtained
             by convolution with given filter_size.
         kernel_sigma: Standard deviation for Gaussian kernel.
-        data_range: The difference between the maximum and minimum of the pixel value,
-            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
-            The pixel value interval of both input and output should remain the same.
+        data_range: Maximum value range of images (usually 1.0 or 255).
         reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default: ``'mean'``
         interpolation: Interpolation to be used for scaling.
@@ -91,13 +90,6 @@ class BRISQUELoss(_Loss):
     Examples::
         >>> loss = BRISQUELoss()
         >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
-<<<<<<< HEAD
-<<<<<<< HEAD
-        >>> y = torch.rand(3, 3, 256, 256)
-=======
->>>>>>> feature/validation: Simplify validation. Delete adjust dimensions
-=======
->>>>>>> 142a9e055d3314817601ff8baca82ffe9b18dd0b
         >>> output = loss(x)
         >>> output.backward()
 

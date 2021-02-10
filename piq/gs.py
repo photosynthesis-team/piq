@@ -122,10 +122,8 @@ class GS(BaseFeatureMetric):
     Dimensionalities of features should match, otherwise it won't be possible to correctly compute statistics.
 
     Args:
-        x_features: Low-dimension representation of predicted image set :math:`x`.
-            Shape (N_x, encoder_dim)
-        y_features: Low-dimension representation of target image set :math:`y`.
-            Shape (N_y, encoder_dim)
+        x_features: Samples from data distribution. Shape :math:`(N_x, D)`
+        y_features: Samples from data distribution. Shape :math:`(N_y, D)`
 
     Returns:
         score: Scalar value of the distance between image sets.
@@ -168,8 +166,8 @@ class GS(BaseFeatureMetric):
         r"""Implements Algorithm 2 from the paper.
 
         Args:
-            x_features: Samples from data distribution. Shape (N_samples, data_dim).
-            y_features: Samples from data distribution. Shape (N_samples, data_dim).
+            x_features: Samples from data distribution. Shape :math:`(N_x, D)`
+            y_features: Samples from data distribution. Shape :math:`(N_y, D)`
 
         Returns:
             score: Scalar value of the distance between distributions.

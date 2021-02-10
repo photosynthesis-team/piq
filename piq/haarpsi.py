@@ -15,7 +15,7 @@ import torch
 import torch.nn.functional as F
 from torch.nn.modules.loss import _Loss
 
-from piq.utils import _adjust_dimensions, _validate_input
+from piq.utils import _validate_input, _reduce
 from piq.functional import similarity_map, rgb2yiq, haar_filter
 
 
@@ -25,15 +25,11 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     r"""Compute Haar Wavelet-Based Perceptual Similarity
     Inputs supposed to be in range [0, data_range] with RGB channels order for colour images.
     Args:
-        x: Tensor with shape (H, W), (C, H, W) or (N, C, H, W) holding a distorted image.
-        y: Tensor with shape (H, W), (C, H, W) or (N, C, H, W) holding a target image.
-        reduction: Specifies the reduction to apply to the output:
-        ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
-        ``'mean'``: the sum of the output will be divided by the number of
-        elements in the output, ``'sum'``: the output will be summed.
-        data_range: The difference between the maximum and minimum of the pixel value,
-        i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
-        The pixel value interval of both input and output should remain the same.
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
+        y: A target tensor. Shape :math:`(N, C, H, W)`.
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        data_range: Maximum value range of images (usually 1.0 or 255).
         scales: Number of Haar wavelets used for image decomposition.
         subsample: Flag to apply average pooling before HaarPSI computation. See [1] for details.
         c: Constant from the paper. See [1] for details
@@ -49,9 +45,7 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         .. [2] Code from authors on MATLAB and Python
            https://github.com/rgcda/haarpsi
     """
-
-    _validate_input(input_tensors=(x, y), allow_5d=False, scale_weights=None, data_range=data_range)
-    x, y = _adjust_dimensions(input_tensors=(x, y))
+    _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
 
     # Assert minimal image size
     kernel_size = 2 ** (scales + 1)
@@ -135,12 +129,7 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     # Logit of score
     score = (torch.log(score / (1 - score)) / alpha) ** 2
 
-    if reduction == 'none':
-        return score
-
-    return {'mean': score.mean,
-            'sum': score.sum
-            }[reduction](dim=0)
+    return _reduce(score, reduction)
 
 
 class HaarPSILoss(_Loss):
@@ -151,21 +140,13 @@ class HaarPSILoss(_Loss):
     The division by :math:`n` can be avoided if one sets ``reduction = 'sum'``.
 
     Args:
-        reduction: Specifies the reduction to apply to the output:
-            ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
-            ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed.
-        data_range: The difference between the maximum and minimum of the pixel value,
-            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
-            The pixel value interval of both input and output should remain the same.
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        data_range: Maximum value range of images (usually 1.0 or 255).
         scales: Number of Haar wavelets used for image decomposition.
         subsample: Flag to apply average pooling before HaarPSI computation. See [1] for details.
         c: Constant from the paper. See [1] for details
         alpha: Exponent used for similarity maps weightning. See [1] for details
-
-    Shape:
-        - Input: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
-        - Target: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
 
     Examples::
 
@@ -194,8 +175,8 @@ class HaarPSILoss(_Loss):
         r"""Computation of HaarPSI as a loss function.
 
         Args:
-            x: Tensor of predictions of the network.
-            y: Reference tensor.
+            x: An input tensor. Shape :math:`(N, C, H, W)`.
+            y: A target tensor. Shape :math:`(N, C, H, W)`.
 
         Returns:
             Value of HaarPSI loss to be minimized. 0 <= HaarPSI loss <= 1.

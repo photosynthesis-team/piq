@@ -142,10 +142,8 @@ class KID(BaseFeatureMetric):
     But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
 
     Args:
-        x_features: Low-dimension representation of predicted image set :math:`x`.
-            Shape (N_x, encoder_dim)
-        y_features: Low-dimension representation of target image set :math:`y`.
-            Shape (N_y, encoder_dim)
+        x_features: Samples from data distribution. Shape :math:`(N_x, D)`
+        y_features: Samples from data distribution. Shape :math:`(N_y, D)`
 
     Returns:
         score: Scalar value of the distance between image sets features.
@@ -190,12 +188,11 @@ class KID(BaseFeatureMetric):
             -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
         """Computes KID (polynomial MMD) for given sets of features, obtained from Inception net
         or any other feature extractor.
+        Samples must be in range [0, 1].
 
         Args:
-            x_features: Samples from data distribution.
-                Shape (N_samples, data_dim), dtype: torch.float32 in range [0, 1].
-            y_features: Samples from data distribution.
-                Shape (N_samples, data_dim), dtype: torch.float32 in range [0, 1].
+            x_features: Samples from data distribution. Shape :math:`(N_x, D)`
+            y_features: Samples from data distribution. Shape :math:`(N_y, D)`
 
         Returns:
             KID score and variance (optional).

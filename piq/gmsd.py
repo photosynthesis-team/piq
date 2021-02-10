@@ -14,7 +14,7 @@ from typing import Optional, Union, Tuple, List, cast
 import torch.nn.functional as F
 from torch.nn.modules.loss import _Loss
 
-from piq.utils import _adjust_dimensions, _validate_input
+from piq.utils import _validate_input, _reduce
 from piq.functional import similarity_map, gradient_map, prewitt_filter, rgb2yiq
 
 
@@ -22,18 +22,14 @@ def gmsd(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
          data_range: Union[int, float] = 1., t: float = 170 / (255. ** 2)) -> torch.Tensor:
     r"""Compute Gradient Magnitude Similarity Deviation.
 
-    Inputs supposed to be in range [0, data_range] with RGB channels order for colour images.
+    Supports greyscale and colour images with RGB channel order.
 
     Args:
-        x: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
-        y: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
-        reduction: Specifies the reduction to apply to the output:
-            ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
-            ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed.
-        data_range: The difference between the maximum and minimum of the pixel value,
-            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
-            The pixel value interval of both input and output should remain the same.
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
+        y: A target tensor. Shape :math:`(N, C, H, W)`.
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        data_range: Maximum value range of images (usually 1.0 or 255).
         t: Constant from the reference paper numerical stability of similarity map.
 
     Returns:
@@ -43,10 +39,7 @@ def gmsd(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         Wufeng Xue et al. Gradient Magnitude Similarity Deviation (2013)
         https://arxiv.org/pdf/1308.3052.pdf
     """
-
-    _validate_input(
-        input_tensors=(x, y), allow_5d=False, scale_weights=None, data_range=data_range)
-    x, y = _adjust_dimensions(input_tensors=(x, y))
+    _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
 
     # Rescale
     x = x / data_range
@@ -66,21 +59,16 @@ def gmsd(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     y = F.avg_pool2d(y, kernel_size=2, stride=2, padding=0)
 
     score = _gmsd(x=x, y=y, t=t)
-    if reduction == 'none':
-        return score
-
-    return {'mean': score.mean,
-            'sum': score.sum
-            }[reduction](dim=0)
+    return _reduce(score, reduction)
 
 
 def _gmsd(x: torch.Tensor, y: torch.Tensor,
           t: float = 170 / (255. ** 2), alpha: float = 0.0) -> torch.Tensor:
     r"""Compute Gradient Magnitude Similarity Deviation
-    Both inputs supposed to be in range [0, 1] with RGB channels order.
+    Supports greyscale images in [0, 1] range.
     Args:
-        x: Tensor with shape (N, 1, H, W).
-        y: Tensor with shape (N, 1, H, W).
+        x: Tensor. Shape :math:`(N, 1, H, W)`.
+        y: Tensor. Shape :math:`(N, 1, H, W)`.
         t: Constant from the reference paper numerical stability of similarity map
         alpha: Masking coefficient for similarity masks computation
 
@@ -110,13 +98,9 @@ class GMSDLoss(_Loss):
     between each element in the input and target.
 
     Args:
-        reduction: Specifies the reduction to apply to the output:
-            ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
-            ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``
-        data_range: The difference between the maximum and minimum of the pixel value,
-            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
-            The pixel value interval of both input and output should remain the same.
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        data_range: Maximum value range of images (usually 1.0 or 255).
         t: Constant from the reference paper numerical stability of similarity map
             
     Reference:
@@ -138,11 +122,11 @@ class GMSDLoss(_Loss):
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         r"""Computation of Gradient Magnitude Similarity Deviation (GMSD) as a loss function.
-        Inputs supposed to be in range [0, data_range] with RGB channels order for colour images.
+        Supports greyscale and colour images with RGB channel order.
 
         Args:
-            x: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
-            y: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
+            x: An input tensor. Shape :math:`(N, C, H, W)`.
+            y: A target tensor. Shape :math:`(N, C, H, W)`.
 
         Returns:
             Value of GMSD loss to be minimized. 0 <= GMSD loss <= 1.
@@ -156,19 +140,15 @@ def multi_scale_gmsd(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, fl
                      beta3: float = 15., t: float = 170) -> torch.Tensor:
     r"""Computation of Multi scale GMSD.
 
-    Inputs supposed to be in range [0, data_range] with RGB channels order for colour images.
+    Supports greyscale and colour images with RGB channel order.
     The height and width should be at least 2 ** scales + 1.
 
     Args:
-        x: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
-        y: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
-        data_range: The difference between the maximum and minimum of the pixel value,
-            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
-            The pixel value interval of both input and output should remain the same.
-        reduction: Specifies the reduction to apply to the output:
-            ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
-            ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
+        y: A target tensor. Shape :math:`(N, C, H, W)`.
+        data_range: Maximum value range of images (usually 1.0 or 255).
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         scale_weights: Weights for different scales. Can contain any number of floating point values.
         chromatic: Flag to use MS-GMSDc algorithm from paper.
             It also evaluates chromatic components of the image. Default: True
@@ -181,8 +161,7 @@ def multi_scale_gmsd(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, fl
     Returns:
         Value of MS-GMSD. 0 <= GMSD loss <= 1.
     """
-    _validate_input(input_tensors=(x, y), allow_5d=False, scale_weights=scale_weights, data_range=data_range)
-    x, y = _adjust_dimensions(input_tensors=(x, y))
+    _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
     
     # Rescale
     x = x / data_range * 255
@@ -246,12 +225,7 @@ def multi_scale_gmsd(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, fl
 
         score = gamma * ms_gmds_val + (1 - gamma) * beta1 * rmse_chrome
 
-    if reduction == 'none':
-        return score
-
-    return {'mean': score.mean,
-            'sum': score.sum
-            }[reduction](dim=0)
+    return _reduce(score, reduction)
 
 
 class MultiScaleGMSDLoss(_Loss):
@@ -259,13 +233,9 @@ class MultiScaleGMSDLoss(_Loss):
     between each element in the input :math:`x` and target :math:`y`.
 
     Args:
-        reduction: Specifies the reduction to apply to the output:
-            ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
-            ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``
-        data_range: The difference between the maximum and minimum of the pixel value,
-            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
-            The pixel value interval of both input and output should remain the same.
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        data_range: Maximum value range of images (usually 1.0 or 255).
         scale_weights: Weights for different scales. Can contain any number of floating point values.
             By defualt weights are initialized with values from the paper.
         chromatic: Flag to use MS-GMSDc algorithm from paper.
@@ -302,12 +272,12 @@ class MultiScaleGMSDLoss(_Loss):
             
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         r"""Computation of Multi Scale GMSD index as a loss function.
-        Inputs supposed to be in range [0, data_range] with RGB channels order for colour images.
+        Supports greyscale and colour images with RGB channel order.
         The height and width should be at least 2 ** scales + 1.
 
         Args:
-            x: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
-            y: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
+            x: An input tensor. Shape :math:`(N, C, H, W)`.
+            y: A target tensor. Shape :math:`(N, C, H, W)`.
 
         Returns:
             Value of MS-GMSD loss to be minimized. 0 <= MS-GMSD loss <= 1.

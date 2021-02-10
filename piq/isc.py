@@ -66,10 +66,8 @@ class IS(BaseFeatureMetric):
     logits as inputs.
 
     Args:
-        x_features: Low-dimension representation of predicted image set :math:`x`.
-            Shape (N_x, encoder_dim).
-        y_features: Low-dimension representation of target image set :math:`y`.
-            Shape (N_y, encoder_dim).
+            x_features: Samples from data distribution. Shape :math:`(N_x, D)`
+            y_features: Samples from data distribution. Shape :math:`(N_y, D)`
 
     Returns:
         distance(x_score, y_score): L1 or L2 distance between scores.
@@ -94,8 +92,8 @@ class IS(BaseFeatureMetric):
         Both features should have shape (N_samples, encoder_dim).
 
         Args:
-            x_features: Low-dimension representation of predicted image set :math:`x`.
-            y_features: Low-dimension representation of target image set :math:`y`.
+            x_features: Samples from data distribution. Shape :math:`(N_x, D)`
+            y_features: Samples from data distribution. Shape :math:`(N_y, D)`
 
         Returns:
             diff: L1 or L2 distance between scores for datasets :math:`x` and :math:`y`.

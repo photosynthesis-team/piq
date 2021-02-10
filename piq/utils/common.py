@@ -1,4 +1,4 @@
-from typing import Optional, Union, Tuple, List, Iterable
+from typing import Tuple, List
 import torch
 
 
@@ -7,10 +7,10 @@ def _validate_input(
     dim_range: Tuple[int, int] = (0, -1),
     data_range: Tuple[float, float] = (0., -1.),
 ) -> None:
-    r"""Check input to satisfy requirements
+    r"""Check that input(-s)  satisfies the requirements
     """
 
-    if not _debug():
+    if not __debug__:
         return
 
     x = tensors[0]
@@ -29,11 +29,11 @@ def _validate_input(
             assert data_range[0] <= t.min(), \
                 f'Expected values to be greater or equal to {data_range[0]}, got {t.min()}'
             assert t.max() <= data_range[1], \
-                f'Expected values to be lower or equal to {data_range[1]}, got {t.max()}'    
+                f'Expected values to be lower or equal to {data_range[1]}, got {t.max()}'
 
 
 def _reduce(x: torch.Tensor, reduction: str = 'mean') -> torch.Tensor:
-    r"""Reduce input in batch dimension if needed. 
+    r"""Reduce input in batch dimension if needed.
 
     Args:
         x: Tensor with shape (N, *).
