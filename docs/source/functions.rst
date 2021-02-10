@@ -2,7 +2,7 @@ PIQ Functional Interface
 ========================
 
 Full Reference Metrics
-^^^^^^^^^^^^^^^^^^^^^^
+----------------------
 Total Variation
 '''''''''''''''
 .. autofunction:: piq.total_variation
@@ -44,13 +44,13 @@ Haar Perceptual Similarity Index (HaarPSI)
 .. autofunction:: piq.haarpsi
 
 No Reference Metrics
-^^^^^^^^^^^^^^^^^^^^
+--------------------
 Blind/Referenceless Image Spatial Quality Evaluator (BRISQUE)
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 .. autofunction:: piq.brisque
 
 Feature Metrics
-^^^^^^^^^^^^^^^
+---------------
 Inseption Score (IS)
 ''''''''''''''''''''
 .. autofunction:: piq.inception_score

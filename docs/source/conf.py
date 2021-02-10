@@ -13,15 +13,11 @@
 import piq
 import datetime
 year = datetime.datetime.today().year
-# import sphinx_rtd_theme
-# $import os
-# import sys
-# sys.path.insert(0, os.path.abspath('../piq'))
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'PyTorch Image Quality (PIQ)'
+project = u'PyTorch Image Quality (PIQ)'
 copyright = f'2019 - {year}, Photosynthesis Team'
 author = 'Photosynthesis Team'
 
@@ -34,7 +30,12 @@ release = piq.__version__
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx_rtd_theme']
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',
+    'sphinx_rtd_theme',
+    'sphinx_search.extension',
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -51,6 +52,10 @@ exclude_patterns = []
 # a list of builtin themes.
 #
 html_theme = 'sphinx_rtd_theme'
+html_logo = '_static/piq_logo.png'
+html_theme_options = {
+    'logo_only': True,
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

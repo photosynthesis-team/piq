@@ -20,7 +20,7 @@ def get_version(rel_path: str) -> str:
     raise RuntimeError("Unable to find version string.")
 
 
-with open("README.md", "r") as f, open("requirements.txt", "r") as g:
+with open("README.rst", "r") as f, open("requirements.txt", "r") as g:
     long_description = f.read()
     required = g.read().splitlines()
 
