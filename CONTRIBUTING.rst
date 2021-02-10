@@ -1,6 +1,6 @@
-******************
+==================
 Contribution guide
-******************
+==================
 
 
 Any contributions you make are **greatly appreciated**. If you plan to:
