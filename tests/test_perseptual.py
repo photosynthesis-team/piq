@@ -40,7 +40,7 @@ def test_content_loss_raises_if_wrong_reduction(x, y) -> None:
         ContentLoss(reduction=mode)(x, y)
 
     for mode in [None, 'n', 2]:
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             ContentLoss(reduction=mode)(x, y)
 
 
@@ -124,7 +124,7 @@ def test_style_loss_raises_if_wrong_reduction(x, y) -> None:
         StyleLoss(reduction=mode)(x, y)
 
     for mode in [None, 'n', 2]:
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             StyleLoss(reduction=mode)(x, y)
 
 
@@ -151,7 +151,7 @@ def test_lpips_loss_raises_if_wrong_reduction(x, y) -> None:
         LPIPS(reduction=mode)(x, y)
 
     for mode in [None, 'n', 2]:
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             LPIPS(reduction=mode)(x, y)
 
 

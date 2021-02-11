@@ -143,7 +143,7 @@ def test_fsim_loss_reduction(x, y) -> None:
         f'FSIM with `none` reduction must have length equal to number of images, got {len(measure)}'
     
     loss = FSIMLoss(reduction='random string')
-    with pytest.raises(KeyError):
+    with pytest.raises(ValueError):
         loss(x, y)
 
 

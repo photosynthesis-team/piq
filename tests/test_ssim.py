@@ -71,7 +71,7 @@ def test_ssim_reduction(x: torch.Tensor, y: torch.Tensor, device: str) -> None:
         ssim(x.to(device), y.to(device), reduction=mode)
 
     for mode in [None, 'n', 2]:
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             ssim(x.to(device), y.to(device), reduction=mode)
             
 

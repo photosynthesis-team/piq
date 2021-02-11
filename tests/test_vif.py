@@ -128,7 +128,7 @@ def test_vif_loss_reduction(x, y) -> None:
         f'VIF with `none` reduction must have length equal to number of images, got {len(measure)}'
     
     loss = VIFLoss(reduction='random string')
-    with pytest.raises(KeyError):
+    with pytest.raises(ValueError):
         loss(x, y)
 
 

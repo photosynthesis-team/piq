@@ -93,7 +93,7 @@ def test_gmsd_modes(x, y, device: str) -> None:
         gmsd(x.to(device), y.to(device), reduction=reduction)
 
     for reduction in ['DEADBEEF', 'random']:
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             gmsd(x.to(device), y.to(device), reduction=reduction)
 
 
@@ -157,7 +157,7 @@ def test_gmsd_loss_modes(x, y, device: str) -> None:
         GMSDLoss(reduction=reduction)(x.to(device), y.to(device))
 
     for reduction in ['DEADBEEF', 'random']:
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             GMSDLoss(reduction=reduction)(x.to(device), y.to(device))
 
 
@@ -226,7 +226,7 @@ def test_multi_scale_gmsd_modes(x, y, device: str) -> None:
         multi_scale_gmsd(x.to(device), y.to(device), reduction=reduction)
 
     for reduction in ['DEADBEEF', 'random']:
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             multi_scale_gmsd(x.to(device), y.to(device), reduction=reduction)
 
 
@@ -291,5 +291,5 @@ def test_multi_scale_loss_gmsd_modes(x, y, device: str) -> None:
         MultiScaleGMSDLoss(reduction=reduction)(x.to(device), y.to(device))
 
     for reduction in ['DEADBEEF', 'random']:
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             MultiScaleGMSDLoss(reduction=reduction)(x.to(device), y.to(device))

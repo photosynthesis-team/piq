@@ -40,10 +40,11 @@ def _reduce(x: torch.Tensor, reduction: str = 'mean') -> torch.Tensor:
         reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default: ``'mean'``
     """
-
-    if reduction == 'mean':
+    if reduction == 'none':
+        return x
+    elif reduction == 'mean':
         return x.mean(dim=0)
     elif reduction == 'sum':
         return x.sum(dim=0)
     else:
-        return x
+        raise ValueError("Uknown reduction. Expected one of {'none', 'mean', 'sum'}")

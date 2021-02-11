@@ -31,7 +31,7 @@ def test_brisque_raises_if_wrong_reduction(x_grey: torch.Tensor, device: str) ->
         brisque(x_grey.to(device), reduction=mode)
 
     for mode in [None, 'n', 2]:
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             brisque(x_grey.to(device), reduction=mode)
 
 
@@ -105,5 +105,5 @@ def test_brisque_loss_raises_if_wrong_reduction(x_grey: torch.Tensor, device: st
         BRISQUELoss(reduction=mode)(x_grey.to(device))
 
     for mode in [None, 'n', 2]:
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             BRISQUELoss(reduction=mode)(x_grey.to(device))
