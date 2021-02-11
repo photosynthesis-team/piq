@@ -154,7 +154,6 @@ Full Reference
 ===========  ======  ==========
 Acronym      Year    Metric
 ===========  ======  ==========
-TV           1937    `Total Variation <https://en.wikipedia.org/wiki/Total_variation>`_
 PSNR         -       `Peak Signal-to-Noise Ratio <https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio>`_
 SSIM         2003    `Structural Similarity <https://en.wikipedia.org/wiki/Structural_similarity>`_
 MS-SSIM      2004    `Multi-Scale Structural Similarity <https://ieeexplore.ieee.org/abstract/document/1292216>`_
@@ -181,6 +180,7 @@ No Reference
 ===========  ======  ==========
 Acronym      Year    Metric
 ===========  ======  ==========
+TV           1937    `Total Variation <https://en.wikipedia.org/wiki/Total_variation>`_
 BRISQUE      2012    `Blind/Referenceless Image Spatial Quality Evaluator <https://ieeexplore.ieee.org/document/6272356>`_
 ===========  ======  ==========
 
