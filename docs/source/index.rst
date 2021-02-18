@@ -1,7 +1,15 @@
 Welcome to PIQ’s documentation!
 ===============================
 
-.. image:: _static/piq_logo.png
+.. image:: _static/piq_logo_main.png
+    :target: https://github.com/photosynthesis-team/piq
+
+.. note::
+
+    PyTorch Image Quality (PIQ) is not endorsed by Facebook, Inc.
+
+    PyTorch, the PyTorch logo and any related marks are trademarks of Facebook, Inc.
+
 
 .. include:: ../../README.rst
     :start-after: intro-section-start
@@ -9,14 +17,16 @@ Welcome to PIQ’s documentation!
 
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Overview
+    :maxdepth: 1
+    :caption: Getting Started
 
-   overview.rst
-   contributing.rst
+    overview.rst
+    installation.rst
+    usage_examples.rst
+    contributing.rst
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: API Reference
 
    functions.rst

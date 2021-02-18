@@ -65,7 +65,7 @@ PIQ uses `reStructuredText <https://docutils.sourceforge.io/docs/user/rst/quickr
 file format to write the documentation, `Sphinx <https://www.sphinx-doc.org/en/master/>`_ 
 to build it and `readthedocs <https://readthedocs.org>`_ to host it.
 
-..
+.. note::
 
    Limit line length in docstrings to 80 characters, so that it fits into Jupyter documentation popups.
 

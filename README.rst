@@ -1,5 +1,6 @@
 
-.. image:: docs/source/_static/piq_logo.png
+.. image:: docs/source/_static/piq_logo_main.png
+    :target: https://github.com/photosynthesis-team/piq
 
 ..
 
@@ -44,7 +45,7 @@ We provide:
 * Most metrics can be backpropagated for model optimization.
 * Supports python 3.6-3.8.
 
-PIQ was initially named `PhotoSynthesis.Metrics <https://pypi.org/project/photosynthesis-metrics/0.4.0/>`_
+PIQ was initially named `PhotoSynthesis.Metrics <https://pypi.org/project/photosynthesis-metrics/0.4.0/>`_.
 
 .. intro-section-end
 
@@ -87,6 +88,8 @@ Documentation
 The full documentation is available at https://piq.readthedocs.io.
 
 .. documentation-section-end
+
+.. usage-examples-start
 
 Usage Examples
 ---------------
@@ -151,6 +154,9 @@ If you already have image features, use the class interface for score computatio
 
 For a full list of examples, see `feature metrics <https://github.com/photosynthesis-team/piq/blob/master/examples/feature_metrics.py>`_ examples.
 
+.. usage-examples-end
+
+.. list-of-metrics-start
 
 List of metrics
 ---------------
@@ -161,7 +167,7 @@ Full Reference
 ===========  ======  ==========
 Acronym      Year    Metric
 ===========  ======  ==========
-PSNR         \-       `Peak Signal-to-Noise Ratio <https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio>`_
+PSNR         \-      `Peak Signal-to-Noise Ratio <https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio>`_
 SSIM         2003    `Structural Similarity <https://en.wikipedia.org/wiki/Structural_similarity>`_
 MS-SSIM      2004    `Multi-Scale Structural Similarity <https://ieeexplore.ieee.org/abstract/document/1292216>`_
 VIFp         2004    `Visual Information Fidelity <https://ieeexplore.ieee.org/document/1576816>`_
@@ -171,8 +177,8 @@ IW-SSIM      2011    `Information Weighted SSIM <https://ece.uwaterloo.ca/~z70wa
 SR-SIM       2012    `Spectral Residual Based Similarity <https://sse.tongji.edu.cn/linzhang/ICIP12/ICIP-SR-SIM.pdf>`_
 GMSD         2013    `Gradient Magnitude Similarity Deviation <https://arxiv.org/abs/1308.3052>`_
 VSI          2014    `Visual Saliency-induced Index <https://ieeexplore.ieee.org/document/6873260>`_
--            2016    `Content Score <https://arxiv.org/abs/1508.06576>`_
--            2016    `Style Score <https://arxiv.org/abs/1508.06576>`_
+\-            2016   `Content Score <https://arxiv.org/abs/1508.06576>`_
+\-            2016   `Style Score <https://arxiv.org/abs/1508.06576>`_
 HaarPSI      2016    `Haar Perceptual Similarity Index <https://arxiv.org/abs/1607.06140>`_
 MDSI         2016    `Mean Deviation Similarity Index <https://arxiv.org/abs/1608.07433>`_
 MS-GMSD      2017    `Multi-Scale Gradient Magnitude Similiarity Deviation <https://ieeexplore.ieee.org/document/7952357>`_
@@ -203,6 +209,8 @@ GS           2018    `Geometry Score <https://arxiv.org/abs/1802.02664>`_
 KID          2018    `Kernel Inception Distance <https://arxiv.org/abs/1801.01401>`_
 MSID         2019    `Multi-Scale Intrinsic Distance <https://arxiv.org/abs/1905.11141>`_
 ===========  ======  ==========
+
+.. list-of-metrics-end
 
 .. benchmark-section-start
 
