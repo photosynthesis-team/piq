@@ -7,23 +7,25 @@
 
   PyTorch, the PyTorch logo and any related marks are trademarks of Facebook, Inc.
 
+|pypy| |conda| |flake8| |tests| |codecov| |quality_gate|
 
-.. image:: https://badge.fury.io/py/piq.svg
+.. |pypy| image:: https://badge.fury.io/py/piq.svg
    :target: https://badge.fury.io/py/piq
    :alt: Pypi Version
-.. image:: https://anaconda.org/photosynthesis-team/piq/badges/version.svg
+.. |conda| image:: https://anaconda.org/photosynthesis-team/piq/badges/version.svg
    :target: https://anaconda.org/photosynthesis-team/piq
    :alt: Conda Version
-.. image:: https://github.com/photosynthesis-team/piq/workflows/flake-8%20style%20check/badge.svg
+.. |flake8| image:: https://github.com/photosynthesis-team/piq/workflows/flake-8%20style%20check/badge.svg
    :alt: CI flake-8 style check
-.. image:: https://github.com/photosynthesis-team/piq/workflows/testing/badge.svg
+.. |tests| image:: https://github.com/photosynthesis-team/piq/workflows/testing/badge.svg
    :alt: CI testing
-.. image:: https://codecov.io/gh/photosynthesis-team/piq/branch/master/graph/badge.svg
+.. |codecov| image:: https://codecov.io/gh/photosynthesis-team/piq/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/photosynthesis-team/piq
    :alt: codecov
-.. image:: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_photosynthesis.metrics&metric=alert_status
+.. |quality_gate| image:: https://sonarcloud.io/api/project_badges/measure?project=photosynthesis-team_photosynthesis.metrics&metric=alert_status
    :target: https://sonarcloud.io/dashboard?id=photosynthesis-team_photosynthesis.metrics
    :alt: Quality Gate Status
+
 
 
 .. intro-section-start
