@@ -1,5 +1,5 @@
-PIQ Functional Interface
-========================
+Functional Interface
+====================
 
 Full Reference Metrics
 ----------------------

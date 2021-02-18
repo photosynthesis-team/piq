@@ -1,5 +1,5 @@
-PIQ Class Interface
-===================
+Class Interface
+===============
 
 Full Reference Metrics
 ----------------------

@@ -63,7 +63,7 @@ Documentation
 
 PIQ uses `reStructuredText <https://docutils.sourceforge.io/docs/user/rst/quickref.html>`_ 
 file format to write the documentation, `Sphinx <https://www.sphinx-doc.org/en/master/>`_ 
- to build it and `readthedocs <https://readthedocs.org>`_ to host it.
+to build it and `readthedocs <https://readthedocs.org>`_ to host it.
 
 ..
 

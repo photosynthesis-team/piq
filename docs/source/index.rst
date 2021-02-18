@@ -1,23 +1,30 @@
-.. include:: readme.rst
+Welcome to PIQ’s documentation!
+===============================
+
+.. image:: _static/piq_logo.png
+
+.. include:: ../../README.rst
+    :start-after: intro-section-start
+    :end-before: intro-section-end
+
 
 .. toctree::
    :maxdepth: 2
-   :hidden:
-   :caption: Documentation
+   :caption: Overview
 
-   readme.rst
+   overview.rst
    contributing.rst
 
-
-
 .. toctree::
    :maxdepth: 2
-   :hidden:
    :caption: API Reference
 
    functions.rst
    modules.rst
 
+.. include:: ../../README.rst
+    :start-after: citation-section-start
+    :end-before: citation-section-end
 
 Indices and tables
 ------------------
