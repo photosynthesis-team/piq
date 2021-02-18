@@ -5,10 +5,10 @@ Contribution guide
 
 Any contributions you make are **greatly appreciated**. If you plan to:
 
-* Path a bug, please do so without any further discussion.
-* Close one of `open issues <https://github.com/photosynthesis-team/piq/issues>`__ , please do so if no one has been assigned to it.
-* Contribute new features, utility functions, or extensions, please create 
-  `GitHub Issue <https://github.com/photosynthesis-team/piq/issues/new/choose>`__ and discuss your idea 
+* Fix a bug, please do so without any further discussion;
+* Close one of `open issues <https://github.com/photosynthesis-team/piq/issues>`__, please do so if no one has been assigned to it;
+* Contribute new features, utility functions or extensions, please create 
+  `GitHub Issue <https://github.com/photosynthesis-team/piq/issues/new/choose>`__ and discuss your idea.
 
 
 Style
@@ -63,7 +63,7 @@ Documentation
 
 PIQ uses `reStructuredText <https://docutils.sourceforge.io/docs/user/rst/quickref.html>`_ 
 file format to write the documentation, `Sphinx <https://www.sphinx-doc.org/en/master/>`_ 
-to buid everything, and `readthedocs <https://readthedocs.org>`_ to host it.
+ to build it and `readthedocs <https://readthedocs.org>`_ to host it.
 
 ..
 
@@ -94,7 +94,7 @@ To build the documentation locally:
        open your_piq_folder/docs/build/html/index.html
 
 When changing documentation (adding formulas, tables, etc.), **provide a rendered version of the result** 
-as part of your PR (e.g add screenshot). 
+as part of your PR (e.g. add screenshot). 
 
 Get in Touch
 ------------

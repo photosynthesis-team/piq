@@ -1,4 +1,4 @@
-.. include:: ../../README.rst
+.. include:: readme.rst
 
 .. toctree::
    :maxdepth: 2
@@ -6,12 +6,9 @@
    :caption: Documentation
 
    readme.rst
-
-.. toctree::
-   :maxdepth: 2
-   :hidden:
-
    contributing.rst
+
+
 
 .. toctree::
    :maxdepth: 2

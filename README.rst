@@ -1,6 +1,3 @@
-=====================
-PyTorch Image Quality
-=====================
 
 .. image:: https://user-images.githubusercontent.com/22414094/106116361-df8a3c80-6162-11eb-83df-f5838110e614.png
 
@@ -154,7 +151,7 @@ Full Reference
 ===========  ======  ==========
 Acronym      Year    Metric
 ===========  ======  ==========
-PSNR         -       `Peak Signal-to-Noise Ratio <https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio>`_
+PSNR         \-       `Peak Signal-to-Noise Ratio <https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio>`_
 SSIM         2003    `Structural Similarity <https://en.wikipedia.org/wiki/Structural_similarity>`_
 MS-SSIM      2004    `Multi-Scale Structural Similarity <https://ieeexplore.ieee.org/abstract/document/1292216>`_
 VIFp         2004    `Visual Information Fidelity <https://ieeexplore.ieee.org/document/1576816>`_
