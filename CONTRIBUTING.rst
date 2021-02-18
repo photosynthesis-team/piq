@@ -6,7 +6,8 @@ Contribution guide
 Any contributions you make are **greatly appreciated**. If you plan to:
 
 * Fix a bug, please do so without any further discussion;
-* Close one of `open issues <https://github.com/photosynthesis-team/piq/issues>`__, please do so if no one has been assigned to it;
+* Close one of `open issues <https://github.com/photosynthesis-team/piq/issues>`__, please do so if no one has been
+assigned to it;
 * Contribute new features, utility functions or extensions, please create 
   `GitHub Issue <https://github.com/photosynthesis-team/piq/issues/new/choose>`__ and discuss your idea.
 
@@ -65,10 +66,6 @@ PIQ uses `reStructuredText <https://docutils.sourceforge.io/docs/user/rst/quickr
 file format to write the documentation, `Sphinx <https://www.sphinx-doc.org/en/master/>`_ 
 to build it and `readthedocs <https://readthedocs.org>`_ to host it.
 
-.. note::
-
-   Limit line length in docstrings to 80 characters, so that it fits into Jupyter documentation popups.
-
 
 To build the documentation locally:
 
@@ -94,7 +91,8 @@ To build the documentation locally:
        open your_piq_folder/docs/build/html/index.html
 
 When changing documentation (adding formulas, tables, etc.), **provide a rendered version of the result** 
-as part of your PR (e.g. add screenshot). 
+as part of your PR (e.g. add screenshot). Limit line length in docstrings to 80 characters, so that it fits into
+Jupyter documentation popups.
 
 Get in Touch
 ------------
