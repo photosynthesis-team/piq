@@ -11,7 +11,7 @@
 |pypy| |conda| |flake8| |tests| |codecov| |quality_gate|
 
 .. |pypy| image:: https://badge.fury.io/py/piq.svg
-   :target: https://badge.fury.io/py/piq
+   :target: https://pypi.org/project/piq/
    :alt: Pypi Version
 .. |conda| image:: https://anaconda.org/photosynthesis-team/piq/badges/version.svg
    :target: https://anaconda.org/photosynthesis-team/piq
