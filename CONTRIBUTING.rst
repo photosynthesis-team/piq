@@ -7,7 +7,7 @@ Any contributions you make are **greatly appreciated**. If you plan to:
 
 * Fix a bug, please do so without any further discussion;
 * Close one of `open issues <https://github.com/photosynthesis-team/piq/issues>`__, please do so if no one has been
-assigned to it;
+  assigned to it;
 * Contribute new features, utility functions or extensions, please create 
   `GitHub Issue <https://github.com/photosynthesis-team/piq/issues/new/choose>`__ and discuss your idea.
 
