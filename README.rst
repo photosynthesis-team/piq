@@ -245,12 +245,12 @@ MS-SSIM      0.7983 / 0.5965    0.787 / 0.608 `TID2013`_          0.8020 / 0.608
 VIFp         0.6102 / 0.4579    0.610 / 0.457 `TID2013`_          0.6500 / 0.4770    0.650 / 0.477 `KADID10k`_
 FSIM         0.8015 / 0.6289    0.801 / 0.630 `TID2013`_          0.8294 / 0.6390    0.829 / 0.639 `KADID10k`_
 FSIMc        0.8509 / 0.6665    0.851 / 0.667 `TID2013`_          0.8537 / 0.6650    0.854 / 0.665 `KADID10k`_
-IW-PSNR      \- / -             0.6913 / -   `eval2019`_          \- / -              \- / -
-IW-SSIM      \- / -             0.7779 / 0.5977 `eval2019`_       \- / -              \- / -
-SR-SIM       \- / -             0.8076 / 0.6406 `eval2019`_       \- / -             0.839 / 0.652 `KADID10k`_
+IW-PSNR      \- / -             0.6913 / -   `Eval2019`_          \- / -              \- / -
+IW-SSIM      \- / -             0.7779 / 0.5977 `Eval2019`_       \- / -              \- / -
+SR-SIM       \- / -             0.8076 / 0.6406 `Eval2019`_       \- / -             0.839 / 0.652 `KADID10k`_
 SR-SIMc      \- / -             \- / -                            \- / -             \- / -
 GMSD         0.8038 / 0.6334    0.8030 / 0.6352 `MS-GMSD`_        0.8474 / 0.6640    0.847 / 0.664 `KADID10k`_
-VSI          0.8949 / 0.7159    0.8965 / 0.7183 `eval2019`_       0.8780 / 0.6899    0.861 / 0.678 `KADID10k`_
+VSI          0.8949 / 0.7159    0.8965 / 0.7183 `Eval2019`_       0.8780 / 0.6899    0.861 / 0.678 `KADID10k`_
 Content      0.7049 / 0.5173    \- / -                            0.7237 / 0.5326    \- / -
 Style        0.5384 / 0.3720    \- / -                            0.6470 / 0.4646    \- / -
 HaarPSI      0.8732 / 0.6923    0.8732 / 0.6923 `HaarPSI`_        0.8849 / 0.6995    0.885 / 0.699 `KADID10k`_
@@ -264,7 +264,7 @@ DISTS        0.7077 / 0.5212    0.830 / 0.639 `DISTS`_            0.8137 / 0.625
 
 .. _TID2013: http://www.ponomarenko.info/tid2013.htm
 .. _KADID10k: http://database.mmsp-kn.de/kadid-10k-database.html
-.. _eval2019: https://ieeexplore.ieee.org/abstract/document/8847307/ eval2019 survey
+.. _Eval2019: https://ieeexplore.ieee.org/abstract/document/8847307/
 .. _`MDSI`: https://arxiv.org/abs/1608.07433
 .. _MS-GMSD: https://ieeexplore.ieee.org/document/7952357
 .. _DISTS: https://arxiv.org/abs/2004.07728
