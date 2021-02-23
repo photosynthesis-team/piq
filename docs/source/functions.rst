@@ -1,12 +1,8 @@
-PIQ Functional Interface
-========================
+Functional Interface
+====================
 
 Full Reference Metrics
-^^^^^^^^^^^^^^^^^^^^^^
-Total Variation
-'''''''''''''''
-.. autofunction:: piq.total_variation
-
+----------------------
 Peak Signal-to-Noise Ratio (PSNR)
 '''''''''''''''''''''''''''''''''
 .. autofunction:: piq.psnr
@@ -44,13 +40,17 @@ Haar Perceptual Similarity Index (HaarPSI)
 .. autofunction:: piq.haarpsi
 
 No Reference Metrics
-^^^^^^^^^^^^^^^^^^^^
+--------------------
+Total Variation
+'''''''''''''''
+.. autofunction:: piq.total_variation
+
 Blind/Referenceless Image Spatial Quality Evaluator (BRISQUE)
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 .. autofunction:: piq.brisque
 
 Feature Metrics
-^^^^^^^^^^^^^^^
+---------------
 Inseption Score (IS)
 ''''''''''''''''''''
 .. autofunction:: piq.inception_score

@@ -1,14 +1,8 @@
-PIQ Class Interface
-===================
+Class Interface
+===============
 
 Full Reference Metrics
-^^^^^^^^^^^^^^^^^^^^^^
-
-Total Variation
-'''''''''''''''
-.. autoclass:: piq.TVLoss
-    :members:
-
+----------------------
 Structural Similarity
 '''''''''''''''''''''
 .. autoclass:: piq.SSIMLoss
@@ -81,14 +75,19 @@ Content Score
 
 
 No Reference Metrics
-^^^^^^^^^^^^^^^^^^^^
+--------------------
+Total Variation
+'''''''''''''''
+.. autoclass:: piq.TVLoss
+    :members:
+
 Blind/Referenceless Image Spatial Quality Evaluator (BRISQUE)
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 .. autoclass:: piq.BRISQUELoss
     :members:
 
 Feature Metrics
-^^^^^^^^^^^^^^^
+---------------
 Inseption Score (IS)
 ''''''''''''''''''''
 .. autoclass:: piq.IS
