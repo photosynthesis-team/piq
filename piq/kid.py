@@ -3,6 +3,7 @@ from typing import Optional, Tuple, Union
 import torch
 
 from piq.base import BaseFeatureMetric
+from piq.utils import _validate_input
 
 
 def _polynomial_kernel(X: torch.Tensor, Y: torch.Tensor = None, degree: int = 3, gamma: Optional[float] = None,
@@ -197,6 +198,7 @@ class KID(BaseFeatureMetric):
         Returns:
             KID score and variance (optional).
         """
+        _validate_input([x_features, y_features], dim_range=(2, 2), size_range=(1, 2))
         var_at_m = min(x_features.size(0), y_features.size(0))
         if self.subset_size is None:
             subset_size = x_features.size(0)

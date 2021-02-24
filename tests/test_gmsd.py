@@ -210,7 +210,6 @@ def test_multi_scale_gmsd_fails_for_greyscale_tensors_chromatic_flag(device: str
 
 
 def test_multi_scale_gmsd_supports_custom_weights(x, y, device: str) -> None:
-    multi_scale_gmsd(x.to(device), y.to(device), scale_weights=[3., 4., 2., 1., 2.])
     multi_scale_gmsd(x.to(device), y.to(device), scale_weights=torch.tensor([3., 4., 2., 1., 2.]))
 
 
@@ -218,7 +217,7 @@ def test_multi_scale_gmsd_raise_exception_for_small_images(device: str) -> None:
     y = torch.ones(3, 1, 32, 32)
     x = torch.zeros(3, 1, 32, 32)
     with pytest.raises(ValueError):
-        multi_scale_gmsd(x.to(device), y.to(device), scale_weights=[3., 4., 2., 1., 1.])
+        multi_scale_gmsd(x.to(device), y.to(device), scale_weights=torch.tensor([3., 4., 2., 1., 2.]))
 
 
 def test_multi_scale_gmsd_modes(x, y, device: str) -> None:
@@ -272,8 +271,6 @@ def test_multi_scale_gmsd_loss_fails_for_greyscale_tensors_chromatic_flag(device
 
 
 def test_multi_scale_gmsd_loss_supports_custom_weights(x, y, device: str) -> None:
-    loss = MultiScaleGMSDLoss(scale_weights=[3., 4., 2., 1., 2.])
-    loss(x.to(device), y.to(device))
     loss = MultiScaleGMSDLoss(scale_weights=torch.tensor([3., 4., 2., 1., 2.]))
     loss(x.to(device), y.to(device))
 
@@ -281,7 +278,7 @@ def test_multi_scale_gmsd_loss_supports_custom_weights(x, y, device: str) -> Non
 def test_multi_scale_gmsd_loss_raise_exception_for_small_images(device: str) -> None:
     y = torch.ones(3, 1, 32, 32)
     x = torch.zeros(3, 1, 32, 32)
-    loss = MultiScaleGMSDLoss(scale_weights=[3., 4., 2., 1., 1.])
+    loss = MultiScaleGMSDLoss(scale_weights=torch.tensor([3., 4., 2., 1., 2.]))
     with pytest.raises(ValueError):
         loss(x.to(device), y.to(device))
 

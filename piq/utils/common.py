@@ -1,4 +1,4 @@
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 import torch
 
 
@@ -6,8 +6,15 @@ def _validate_input(
     tensors: List[torch.Tensor],
     dim_range: Tuple[int, int] = (0, -1),
     data_range: Tuple[float, float] = (0., -1.),
+    # size_dim_range: Tuple[float, float] = (0., -1.),
+    size_range: Optional[Tuple[int, int]] = None,
 ) -> None:
     r"""Check that input(-s)  satisfies the requirements
+    Args:
+        tensors: Tensors to check
+        dim_range: Allowed number of dimensions. (min, max)
+        data_range: Allowed range of values in tensors. (min, max)
+        size_range: Dimensions to include in size comparison. (start_dim, end_dim + 1)
     """
 
     if not __debug__:
@@ -16,8 +23,14 @@ def _validate_input(
     x = tensors[0]
 
     for t in tensors:
+        assert torch.is_tensor(t), f'Expected torch.Tensor, got {type(t)}'
         assert t.device == x.device, f'Expected tensors to be on {x.device}, got {t.device}'
-        assert t.size() == x.size(), f'Expected tensors with same size, got {t.size()} and {x.size()}'
+
+        if size_range is None:
+            assert t.size() == x.size(), f'Expected tensors with same size, got {t.size()} and {x.size()}'
+        else:
+            assert t.size()[size_range[0]: size_range[1]] == x.size()[size_range[0]: size_range[1]], \
+                f'Expected tensors with same size at given dimensions, got {t.size()} and {x.size()}'
 
         if dim_range[0] == dim_range[1]:
             assert t.dim() == dim_range[0], f'Expected number of dimensions to be {dim_range[0]}, got {t.dim()}'

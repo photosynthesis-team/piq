@@ -9,7 +9,7 @@ Reference:
 
 """
 import torch
-from typing import Optional, Union, Tuple, List, cast
+from typing import Optional, Union
 
 import torch.nn.functional as F
 from torch.nn.modules.loss import _Loss
@@ -135,7 +135,7 @@ class GMSDLoss(_Loss):
 
 
 def multi_scale_gmsd(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1., reduction: str = 'mean',
-                     scale_weights: Optional[Union[torch.Tensor, Tuple[float, ...], List[float]]] = None,
+                     scale_weights: Optional[torch.Tensor] = None,
                      chromatic: bool = False, alpha: float = 0.5, beta1: float = 0.01, beta2: float = 0.32,
                      beta3: float = 15., t: float = 170) -> torch.Tensor:
     r"""Computation of Multi scale GMSD.
@@ -169,12 +169,10 @@ def multi_scale_gmsd(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, fl
     
     # Values from the paper
     if scale_weights is None:
-        scale_weights = torch.tensor([0.096, 0.596, 0.289, 0.019])
+        scale_weights = torch.tensor([0.096, 0.596, 0.289, 0.019], device=x.device)
     else:
         # Normalize scale weights
-        scale_weights = torch.tensor(scale_weights) / torch.tensor(scale_weights).sum()
-
-    scale_weights = cast(torch.Tensor, scale_weights).to(x)
+        scale_weights = (scale_weights / scale_weights.sum()).to(x)
 
     # Check that input is big enough
     num_scales = scale_weights.size(0)
@@ -251,7 +249,7 @@ class MultiScaleGMSDLoss(_Loss):
     """
 
     def __init__(self, reduction: str = 'mean', data_range: Union[int, float] = 1.,
-                 scale_weights: Optional[Union[torch.Tensor, Tuple[float, ...], List[float]]] = None,
+                 scale_weights: Optional[torch.Tensor] = None,
                  chromatic: bool = False, alpha: float = 0.5, beta1: float = 0.01, beta2: float = 0.32,
                  beta3: float = 15., t: float = 170) -> None:
         super().__init__()

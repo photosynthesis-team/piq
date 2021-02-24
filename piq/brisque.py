@@ -77,7 +77,7 @@ class BRISQUELoss(_Loss):
 
     Args:
         kernel_size: By default, the mean and covariance of a pixel is obtained
-            by convolution with given filter_size.
+            by convolution with given filter_size. Must be an odd value.
         kernel_sigma: Standard deviation for Gaussian kernel.
         data_range: Maximum value range of images (usually 1.0 or 255).
         reduction: Specifies the reduction type:

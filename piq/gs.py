@@ -13,6 +13,7 @@ import numpy as np
 from scipy.spatial.distance import cdist
 
 from piq.base import BaseFeatureMetric
+from piq.utils import _validate_input
 
 
 def relative(intervals: np.ndarray, alpha_max: float, i_max: int = 100) -> np.ndarray:
@@ -172,6 +173,7 @@ class GS(BaseFeatureMetric):
         Returns:
             score: Scalar value of the distance between distributions.
         """
+        _validate_input([x_features, y_features], dim_range=(2, 2), size_range=(1, 2))
         with Pool(self.num_workers) as p:
             self.features = x_features.detach().cpu().numpy()
             pool_results = p.map(self._relative_living_times, range(self.num_iters))

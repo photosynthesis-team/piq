@@ -100,8 +100,8 @@ def test_fsim_fails_for_incorrect_data_range(x, y, device: str) -> None:
 
 def test_fsim_simmular_to_matlab_implementation():
     # Greyscale images
-    goldhill = torch.tensor(imread('tests/assets/goldhill.gif'))
-    goldhill_jpeg = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'))
+    goldhill = torch.tensor(imread('tests/assets/goldhill.gif'))[None, None, ...]
+    goldhill_jpeg = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'))[None, None, ...]
 
     score = fsim(goldhill_jpeg, goldhill, data_range=255, chromatic=False, reduction='none')
     score_baseline = torch.tensor(0.89691)
@@ -110,8 +110,8 @@ def test_fsim_simmular_to_matlab_implementation():
         f'Expected PyTorch score to be equal to MATLAB prediction. Got {score} and {score_baseline}'
 
     # RGB images
-    I01 = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1)
-    i1_01_5 = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1)
+    I01 = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1)[None, ...]
+    i1_01_5 = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1)[None, ...]
 
     score = fsim(i1_01_5, I01, data_range=255, chromatic=False, reduction='none')
     score_chromatic = fsim(i1_01_5, I01, data_range=255, chromatic=True, reduction='none')

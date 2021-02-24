@@ -12,6 +12,7 @@ from typing import Tuple
 import torch
 
 from piq.base import BaseFeatureMetric
+from piq.utils import _validate_input
 
 
 def _approximation_error(matrix: torch.Tensor, s_matrix: torch.Tensor) -> torch.Tensor:
@@ -167,6 +168,7 @@ class FID(BaseFeatureMetric):
         Returns:
         --   : The Frechet Distance.
         """
+        _validate_input([x_features, y_features], dim_range=(2, 2), size_range=(1, 2))
         # GPU -> CPU
         mu_x, sigma_x = _compute_statistics(x_features.detach().to(dtype=torch.float64))
         mu_y, sigma_y = _compute_statistics(y_features.detach().to(dtype=torch.float64))
