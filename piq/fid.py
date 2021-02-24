@@ -64,15 +64,15 @@ def _sqrtm_newton_schulz(matrix: torch.Tensor, num_iters: int = 100) -> Tuple[to
 def _compute_fid(mu1: torch.Tensor, sigma1: torch.Tensor, mu2: torch.Tensor, sigma2: torch.Tensor,
                  eps=1e-6) -> torch.Tensor:
     r"""
-    The Frechet Inception Distance between two multivariate Gaussians X_predicted ~ N(mu_1, sigm_1)
-    and X_target ~ N(mu_2, sigm_2) is
+    The Frechet Inception Distance between two multivariate Gaussians X_x ~ N(mu_1, sigm_1)
+    and X_y ~ N(mu_2, sigm_2) is
         d^2 = ||mu_1 - mu_2||^2 + Tr(sigm_1 + sigm_2 - 2*sqrt(sigm_1*sigm_2)).
 
     Args:
-        mu1: mean of activations calculated on predicted samples
-        sigma1: covariance matrix over activations calculated on predicted samples
-        mu2: mean of activations calculated on target samples
-        sigma2: covariance matrix over activations calculated on target samples
+        mu1: mean of activations calculated on predicted (x) samples
+        sigma1: covariance matrix over activations calculated on predicted (x) samples
+        mu2: mean of activations calculated on target (y) samples
+        sigma2: covariance matrix over activations calculated on target (y) samples
         eps: offset constant. used if sigma_1 @ sigma_2 matrix is singular
 
     Returns:
@@ -149,8 +149,8 @@ class FID(BaseFeatureMetric):
     But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
 
     Args:
-        predicted_features: Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
-        target_features: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
+        x_features: Low-dimension representation of predicted image set :math:`x`. Shape (N_x, encoder_dim)
+        y_features: Low-dimension representation of target image set :math:`y`. Shape (N_y, encoder_dim)
 
     Returns:
         score: Scalar value of the distance between image sets features.
@@ -158,29 +158,29 @@ class FID(BaseFeatureMetric):
 
     References:
         .. [1] Heusel M. et al. (2017).
-        Gans trained by a two time-scale update rule converge to a local nash equilibrium.
-        Advances in neural information processing systems,
-        https://arxiv.org/abs/1706.08500
+           Gans trained by a two time-scale update rule converge to a local nash equilibrium.
+           Advances in neural information processing systems,
+           https://arxiv.org/abs/1706.08500
     """
 
-    def compute_metric(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+    def compute_metric(self, x_features: torch.Tensor, y_features: torch.Tensor) -> torch.Tensor:
         r"""
         Fits multivariate Gaussians: X ~ N(mu_1, sigm_1) and Y ~ N(mu_2, sigm_2) to image stacks.
         Then computes FID as d^2 = ||mu_1 - mu_2||^2 + Tr(sigm_1 + sigm_2 - 2*sqrt(sigm_1*sigm_2)).
 
         Args:
-            predicted_features: Samples from data distribution.
+            x_features: Samples from data distribution.
                 Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1.
-            target_features: Samples from data distribution.
+            y_features: Samples from data distribution.
                 Shape (N_samples, data_dim), dtype: torch.float32 in range 0 - 1
 
         Returns:
         --   : The Frechet Distance.
         """
         # GPU -> CPU
-        m_pred, s_pred = _compute_statistics(predicted_features.detach().to(dtype=torch.float64))
-        m_targ, s_targ = _compute_statistics(target_features.detach().to(dtype=torch.float64))
+        mu_x, sigma_x = _compute_statistics(x_features.detach().to(dtype=torch.float64))
+        mu_y, sigma_y = _compute_statistics(y_features.detach().to(dtype=torch.float64))
 
-        score = _compute_fid(m_pred, s_pred, m_targ, s_targ)
+        score = _compute_fid(mu_x, sigma_x, mu_y, sigma_y)
 
         return score.to(dtype=torch.float32)

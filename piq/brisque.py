@@ -40,7 +40,7 @@ def brisque(x: torch.Tensor,
 
     References:
         .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
-        https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
+           https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
     """
     if '1.5.0' in torch.__version__:
         warnings.warn(f'BRISQUE does not support back propagation due to bug in torch={torch.__version__}.'
@@ -96,9 +96,9 @@ class BRISQUELoss(_Loss):
 
     Examples::
         >>> loss = BRISQUELoss()
-        >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
-        >>> target = torch.rand(3, 3, 256, 256)
-        >>> output = loss(prediction)
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x)
         >>> output.backward()
 
     Note:
@@ -107,7 +107,7 @@ class BRISQUELoss(_Loss):
 
     References:
         .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
-        https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
+           https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
     """
     def __init__(self, kernel_size: int = 7, kernel_sigma: float = 7 / 6,
                  data_range: Union[int, float] = 1., reduction: str = 'mean',
@@ -119,16 +119,16 @@ class BRISQUELoss(_Loss):
         self.data_range = data_range
         self.interpolation = interpolation
 
-    def forward(self, prediction: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         r"""Computation of BRISQUE score as a loss function.
 
         Args:
-            prediction: Tensor of prediction of the network.
+            x: Tensor of prediction of the network.
 
         Returns:
             Value of BRISQUE loss to be minimized.
         """
-        return brisque(prediction, reduction=self.reduction, kernel_size=self.kernel_size,
+        return brisque(x, reduction=self.reduction, kernel_size=self.kernel_size,
                        kernel_sigma=self.kernel_sigma, data_range=self.data_range, interpolation=self.interpolation)
 
 

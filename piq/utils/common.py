@@ -72,15 +72,15 @@ def _validate_features(x: torch.Tensor, y: torch.Tensor) -> None:
     r"""Check, that computed features satisfy metric requirements.
 
     Args:
-        x : Low-dimensional representation of predicted images.
-        y : Low-dimensional representation of target images.
+        x : Low-dimensional representation of images :math:`x`.
+        y : Low-dimensional representation of images :math:`y`.
     """
     assert torch.is_tensor(x) and torch.is_tensor(y), \
         f"Both features should be torch.Tensors, got {type(x)} and {type(y)}"
     assert x.dim() == 2, \
-        f"Predicted features must have shape (N_samples, encoder_dim), got {x.shape}"
+        f"x features must have shape (N_samples, encoder_dim), got {x.shape}"
     assert y.dim() == 2, \
-        f"Target features must have shape  (N_samples, encoder_dim), got {y.shape}"
+        f"y features must have shape  (N_samples, encoder_dim), got {y.shape}"
     assert x.size(1) == y.size(1), \
         f"Features dimensionalities should match, otherwise it won't be possible to correctly compute statistics. \
             Got {x.size(1)} and {y.size(1)}"

@@ -121,13 +121,8 @@ class PieAPP(_Loss):
     """
     _weights_url = "https://github.com/photosynthesis-team/piq/releases/download/v0.5.4/PieAPPv0.1.pth"
 
-    def __init__(
-        self,
-        reduction: str = "mean",
-        data_range: Union[int, float] = 1.0,
-        stride: int = 27,
-        enable_grad: bool = False
-    ) -> None:
+    def __init__(self, reduction: str = "mean", data_range: Union[int, float] = 1.0, stride: int = 27,
+                 enable_grad: bool = False) -> None:
         super().__init__()
         
         # Load weights and initialize model
@@ -146,32 +141,32 @@ class PieAPP(_Loss):
         self.stride = stride
         self.enable_grad = enable_grad
 
-    def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         r"""
-        Computation of PieAPP  between feature representations of prediction and target tensors.
+        Computation of PieAPP  between feature representations of prediction (x) and target (y) tensors.
 
         Args:
-            prediction: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
-            target: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
+            x: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
+            y: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
         """
         _validate_input(
-            input_tensors=(prediction, target), allow_5d=False, allow_negative=True, data_range=self.data_range)
-        prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
+            input_tensors=(x, y), allow_5d=False, allow_negative=True, data_range=self.data_range)
+        x, y = _adjust_dimensions(input_tensors=(x, y))
 
-        N, C, _, _ = prediction.shape
+        N, C, _, _ = x.shape
         if C == 1:
-            prediction = prediction.repeat(1, 3, 1, 1)
-            target = target.repeat(1, 3, 1, 1)
+            x = x.repeat(1, 3, 1, 1)
+            y = y.repeat(1, 3, 1, 1)
             warnings.warn('The original PieAPP supports only RGB images.'
                           'The input images were converted to RGB by copying the grey channel 3 times.')
 
-        self.model.to(device=prediction.device)
-        prediction_features, prediction_weights = self.get_features(prediction)
-        target_features, target_weights = self.get_features(target)
+        self.model.to(device=x.device)
+        x_features, x_weights = self.get_features(x)
+        y_features, y_weights = self.get_features(y)
 
         distances, weights = self.model.compute_difference(
-            target_features - prediction_features,
-            target_weights - prediction_weights
+            y_features - x_features,
+            y_weights - x_weights
         )
 
         distances = distances.reshape(N, -1)

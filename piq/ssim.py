@@ -47,7 +47,7 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
            structural similarity. IEEE Transactions on Image Processing,
            13, 600-612.
            https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
-           :DOI:`10.1109/TIP.2003.819861`
+           DOI: `10.1109/TIP.2003.819861`
     """
     _validate_input(
         input_tensors=(x, y), allow_5d=True, kernel_size=kernel_size, scale_weights=None, data_range=data_range)
@@ -92,7 +92,7 @@ class SSIMLoss(_Loss):
     The unreduced (i.e. with :attr:`reduction` set to ``'none'``) loss can be described as:
 
     .. math::
-        SSIM = \{ssim_1,\dots,ssim_{N \times C}\}, \quad
+        SSIM = \{ssim_1,\dots,ssim_{N \times C}\}\\
         ssim_{l}(x, y) = \frac{(2 \mu_x \mu_y + c_1) (2 \sigma_{xy} + c_2)}
         {(\mu_x^2 +\mu_y^2 + c_1)(\sigma_x^2 +\sigma_y^2 + c_2)},
 
@@ -134,9 +134,9 @@ class SSIMLoss(_Loss):
 
     Examples::
         >>> loss = SSIMLoss()
-        >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
-        >>> target = torch.rand(3, 3, 256, 256)
-        >>> output = loss(prediction, target)
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
         >>> output.backward()
 
     References:
@@ -145,7 +145,7 @@ class SSIMLoss(_Loss):
            structural similarity. IEEE Transactions on Image Processing,
            13, 600-612.
            https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
-           :DOI:`10.1109/TIP.2003.819861`
+           DOI:`10.1109/TIP.2003.819861`
     """
     __constants__ = ['kernel_size', 'k1', 'k2', 'sigma', 'kernel', 'reduction']
 
@@ -164,9 +164,7 @@ class SSIMLoss(_Loss):
         self.downsample = downsample
         self.data_range = data_range
 
-    def forward(self,
-                x: torch.Tensor,
-                y: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         r"""Computation of Structural Similarity (SSIM) index as a loss function.
 
         Args:

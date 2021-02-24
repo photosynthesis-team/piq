@@ -256,15 +256,10 @@ def _normalize_msid(msid: np.ndarray, normalization: str, n: int, k: int, ts: np
     return normed_msid
 
 
-def _msid_descriptor(
-        x: np.ndarray,
-        ts: np.ndarray = np.logspace(-1, 1, 256),
-        k: int = 5,
-        m: int = 10,
-        niters: int = 100,
-        rademacher: bool = False,
-        normalized_laplacian: bool = True,
-        normalize: str = 'empty') -> np.ndarray:
+def _msid_descriptor(x: np.ndarray, ts: np.ndarray = np.logspace(-1, 1, 256), k: int = 5, m: int = 10,
+                     niters: int = 100, rademacher: bool = False, normalized_laplacian: bool = True,
+                     normalize: str = 'empty') \
+        -> np.ndarray:
     r"""Compute the msid descriptor for a single set of samples
 
     Args:
@@ -298,8 +293,10 @@ class MSID(BaseFeatureMetric):
     number of samples or different dimensionalities.
 
     Args:
-        predicted_features: Low-dimension representation of predicted image set. Shape (N_pred, encoder_dim)
-        target_features: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
+        x_features: Low-dimension representation of predicted image set `x`.
+            Shape (N_x, encoder_dim)
+        y_features: Low-dimension representation of target image set `y`.
+            Shape (N_y, encoder_dim)
 
     Returns:
         score: Scalar value of the distance between image sets features.
@@ -308,17 +305,9 @@ class MSID(BaseFeatureMetric):
         https://arxiv.org/abs/1905.11141
     """
 
-    def __init__(
-            self,
-            ts: torch.Tensor = torch.logspace(-1, 1, 256),
-            k: int = 5,
-            m: int = 10,
-            niters: int = 100,
-            rademacher: bool = False,
-            normalized_laplacian: bool = True,
-            normalize: str = 'empty',
-            msid_mode: str = "max",
-    ) -> None:
+    def __init__(self, ts: torch.Tensor = torch.logspace(-1, 1, 256), k: int = 5, m: int = 10, niters: int = 100,
+                 rademacher: bool = False, normalized_laplacian: bool = True, normalize: str = 'empty',
+                 msid_mode: str = "max") -> None:
         r"""
         Args:
             ts: Temperature values.
@@ -344,29 +333,29 @@ class MSID(BaseFeatureMetric):
         self.normalized_laplacian = normalized_laplacian
         self.normalize = normalize
 
-    def compute_metric(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+    def compute_metric(self, x_features: torch.Tensor, y_features: torch.Tensor) -> torch.Tensor:
 
         r"""Compute MSID score between two sets of samples.
         Args:
-            x: Samples from data distribution. Shape (N_samples, data_dim).
-            y: Samples from data distribution. Shape (N_samples, data_dim).
+            x_features: Samples from data distribution. Shape (N_samples, data_dim).
+            y_features: Samples from data distribution. Shape (N_samples, data_dim).
             ts: Temperature values.
             k: Number of neighbours for graph construction.
             m: Lanczos steps in SLQ.
             niters: Number of starting random vectors for SLQ.
             rademacher: True to use Rademacher distribution,
-                False - standard normal for random vectors in Hutchinson.
+            False - standard normal for random vectors in Hutchinson.
             msid_mode: 'l2' to compute the l2 norm of the distance between `msid1` and `msid2`;
-                    'max' to find the maximum abosulute difference between two descriptors over temperature
+            'max' to find the maximum abosulute difference between two descriptors over temperature
             normalized_laplacian: if True, use normalized Laplacian.
             normalize: 'empty' for average heat kernel (corresponds to the empty graph normalization of NetLSD),
-                    'complete' for the complete, 'er' for erdos-renyi normalization, 'none' for no normalization
+            'complete' for the complete, 'er' for erdos-renyi normalization, 'none' for no normalization
 
         Returns:
             score: Scalar value of the distance between distributions.
         """
-        normed_msid_pred = _msid_descriptor(
-            predicted_features.detach().cpu().numpy(),
+        normed_msid_x = _msid_descriptor(
+            x_features.detach().cpu().numpy(),
             ts=self.ts,
             k=self.k,
             m=self.m,
@@ -375,8 +364,8 @@ class MSID(BaseFeatureMetric):
             normalized_laplacian=self.normalized_laplacian,
             normalize=self.normalize
         )
-        normed_msid_target = _msid_descriptor(
-            target_features.detach().cpu().numpy(),
+        normed_msid_y = _msid_descriptor(
+            y_features.detach().cpu().numpy(),
             ts=self.ts,
             k=self.k,
             m=self.m,
@@ -388,10 +377,10 @@ class MSID(BaseFeatureMetric):
 
         c = np.exp(-2 * (self.ts + 1 / self.ts))
         if self.msid_mode == 'l2':
-            score = np.linalg.norm(normed_msid_pred - normed_msid_target)
+            score = np.linalg.norm(normed_msid_x - normed_msid_y)
         elif self.msid_mode == 'max':
-            score = np.amax(c * np.abs(normed_msid_pred - normed_msid_target))
+            score = np.amax(c * np.abs(normed_msid_x - normed_msid_y))
         else:
             raise ValueError('Mode must be in {`l2`, `max`}')
 
-        return torch.tensor(score, device=predicted_features.device)
+        return torch.tensor(score, device=x_features.device)

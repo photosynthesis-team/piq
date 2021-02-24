@@ -95,13 +95,13 @@ class ContentLoss(_Loss):
 
     References:
         .. [1] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
-        (2016). A Neural Algorithm of Artistic Style}
-        Association for Research in Vision and Ophthalmology (ARVO)
-        https://arxiv.org/abs/1508.06576
+           (2016). A Neural Algorithm of Artistic Style}
+           Association for Research in Vision and Ophthalmology (ARVO)
+           https://arxiv.org/abs/1508.06576
         .. [2] Zhang, Richard and Isola, Phillip and Efros, et al.
-        (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
-        2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
-        https://arxiv.org/abs/1801.03924
+           (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
+           2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
+           https://arxiv.org/abs/1801.03924
     """
 
     def __init__(self, feature_extractor: Union[str, torch.nn.Module] = "vgg16", layers: Iterable[str] = ("relu3_3", ),
@@ -145,20 +145,20 @@ class ContentLoss(_Loss):
         self.normalize_features = normalize_features
         self.reduction = reduction
 
-    def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        r"""Computation of Content loss between feature representations of prediction and target tensors.
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        r"""Computation of Content loss between feature representations of prediction (x) and target (y) tensors.
         Args:
-            prediction: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
-            target: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
+            x: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
+            y: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
         """
-        _validate_input(input_tensors=(prediction, target), allow_5d=False, allow_negative=True)
-        prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
+        _validate_input(input_tensors=(x, y), allow_5d=False, allow_negative=True)
+        x, y = _adjust_dimensions(input_tensors=(x, y))
 
-        self.model.to(prediction)
-        prediction_features = self.get_features(prediction)
-        target_features = self.get_features(target)
+        self.model.to(x)
+        x_features = self.get_features(x)
+        y_features = self.get_features(y)
 
-        distances = self.compute_distance(prediction_features, target_features)
+        distances = self.compute_distance(x_features, y_features)
 
         # Scale distances, then average in spatial dimensions, then stack and sum in channels dimension
         loss = torch.cat([(d * w.to(d)).mean(dim=[2, 3]) for d, w in zip(distances, self.weights)], dim=1).sum(dim=1)
@@ -170,9 +170,9 @@ class ContentLoss(_Loss):
                 'sum': loss.sum
                 }[self.reduction](dim=0)
 
-    def compute_distance(self, prediction_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+    def compute_distance(self, x_features: torch.Tensor, y_features: torch.Tensor) -> torch.Tensor:
         r"""Take L2 or L1 distance between feature maps"""
-        return [self.distance(x, y) for x, y in zip(prediction_features, target_features)]
+        return [self.distance(x, y) for x, y in zip(x_features, y_features)]
 
     def get_features(self, x: torch.Tensor) -> List[torch.Tensor]:
         r"""
@@ -190,6 +190,7 @@ class ContentLoss(_Loss):
             x = module(x)
             if name in self.layers:
                 features.append(self.normalize(x) if self.normalize_features else x)
+
         return features
 
     def normalize(self, x: torch.Tensor) -> torch.Tensor:
@@ -236,20 +237,20 @@ class StyleLoss(ContentLoss):
             and computing distance. See [2] for details.
     References:
         .. [1] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
-        (2016). A Neural Algorithm of Artistic Style}
-        Association for Research in Vision and Ophthalmology (ARVO)
-        https://arxiv.org/abs/1508.06576
+           (2016). A Neural Algorithm of Artistic Style}
+           Association for Research in Vision and Ophthalmology (ARVO)
+           https://arxiv.org/abs/1508.06576
         .. [2] Zhang, Richard and Isola, Phillip and Efros, et al.
-        (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
-        2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
-        https://arxiv.org/abs/1801.03924
+           (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
+           2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
+           https://arxiv.org/abs/1801.03924
     """
 
-    def compute_distance(self, prediction_features: torch.Tensor, target_features: torch.Tensor):
+    def compute_distance(self, x_features: torch.Tensor, y_features: torch.Tensor):
         """Take L2 or L1 distance between Gram matrixes of feature maps"""
-        prediction_gram = [self.gram_matrix(x) for x in prediction_features]
-        target_gram = [self.gram_matrix(x) for x in target_features]
-        return [self.distance(x, y) for x, y in zip(prediction_gram, target_gram)]
+        x_gram = [self.gram_matrix(x) for x in x_features]
+        y_gram = [self.gram_matrix(x) for x in y_features]
+        return [self.distance(x, y) for x, y in zip(x_gram, y_gram)]
 
     def gram_matrix(self, x: torch.Tensor) -> torch.Tensor:
         r"""Compute Gram matrix for batch of features.
@@ -263,6 +264,7 @@ class StyleLoss(ContentLoss):
 
             # Add fake channel dimension
             gram.append(torch.mm(features, features.t()).unsqueeze(0))
+
         return torch.stack(gram)
 
 
@@ -282,14 +284,14 @@ class LPIPS(ContentLoss):
             If there is no need to normalize data, use [1., 1., 1.].
     References:
         .. [1] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
-        (2016). A Neural Algorithm of Artistic Style}
-        Association for Research in Vision and Ophthalmology (ARVO)
-        https://arxiv.org/abs/1508.06576
+           (2016). A Neural Algorithm of Artistic Style}
+           Association for Research in Vision and Ophthalmology (ARVO)
+           https://arxiv.org/abs/1508.06576
         .. [2] Zhang, Richard and Isola, Phillip and Efros, et al.
-        (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
-        2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
-        https://arxiv.org/abs/1801.03924
-        https://github.com/richzhang/PerceptualSimilarity
+           (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
+           2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
+           https://arxiv.org/abs/1801.03924
+           https://github.com/richzhang/PerceptualSimilarity
     """
     _weights_url = "https://github.com/photosynthesis-team/" + \
         "photosynthesis.metrics/releases/download/v0.4.0/lpips_weights.pt"
@@ -318,8 +320,8 @@ class DISTS(ContentLoss):
             If there is no need to normalize data, use [1., 1., 1.].
     References:
         .. [1] Keyan Ding, Kede Ma, Shiqi Wang, Eero P. Simoncelli
-        (2020). Image Quality Assessment: Unifying Structure and Texture Similarity.
-        https://arxiv.org/abs/2004.07728
+           (2020). Image Quality Assessment: Unifying Structure and Texture Similarity.
+           https://arxiv.org/abs/2004.07728
         .. [2] https://github.com/dingkeyan93/DISTS
     """
     _weights_url = "https://github.com/photosynthesis-team/piq/releases/download/v0.4.1/dists_weights.pt"
@@ -337,17 +339,17 @@ class DISTS(ContentLoss):
                          replace_pooling=True, reduction=reduction,
                          mean=mean, std=std, normalize_features=False)
 
-    def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        loss = super().forward(prediction, target)
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        loss = super().forward(x, y)
         return 1 - loss
 
-    def compute_distance(self, prediction_features: torch.Tensor, target_features: torch.Tensor) -> List[torch.Tensor]:
+    def compute_distance(self, x_features: torch.Tensor, y_features: torch.Tensor) -> List[torch.Tensor]:
         r"""Compute structure similarity between feature maps"""
         structure_distance, texture_distance = [], []
         # Small constant for numerical stability
         EPS = 1e-6
 
-        for x, y in zip(prediction_features, target_features):
+        for x, y in zip(x_features, y_features):
             x_mean = x.mean([2, 3], keepdim=True)
             y_mean = y.mean([2, 3], keepdim=True)
             structure_distance.append(similarity_map(x_mean, y_mean, constant=EPS))
@@ -374,4 +376,5 @@ class DISTS(ContentLoss):
             
         for name, child in module.named_children():
             module_output.add_module(name, self.replace_pooling(child))
+
         return module_output

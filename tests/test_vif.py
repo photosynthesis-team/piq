@@ -7,74 +7,73 @@ from skimage.io import imread
 
 
 @pytest.fixture(scope='module')
-def prediction() -> torch.Tensor:
+def x() -> torch.Tensor:
     return torch.rand(4, 3, 256, 256)
 
 
 @pytest.fixture(scope='module')
-def target() -> torch.Tensor:
+def y() -> torch.Tensor:
     return torch.rand(4, 3, 256, 256)
 
 
 @pytest.fixture(scope='module')
-def prediction_1d() -> torch.Tensor:
+def x_1d() -> torch.Tensor:
     return torch.rand(4, 1, 256, 256)
 
 
 @pytest.fixture(scope='module')
-def target_1d() -> torch.Tensor:
+def y_1d() -> torch.Tensor:
     return torch.rand(4, 1, 256, 256)
 
 
 # ================== Test function: `vif_p` ==================
 def test_vif_p(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
-    prediction, target = input_tensors
-    vif_p(prediction.to(device), target.to(device), data_range=1.)
+    x, y = input_tensors
+    vif_p(x.to(device), y.to(device), data_range=1.)
 
 
-def test_vif_p_one_for_equal_tensors(prediction: torch.Tensor) -> None:
-    target = prediction.clone()
-    measure = vif_p(prediction, target)
+def test_vif_p_one_for_equal_tensors(x) -> None:
+    y = x.clone()
+    measure = vif_p(x, y)
     assert torch.isclose(measure, torch.tensor(1.0)), f'VIF for equal tensors shouls be 1.0, got {measure}.'
 
 
 def test_vif_p_works_for_zeros_tensors() -> None:
-    prediction = torch.zeros(4, 3, 256, 256)
-    target = torch.zeros(4, 3, 256, 256)
-    measure = vif_p(prediction, target, data_range=1.)
+    x = torch.zeros(4, 3, 256, 256)
+    y = torch.zeros(4, 3, 256, 256)
+    measure = vif_p(x, y, data_range=1.)
     assert torch.isclose(measure, torch.tensor(1.0)), f'VIF for 2 zero tensors shouls be 1.0, got {measure}.'
 
 
 def test_vif_p_fails_for_small_images() -> None:
-    prediction = torch.rand(2, 3, 32, 32)
-    target = torch.rand(2, 3, 32, 32)
+    x = torch.rand(2, 3, 32, 32)
+    y = torch.rand(2, 3, 32, 32)
     with pytest.raises(ValueError):
-        vif_p(prediction, target)
+        vif_p(x, y)
 
 
 @pytest.mark.parametrize(
     "data_range", [128, 255],
 )
-def test_vif_supports_different_data_ranges(
-        prediction: torch.Tensor, target: torch.Tensor, data_range, device: str) -> None:
-    prediction_scaled = (prediction * data_range).type(torch.uint8)
-    target_scaled = (target * data_range).type(torch.uint8)
-    measure_scaled = vif_p(prediction_scaled.to(device), target_scaled.to(device), data_range=data_range)
+def test_vif_supports_different_data_ranges(x, y, data_range, device: str) -> None:
+    x_scaled = (x * data_range).type(torch.uint8)
+    y_scaled = (y * data_range).type(torch.uint8)
+    measure_scaled = vif_p(x_scaled.to(device), y_scaled.to(device), data_range=data_range)
     measure = vif_p(
-        prediction_scaled.to(device) / float(data_range),
-        target_scaled.to(device) / float(data_range),
+        x_scaled.to(device) / float(data_range),
+        y_scaled.to(device) / float(data_range),
         data_range=1.0
     )
     diff = torch.abs(measure_scaled - measure)
     assert diff <= 1e-5, f'Result for same tensor with different data_range should be the same, got {diff}'
 
 
-def test_vif_fails_for_incorrect_data_range(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+def test_vif_fails_for_incorrect_data_range(x, y, device: str) -> None:
     # Scale to [0, 255]
-    prediction_scaled = (prediction * 255).type(torch.uint8)
-    target_scaled = (target * 255).type(torch.uint8)
+    x_scaled = (x * 255).type(torch.uint8)
+    y_scaled = (y * 255).type(torch.uint8)
     with pytest.raises(AssertionError):
-        vif_p(prediction_scaled.to(device), target_scaled.to(device), data_range=1.0)
+        vif_p(x_scaled.to(device), y_scaled.to(device), data_range=1.0)
 
 
 def test_vif_simmular_to_matlab_implementation():
@@ -102,50 +101,50 @@ def test_vif_simmular_to_matlab_implementation():
 
 
 # ================== Test class: `VIFLoss` ==================
-def test_vif_loss_forward(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+def test_vif_loss_forward(x, y, device: str) -> None:
     loss = VIFLoss()
-    loss(prediction.to(device), target.to(device))
+    loss(x.to(device), y.to(device))
 
     
-def test_vif_loss_zero_for_equal_tensors(prediction: torch.Tensor):
+def test_vif_loss_zero_for_equal_tensors(x):
     loss = VIFLoss()
-    target = prediction.clone()
-    measure = loss(prediction, target)
+    y = x.clone()
+    measure = loss(x, y)
     assert torch.isclose(measure, torch.tensor(0.), atol=1e-6), f'VIF for equal tensors must be 0, got {measure}'
 
 
-def test_vif_loss_reduction(prediction: torch.Tensor, target: torch.Tensor) -> None:
+def test_vif_loss_reduction(x, y) -> None:
     loss = VIFLoss(reduction='mean')
-    measure = loss(prediction, target)
+    measure = loss(x, y)
     assert measure.dim() == 0, f'VIF with `mean` reduction must return 1 number, got {len(measure)}'
 
     loss = VIFLoss(reduction='sum')
-    measure = loss(prediction, target)
+    measure = loss(x, y)
     assert measure.dim() == 0, f'VIF with `mean` reduction must return 1 number, got {len(measure)}'
 
     loss = VIFLoss(reduction='none')
-    measure = loss(prediction, target)
-    assert len(measure) == prediction.size(0), \
+    measure = loss(x, y)
+    assert len(measure) == x.size(0), \
         f'VIF with `none` reduction must have length equal to number of images, got {len(measure)}'
     
     loss = VIFLoss(reduction='random string')
     with pytest.raises(KeyError):
-        loss(prediction, target)
+        loss(x, y)
 
 
 NONE_GRAD_ERR_MSG = 'Expected non None gradient of leaf variable'
 
 
-def test_vif_loss_computes_grad(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
-    prediction.requires_grad_()
-    loss_value = VIFLoss()(prediction.to(device), target.to(device))
+def test_vif_loss_computes_grad(x, y, device: str) -> None:
+    x.requires_grad_()
+    loss_value = VIFLoss()(x.to(device), y.to(device))
     loss_value.backward()
-    assert prediction.grad is not None, NONE_GRAD_ERR_MSG
+    assert x.grad is not None, NONE_GRAD_ERR_MSG
 
 
 def test_vif_loss_computes_grad_for_zeros_tensors() -> None:
-    prediction = torch.zeros(4, 3, 256, 256, requires_grad=True)
-    target = torch.zeros(4, 3, 256, 256)
-    loss_value = VIFLoss()(prediction, target)
+    x = torch.zeros(4, 3, 256, 256, requires_grad=True)
+    y = torch.zeros(4, 3, 256, 256)
+    loss_value = VIFLoss()(x, y)
     loss_value.backward()
-    assert prediction.grad is not None, NONE_GRAD_ERR_MSG
+    assert x.grad is not None, NONE_GRAD_ERR_MSG

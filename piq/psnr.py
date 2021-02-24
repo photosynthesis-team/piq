@@ -12,8 +12,10 @@ def psnr(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1.0,
     Supports both greyscale and color images with RGB channel order.
 
     Args:
-        x: Predicted images. Shape (H, W), (C, H, W) or (N, C, H, W).
-        y: Target images. Shape (H, W), (C, H, W) or (N, C, H, W).
+        x: Predicted images set :math:`x`.
+            Shape (H, W), (C, H, W) or (N, C, H, W).
+        y: Target images set :math:`y`.
+            Shape (H, W), (C, H, W) or (N, C, H, W).
         data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
         reduction: Reduction over samples in batch: "mean"|"sum"|"none"
         convert_to_greyscale: Convert RGB image to YCbCr format and computes PSNR

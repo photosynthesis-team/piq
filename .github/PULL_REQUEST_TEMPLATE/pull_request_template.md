@@ -12,9 +12,11 @@ Closes #
   -
   
 ## Checklist (new metrics only)
-- [ ] Add documentation strings for functional and class interfaces
+- [ ] Add docstrings for functional and class interfaces
 - [ ] Add tests
-- [ ] Compute value for `i01_01_5.bmp` <-> `I01.BMP` and `goldhill_jpeg.gif` <-> `goldhill.gif` image pairs from `tests/assets` and test that your results match
-- [ ] Update 2 tables in `README.md` (benchmark and  list of metrics)
-- [ ] Update examples
-- [ ] Update Sphinx documentation
+- [ ] Compute values for `i01_01_5.bmp` <-> `I01.BMP` and `goldhill_jpeg.gif` <-> `goldhill.gif` 
+(in `tests/assets`) using original implementation, verify that your results match.
+- [ ] Update table with metrics in `README.rst`
+- [ ] Update benchmark values in `docs/source/_static/benchmark.csv`
+- [ ] Update examples 
+
