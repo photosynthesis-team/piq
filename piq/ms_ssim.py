@@ -1,4 +1,4 @@
-r""" This module implements Structural Similarity (SSIM) index in PyTorch.
+r""" This module implements Multi-Scale Structural Similarity (MS-SSIM) index in PyTorch.
 
 Implementation of classes and functions from this module are inspired by Gongfan Fang's (@VainF) implementation:
 https://github.com/VainF/pytorch-msssim
