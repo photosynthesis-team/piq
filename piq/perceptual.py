@@ -17,7 +17,7 @@ import torch.nn as nn
 from torch.nn.modules.loss import _Loss
 from torchvision.models import vgg16, vgg19
 
-from piq.utils import _validate_input, _adjust_dimensions
+from piq.utils import _validate_input, _reduce
 from piq.functional import similarity_map, L2Pool2d
 
 
@@ -85,7 +85,8 @@ class ContentLoss(_Loss):
         weights: List of float weight to balance different layers
         replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See [1] for details.
         distance: Method to compute distance between features. One of {`mse`, `mae`}.
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         mean: List of float values used for data standartization. Default: ImageNet mean.
             If there is no need to normalize data, use [0., 0., 0.].
         std: List of float values used for data standartization. Default: ImageNet std.
@@ -147,12 +148,12 @@ class ContentLoss(_Loss):
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         r"""Computation of Content loss between feature representations of prediction (x) and target (y) tensors.
+
         Args:
-            x: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
-            y: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
+            x: An input tensor. Shape :math:`(N, C, H, W)`.
+            y: A target tensor. Shape :math:`(N, C, H, W)`.
         """
-        _validate_input(input_tensors=(x, y), allow_5d=False, allow_negative=True)
-        x, y = _adjust_dimensions(input_tensors=(x, y))
+        _validate_input([x, y], dim_range=(4, 4), data_range=(0, -1))
 
         self.model.to(x)
         x_features = self.get_features(x)
@@ -163,12 +164,7 @@ class ContentLoss(_Loss):
         # Scale distances, then average in spatial dimensions, then stack and sum in channels dimension
         loss = torch.cat([(d * w.to(d)).mean(dim=[2, 3]) for d, w in zip(distances, self.weights)], dim=1).sum(dim=1)
 
-        if self.reduction == 'none':
-            return loss
-
-        return {'mean': loss.mean,
-                'sum': loss.sum
-                }[self.reduction](dim=0)
+        return _reduce(loss, self.reduction)
 
     def compute_distance(self, x_features: torch.Tensor, y_features: torch.Tensor) -> torch.Tensor:
         r"""Take L2 or L1 distance between feature maps"""
@@ -177,7 +173,7 @@ class ContentLoss(_Loss):
     def get_features(self, x: torch.Tensor) -> List[torch.Tensor]:
         r"""
         Args:
-            x: Tensor with shape (N, C, H, W)
+            x: Tensor. Shape :math:`(N, C, H, W)`.
         
         Returns:
             features: List of features extracted from intermediate layers
@@ -196,7 +192,7 @@ class ContentLoss(_Loss):
     def normalize(self, x: torch.Tensor) -> torch.Tensor:
         r"""Normalize feature maps in channel direction to unit length.
         Args:
-            x: Tensor with shape (N, C, H, W)
+            x: Tensor. Shape :math:`(N, C, H, W)`.
         Returns:
             x_norm: Normalized input
         """
@@ -228,7 +224,8 @@ class StyleLoss(ContentLoss):
         weights: List of float weight to balance different layers
         replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See [1] for details.
         distance: Method to compute distance between features. One of {`mse`, `mae`}.
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
+         reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         mean: List of float values used for data standartization. Default: ImageNet mean.
             If there is no need to normalize data, use [0., 0., 0.].
         std: List of float values used for data standartization. Default: ImageNet std.
@@ -255,7 +252,7 @@ class StyleLoss(ContentLoss):
     def gram_matrix(self, x: torch.Tensor) -> torch.Tensor:
         r"""Compute Gram matrix for batch of features.
         Args:
-            x: Tensor with shape (N, C, H, W).
+            x: Tensor. Shape :math:`(N, C, H, W)`.
         """
         B, C, H, W = x.size()
         gram = []
@@ -277,7 +274,8 @@ class LPIPS(ContentLoss):
     Args:
         replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See [1] for details.
         distance: Method to compute distance between features. One of {`mse`, `mae`}.
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         mean: List of float values used for data standartization. Default: ImageNet mean.
             If there is no need to normalize data, use [0., 0., 0.].
         std: List of float values used for data standartization. Default: ImageNet std.
@@ -313,7 +311,8 @@ class DISTS(ContentLoss):
     If no normaliation is requiered, change `mean` and `std` values accordingly.
 
     Args:
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         mean: List of float values used for data standartization. Default: ImageNet mean.
             If there is no need to normalize data, use [0., 0., 0.].
         std: List of float values used for data standartization. Default: ImageNet std.

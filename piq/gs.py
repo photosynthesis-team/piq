@@ -13,6 +13,7 @@ import numpy as np
 from scipy.spatial.distance import cdist
 
 from piq.base import BaseFeatureMetric
+from piq.utils import _validate_input
 
 
 def relative(intervals: np.ndarray, alpha_max: float, i_max: int = 100) -> np.ndarray:
@@ -122,10 +123,8 @@ class GS(BaseFeatureMetric):
     Dimensionalities of features should match, otherwise it won't be possible to correctly compute statistics.
 
     Args:
-        x_features: Low-dimension representation of predicted image set :math:`x`.
-            Shape (N_x, encoder_dim)
-        y_features: Low-dimension representation of target image set :math:`y`.
-            Shape (N_y, encoder_dim)
+        x_features: Samples from data distribution. Shape :math:`(N_x, D)`
+        y_features: Samples from data distribution. Shape :math:`(N_y, D)`
 
     Returns:
         score: Scalar value of the distance between image sets.
@@ -168,12 +167,13 @@ class GS(BaseFeatureMetric):
         r"""Implements Algorithm 2 from the paper.
 
         Args:
-            x_features: Samples from data distribution. Shape (N_samples, data_dim).
-            y_features: Samples from data distribution. Shape (N_samples, data_dim).
+            x_features: Samples from data distribution. Shape :math:`(N_x, D)`
+            y_features: Samples from data distribution. Shape :math:`(N_y, D)`
 
         Returns:
             score: Scalar value of the distance between distributions.
         """
+        _validate_input([x_features, y_features], dim_range=(2, 2), size_range=(1, 2))
         with Pool(self.num_workers) as p:
             self.features = x_features.detach().cpu().numpy()
             pool_results = p.map(self._relative_living_times, range(self.num_iters))

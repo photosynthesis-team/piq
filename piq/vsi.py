@@ -5,14 +5,16 @@ https://sse.tongji.edu.cn/linzhang/IQA/VSI/VSI.htm
 References:
     https://ieeexplore.ieee.org/document/6873260
 """
+import warnings
+import functools
 from typing import Union, Tuple
+
 import torch
 from torch.nn.modules.loss import _Loss
 from torch.nn.functional import avg_pool2d, interpolate, pad
+
 from piq.functional import ifftshift, gradient_map, scharr_filter, rgb2lmn, rgb2lab, similarity_map, get_meshgrid
-from piq.utils import _validate_input, _adjust_dimensions
-import functools
-import warnings
+from piq.utils import _validate_input, _reduce
 
 
 def vsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean', data_range: Union[int, float] = 1.,
@@ -25,10 +27,11 @@ def vsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean', data_range: U
     channel 3 times.
 
     Args:
-        x:  Tensor with shape (H, W), (C, H, W) or (N, C, H, W) holding a distorted image.
-        y: Tensor with shape (H, W), (C, H, W) or (N, C, H, W) holding a target image.
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
-        data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
+        y: A target tensor. Shape :math:`(N, C, H, W)`.
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        data_range: Maximum value range of images (usually 1.0 or 255).
         c1: coefficient to calculate saliency component of VSI
         c2: coefficient to calculate gradient component of VSI
         c3: coefficient to calculate color component of VSI
@@ -42,10 +45,6 @@ def vsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean', data_range: U
     Returns:
         VSI: Index of similarity between two images. Usually in [0, 1] interval.
 
-    Shape:
-        - Input:  Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
-        - Target: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
-
     References:
         .. [1] Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P.
            (2004). Image quality assessment: From error visibility to
@@ -58,8 +57,8 @@ def vsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean', data_range: U
         The original method supports only RGB image.
         See https://ieeexplore.ieee.org/document/6873260 for details.
     """
-    _validate_input(input_tensors=(x, y), allow_5d=False)
-    x, y = _adjust_dimensions(input_tensors=(x, y))
+    _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
+
     if x.size(1) == 1:
         x = x.repeat(1, 3, 1, 1)
         y = y.repeat(1, 3, 1, 1)
@@ -121,11 +120,8 @@ def vsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean', data_range: U
     eps = torch.finfo(vs_max.dtype).eps
     output = s * vs_max
     output = ((output.sum(dim=(-1, -2)) + eps) / (vs_max.sum(dim=(-1, -2)) + eps)).squeeze(-1)
-    if reduction == 'none':
-        return output
-    return {'mean': torch.mean,
-            'sum': torch.sum
-            }[reduction](output, dim=0)
+
+    return _reduce(output, reduction)
 
 
 class VSILoss(_Loss):
@@ -137,8 +133,9 @@ class VSILoss(_Loss):
     The division by :math:`n` can be avoided if one sets ``reduction = 'sum'``.
 
     Args:
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
-        data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
+        reduction: Specifies the reduction type:
+        ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        data_range: Maximum value range of images (usually 1.0 or 255).
         c1: coefficient to calculate saliency component of VSI
         c2: coefficient to calculate gradient component of VSI
         c3: coefficient to calculate color component of VSI
@@ -149,10 +146,8 @@ class VSILoss(_Loss):
         sigma_d: coefficient to get SDSP
         sigma_c: coefficient to get SDSP
 
-    Shape:
-        - Input: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
-        - Target: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
 
+    Note:
         Both inputs are supposed to have RGB channels order in accordance with the original approach.
         Nevertheless, the method supports greyscale images, which they are converted to RGB
         by copying the grey channel 3 times.
@@ -189,8 +184,8 @@ class VSILoss(_Loss):
         r"""Computation of VSI as a loss function.
 
         Args:
-            x: Tensor of prediction of the network.
-            y: Reference tensor.
+            x: An input tensor. Shape :math:`(N, C, H, W)`.
+            y: A target tensor. Shape :math:`(N, C, H, W)`.
 
         Returns:
             Value of VSI loss to be minimized. 0 <= VSI loss <= 1.
@@ -208,9 +203,11 @@ def sdsp(x: torch.Tensor, data_range: Union[int, float] = 255, omega_0: float = 
          sigma_d: float = 145., sigma_c: float = 0.001) -> torch.Tensor:
     r"""SDSP algorithm for salient region detection from a given image.
 
-    Args :
-        x: an  RGB image with dynamic range [0, 1] or [0, 255] for each channel
-        data_range: dynamic range of the image
+    Supports only colour images with RGB channel order.
+
+    Args:
+        x: Tensor. Shape :math:`(N, 3, H, W)`.
+        data_range: Maximum value range of images (usually 1.0 or 255).
         omega_0: coefficient for log Gabor filter
         sigma_f: coefficient for log Gabor filter
         sigma_d: coefficient for the central areas, which have a bias towards attention

@@ -14,5 +14,9 @@ Overview
     :end-before: benchmark-section-end
 
 .. include:: ../../README.rst
+    :start-after: assertions-section-start
+    :end-before: assertions-section-end
+
+.. include:: ../../README.rst
     :start-after: citation-section-start
     :end-before: citation-section-end
