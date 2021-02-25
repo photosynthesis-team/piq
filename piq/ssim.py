@@ -47,6 +47,7 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
            https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
            DOI: `10.1109/TIP.2003.819861`
     """
+    assert kernel_size % 2 == 1, f'Kernel size must be odd, got [{kernel_size}]'
     _validate_input([x, y], dim_range=(4, 5), data_range=(0, data_range))
 
     x = x.type(torch.float32)
@@ -135,6 +136,10 @@ class SSIMLoss(_Loss):
 
         # Loss-specific parameters.
         self.kernel_size = kernel_size
+
+        # This check might look redundant because kernel size is checked within the ssim function anyway.
+        # However, this check allows to fail fast when the loss is being initialised and training has not been started.
+        assert kernel_size % 2 == 1, f'Kernel size must be odd, got [{kernel_size}]'
         self.kernel_sigma = kernel_sigma
         self.k1 = k1
         self.k2 = k2
@@ -197,6 +202,7 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
            https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
            DOI: `10.1109/TIP.2003.819861`
     """
+    assert kernel_size % 2 == 1, f'Kernel size must be odd, got [{kernel_size}]'
     _validate_input([x, y], dim_range=(4, 5), data_range=(0, data_range))
 
     x = x.type(torch.float32)
@@ -305,6 +311,11 @@ class MultiScaleSSIMLoss(_Loss):
 
         self.kernel_size = kernel_size
         self.kernel_sigma = kernel_sigma
+
+        # This check might look redundant because kernel size is checked within the ms-ssim function anyway.
+        # However, this check allows to fail fast when the loss is being initialised and training has not been started.
+        assert kernel_size % 2 == 1, f'Kernel size must be odd, got [{kernel_size}]'
+
         self.k1 = k1
         self.k2 = k2
         self.data_range = data_range
@@ -322,7 +333,6 @@ class MultiScaleSSIMLoss(_Loss):
             Value of MS-SSIM loss to be minimized, i.e. 1-`ms_sim`. 0 <= MS-SSIM loss <= 1. In case of 5D tensor,
             complex value is returned as a tensor of size 2.
         """
-
         score = multi_scale_ssim(x=x, y=y, kernel_size=self.kernel_size, kernel_sigma=self.kernel_sigma,
                                  data_range=self.data_range, reduction=self.reduction, scale_weights=self.scale_weights,
                                  k1=self.k1, k2=self.k2)
@@ -346,7 +356,6 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
     Returns:
         Full Value of Structural Similarity (SSIM) index.
     """
-
     if x.size(-1) < kernel.size(-1) or x.size(-2) < kernel.size(-2):
         raise ValueError(f'Kernel size can\'t be greater than actual input size. Input size: {x.size()}. '
                          f'Kernel size: {kernel.size()}')

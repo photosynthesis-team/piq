@@ -50,6 +50,7 @@ def brisque(x: torch.Tensor,
                       f'More info is available at https://github.com/photosynthesis-team/piq/pull/79 and'
                       f'https://github.com/pytorch/pytorch/issues/38869.')
 
+    assert kernel_size % 2 == 1, f'Kernel size must be odd, got [{kernel_size}]'
     _validate_input([x, ], dim_range=(4, 4), data_range=(0, data_range))
 
     x = x / data_range * 255
@@ -107,6 +108,11 @@ class BRISQUELoss(_Loss):
         super().__init__()
         self.reduction = reduction
         self.kernel_size = kernel_size
+
+        # This check might look redundant because kernel size is checked within the brisque function anyway.
+        # However, this check allows to fail fast when the loss is being initialised and training has not been started.
+        assert kernel_size % 2 == 1, f'Kernel size must be odd, got [{kernel_size}]'
+
         self.kernel_sigma = kernel_sigma
         self.data_range = data_range
         self.interpolation = interpolation
