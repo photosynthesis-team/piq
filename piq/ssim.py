@@ -7,7 +7,7 @@ and implementation of one of pull requests to the PyTorch by Kangfu Mei (@MKFMIK
 https://github.com/pytorch/pytorch/pull/22289/files
 """
 
-from typing import Optional, Tuple, Union
+from typing import Tuple, Union, List
 
 import torch
 import torch.nn.functional as F

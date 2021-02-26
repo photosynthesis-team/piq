@@ -253,8 +253,8 @@ def test_ssim_loss_raise_if_wrong_value_is_estimated(test_images: Tuple[torch.Te
 
 def test_ssim_simmular_to_matlab_implementation():
     # Greyscale images
-    goldhill = torch.tensor(imread('tests/assets/goldhill.gif'))
-    goldhill_jpeg = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'))
+    goldhill = torch.tensor(imread('tests/assets/goldhill.gif'))[None, None, ...]
+    goldhill_jpeg = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'))[None, None, ...]
 
     score = ssim(goldhill_jpeg, goldhill, data_range=255, reduction='none')
     # Output of http://www.cns.nyu.edu/~lcv/ssim/ssim.m
@@ -264,8 +264,8 @@ def test_ssim_simmular_to_matlab_implementation():
         f'Expected PyTorch score to be equal to MATLAB prediction. Got {score} and {score_baseline}'
 
     # RGB images
-    I01 = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1)
-    i1_01_5 = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1)
+    I01 = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1)[None, ...]
+    i1_01_5 = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1)[None, ...]
 
     score = ssim(i1_01_5, I01, data_range=255, reduction='none')
     # Output of http://www.cns.nyu.edu/~lcv/ssim/ssim.m
