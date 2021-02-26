@@ -76,7 +76,7 @@ def test_psnr_reduction(x, y):
     assert len(measure) == x.size(0), \
         f'PSNR with `none` reduction must have length equal to number of images, got {len(measure)}'
 
-    with pytest.raises(KeyError):
+    with pytest.raises(ValueError):
         psnr(x, y, reduction='random string')
 
 

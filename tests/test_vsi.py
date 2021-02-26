@@ -35,8 +35,8 @@ def test_vsi_zeros_ones_inputs(device: str) -> None:
 
 
 def test_vsi_compare_with_matlab(device: str) -> None:
-    x = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1)
-    y = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1)
+    x = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1)[None, ...]
+    y = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1)[None, ...]
     predicted_score = vsi(x.to(device), y.to(device), data_range=255, reduction='none')
     target_score = torch.tensor([0.96405]).to(predicted_score)
     assert torch.allclose(predicted_score, target_score), f'Expected result similar to MATLAB,' \

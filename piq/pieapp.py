@@ -13,7 +13,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.modules.loss import _Loss
 
-from piq.utils import _validate_input, _adjust_dimensions
+from piq.utils import _validate_input, _reduce
 from piq.functional import crop_patches
 
 
@@ -55,14 +55,14 @@ class PieAPPModel(nn.Module):
 
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         r"""
-        Forward pass a batch of square patches with shape  (N, C, FEATURES, FEATURES)
+        Forward pass a batch of square patches with shape :math:`(N, C, F, F)`.
 
         Returns:
             features: Concatenation of model features from different scales
             x11: Outputs of the last convolutional layer used as weights
         """
-        _validate_input(input_tensors=x, allow_5d=False, allow_negative=False)
-        x = _adjust_dimensions(input_tensors=x)
+        _validate_input([x, ], dim_range=(4, 4), data_range=(0, -1))
+
         assert x.shape[2] == x.shape[3] == self.FEATURES, \
             f"Expected square input with shape {self.FEATURES, self.FEATURES}, got {x.shape}"
 
@@ -84,8 +84,9 @@ class PieAPPModel(nn.Module):
             -> Tuple[torch.Tensor, torch.Tensor]:
         r"""
         Args:
-            features_diff: Tensor of shape (N, C_1)
-            weights_diff: Tensor of shape (N, C_2)
+            features_diff: Tensor. Shape :math:`(N, C_1)`
+            weights_diff: Tensor. Shape :math:`(N, C_2)`
+
         Returns:
             distances
             weights
@@ -106,8 +107,9 @@ class PieAPP(_Loss):
     Input images are croped into smaller patches. Score for each individual image is mean of it's patch scores.
 
     Args:
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none".
-        data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
+         reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        data_range: Maximum value range of images (usually 1.0 or 255).
         stride: Step between cropped patches. Smaller values lead to better quality,
             but cause higher memory consumption. Default: 27 (`sparse` sampling in original implementation)
         enable_grad: Flag to compute gradients. Usefull when PieAPP used as a loss. Default: False.
@@ -146,12 +148,10 @@ class PieAPP(_Loss):
         Computation of PieAPP  between feature representations of prediction (x) and target (y) tensors.
 
         Args:
-            x: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
-            y: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
+            x: An input tensor. Shape :math:`(N, C, H, W)`.
+            y: A target tensor. Shape :math:`(N, C, H, W)`.
         """
-        _validate_input(
-            input_tensors=(x, y), allow_5d=False, allow_negative=True, data_range=self.data_range)
-        x, y = _adjust_dimensions(input_tensors=(x, y))
+        _validate_input([x, y], dim_range=(4, 4), data_range=(0, self.data_range))
 
         N, C, _, _ = x.shape
         if C == 1:
@@ -175,17 +175,12 @@ class PieAPP(_Loss):
         # Scale scores, then average across patches
         loss = torch.stack([(d * w).sum() / w.sum() for d, w in zip(distances, weights)])
 
-        if self.reduction == 'none':
-            return loss
-
-        return {'mean': loss.mean,
-                'sum': loss.sum
-                }[self.reduction](dim=0)
+        return _reduce(loss, self.reduction)
 
     def get_features(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         r"""
         Args:
-            x: Tensor with shape (N, C, H, W)
+            x: Tensor. Shape :math:`(N, C, H, W)`.
         
         Returns:
             features: List of features extracted from intermediate layers

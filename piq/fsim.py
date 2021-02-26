@@ -11,7 +11,7 @@ from typing import Union, Tuple
 import torch
 from torch.nn.modules.loss import _Loss
 
-from piq.utils import _adjust_dimensions, _validate_input
+from piq.utils import _validate_input, _reduce
 from piq.functional import ifftshift, get_meshgrid, similarity_map, gradient_map, scharr_filter, rgb2yiq
 
 
@@ -23,12 +23,11 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     r"""Compute Feature Similarity Index Measure for a batch of images.
 
     Args:
-        x: Predicted images set :math:`x`.
-            Shape (H, W), (C, H, W) or (N, C, H, W).
-        y: Target images set :math:`y`.
-            Shape (H, W), (C, H, W) or (N, C, H, W).
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
-        data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
+        y: A target tensor. Shape :math:`(N, C, H, W)`.
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        data_range: Maximum value range of images (usually 1.0 or 255).
         chromatic: Flag to compute FSIMc, which also takes into account chromatic components
         scales: Number of wavelets used for computation of phase congruensy maps
         orientations: Number of filter orientations used for computation of phase congruensy maps
@@ -49,9 +48,7 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         https://www4.comp.polyu.edu.hk/~cslzhang/IQA/FSIM/FSIM.htm
         
     """
-    
-    _validate_input(input_tensors=(x, y), allow_5d=False, data_range=data_range)
-    x, y = _adjust_dimensions(input_tensors=(x, y))
+    _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
     
     # Rescale to [0, 255] range, because all constant are calculated for this factor
     x = x / data_range * 255
@@ -117,12 +114,7 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
 
     result = score.sum(dim=[1, 2, 3]) / pc_max.sum(dim=[1, 2, 3])
     
-    if reduction == 'none':
-        return result
-
-    return {'mean': result.mean,
-            'sum': result.sum
-            }[reduction](dim=0)
+    return _reduce(result, reduction)
 
 
 def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
@@ -131,7 +123,7 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     """Creates a stack of filters used for computation of phase congruensy maps
     
     Args:
-        x: Tensor with shape (N, 1, H, W).
+        x: Tensor. Shape :math:`(N, 1, H, W)`.
         scales: Number of wavelets
         orientations: Number of filter orientations
         min_length: Wavelength of smallest scale filter
@@ -216,7 +208,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     r"""Compute Phase Congruence for a batch of greyscale images
 
     Args:
-        x: Tensor with shape (N, 1, H, W).
+        x: Tensor. Shape :math:`(N, 1, H, W)`.
         scales: Number of wavelet scales
         orientations: Number of filter orientations
         min_length: Wavelength of smallest scale filter
@@ -372,15 +364,12 @@ class FSIMLoss(_Loss):
 
     In order to be considered as a loss, value `1 - clip(FSIM, min=0, max=1)` is returned. If you need FSIM value,
     use function `fsim` instead.
+    Supports greyscale and colour images with RGB channel order.
 
     Args:
-        reduction: Specifies the reduction to apply to the output:
-            ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
-            ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``
-        data_range: The difference between the maximum and minimum of the pixel value,
-            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
-            The pixel value interval of both input and output should remain the same.
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        data_range: Maximum value range of images (usually 1.0 or 255).
         chromatic: Flag to compute FSIMc, which also takes into account chromatic components
         scales: Number of wavelets used for computation of phase congruensy maps
         orientations: Number of filter orientations used for computation of phase congruensy maps
@@ -392,10 +381,6 @@ class FSIMLoss(_Loss):
             of the angular Gaussian function used to construct filters in the frequency plane.
         k: No of standard deviations of the noise energy beyond the mean at which we set the noise
             threshold  point, below which phase congruency values get penalized.
-
-    Shape:
-        - Input: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
-        - Target: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
 
     Examples::
 
@@ -435,8 +420,9 @@ class FSIMLoss(_Loss):
         r"""Computation of FSIM as a loss function.
 
         Args:
-            x: Tensor of prediction of the network.
-            y: Reference tensor.
+            x: An input tensor. Shape :math:`(N, C, H, W)`.
+            y: A target tensor. Shape :math:`(N, C, H, W)`.
+
         Returns:
             Value of FSIM loss to be minimized. 0 <= FSIM <= 1.
         """

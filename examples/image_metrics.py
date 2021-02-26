@@ -6,8 +6,8 @@ from skimage.io import imread
 @torch.no_grad()
 def main():
     # Read RGB image and it's noisy version
-    x = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1) / 255.
-    y = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1) / 255.
+    x = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1)[None, ...] / 255.
+    y = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1)[None, ...] / 255.
     
     if torch.cuda.is_available():
         # Move to GPU to make computaions faster

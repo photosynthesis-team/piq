@@ -1,7 +1,6 @@
 import torch
 
 from piq.feature_extractors import InceptionV3
-from piq.utils import _validate_features
 
 
 class BaseFeatureMetric(torch.nn.Module):
@@ -13,8 +12,6 @@ class BaseFeatureMetric(torch.nn.Module):
         super(BaseFeatureMetric, self).__init__()
 
     def forward(self, x_features: torch.Tensor, y_features: torch.Tensor) -> torch.Tensor:
-        # Sanity check for input
-        _validate_features(x_features, y_features)
         return self.compute_metric(x_features, y_features)
 
     @torch.no_grad()

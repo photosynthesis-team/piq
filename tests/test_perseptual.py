@@ -40,7 +40,7 @@ def test_content_loss_raises_if_wrong_reduction(x, y) -> None:
         ContentLoss(reduction=mode)(x, y)
 
     for mode in [None, 'n', 2]:
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             ContentLoss(reduction=mode)(x, y)
 
 
@@ -124,7 +124,7 @@ def test_style_loss_raises_if_wrong_reduction(x, y) -> None:
         StyleLoss(reduction=mode)(x, y)
 
     for mode in [None, 'n', 2]:
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             StyleLoss(reduction=mode)(x, y)
 
 
@@ -151,7 +151,7 @@ def test_lpips_loss_raises_if_wrong_reduction(x, y) -> None:
         LPIPS(reduction=mode)(x, y)
 
     for mode in [None, 'n', 2]:
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             LPIPS(reduction=mode)(x, y)
 
 
@@ -203,8 +203,8 @@ def test_dists_simmilar_to_official_implementation() -> None:
     loss = DISTS()
 
     # Greyscale images
-    goldhill = torch.tensor(imread('tests/assets/goldhill.gif')) / 255.0
-    goldhill_jpeg = torch.tensor(imread('tests/assets/goldhill_jpeg.gif')) / 255.0
+    goldhill = torch.tensor(imread('tests/assets/goldhill.gif'))[None, None, ...] / 255.0
+    goldhill_jpeg = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'))[None, None, ...] / 255.0
 
     loss_value = loss(goldhill_jpeg, goldhill)
     baseline_value = torch.tensor(0.3447)
@@ -212,8 +212,8 @@ def test_dists_simmilar_to_official_implementation() -> None:
         f'Expected PIQ loss to be equal to original. Got {loss_value} and {baseline_value}'
 
     # RGB images
-    I01 = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1) / 255.0
-    i1_01_5 = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1) / 255.0
+    I01 = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1)[None, ...] / 255.0
+    i1_01_5 = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1)[None, ...] / 255.0
 
     loss_value = loss(i1_01_5, I01)
     baseline_value = torch.tensor(0.2376)

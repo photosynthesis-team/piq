@@ -43,8 +43,8 @@ def test_pieapp_simmilar_to_official_implementation() -> None:
     loss = PieAPP(data_range=255, stride=27)
 
     # RGB images
-    I01 = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1)
-    i1_01_5 = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1)
+    I01 = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1)[None, ...]
+    i1_01_5 = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1)[None, ...]
 
     loss_value = loss(i1_01_5, I01)
     # Baseline score from: https://github.com/prashnani/PerceptualImageError

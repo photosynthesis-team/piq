@@ -42,9 +42,9 @@ def test_images() -> List[Tuple[torch.Tensor, torch.Tensor]]:
     return [(x_grey, y_grey), (x_rgb, y_rgb)]
 
 
-@pytest.fixture(params=[[0.0448, 0.2856, 0.3001, 0.2363, 0.1333], [0.0448, 0.2856, 0.3001]], scope='module')
-def scale_weights(request: Any) -> List:
-    return request.param
+@pytest.fixture(scope='module')
+def scale_weights() -> torch.Tensor:
+    return torch.tensor([0.0448, 0.2856, 0.3001, 0.2363, 0.1333])
 
 
 # ================== Test function: `ssim` ==================
@@ -71,7 +71,7 @@ def test_ssim_reduction(x: torch.Tensor, y: torch.Tensor, device: str) -> None:
         ssim(x.to(device), y.to(device), reduction=mode)
 
     for mode in [None, 'n', 2]:
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             ssim(x.to(device), y.to(device), reduction=mode)
             
 
@@ -111,34 +111,6 @@ def test_ssim_raises_if_tensors_have_different_types(y: torch.Tensor) -> None:
     wrong_type_x = list(range(10))
     with pytest.raises(AssertionError):
         ssim(wrong_type_x, y)
-
-
-def test_ssim_check_available_dimensions() -> None:
-    custom_x = torch.rand(256, 256)
-    custom_y = torch.rand(256, 256)
-    for _ in range(10):
-        if custom_x.dim() < 5:
-            try:
-                ssim(custom_x, custom_y)
-            except Exception as e:
-                pytest.fail(f"Unexpected error occurred: {e}")
-        else:
-            with pytest.raises(AssertionError):
-                ssim(custom_x, custom_y)
-        custom_x.unsqueeze_(0)
-        custom_y.unsqueeze_(0)
-
-
-def test_ssim_check_kernel_size_is_passed(x_y_4d_5d, device: str) -> None:
-    x = x_y_4d_5d[0].to(device)
-    y = x_y_4d_5d[1].to(device)
-    kernel_sizes = list(range(0, 50))
-    for kernel_size in kernel_sizes:
-        if kernel_size % 2:
-            ssim(x, y, kernel_size=kernel_size)
-        else:
-            with pytest.raises(AssertionError):
-                ssim(x, y, kernel_size=kernel_size)
 
 
 def test_ssim_raises_if_kernel_size_greater_than_image(x_y_4d_5d, device: str) -> None:
@@ -247,36 +219,10 @@ def test_ssim_loss_raises_if_tensors_have_different_shapes(x_y_4d_5d,
                 SSIMLoss()(wrong_shape_x, y)
 
 
-def test_ssim_loss_check_available_dimensions() -> None:
-    custom_x = torch.rand(256, 256)
-    custom_y = torch.rand(256, 256)
-    for _ in range(10):
-        if custom_x.dim() < 5:
-            try:
-                SSIMLoss()(custom_x, custom_y)
-            except Exception as e:
-                pytest.fail(f"Unexpected error occurred: {e}")
-        else:
-            with pytest.raises(AssertionError):
-                SSIMLoss()(custom_x, custom_y)
-        custom_x.unsqueeze_(0)
-        custom_y.unsqueeze_(0)
-
-
 def test_ssim_loss_raises_if_tensors_have_different_types(y: torch.Tensor) -> None:
     wrong_type_x = list(range(10))
     with pytest.raises(AssertionError):
         SSIMLoss()(wrong_type_x, y)
-
-
-def test_ssim_loss_check_kernel_size_is_passed(x: torch.Tensor, y: torch.Tensor) -> None:
-    kernel_sizes = list(range(0, 50))
-    for kernel_size in kernel_sizes:
-        if kernel_size % 2:
-            SSIMLoss(kernel_size=kernel_size)(x, y)
-        else:
-            with pytest.raises(AssertionError):
-                SSIMLoss(kernel_size=kernel_size)(x, y)
 
 
 def test_ssim_loss_raises_if_kernel_size_greater_than_image(x_y_4d_5d, device: str) -> None:

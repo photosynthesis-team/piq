@@ -6,13 +6,14 @@ https://github.com/VainF/pytorch-msssim
 and implementation of one of pull requests to the PyTorch by Kangfu Mei (@MKFMIKU):
 https://github.com/pytorch/pytorch/pull/22289/files
 """
-from typing import Tuple, Union, List
+
+from typing import Optional, Tuple, Union
 
 import torch
 import torch.nn.functional as F
 from torch.nn.modules.loss import _Loss
 
-from piq.utils import _adjust_dimensions, _validate_input
+from piq.utils import _validate_input, _reduce
 from piq.functional import gaussian_filter
 
 
@@ -24,13 +25,13 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
     To match performance with skimage and tensorflow set `downsample` = True.
 
     Args:
-        x: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
-        y: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
+        x: An input tensor. Shape :math:`(N, C, H, W)` or :math:`(N, C, H, W, 2)`.
+        y: A target tensor. Shape :math:`(N, C, H, W)` or :math:`(N, C, H, W, 2)`.
         kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
         kernel_sigma: Sigma of normal distribution.
-        data_range: Value range of input images (usually 1.0 or 255).
-        reduction: Specifies the reduction to apply to the output:
-            ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
+        data_range: Maximum value range of images (usually 1.0 or 255).
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         full: Return cs map or not.
         downsample: Perform average pool before SSIM computation. Default: True
         k1: Algorithm parameter, K1 (small constant, see [1]).
@@ -49,9 +50,8 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
            https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
            DOI: `10.1109/TIP.2003.819861`
     """
-    _validate_input(
-        input_tensors=(x, y), allow_5d=True, kernel_size=kernel_size, scale_weights=None, data_range=data_range)
-    x, y = _adjust_dimensions(input_tensors=(x, y))
+    assert kernel_size % 2 == 1, f'Kernel size must be odd, got [{kernel_size}]'
+    _validate_input([x, y], dim_range=(4, 5), data_range=(0, data_range))
 
     x = x.type(torch.float32)
     y = y.type(torch.float32)
@@ -71,11 +71,8 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
     ssim_val = ssim_map.mean(1)
     cs = cs_map.mean(1)
 
-    if reduction != 'none':
-        reduction_operation = {'mean': torch.mean,
-                               'sum': torch.sum}
-        ssim_val = reduction_operation[reduction](ssim_val, dim=0)
-        cs = reduction_operation[reduction](cs, dim=0)
+    ssim_val = _reduce(ssim_val, reduction)
+    cs = _reduce(cs, reduction)
 
     if full:
         return [ssim_val, cs]
@@ -120,17 +117,9 @@ class SSIMLoss(_Loss):
         k1: Coefficient related to c1 in the above equation.
         k2: Coefficient related to c2 in the above equation.
         downsample: Perform average pool before SSIM computation. Default: True
-        reduction: Specifies the reduction to apply to the output:
-            ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
-            ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``
-        data_range: The difference between the maximum and minimum of the pixel value,
-            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
-            The pixel value interval of both input and output should remain the same.
-
-    Shape:
-        - Input: 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
-        - Target: 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        data_range: Maximum value range of images (usually 1.0 or 255).
 
     Examples::
         >>> loss = SSIMLoss()
@@ -158,6 +147,10 @@ class SSIMLoss(_Loss):
 
         # Loss-specific parameters.
         self.kernel_size = kernel_size
+
+        # This check might look redundant because kernel size is checked within the ssim function anyway.
+        # However, this check allows to fail fast when the loss is being initialised and training has not been started.
+        assert kernel_size % 2 == 1, f'Kernel size must be odd, got [{kernel_size}]'
         self.kernel_sigma = kernel_sigma
         self.k1 = k1
         self.k2 = k2
@@ -168,8 +161,8 @@ class SSIMLoss(_Loss):
         r"""Computation of Structural Similarity (SSIM) index as a loss function.
 
         Args:
-            x: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
-            y: Tensor with shape 2D (H, W), 3D (C, H, W), 4D (N, C, H, W) or 5D (N, C, H, W, 2).
+            x: An input tensor. Shape :math:`(N, C, H, W)` or :math:`(N, C, H, W, 2)`.
+            y: A target tensor. Shape :math:`(N, C, H, W)` or :math:`(N, C, H, W, 2)`.
 
         Returns:
             Value of SSIM loss to be minimized, i.e 1 - `ssim`. 0 <= SSIM loss <= 1. In case of 5D input tensors,
@@ -187,10 +180,10 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
     r"""Calculate Structural Similarity (SSIM) index for X and Y per channel.
 
     Args:
-        x: Tensor with shape (N, C, H, W).
-        y: Tensor with shape (N, C, H, W).
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
+        y: A target tensor. Shape :math:`(N, C, H, W)`.
         kernel: 2D Gaussian kernel.
-        data_range: Value range of input images (usually 1.0 or 255).
+        data_range: Maximum value range of images (usually 1.0 or 255).
         k1: Algorithm parameter, K1 (small constant, see [1]).
         k2: Algorithm parameter, K2 (small constant, see [1]).
             Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
@@ -198,7 +191,6 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
     Returns:
         Full Value of Structural Similarity (SSIM) index.
     """
-
     if x.size(-1) < kernel.size(-1) or x.size(-2) < kernel.size(-2):
         raise ValueError(f'Kernel size can\'t be greater than actual input size. Input size: {x.size()}. '
                          f'Kernel size: {kernel.size()}')
@@ -234,10 +226,10 @@ def _ssim_per_channel_complex(x: torch.Tensor, y: torch.Tensor, kernel: torch.Te
     r"""Calculate Structural Similarity (SSIM) index for Complex X and Y per channel.
 
     Args:
-        x: Complex tensor with shape (N, C, H, W, 2).
-        y: Complex tensor with shape (N, C, H, W, 2).
+        x: An input tensor. Shape :math:`(N, C, H, W, 2)`.
+        y: A target tensor. Shape :math:`(N, C, H, W, 2)`.
         kernel: 2-D gauss kernel.
-        data_range: Value range of input images (usually 1.0 or 255).
+        data_range: Maximum value range of images (usually 1.0 or 255).
         k1: Algorithm parameter, K1 (small constant, see [1]).
         k2: Algorithm parameter, K2 (small constant, see [1]).
             Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.

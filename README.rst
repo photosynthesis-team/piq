@@ -272,6 +272,17 @@ DISTS        0.7077 / 0.5212    0.830 / 0.639 `DISTS`_            0.8137 / 0.625
 
 .. benchmark-section-end
 
+.. assertions-section-start
+
+Assertions
+----------
+In PIQ we use assertions to raise meaningful messages when some component doesn't receive an input of the expected type.
+This makes prototyping and debugging easier, but it might hurt the performance.
+To disable all checks, use the Python ``-O`` flag: ``python -O your_script.py``
+
+.. assertions-section-end
+
+
 Roadmap
 -------
 

@@ -25,16 +25,12 @@ def y() -> torch.Tensor:
 
 x_tensors = [
     torch.rand(4, 3, 96, 96),  # Random 4D
-    torch.rand(3, 96, 96),  # Random 3D
     torch.rand(4, 1, 96, 96),  # Random 4D greyscale
-    torch.rand(96, 96),  # Random 2D greyscale
 ]
 
 y_tensors = [
     torch.rand(4, 3, 96, 96),  # Random 4D
-    torch.rand(3, 96, 96),  # Random 3D
     torch.rand(4, 1, 96, 96),  # Random 4D greyscale
-    torch.rand(96, 96),  # Random 2D greyscale
 ]
 
 

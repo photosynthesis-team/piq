@@ -11,7 +11,7 @@ import torch.nn.functional as F
 from typing import Union
 
 from piq.functional import gaussian_filter
-from piq.utils import _adjust_dimensions, _validate_input
+from piq.utils import _validate_input, _reduce
 
 
 def vif_p(x: torch.Tensor, y: torch.Tensor, sigma_n_sq: float = 2.0,
@@ -21,11 +21,12 @@ def vif_p(x: torch.Tensor, y: torch.Tensor, sigma_n_sq: float = 2.0,
     Both inputs supposed to have RGB channels order.
 
     Args:
-        x: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
-        y: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
+        y: A target tensor. Shape :math:`(N, C, H, W)`.
         sigma_n_sq: HVS model parameter (variance of the visual noise).
-        data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
+        data_range: Maximum value range of images (usually 1.0 or 255).
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         
     Returns:
         VIF: Index of similarity betwen two images. Usually in [0, 1] interval.
@@ -36,8 +37,7 @@ def vif_p(x: torch.Tensor, y: torch.Tensor, sigma_n_sq: float = 2.0,
         See https://live.ece.utexas.edu/research/Quality/VIF.htm for details.
         
     """
-    _validate_input((x, y), allow_5d=False, data_range=data_range)
-    x, y = _adjust_dimensions(input_tensors=(x, y))
+    _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
 
     min_size = 41
     if x.size(-1) < min_size or x.size(-2) < min_size:
@@ -104,13 +104,7 @@ def vif_p(x: torch.Tensor, y: torch.Tensor, sigma_n_sq: float = 2.0,
 
     score: torch.Tensor = (x_vif + EPS) / (y_vif + EPS)
 
-    # Reduce if needed
-    if reduction == 'none':
-        return score
-
-    return {'mean': score.mean,
-            'sum': score.sum
-            }[reduction](dim=0)
+    return _reduce(score, reduction)
 
 
 class VIFLoss(_Loss):
@@ -123,8 +117,10 @@ class VIFLoss(_Loss):
         r"""
         Args:
             sigma_n_sq: HVS model parameter (variance of the visual noise).
-            data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
-            reduction: Reduction over samples in batch: "mean"|"sum"|"none"
+            data_range: Maximum value range of images (usually 1.0 or 255).
+            reduction: Specifies the reduction type:
+                ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+
         """
         super().__init__()
         self.sigma_n_sq = sigma_n_sq
@@ -135,9 +131,11 @@ class VIFLoss(_Loss):
         r"""Computation of Visual Information Fidelity (VIF) index as a loss function.
         Colour images are expected to have RGB channel order.
         Order of inputs is important! First tensor must contain distorted images, second reference images.
+
         Args:
-            x: Tensor of distorted images with shape (H, W), (C, H, W) or (N, C, H, W).
-            y: Tensor of target images with shape (H, W), (C, H, W) or (N, C, H, W).
+            x: An input tensor. Shape :math:`(N, C, H, W)`.
+            y: A target tensor. Shape :math:`(N, C, H, W)`.
+
         Returns:
             Value of VIF loss to be minimized. 0 <= VIFLoss <= 1.
         """

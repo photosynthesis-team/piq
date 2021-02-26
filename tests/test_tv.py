@@ -39,7 +39,7 @@ def test_tv_loss_raises_if_tensors_have_different_types() -> None:
 def test_tv_loss_check_available_dimensions() -> None:
     custom_x = torch.rand(256, 256)
     for _ in range(10):
-        if custom_x.dim() < 5:
+        if custom_x.dim() == 4:
             TVLoss()(custom_x)
         else:
             with pytest.raises(AssertionError):

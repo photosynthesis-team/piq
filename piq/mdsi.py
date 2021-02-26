@@ -7,12 +7,14 @@ References:
 """
 import warnings
 import functools
+from typing import Union
+
 import torch
 from torch.nn.modules.loss import _Loss
 from torch.nn.functional import pad, avg_pool2d
-from typing import Union
+
 from piq.functional import rgb2lhm, gradient_map, similarity_map, prewitt_filter, pow_for_complex
-from piq.utils import _validate_input, _adjust_dimensions
+from piq.utils import _validate_input, _reduce
 
 
 def mdsi(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1., reduction: str = 'mean',
@@ -20,15 +22,14 @@ def mdsi(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1., r
          beta: float = 0.1, gamma: float = 0.2, rho: float = 1., q: float = 0.25, o: float = 0.25):
     r"""Compute Mean Deviation Similarity Index (MDSI) for a batch of images.
 
-    Note:
-        Both inputs are supposed to have RGB channels order.
-        Greyscale images converted to RGB by copying the grey channel 3 times.
+    Supports greyscale and colour images with RGB channel order.
 
     Args:
-        x: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
-        y:Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
-        data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
+        y: A target tensor. Shape :math:`(N, C, H, W)`.
+        data_range: Maximum value range of images (usually 1.0 or 255).
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         c1: coefficient to calculate gradient similarity. Default: 140.
         c2: coefficient to calculate gradient similarity. Default: 55.
         c3: coefficient to calculate chromaticity similarity. Default: 550.
@@ -46,8 +47,7 @@ def mdsi(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1., r
     Note:
         The ratio between constants is usually equal c3 = 4c1 = 10c2
     """
-    _validate_input(input_tensors=(x, y), allow_5d=False, data_range=data_range)
-    x, y = _adjust_dimensions(input_tensors=(x, y))
+    _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
 
     if x.size(1) == 1:
         x = x.repeat(1, 3, 1, 1)
@@ -106,19 +106,19 @@ def mdsi(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1., r
     mct_complex = mct_complex.mean(dim=2, keepdim=True).mean(dim=3, keepdim=True)  # split to increase precision
     score = (pow_for_complex(base=gcs, exp=q) - mct_complex).pow(2).sum(dim=-1).sqrt()
     score = ((score ** rho).mean(dim=(-1, -2)) ** (o / rho)).squeeze(1)
-    if reduction == 'none':
-        return score
-    return {'mean': score.mean,
-            'sum': score.sum}[reduction](dim=0)
+    return _reduce(score, reduction)
 
 
 class MDSILoss(_Loss):
     r"""Creates a criterion that measures Mean Deviation Similarity Index (MDSI) error between the prediction :math:`x`
     and target :math:`y`.
 
+    Supports greyscale and colour images with RGB channel order.
+
     Args:
-        data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
+        data_range: Maximum value range of images (usually 1.0 or 255).
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         c1: coefficient to calculate gradient similarity. Default: 140.
         c2: coefficient to calculate gradient similarity. Default: 55.
         c3: coefficient to calculate chromaticity similarity. Default: 550.
@@ -129,14 +129,6 @@ class MDSILoss(_Loss):
         rho: order of the Minkowski distance
         q: coefficient to adjusts the emphasis of the values in image and MCT
         o: the power pooling applied on the final value of the deviation
-
-    Shape:
-        - Input: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
-        - Target: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
-
-        Both inputs are supposed to have RGB channels order in accordance with the original approach.
-        Nevertheless, the method supports greyscale images, which they are converted to RGB
-        by copying the grey channel 3 times.
 
     Examples::
 
@@ -173,10 +165,8 @@ class MDSILoss(_Loss):
         Greyscale images converted to RGB by copying the grey channel 3 times.
 
         Args:
-            x: Predicted images set :math:`x`.
-                Shape (H, W), (C, H, W) or (N, C, H, W).
-            y: Target images set :math:`y`.
-                Shape (H, W), (C, H, W) or (N, C, H, W).
+            x: An input tensor. Shape :math:`(N, C, H, W)`.
+            y: A target tensor. Shape :math:`(N, C, H, W)`.
 
         Returns:
             Value of MDSI loss to be minimized. 0 <= MDSI loss <= 1.
