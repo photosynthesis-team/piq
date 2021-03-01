@@ -24,7 +24,7 @@ def features_x_beta() -> torch.Tensor:
 
 
 def install(package: str) -> None:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", '-y', package])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
 
 def uninstall(package) -> None:
