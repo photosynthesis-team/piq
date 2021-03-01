@@ -31,16 +31,16 @@ def uninstall(package) -> None:
     subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "-y", package])
 
 
-def prepare_test() -> None:
+def prepare_test(scipy_version='1.3.3', gudhi_version='3.2') -> None:
     try:
         import scipy  # noqa: F401
     except ImportError:
-        install('scipy')
+        install('scipy' + '==' + scipy_version)
 
     try:
         import gudhi  # noqa: F401
     except ImportError:
-        install('gudhi')
+        install('gudhi' + '==' + gudhi_version)
 
 
 # ================== Test class: `GS` ==================
@@ -67,7 +67,7 @@ def test_fails_is_libs_not_installed(features_y_normal, features_x_normal) -> No
 
 
 def test_warns_if_lowe_versions(features_y_normal, features_x_normal) -> None:
-    prepare_test()
+    prepare_test(scipy_version='1.1.0')
 
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered
