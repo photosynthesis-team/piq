@@ -4,16 +4,16 @@ https://github.com/KhrulkovV/geometry-score
 See paper for details:
 https://arxiv.org/pdf/1802.02664.pdf
 """
+import torch
+
+import numpy as np
+
 from typing import Optional, Tuple, Union
 from multiprocessing import Pool
-
-import torch
-import gudhi
-import numpy as np
-from scipy.spatial.distance import cdist
+from warnings import warn
 
 from piq.base import BaseFeatureMetric
-from piq.utils import _validate_input
+from piq.utils import _validate_input, _version_tuple
 
 
 def relative(intervals: np.ndarray, alpha_max: float, i_max: int = 100) -> np.ndarray:
@@ -76,6 +76,19 @@ def lmrk_table(witnesses: np.ndarray, landmarks: np.ndarray) -> Tuple[np.ndarray
             in L, e.g., D[i, :, :] = [[0, 0.1], [1, 0.2], [3, 0.3], [2, 0.4]]
         max_dist: Maximal distance between W and L
     """
+    try:
+        import scipy
+    except ImportError:
+        raise ImportError("Scipy is required for computation of the Geometry Score but not installed. "
+                          "Please install scipy using the following command: pip install --user scipy")
+
+    recommended_scipy_version = "1.3.3"
+    if _version_tuple(scipy.__version__) < _version_tuple(recommended_scipy_version):
+        warn(f'Scipy of version {scipy.__version__} is used while version >= {recommended_scipy_version} is '
+             f'recommended. Consider updating scipy to avoid potential poblems.')
+
+    from scipy.spatial.distance import cdist
+
     a = cdist(witnesses, landmarks)
     max_dist = np.max(a)
     idx = np.argsort(a)
@@ -96,6 +109,17 @@ def witness(features: np.ndarray, sample_size: int = 64, gamma: Optional[float] 
     Returns
         A list of persistence intervals and the maximal persistence value.
     """
+    try:
+        import gudhi
+    except ImportError:
+        raise ImportError("GUDHI is required for computation of the Geometry Score but not installed. "
+                          "Please install scipy using the following command: pip install --user gudhi")
+
+    recommended_gudhi_version = "3.2"
+    if _version_tuple(gudhi.__version__) < _version_tuple(recommended_gudhi_version):
+        warn(f'GUDHI of version {gudhi.__version__} is used while version >= {recommended_gudhi_version} is '
+             f'recommended. Consider updating GUDHI to avoid potential poblems.')
+
     N = features.shape[0]
     if gamma is None:
         gamma = 1.0 / 128 * N / 5000
