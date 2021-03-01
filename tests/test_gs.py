@@ -24,11 +24,11 @@ def features_x_beta() -> torch.Tensor:
 
 
 def install(package: str) -> None:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", '-y', package])
 
 
 def uninstall(package) -> None:
-    subprocess.check_call([sys.executable, "-m", "pip", "uninstall", package])
+    subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "-y", package])
 
 
 def prepare_test() -> None:
@@ -52,7 +52,7 @@ def test_initialization() -> None:
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
-def test_fails_is_libs_not_install(features_y_normal, features_x_normal) -> None:
+def test_fails_is_libs_not_installed(features_y_normal, features_x_normal) -> None:
     reqs = subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'])
     installed_packages = [r.decode().split('==')[0] for r in reqs.split()]
     if 'scipy' in installed_packages:
