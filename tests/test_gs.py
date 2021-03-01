@@ -33,12 +33,12 @@ def uninstall(package) -> None:
 
 def prepare_test() -> None:
     try:
-        import scipy
+        import scipy  # noqa: F401
     except ImportError:
         install('scipy')
 
     try:
-        import gudhi
+        import gudhi  # noqa: F401
     except ImportError:
         install('scipy')
 
