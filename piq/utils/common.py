@@ -65,4 +65,3 @@ def _reduce(x: torch.Tensor, reduction: str = 'mean') -> torch.Tensor:
 
 def _version_tuple(v):
     return tuple(map(int, (v.split("."))))
-
