@@ -40,7 +40,7 @@ def prepare_test() -> None:
     try:
         import gudhi  # noqa: F401
     except ImportError:
-        install('scipy')
+        install('gudhi')
 
 
 # ================== Test class: `GS` ==================
