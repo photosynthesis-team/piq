@@ -85,7 +85,7 @@ def lmrk_table(witnesses: np.ndarray, landmarks: np.ndarray) -> Tuple[np.ndarray
     recommended_scipy_version = "1.3.3"
     if _version_tuple(scipy.__version__) < _version_tuple(recommended_scipy_version):
         warn(f'Scipy of version {scipy.__version__} is used while version >= {recommended_scipy_version} is '
-             f'recommended. Consider updating scipy to avoid potential poblems.')
+             f'recommended. Consider updating scipy to avoid potential problems.')
 
     from scipy.spatial.distance import cdist
 
@@ -118,7 +118,7 @@ def witness(features: np.ndarray, sample_size: int = 64, gamma: Optional[float] 
     recommended_gudhi_version = "3.2"
     if _version_tuple(gudhi.__version__) < _version_tuple(recommended_gudhi_version):
         warn(f'GUDHI of version {gudhi.__version__} is used while version >= {recommended_gudhi_version} is '
-             f'recommended. Consider updating GUDHI to avoid potential poblems.')
+             f'recommended. Consider updating GUDHI to avoid potential problems.')
 
     N = features.shape[0]
     if gamma is None:
