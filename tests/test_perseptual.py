@@ -207,7 +207,7 @@ def test_dists_simmilar_to_official_implementation() -> None:
     goldhill_jpeg = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'))[None, None, ...] / 255.0
 
     loss_value = loss(goldhill_jpeg, goldhill)
-    baseline_value = torch.tensor(0.3447)
+    baseline_value = torch.tensor(0.19509)
     assert torch.isclose(loss_value, baseline_value, atol=1e-3), \
         f'Expected PIQ loss to be equal to original. Got {loss_value} and {baseline_value}'
 
@@ -216,7 +216,7 @@ def test_dists_simmilar_to_official_implementation() -> None:
     i1_01_5 = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1)[None, ...] / 255.0
 
     loss_value = loss(i1_01_5, I01)
-    baseline_value = torch.tensor(0.2376)
+    baseline_value = torch.tensor(0.17321)
 
     assert torch.isclose(loss_value, baseline_value, atol=1e-3), \
         f'Expected PIQ loss to be equal to original. Got {loss_value} and {baseline_value}'
