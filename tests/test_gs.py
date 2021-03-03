@@ -2,7 +2,6 @@ import pytest
 import torch
 import subprocess
 import sys
-import warnings
 import builtins
 
 from piq import GS
@@ -49,8 +48,9 @@ def hide_available_pkg(monkeypatch):
     import_orig = builtins.__import__
 
     def mocked_import(name, *args, **kwargs):
-        if name == 'pkg':
+        if name in ['scipy', 'gudhi']:
             raise ImportError()
+
         return import_orig(name, *args, **kwargs)
 
     monkeypatch.setattr(builtins, '__import__', mocked_import)
@@ -66,7 +66,7 @@ def test_initialization() -> None:
 
 
 @pytest.mark.usefixtures('hide_available_pkg')
-def test_fails_is_libs_not_installed(features_y_normal, features_x_normal) -> None:
+def test_fails_if_libs_not_installed(features_y_normal, features_x_normal) -> None:
     with pytest.raises(ImportError):
         metric = GS(num_iters=10, sample_size=8)
         metric(features_y_normal, features_x_normal)
