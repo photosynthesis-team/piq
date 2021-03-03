@@ -3,6 +3,7 @@ import torch
 import subprocess
 import sys
 import warnings
+import builtins
 
 from piq import GS
 
@@ -43,6 +44,18 @@ def prepare_test(scipy_version='1.3.3', gudhi_version='3.2') -> None:
         install('gudhi' + '==' + gudhi_version)
 
 
+@pytest.fixture
+def hide_available_pkg(monkeypatch):
+    import_orig = builtins.__import__
+
+    def mocked_import(name, *args, **kwargs):
+        if name == 'pkg':
+            raise ImportError()
+        return import_orig(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, '__import__', mocked_import)
+
+
 # ================== Test class: `GS` ==================
 def test_initialization() -> None:
     prepare_test()
@@ -52,36 +65,11 @@ def test_initialization() -> None:
         pytest.fail(f"Unexpected error occurred: {e}")
 
 
+@pytest.mark.usefixtures('hide_available_pkg')
 def test_fails_is_libs_not_installed(features_y_normal, features_x_normal) -> None:
-    reqs = subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'])
-    installed_packages = [r.decode().split('==')[0] for r in reqs.split()]
-    if 'scipy' in installed_packages:
-        uninstall('scipy')
-
-    if 'gudhi' in installed_packages:
-        uninstall('gudhi')
-
     with pytest.raises(ImportError):
         metric = GS(num_iters=10, sample_size=8)
         metric(features_y_normal, features_x_normal)
-
-
-def test_warns_if_lowe_versions(features_y_normal, features_x_normal) -> None:
-    prepare_test(scipy_version='1.1.0')
-
-    with warnings.catch_warnings(record=True) as w:
-        # Cause all warnings to always be triggered
-        warnings.simplefilter("always")
-
-        # Trigger a warnings
-        try:
-            metric = GS(num_iters=10, sample_size=8)
-            metric(features_y_normal, features_x_normal)
-        except Exception as e:
-            pytest.fail(f"Unexpected error occurred: {e}")
-
-        # Verify some things
-        assert len(w) == 1
 
 
 @pytest.mark.skip(reason="Randomnly fails, fix in separate PR")
