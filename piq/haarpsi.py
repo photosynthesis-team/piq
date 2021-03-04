@@ -7,7 +7,6 @@ Reference:
     [2] Code from authors on MATLAB and Python
         https://github.com/rgcda/haarpsi
 """
-
 import functools
 from typing import Optional, Union
 
