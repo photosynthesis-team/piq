@@ -339,6 +339,14 @@ class DISTS(ContentLoss):
                          mean=mean, std=std, normalize_features=False)
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        _, _, H, W = x.shape
+
+        if min(H, W) > 256:
+            x = torch.nn.functional.interpolate(
+                x, scale_factor=256 / min(H, W), recompute_scale_factor=False, mode='bilinear')
+            y = torch.nn.functional.interpolate(
+                y, scale_factor=256 / min(H, W), recompute_scale_factor=False, mode='bilinear')
+
         loss = super().forward(x, y)
         return 1 - loss
 
