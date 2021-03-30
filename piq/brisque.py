@@ -36,13 +36,13 @@ def brisque(x: torch.Tensor,
     Returns:
         Value of BRISQUE index.
 
-    Note:
-        The back propagation is not available using torch=1.5.0 due to bug in argmin/argmax back propagation.
-        Update the torch and torchvision to the latest versions.
-
     References:
-        .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
-           https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
+        Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
+        https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
+
+    Note:
+        The back propagation is not available using ``torch=1.5.0`` due to bug in ``argmin`` and ``argmax``
+        backpropagation. Update the torch and torchvision to the latest versions.
     """
     if '1.5.0' in torch.__version__:
         warnings.warn(f'BRISQUE does not support back propagation due to bug in torch={torch.__version__}.'
@@ -84,23 +84,18 @@ class BRISQUELoss(_Loss):
         reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default: ``'mean'``
         interpolation: Interpolation to be used for scaling.
-
-    Shape:
-        - Input: Required to be (N, C, H, W). RGB channel order for colour images.
-
-    Examples::
+    Examples:
         >>> loss = BRISQUELoss()
         >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
         >>> output = loss(x)
         >>> output.backward()
+    References:
+        Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
+        https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
 
     Note:
-        The back propagation is not available using torch=1.5.0 due to bug in argmin/argmax back propagation.
-        Update the torch and torchvision to the latest versions.
-
-    References:
-        .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
-           https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
+        The back propagation is not available using ``torch=1.5.0`` due to bug in ``argmin`` and ``argmax``
+        backpropagation. Update the torch and torchvision to the latest versions.
     """
     def __init__(self, kernel_size: int = 7, kernel_sigma: float = 7 / 6,
                  data_range: Union[int, float] = 1., reduction: str = 'mean',
@@ -121,7 +116,7 @@ class BRISQUELoss(_Loss):
         r"""Computation of BRISQUE score as a loss function.
 
         Args:
-            x: An input tensor with (N, 3, H, W) shape.
+            x: An input tensor with (N, C, H, W) shape. RGB channel order for colour images.
 
         Returns:
             Value of BRISQUE loss to be minimized.
