@@ -34,8 +34,8 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         full: Return cs map or not.
         downsample: Perform average pool before SSIM computation. Default: True
-        k1: Algorithm parameter, K1 (small constant, see [1]).
-        k2: Algorithm parameter, K2 (small constant, see [1]).
+        k1: Algorithm parameter, K1 (small constant).
+        k2: Algorithm parameter, K2 (small constant).
             Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
 
     Returns:
