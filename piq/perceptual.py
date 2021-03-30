@@ -94,6 +94,13 @@ class ContentLoss(_Loss):
         normalize_features: If true, unit-normalize each feature in channel dimension before scaling
             and computing distance. See references for details.
 
+    Examples:
+        >>> loss = ContentLoss()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
+
     References:
         Gatys, Leon and Ecker, Alexander and Bethge, Matthias (2016).
         A Neural Algorithm of Artistic Style
@@ -256,6 +263,13 @@ class StyleLoss(ContentLoss):
         normalize_features: If true, unit-normalize each feature in channel dimension before scaling
             and computing distance. See references for details.
 
+    Examples:
+        >>> loss = StyleLoss()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
+
     References:
         Gatys, Leon and Ecker, Alexander and Bethge, Matthias (2016).
         A Neural Algorithm of Artistic Style
@@ -318,6 +332,13 @@ class LPIPS(ContentLoss):
         std: List of float values used for data standardization. Default: ImageNet std.
             If there is no need to normalize data, use [1., 1., 1.].
 
+    Examples:
+        >>> loss = LPIPS()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
+
     References:
         Gatys, Leon and Ecker, Alexander and Bethge, Matthias (2016).
         A Neural Algorithm of Artistic Style
@@ -356,6 +377,13 @@ class DISTS(ContentLoss):
             If there is no need to normalize data, use [0., 0., 0.].
         std: List of float values used for data standardization. Default: ImageNet std.
             If there is no need to normalize data, use [1., 1., 1.].
+
+    Examples:
+        >>> loss = DISTS()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
 
     References:
         Keyan Ding, Kede Ma, Shiqi Wang, Eero P. Simoncelli (2020).

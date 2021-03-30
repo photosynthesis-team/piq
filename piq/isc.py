@@ -74,6 +74,13 @@ class IS(BaseFeatureMetric):
             IS is computed for them separately and results are then averaged.
         distance: How to measure distance between scores: ``'l1'`` | ``'l2'``. Default: ``'l1'``.
 
+    Examples:
+        >>> loss = IS()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
+
     References:
         "A Note on the Inception Score" https://arxiv.org/pdf/1801.01973.pdf
     """

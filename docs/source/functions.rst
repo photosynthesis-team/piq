@@ -39,6 +39,10 @@ Haar Perceptual Similarity Index (HaarPSI)
 ''''''''''''''''''''''''''''''''''''''''''
 .. autofunction:: piq.haarpsi
 
+Mean Deviation Similarity Index (MDSI)
+''''''''''''''''''''''''''''''''''''''
+.. autofunction:: piq.mdsi
+
 No Reference Metrics
 --------------------
 Total Variation
@@ -54,8 +58,3 @@ Feature Metrics
 Inception Score (IS)
 ''''''''''''''''''''
 .. autofunction:: piq.inception_score
-
-Mean Deviation Similarity Index (MDSI)
-''''''''''''''''''''''''''''''''''''''
-.. autofunction:: piq.mdsi
-

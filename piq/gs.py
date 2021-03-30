@@ -155,6 +155,13 @@ class GS(BaseFeatureMetric):
         i_max: Upper bound on i in RLT(i, 1, X, L)
         num_workers: Number of proccess used for GS computation.
 
+    Examples:
+        >>> loss = GS()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
+
     References:
         Khrulkov V., Oseledets I. (2018).
         Geometry score: A method for comparing generative adversarial networks.

@@ -113,7 +113,14 @@ class PieAPP(_Loss):
         stride: Step between cropped patches. Smaller values lead to better quality,
             but cause higher memory consumption. Default: 27 (`sparse` sampling in original implementation)
         enable_grad: Flag to compute gradients. Useful when PieAPP used as a loss. Default: False.
-    
+
+    Examples:
+        >>> loss = PieAPP()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
+
     References:
         Ekta Prashnani, Hong Cai, Yasamin Mostofi, Pradeep Sen (2018).
         PieAPP: Perceptual Image-Error Assessment through Pairwise Preference

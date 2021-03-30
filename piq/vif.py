@@ -116,7 +116,20 @@ def vif_p(x: torch.Tensor, y: torch.Tensor, sigma_n_sq: float = 2.0,
 class VIFLoss(_Loss):
     r"""Creates a criterion that measures the Visual Information Fidelity loss
     between predicted (x) and target (y) image. In order to be considered as a loss,
-    value `1 - clip(VIF, min=0, max=1)` is returned.
+    value ``1 - clip(VIF, min=0, max=1)`` is returned.
+
+    Args:
+        sigma_n_sq: HVS model parameter (variance of the visual noise).
+        data_range: Maximum value range of images (usually 1.0 or 255).
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+
+    Examples:
+        >>> loss = VIFLoss()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
 
     References:
         H. R. Sheikh and A. C. Bovik, "Image information and visual quality,"
@@ -126,14 +139,6 @@ class VIFLoss(_Loss):
     """
 
     def __init__(self, sigma_n_sq: float = 2.0, data_range: Union[int, float] = 1.0, reduction: str = 'mean'):
-        r"""
-        Args:
-            sigma_n_sq: HVS model parameter (variance of the visual noise).
-            data_range: Maximum value range of images (usually 1.0 or 255).
-            reduction: Specifies the reduction type:
-                ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
-
-        """
         super().__init__()
         self.sigma_n_sq = sigma_n_sq
         self.data_range = data_range
@@ -149,7 +154,7 @@ class VIFLoss(_Loss):
             y: A target tensor. Shape :math:`(N, C, H, W)`.
 
         Returns:
-            Value of VIF loss to be minimized. 0 <= VIFLoss <= 1.
+            Value of VIF loss to be minimized in [0, 1] range.
         """
         # All checks are done in vif_p function
         score = vif_p(x, y, sigma_n_sq=self.sigma_n_sq, data_range=self.data_range, reduction=self.reduction)

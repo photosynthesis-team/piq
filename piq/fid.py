@@ -141,6 +141,13 @@ class FID(BaseFeatureMetric):
     computation cost. FID can compare two data distributions with different number of samples.
     But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
 
+    Examples:
+        >>> loss = FID()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
+
     References:
         Heusel M. et al. (2017).
         Gans trained by a two time-scale update rule converge to a local nash equilibrium.
