@@ -51,7 +51,7 @@ Blind/Referenceless Image Spatial Quality Evaluator (BRISQUE)
 
 Feature Metrics
 ---------------
-Inseption Score (IS)
+Inception Score (IS)
 ''''''''''''''''''''
 .. autofunction:: piq.inception_score
 
