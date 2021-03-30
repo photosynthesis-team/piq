@@ -103,22 +103,23 @@ class PieAPP(_Loss):
     r"""
     Implementation of Perceptual Image-Error Assessment through Pairwise Preference.
     
-    Expects input to be in range [0, `data_range`] with no normalization and RGB channel order.
-    Input images are croped into smaller patches. Score for each individual image is mean of it's patch scores.
+    Expects input to be in range ``[0, data_range]`` with no normalization and RGB channel order.
+    Input images are cropped into smaller patches. Score for each individual image is mean of it's patch scores.
 
     Args:
-         reduction: Specifies the reduction type:
+        reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         data_range: Maximum value range of images (usually 1.0 or 255).
         stride: Step between cropped patches. Smaller values lead to better quality,
             but cause higher memory consumption. Default: 27 (`sparse` sampling in original implementation)
-        enable_grad: Flag to compute gradients. Usefull when PieAPP used as a loss. Default: False.
+        enable_grad: Flag to compute gradients. Useful when PieAPP used as a loss. Default: False.
     
     References:
-        .. [1] Ekta Prashnani, Hong Cai, Yasamin Mostofi, Pradeep Sen
-            (2018). PieAPP: Perceptual Image-Error Assessment through Pairwise Preference
-            https://arxiv.org/abs/1806.02067
-        .. [2] https://github.com/prashnani/PerceptualImageError
+        Ekta Prashnani, Hong Cai, Yasamin Mostofi, Pradeep Sen (2018).
+        PieAPP: Perceptual Image-Error Assessment through Pairwise Preference
+        https://arxiv.org/abs/1806.02067
+
+        https://github.com/prashnani/PerceptualImageError
 
     """
     _weights_url = "https://github.com/photosynthesis-team/piq/releases/download/v0.5.4/PieAPPv0.1.pth"
@@ -145,11 +146,14 @@ class PieAPP(_Loss):
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         r"""
-        Computation of PieAPP  between feature representations of prediction (x) and target (y) tensors.
+        Computation of PieAPP  between feature representations of prediction :math:`x` and target :math:`y` tensors.
 
         Args:
             x: An input tensor. Shape :math:`(N, C, H, W)`.
             y: A target tensor. Shape :math:`(N, C, H, W)`.
+
+        Returns:
+            Perceptual Image-Error Assessment through Pairwise Preference
         """
         _validate_input([x, y], dim_range=(4, 4), data_range=(0, self.data_range))
 
@@ -179,12 +183,12 @@ class PieAPP(_Loss):
 
     def get_features(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         r"""
+
         Args:
             x: Tensor. Shape :math:`(N, C, H, W)`.
         
         Returns:
-            features: List of features extracted from intermediate layers
-            weights
+            List of features extracted from intermediate layers weights
         """
         # Rescale to [0, 255] range on which models was trained
         x = x / self.data_range * 255
