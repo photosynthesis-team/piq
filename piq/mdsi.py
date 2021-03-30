@@ -43,6 +43,13 @@ def mdsi(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1., r
     Returns:
         The batch of Mean Deviation Similarity Index (MDSI) score reduced accordingly
 
+    References:
+        Nafchi, Hossein Ziaei and Shahkolaei, Atena and Hedjam, Rachid and Cheriet, Mohamed (2016).
+        Mean deviation similarity index: Efficient and reliable full-reference image quality evaluator.
+        IEEE Ieee Access, 4, 5579--5590.
+        https://arxiv.org/pdf/1608.07433.pdf,
+        DOI:`10.1109/ACCESS.2016.2604042`
+
     Note:
         The ratio between constants is usually equal :math:`c_3 = 4c_1 = 10c_2`
 
@@ -144,7 +151,7 @@ class MDSILoss(_Loss):
         Nafchi, Hossein Ziaei and Shahkolaei, Atena and Hedjam, Rachid and Cheriet, Mohamed (2016).
         Mean deviation similarity index: Efficient and reliable full-reference image quality evaluator.
         IEEE Ieee Access, 4, 5579--5590.
-        https://ieeexplore.ieee.org/abstract/document/7556976/,
+        https://arxiv.org/pdf/1608.07433.pdf
         DOI:`10.1109/ACCESS.2016.2604042`
 
     Note:

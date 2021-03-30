@@ -33,7 +33,7 @@ def gmsd(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         t: Constant from the reference paper numerical stability of similarity map.
 
     Returns:
-        gmsd : Gradient Magnitude Similarity Deviation between given tensors.
+        Gradient Magnitude Similarity Deviation between given tensors.
 
     References:
         Wufeng Xue et al. Gradient Magnitude Similarity Deviation (2013)
@@ -66,6 +66,7 @@ def _gmsd(x: torch.Tensor, y: torch.Tensor,
           t: float = 170 / (255. ** 2), alpha: float = 0.0) -> torch.Tensor:
     r"""Compute Gradient Magnitude Similarity Deviation
     Supports greyscale images in [0, 1] range.
+
     Args:
         x: Tensor. Shape :math:`(N, 1, H, W)`.
         y: Tensor. Shape :math:`(N, 1, H, W)`.
@@ -141,7 +142,7 @@ def multi_scale_gmsd(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, fl
     r"""Computation of Multi scale GMSD.
 
     Supports greyscale and colour images with RGB channel order.
-    The height and width should be at least 2 ** scales + 1.
+    The height and width should be at least ``2 ** scales + 1``.
 
     Args:
         x: An input tensor. Shape :math:`(N, C, H, W)`.
@@ -152,14 +153,18 @@ def multi_scale_gmsd(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, fl
         scale_weights: Weights for different scales. Can contain any number of floating point values.
         chromatic: Flag to use MS-GMSDc algorithm from paper.
             It also evaluates chromatic components of the image. Default: True
-        alpha: Masking coefficient. See [1] for details.
+        alpha: Masking coefficient. See references for details.
         beta1: Algorithm parameter. Weight of chromatic component in the loss.
-        beta2: Algorithm parameter. Small constant, see [1].
-        beta3: Algorithm parameter. Small constant, see [1].
+        beta2: Algorithm parameter. Small constant, see references.
+        beta3: Algorithm parameter. Small constant, see references.
         t: Constant from the reference paper numerical stability of similarity map
 
     Returns:
-        Value of MS-GMSD. 0 <= GMSD loss <= 1.
+        Value of MS-GMSD in [0, 1] range.
+
+    References:
+        Wufeng Xue et al. Gradient Magnitude Similarity Deviation (2013)
+        https://arxiv.org/pdf/1308.3052.pdf
     """
     _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
     

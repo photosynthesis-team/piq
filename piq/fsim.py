@@ -44,6 +44,10 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         Index of similarity betwen two images. Usually in [0, 1] interval.
         Can be bigger than 1 for predicted :math:`x` images with higher contrast than the original ones.
 
+    References:
+        Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
+        https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
+
     Note:
         This implementation is based on the original MATLAB code.
         https://www4.comp.polyu.edu.hk/~cslzhang/IQA/FSIM/FSIM.htm

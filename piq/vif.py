@@ -29,13 +29,19 @@ def vif_p(x: torch.Tensor, y: torch.Tensor, sigma_n_sq: float = 2.0,
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         
     Returns:
-        VIF: Index of similarity betwen two images. Usually in [0, 1] interval.
-            Can be bigger than 1 for predicted (x) images with higher contrast than original one.
+        VIF Index of similarity betwen two images. Usually in [0, 1] interval.
+        Can be bigger than 1 for predicted :math:`x` images with higher contrast than original one.
+
+    References:
+        H. R. Sheikh and A. C. Bovik, "Image information and visual quality,"
+        IEEE Transactions on Image Processing, vol. 15, no. 2, pp. 430-444, Feb. 2006
+        https://ieeexplore.ieee.org/abstract/document/1576816/
+        DOI: 10.1109/TIP.2005.859378.
+
     Note:
         In original paper this method was used for bands in discrete wavelet decomposition.
         Later on authors released code to compute VIF approximation in pixel domain.
         See https://live.ece.utexas.edu/research/Quality/VIF.htm for details.
-        
     """
     _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
 
@@ -111,6 +117,12 @@ class VIFLoss(_Loss):
     r"""Creates a criterion that measures the Visual Information Fidelity loss
     between predicted (x) and target (y) image. In order to be considered as a loss,
     value `1 - clip(VIF, min=0, max=1)` is returned.
+
+    References:
+        H. R. Sheikh and A. C. Bovik, "Image information and visual quality,"
+        IEEE Transactions on Image Processing, vol. 15, no. 2, pp. 430-444, Feb. 2006
+        https://ieeexplore.ieee.org/abstract/document/1576816/
+        DOI: 10.1109/TIP.2005.859378.
     """
 
     def __init__(self, sigma_n_sq: float = 2.0, data_range: Union[int, float] = 1.0, reduction: str = 'mean'):

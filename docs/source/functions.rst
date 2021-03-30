@@ -55,7 +55,7 @@ Inception Score (IS)
 ''''''''''''''''''''
 .. autofunction:: piq.inception_score
 
-Multi-Scale Intrinsic Distance(MSID)
-''''''''''''''''''''''''''''''''''''
+Mean Deviation Similarity Index (MDSI)
+''''''''''''''''''''''''''''''''''''''
 .. autofunction:: piq.mdsi
 
