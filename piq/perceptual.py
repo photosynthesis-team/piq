@@ -306,27 +306,29 @@ class LPIPS(ContentLoss):
     r"""Learned Perceptual Image Patch Similarity metric. Only VGG16 learned weights are supported.
 
     By default expects input to be in range [0, 1], which is then normalized by ImageNet statistics into range [-1, 1].
-    If no normaliation is requiered, change `mean` and `std` values accordingly.
+    If no normalisation is required, change `mean` and `std` values accordingly.
 
     Args:
-        replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See [1] for details.
-        distance: Method to compute distance between features. One of {`mse`, `mae`}.
+        replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See references for details.
+        distance: Method to compute distance between features: ``'mse'`` | ``'mae'``.
         reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
-        mean: List of float values used for data standartization. Default: ImageNet mean.
+        mean: List of float values used for data standardization. Default: ImageNet mean.
             If there is no need to normalize data, use [0., 0., 0.].
-        std: List of float values used for data standartization. Default: ImageNet std.
+        std: List of float values used for data standardization. Default: ImageNet std.
             If there is no need to normalize data, use [1., 1., 1.].
+
     References:
-        .. [1] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
-           (2016). A Neural Algorithm of Artistic Style}
-           Association for Research in Vision and Ophthalmology (ARVO)
-           https://arxiv.org/abs/1508.06576
-        .. [2] Zhang, Richard and Isola, Phillip and Efros, et al.
-           (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
-           2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
-           https://arxiv.org/abs/1801.03924
-           https://github.com/richzhang/PerceptualSimilarity
+        Gatys, Leon and Ecker, Alexander and Bethge, Matthias (2016).
+        A Neural Algorithm of Artistic Style
+        Association for Research in Vision and Ophthalmology (ARVO)
+        https://arxiv.org/abs/1508.06576
+
+        Zhang, Richard and Isola, Phillip and Efros, et al. (2018)
+        The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
+        IEEE/CVF Conference on Computer Vision and Pattern Recognition
+        https://arxiv.org/abs/1801.03924
+        https://github.com/richzhang/PerceptualSimilarity
     """
     _weights_url = "https://github.com/photosynthesis-team/" + \
         "photosynthesis.metrics/releases/download/v0.4.0/lpips_weights.pt"
@@ -345,20 +347,21 @@ class DISTS(ContentLoss):
     r"""Deep Image Structure and Texture Similarity metric.
 
     By default expects input to be in range [0, 1], which is then normalized by ImageNet statistics into range [-1, 1].
-    If no normaliation is requiered, change `mean` and `std` values accordingly.
+    If no normalisation is required, change `mean` and `std` values accordingly.
 
     Args:
         reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
-        mean: List of float values used for data standartization. Default: ImageNet mean.
+        mean: List of float values used for data standardization. Default: ImageNet mean.
             If there is no need to normalize data, use [0., 0., 0.].
-        std: List of float values used for data standartization. Default: ImageNet std.
+        std: List of float values used for data standardization. Default: ImageNet std.
             If there is no need to normalize data, use [1., 1., 1.].
+
     References:
-        .. [1] Keyan Ding, Kede Ma, Shiqi Wang, Eero P. Simoncelli
-           (2020). Image Quality Assessment: Unifying Structure and Texture Similarity.
-           https://arxiv.org/abs/2004.07728
-        .. [2] https://github.com/dingkeyan93/DISTS
+        Keyan Ding, Kede Ma, Shiqi Wang, Eero P. Simoncelli (2020).
+        Image Quality Assessment: Unifying Structure and Texture Similarity.
+        https://arxiv.org/abs/2004.07728
+        https://github.com/dingkeyan93/DISTS
     """
     _weights_url = "https://github.com/photosynthesis-team/piq/releases/download/v0.4.1/dists_weights.pt"
 
@@ -376,6 +379,15 @@ class DISTS(ContentLoss):
                          mean=mean, std=std, normalize_features=False)
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        r"""
+
+        Args:
+            x: An input tensor. Shape :math:`(N, C, H, W)`.
+            y: A target tensor. Shape :math:`(N, C, H, W)`.
+
+        Returns:
+            Deep Image Structure and Texture Similarity loss, i.e. ``1-DISTS`` in range [0, 1].
+        """
         _, _, H, W = x.shape
 
         if min(H, W) > 256:
@@ -388,7 +400,15 @@ class DISTS(ContentLoss):
         return 1 - loss
 
     def compute_distance(self, x_features: torch.Tensor, y_features: torch.Tensor) -> List[torch.Tensor]:
-        r"""Compute structure similarity between feature maps"""
+        r"""Compute structure similarity between feature maps
+
+        Args:
+            x_features: Features of the input tensor.
+            y_features: Features of the target tensor.
+
+        Returns:
+            Structural similarity distance between feature maps
+        """
         structure_distance, texture_distance = [], []
         # Small constant for numerical stability
         EPS = 1e-6
@@ -406,6 +426,14 @@ class DISTS(ContentLoss):
         return structure_distance + texture_distance
 
     def get_features(self, x: torch.Tensor) -> List[torch.Tensor]:
+        r"""
+
+        Args:
+            x: Input tensor
+
+        Returns:
+            List of features extracted from input tensor
+        """
         features = super().get_features(x)
 
         # Add input tensor as an additional feature
@@ -413,7 +441,14 @@ class DISTS(ContentLoss):
         return features
 
     def replace_pooling(self, module: torch.nn.Module) -> torch.nn.Module:
-        r"""Turn All MaxPool layers into L2Pool"""
+        r"""Turn All MaxPool layers into L2Pool
+
+        Args:
+            module: Module to change MaxPool into L2Pool
+
+        Returns:
+            Module with L2Pool instead of MaxPool
+        """
         module_output = module
         if isinstance(module, torch.nn.MaxPool2d):
             module_output = L2Pool2d(kernel_size=3, stride=2, padding=1)
