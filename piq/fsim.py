@@ -237,7 +237,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     if torch.__version__ >= '1.7.0':
         imagefft = torch.fft.fft(x, 2)
         filters_ifft = torch.fft.ifft(filters, 2).real * math.sqrt(H * W)
-        even_odd = torch.view_as_real(torch.fft.ifft(imagefft * filters.unsqueeze(-1), 2))
+        even_odd = torch.view_as_real(torch.fft.ifft(imagefft * filters, 2))
     else:
         imagefft = torch.rfft(x, 2, onesided=False)
         filters_ifft = torch.ifft(torch.stack([filters, torch.zeros_like(filters)], dim=-1), 2)[..., 0]
