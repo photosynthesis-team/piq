@@ -12,6 +12,10 @@ from typing import Union, Tuple
 import torch
 from torch.nn.modules.loss import _Loss
 from torch.nn.functional import avg_pool2d, interpolate, pad
+if torch.__version__ >= '1.7.0':
+    from torch.fft import rfft, ifft
+else:
+    from torch import rfft, ifft
 
 from piq.functional import ifftshift, gradient_map, scharr_filter, rgb2lmn, rgb2lab, similarity_map, get_meshgrid
 from piq.utils import _validate_input, _reduce
@@ -222,9 +226,9 @@ def sdsp(x: torch.Tensor, data_range: Union[int, float] = 255, omega_0: float = 
     x = interpolate(input=x, size=size_to_use, mode='bilinear', align_corners=False)
 
     x_lab = rgb2lab(x, data_range=255)
-    x_fft = torch.rfft(x_lab, 2, onesided=False)
+    x_fft = rfft(x_lab, 2, onesided=False)
     lg = _log_gabor(size_to_use, omega_0, sigma_f).to(x_fft).view(1, 1, *size_to_use, 1)
-    x_ifft_real = torch.ifft(x_fft * lg, 2)[..., 0]
+    x_ifft_real = ifft(x_fft * lg, 2)[..., 0]
     s_f = x_ifft_real.pow(2).sum(dim=1, keepdim=True).sqrt()
 
     coordinates = torch.stack(get_meshgrid(size_to_use), dim=0).to(x)

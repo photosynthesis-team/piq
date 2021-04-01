@@ -10,6 +10,10 @@ from typing import Union, Tuple
 
 import torch
 from torch.nn.modules.loss import _Loss
+if torch.__version__ >= '1.7.0':
+    from torch.fft import rfft, ifft
+else:
+    from torch import rfft, ifft
 
 from piq.utils import _validate_input, _reduce
 from piq.functional import ifftshift, get_meshgrid, similarity_map, gradient_map, scharr_filter, rgb2yiq
@@ -231,15 +235,15 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     N, _, H, W = x.shape
 
     # Fourier transform
-    imagefft = torch.rfft(x, 2, onesided=False)
+    imagefft = rfft(x, 2, onesided=False)
 
     filters = _construct_filters(x, scales, orientations, min_length, mult, sigma_f, delta_theta, k)
 
     # Note rescaling to match power record ifft2 of filter
-    filters_ifft = torch.ifft(torch.stack([filters, torch.zeros_like(filters)], dim=-1), 2)[..., 0] * math.sqrt(H * W)
+    filters_ifft = ifft(torch.stack([filters, torch.zeros_like(filters)], dim=-1), 2)[..., 0] * math.sqrt(H * W)
     
     # Convolve image with even and odd filters
-    even_odd = torch.ifft(imagefft * filters.unsqueeze(-1), 2).view(N, orientations, scales, H, W, 2)
+    even_odd = ifft(imagefft * filters.unsqueeze(-1), 2).view(N, orientations, scales, H, W, 2)
 
     # Amplitude of even & odd filter response. An = sqrt(real^2 + imag^2)
     an = torch.sqrt(torch.sum(even_odd ** 2, dim=-1))
