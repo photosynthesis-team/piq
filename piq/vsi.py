@@ -266,7 +266,7 @@ def _log_gabor(size: Tuple[int, int], omega_0: float, sigma_f: float) -> torch.T
     xx, yy = get_meshgrid(size)
 
     radius = (xx ** 2 + yy ** 2).sqrt()
-    mask = radius <= 0.5
+    mask = (radius <= 0.5).type(torch.float32)
 
     r = radius * mask
     r = ifftshift(r)
