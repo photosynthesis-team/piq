@@ -49,16 +49,16 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         
     """
     _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
-    
+
     # Rescale to [0, 255] range, because all constant are calculated for this factor
     x = x / float(data_range) * 255
     y = y / float(data_range) * 255
-    
+
     # Apply average pooling
     kernel_size = max(1, round(min(x.shape[-2:]) / 256))
     x = torch.nn.functional.avg_pool2d(x, kernel_size)
     y = torch.nn.functional.avg_pool2d(y, kernel_size)
-        
+
     num_channels = x.size(1)
 
     # Convert RGB to YIQ color space https://en.wikipedia.org/wiki/YIQ
@@ -68,7 +68,7 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
 
         x_lum = x_yiq[:, : 1]
         y_lum = y_yiq[:, : 1]
-        
+
         x_i = x_yiq[:, 1:2]
         y_i = y_yiq[:, 1:2]
         x_q = x_yiq[:, 2:]
@@ -89,21 +89,21 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         min_length=min_length, mult=mult, sigma_f=sigma_f,
         delta_theta=delta_theta, k=k
     )
-    
+
     # Gradient maps
     kernels = torch.stack([scharr_filter(), scharr_filter().transpose(-1, -2)])
     grad_map_x = gradient_map(x_lum, kernels)
     grad_map_y = gradient_map(y_lum, kernels)
-    
+
     # Constants from the paper
     T1, T2, T3, T4, lmbda = 0.85, 160, 200, 200, 0.03
-    
+
     # Compute FSIM
     PC = similarity_map(pc_x, pc_y, T1)
     GM = similarity_map(grad_map_x, grad_map_y, T2)
     pc_max = torch.where(pc_x > pc_y, pc_x, pc_y)
     score = GM * PC * pc_max
-    
+
     if chromatic:
         assert num_channels == 3, "Chromatic component can be computed only for RGB images!"
         S_I = similarity_map(x_i, y_i, T3)
@@ -113,7 +113,7 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         # score = score * torch.real((S_I * S_Q).to(torch.complex64) ** lmbda)
 
     result = score.sum(dim=[1, 2, 3]) / pc_max.sum(dim=[1, 2, 3])
-    
+
     return _reduce(result, reduction)
 
 
@@ -196,7 +196,7 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
 
     spread = torch.stack(spread)
     log_gabor = torch.stack(log_gabor)
-    
+
     # Multiply, add batch dimension and transfer to correct device.
     filters = (spread.repeat_interleave(scales, dim=0) * log_gabor.repeat(orientations, 1, 1)).unsqueeze(0).to(x)
     return filters
@@ -240,7 +240,8 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
         even_odd = torch.view_as_real(torch.fft.ifft(imagefft * filters.unsqueeze(-1), 2))
     else:
         imagefft = torch.rfft(x, 2, onesided=False)
-        filters_ifft = torch.ifft(torch.stack([filters, torch.zeros_like(filters)], dim=-1), 2)[..., 0] * math.sqrt(H * W)
+        filters_ifft = torch.ifft(torch.stack([filters, torch.zeros_like(filters)], dim=-1), 2)[..., 0]
+        filters_ifft *= math.sqrt(H * W)
         even_odd = torch.ifft(imagefft * filters.unsqueeze(-1), 2).view(N, orientations, scales, H, W, 2)
 
     # Amplitude of even & odd filter response. An = sqrt(real^2 + imag^2)
@@ -253,10 +254,10 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
 
     # Sum of even filter convolution results.
     sum_e = even_odd[..., 0].sum(dim=2, keepdims=True)
-    
+
     # Sum of odd filter convolution results.
     sum_o = even_odd[..., 1].sum(dim=2, keepdims=True)
-    
+
     # Get weighted mean filter response vector, this gives the weighted mean phase angle.
     x_energy = torch.sqrt(sum_e ** 2 + sum_o ** 2) + EPS
 
@@ -273,7 +274,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     odd = even_odd[..., 1]
 
     energy = (even * mean_e + odd * mean_o - torch.abs(even * mean_o - odd * mean_e)).sum(dim=2, keepdim=True)
-    
+
     # Compensate for noise
     # We estimate the noise power from the energy squared response at the
     # smallest scale.  If the noise is Gaussian the energy squared will have a
@@ -281,7 +282,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     # as this is a robust statistic.  From this we estimate the mean.
     # The estimate of noise power is obtained by dividing the mean squared
     # energy value by the mean squared filter value
-    
+
     abs_eo = torch.sqrt(torch.sum(even_odd[:, :, :1, ...] ** 2, dim=-1)).reshape(N, orientations, 1, 1, H * W)
     median_e2n = torch.median(abs_eo ** 2, dim=-1, keepdim=True).values
 
@@ -289,17 +290,17 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
 
     # Estimate of noise power.
     noise_power = mean_e2n / em_n
-    
+
     # Now estimate the total energy^2 due to noise
     # Estimate for sum(An^2) + sum(Ai.*Aj.*(cphi.*cphj + sphi.*sphj))
     filters_ifft = filters_ifft.view(1, orientations, scales, H, W)
-    
+
     sum_an2 = torch.sum(filters_ifft ** 2, dim=-3, keepdim=True)
-    
+
     sum_ai_aj = torch.zeros(N, orientations, 1, H, W).to(x)
     for s in range(scales - 1):
         sum_ai_aj = sum_ai_aj + (filters_ifft[:, :, s: s + 1] * filters_ifft[:, :, s + 1:]).sum(dim=-3, keepdim=True)
-            
+
     sum_an2 = torch.sum(sum_an2, dim=[-1, -2], keepdim=True)
     sum_ai_aj = torch.sum(sum_ai_aj, dim=[-1, -2], keepdim=True)
 
@@ -354,7 +355,7 @@ def _lowpassfilter(size: Tuple[int, int], cutoff: float, n: int) -> torch.Tensor
     assert n > 1 and int(n) == n, "n must be an integer >= 1"
 
     grid_x, grid_y = get_meshgrid(size)
-    
+
     # A matrix with every pixel = radius relative to centre.
     radius = torch.sqrt(grid_x ** 2 + grid_y ** 2)
 
@@ -396,6 +397,7 @@ class FSIMLoss(_Loss):
         .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
            https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
     """
+
     def __init__(self, reduction: str = 'mean', data_range: Union[int, float] = 1., chromatic: bool = True,
                  scales: int = 4, orientations: int = 4, min_length: int = 6, mult: int = 2,
                  sigma_f: float = 0.55, delta_theta: float = 1.2, k: float = 2.0) -> None:
