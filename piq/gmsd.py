@@ -42,8 +42,8 @@ def gmsd(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
 
     # Rescale
-    x = x / data_range
-    y = y / data_range
+    x = x / float(data_range)
+    y = y / float(data_range)
 
     num_channels = x.size(1)
     if num_channels == 3:
@@ -176,8 +176,8 @@ def multi_scale_gmsd(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, fl
     _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
     
     # Rescale
-    x = x / data_range * 255
-    y = y / data_range * 255
+    x = x / float(data_range) * 255
+    y = y / float(data_range) * 255
     
     # Values from the paper
     if scale_weights is None:

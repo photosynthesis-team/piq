@@ -53,7 +53,7 @@ def brisque(x: torch.Tensor,
     assert kernel_size % 2 == 1, f'Kernel size must be odd, got [{kernel_size}]'
     _validate_input([x, ], dim_range=(4, 4), data_range=(0, data_range))
 
-    x = x / data_range * 255
+    x = x / float(data_range) * 255
 
     if x.size(1) == 3:
         x = rgb2yiq(x)[:, :1]
