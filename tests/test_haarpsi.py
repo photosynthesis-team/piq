@@ -51,8 +51,8 @@ def test_haarpsi_supports_different_data_ranges(
 
     measure_scaled = haarpsi(x_scaled.to(device), y_scaled.to(device), data_range=data_range)
     measure = haarpsi(
-        x_scaled.to(device, dtype=torch.float32) / float(data_range),
-        y_scaled.to(device, dtype=torch.float32) / float(data_range),
+        x_scaled.to(device) / float(data_range),
+        y_scaled.to(device) / float(data_range),
         data_range=1.0
     )
     diff = torch.abs(measure_scaled - measure)

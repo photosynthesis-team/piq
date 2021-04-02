@@ -43,8 +43,8 @@ def vif_p(x: torch.Tensor, y: torch.Tensor, sigma_n_sq: float = 2.0,
     if x.size(-1) < min_size or x.size(-2) < min_size:
         raise ValueError(f'Invalid size of the input images, expected at least {min_size}x{min_size}.')
 
-    x = x.float() / data_range * 255
-    y = y.float() / data_range * 255
+    x = x / float(data_range) * 255
+    y = y / float(data_range) * 255
 
     # Convert RGB image to YCbCr and take luminance: Y = 0.299 R + 0.587 G + 0.114 B
     num_channels = x.size(1)

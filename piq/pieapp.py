@@ -161,8 +161,8 @@ class PieAPP(_Loss):
                           'The input images were converted to RGB by copying the grey channel 3 times.')
 
         self.model.to(device=x.device)
-        x_features, x_weights = self.get_features(x.float())
-        y_features, y_weights = self.get_features(y.float())
+        x_features, x_weights = self.get_features(x)
+        y_features, y_weights = self.get_features(y)
 
         distances, weights = self.model.compute_difference(
             y_features - x_features,
@@ -187,7 +187,7 @@ class PieAPP(_Loss):
             weights
         """
         # Rescale to [0, 255] range on which models was trained
-        x = x / self.data_range * 255
+        x = x / float(self.data_range) * 255
         x_patches = crop_patches(x, size=64, stride=self.stride)
 
         with torch.autograd.set_grad_enabled(self.enable_grad):

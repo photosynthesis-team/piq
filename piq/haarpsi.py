@@ -53,8 +53,8 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
                          f'Kernel size: {kernel_size}')
 
     # Rescale images
-    x = x.float() / data_range * 255
-    y = y.float() / data_range * 255
+    x = x / float(data_range) * 255
+    y = y / float(data_range) * 255
 
     num_channels = x.size(1)
     # Convert RGB to YIQ color space https://en.wikipedia.org/wiki/YIQ
