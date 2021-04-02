@@ -1,6 +1,5 @@
 from typing import Tuple, List, Optional
 import torch
-import re
 
 
 def _validate_input(
