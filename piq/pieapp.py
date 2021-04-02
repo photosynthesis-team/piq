@@ -187,7 +187,7 @@ class PieAPP(_Loss):
             weights
         """
         # Rescale to [0, 255] range on which models was trained
-        x = x / self.data_range * 255
+        x = x / float(self.data_range) * 255
         x_patches = crop_patches(x, size=64, stride=self.stride)
 
         with torch.autograd.set_grad_enabled(self.enable_grad):

@@ -31,8 +31,8 @@ def psnr(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1.0,
     # Constant for numerical stability
     EPS = 1e-8
 
-    x = x / data_range
-    y = y / data_range
+    x = x / float(data_range)
+    y = y / float(data_range)
 
     if (x.size(1) == 3) and convert_to_greyscale:
         # Convert RGB image to YCbCr and take luminance: Y = 0.299 R + 0.587 G + 0.114 B
