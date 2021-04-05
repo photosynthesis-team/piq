@@ -130,7 +130,7 @@ class MDSILoss(_Loss):
         q: coefficient to adjusts the emphasis of the values in image and MCT
         o: the power pooling applied on the final value of the deviation
 
-    Examples::
+    Examples:
 
         >>> loss = MDSILoss(data_range=1.)
         >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)

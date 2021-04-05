@@ -14,7 +14,7 @@ from torch.nn.modules.loss import _Loss
 from torch.nn.functional import avg_pool2d, interpolate, pad
 
 from piq.functional import ifftshift, gradient_map, scharr_filter, rgb2lmn, rgb2lab, similarity_map, get_meshgrid
-from piq.utils import _validate_input, _reduce
+from piq.utils import _validate_input, _reduce, _version_tuple
 
 
 def vsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean', data_range: Union[int, float] = 1.,
@@ -224,7 +224,8 @@ def sdsp(x: torch.Tensor, data_range: Union[int, float] = 255, omega_0: float = 
     x_lab = rgb2lab(x, data_range=255)
 
     lg = _log_gabor(size_to_use, omega_0, sigma_f).to(x).view(1, 1, *size_to_use)
-    if torch.__version__ >= '1.7.0':
+    recommended_torch_version = '1.7.0'
+    if _version_tuple(torch.__version__) >= _version_tuple(recommended_torch_version):
         x_fft = torch.fft.fft2(x_lab)
         x_ifft_real = torch.fft.ifft2(x_fft * lg).real
     else:
