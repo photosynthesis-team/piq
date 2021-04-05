@@ -288,7 +288,7 @@ def _msid_descriptor(x: np.ndarray, ts: np.ndarray = np.logspace(-1, 1, 256), k:
     recommended_scipy_version = "1.3.3"
     if _version_tuple(scipy.__version__) < _version_tuple(recommended_scipy_version):
         warn(f'Scipy of version {scipy.__version__} is used while version >= {recommended_scipy_version} is '
-             f'recommended. Consider updating scipy to avoid potential problems.')
+             f'recommended. Consider updating scipy to avoid potential long compute time with older versions.')
 
     Lx = _build_graph(x, k, normalized_laplacian)
 
