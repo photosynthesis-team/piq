@@ -85,7 +85,7 @@ def lmrk_table(witnesses: np.ndarray, landmarks: np.ndarray) -> Tuple[np.ndarray
     recommended_scipy_version = "1.3.3"
     if _version_tuple(scipy.__version__) < _version_tuple(recommended_scipy_version):
         warn(f'Scipy of version {scipy.__version__} is used while version >= {recommended_scipy_version} is '
-             f'recommended. Consider updating scipy to avoid potential problems.')
+             f'recommended. Consider updating scipy to avoid potential long compute time with older versions.')
 
     from scipy.spatial.distance import cdist
 

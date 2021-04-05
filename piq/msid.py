@@ -2,14 +2,13 @@ r"""Implemetation of Multi-scale Evaluation metric, based on paper
  https://arxiv.org/abs/1905.11141 and author's repository https://github.com/xgfs/msid
 """
 from typing import List, Tuple, Optional
+from warnings import warn
 
 import torch
 import numpy as np
 
-from scipy.sparse import lil_matrix, diags, eye
-
 from piq.base import BaseFeatureMetric
-from piq.utils import _validate_input
+from piq.utils import _validate_input, _version_tuple
 
 
 EPSILON = 1e-6
@@ -27,6 +26,7 @@ def _np_euc_cdist(data: np.ndarray) -> np.ndarray:
 
 def _construct_graph_sparse(data: np.ndarray, k: int) -> np.ndarray:
     n = len(data)
+    from scipy.sparse import lil_matrix
     spmat = lil_matrix((n, n))
     dd = np.sum(data * data, axis=1)
 
@@ -40,6 +40,7 @@ def _construct_graph_sparse(data: np.ndarray, k: int) -> np.ndarray:
 
 
 def _laplacian_sparse(matrix: np.ndarray, normalized: bool = True) -> np.ndarray:
+    from scipy.sparse import diags, eye
     row_sum = matrix.sum(1).A1
     if not normalized:
         return diags(row_sum) - matrix
@@ -278,6 +279,17 @@ def _msid_descriptor(x: np.ndarray, ts: np.ndarray = np.logspace(-1, 1, 256), k:
     Returns:
         normed_msidx: normalized msid descriptor
     """
+    try:
+        import scipy
+    except ImportError:
+        raise ImportError("Scipy is required for computation of the Geometry Score but not installed. "
+                          "Please install scipy using the following command: pip install --user scipy")
+
+    recommended_scipy_version = "1.3.3"
+    if _version_tuple(scipy.__version__) < _version_tuple(recommended_scipy_version):
+        warn(f'Scipy of version {scipy.__version__} is used while version >= {recommended_scipy_version} is '
+             f'recommended. Consider updating scipy to avoid potential long compute time with older versions.')
+
     Lx = _build_graph(x, k, normalized_laplacian)
 
     nx = Lx.shape[0]
