@@ -7,7 +7,7 @@ Credits:
     https://github.com/clovaai/generative-evaluation-prdc/blob/master/prdc/prdc.py
 """
 
-from typing import Tuple
+from typing import Tuple, Optional
 import torch
 
 from piq.base import BaseFeatureMetric
