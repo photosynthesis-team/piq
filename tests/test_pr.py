@@ -25,13 +25,6 @@ def features_x_constant() -> torch.Tensor:
     return torch.ones(1000, 20)
 
 
-def test_initialization() -> None:
-    try:
-        PR()
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred: {e}")
-
-
 def test_forward(features_y_normal, features_x_normal, ) -> None:
         metric = PR()
         metric(features_y_normal, features_x_normal)
