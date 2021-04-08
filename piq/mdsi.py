@@ -41,7 +41,7 @@ def mdsi(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1., r
         o: the power pooling applied on the final value of the deviation
 
     Returns:
-        The batch of Mean Deviation Similarity Index (MDSI) score reduced accordingly
+        Mean Deviation Similarity Index (MDSI) between 2 tensors.
 
     References:
         Nafchi, Hossein Ziaei and Shahkolaei, Atena and Hedjam, Rachid and Cheriet, Mohamed (2016).

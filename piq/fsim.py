@@ -45,8 +45,9 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         Can be bigger than 1 for predicted :math:`x` images with higher contrast than the original ones.
 
     References:
-        Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
-        https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
+        L. Zhang, L. Zhang, X. Mou and D. Zhang, "FSIM: A Feature Similarity Index for Image Quality Assessment,"
+        IEEE Transactions on Image Processing, vol. 20, no. 8, pp. 2378-2386, Aug. 2011, doi: 10.1109/TIP.2011.2109730.
+        https://ieeexplore.ieee.org/document/5705575
 
     Note:
         This implementation is based on the original MATLAB code.
@@ -229,7 +230,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
             congruency values get penalized.
 
     Returns:
-        PCmap Tensor with shape BxHxW
+        Phase Congruency map with shape :math:`(N, H, W)`
 
     """
     EPS = torch.finfo(x.dtype).eps
@@ -399,8 +400,9 @@ class FSIMLoss(_Loss):
         >>> output.backward()
 
     References:
-        Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
-        https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
+        L. Zhang, L. Zhang, X. Mou and D. Zhang, "FSIM: A Feature Similarity Index for Image Quality Assessment,"
+        IEEE Transactions on Image Processing, vol. 20, no. 8, pp. 2378-2386, Aug. 2011, doi: 10.1109/TIP.2011.2109730.
+        https://ieeexplore.ieee.org/document/5705575
     """
 
     def __init__(self, reduction: str = 'mean', data_range: Union[int, float] = 1., chromatic: bool = True,

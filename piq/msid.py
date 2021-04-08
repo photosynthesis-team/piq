@@ -307,7 +307,7 @@ class MSID(BaseFeatureMetric):
     number of samples or different dimensionalities.
 
     Args:
-        ts: Temperature values.
+        ts: Temperature values. If ``None``, the default value ``torch.logspace(-1, 1, 256)`` is used.
         k: Number of neighbours for graph construction.
         m: Lanczos steps in SLQ.
         niters: Number of starting random vectors for SLQ.
@@ -332,10 +332,13 @@ class MSID(BaseFeatureMetric):
         https://arxiv.org/abs/1905.11141
     """
 
-    def __init__(self, ts: torch.Tensor = torch.logspace(-1, 1, 256), k: int = 5, m: int = 10, niters: int = 100,
+    def __init__(self, ts: torch.Tensor = None, k: int = 5, m: int = 10, niters: int = 100,
                  rademacher: bool = False, normalized_laplacian: bool = True, normalize: str = 'empty',
                  msid_mode: str = "max") -> None:
         super(MSID, self).__init__()
+
+        if ts is None:
+            ts = torch.logspace(-1, 1, 256)
 
         self.ts = ts.numpy()  # MSID works only with Numpy tensors
         self.k = k

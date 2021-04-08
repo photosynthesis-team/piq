@@ -185,7 +185,7 @@ class MultiScaleSSIMLoss(_Loss):
             y: A target tensor. Shape :math:`(N, C, H, W)` or :math:`(N, C, H, W, 2)`.
 
         Returns:
-            Value of MS-SSIM loss to be minimized, i.e. ``1-ms_ssim`` in [0, 1] range. In case of 5D tensor,
+            Value of MS-SSIM loss to be minimized, i.e. ``1 - ms_ssim`` in [0, 1] range. In case of 5D tensor,
             complex value is returned as a tensor of size 2.
         """
         score = multi_scale_ssim(x=x, y=y, kernel_size=self.kernel_size, kernel_sigma=self.kernel_sigma,

@@ -46,11 +46,9 @@ def vsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean', data_range: U
         Index of similarity between two images. Usually in [0, 1] range.
 
     References:
-        Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P. (2004).
-        Image quality assessment: From error visibility to structural similarity.
-        IEEE Transactions on Image Processing, 13, 600-612.
-        https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
-        DOI:`10.1109/TIP.2003.819861`
+        L. Zhang, Y. Shen and H. Li, "VSI: A Visual Saliency-Induced Index for Perceptual Image Quality Assessment,"
+        IEEE Transactions on Image Processing, vol. 23, no. 10, pp. 4270-4281, Oct. 2014, doi: 10.1109/TIP.2014.2346028
+        https://ieeexplore.ieee.org/document/6873260
 
     Note:
         The original method supports only RGB image.
@@ -154,11 +152,9 @@ class VSILoss(_Loss):
         >>> output.backward()
 
     References:
-        Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P. (2004).
-        Image quality assessment: From error visibility to structural similarity.
-        IEEE Transactions on Image Processing, 13, 600-612.
-        https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
-        DOI:`10.1109/TIP.2003.819861`
+        L. Zhang, Y. Shen and H. Li, "VSI: A Visual Saliency-Induced Index for Perceptual Image Quality Assessment,"
+        IEEE Transactions on Image Processing, vol. 23, no. 10, pp. 4270-4281, Oct. 2014, doi: 10.1109/TIP.2014.2346028
+        https://ieeexplore.ieee.org/document/6873260
     """
 
     def __init__(self, reduction: str = 'mean', c1: float = 1.27, c2: float = 386., c3: float = 130.,

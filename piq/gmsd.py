@@ -170,8 +170,8 @@ def multi_scale_gmsd(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, fl
         Value of MS-GMSD in [0, 1] range.
 
     References:
-        Wufeng Xue et al. Gradient Magnitude Similarity Deviation (2013)
-        https://arxiv.org/pdf/1308.3052.pdf
+        Bo Zhang et al. Gradient Magnitude Similarity Deviation on Multiple Scales (2017).
+        http://www.cse.ust.hk/~psander/docs/gradsim.pdf
     """
     _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
     
@@ -263,7 +263,7 @@ class MultiScaleGMSDLoss(_Loss):
         >>> output.backward()
 
     References:
-        GRADIENT MAGNITUDE SIMILARITY DEVIATION ON MULTIPLE SCALES (2017)
+        Bo Zhang et al. Gradient Magnitude Similarity Deviation on Multiple Scales (2017).
         http://www.cse.ust.hk/~psander/docs/gradsim.pdf
     """
 
