@@ -14,7 +14,7 @@ from piq.base import BaseFeatureMetric
 from piq.utils import _validate_input
 
 
-def _compute_pairwise_distance(data_x: torch.Tensor, data_y: torch.Tensor = None) -> torch.Tensor:
+def _compute_pairwise_distance(data_x: torch.Tensor, data_y: Optional[torch.Tensor] = None) -> torch.Tensor:
     """Compute Euclidean distance between x and y
     Args:
         data_x: Tensor of shape (N, feature_dim)
