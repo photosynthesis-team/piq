@@ -33,11 +33,8 @@ def test_initialization() -> None:
 
 
 def test_forward(features_y_normal, features_x_normal, ) -> None:
-    try:
         metric = PR()
         metric(features_y_normal, features_x_normal)
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred: {e}")
 
 
 def test_fails_for_different_dimensions(features_y_normal: torch.Tensor) -> None:
