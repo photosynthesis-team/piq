@@ -114,10 +114,9 @@ Multi-Scale Intrinsic Distance (MSID)
     :members:
 
 Improved Precision and Recall (P&R)
-'''''''''''''''''''''''''''''''
+'''''''''''''''''''''''''''''''''''
 .. autoclass:: piq.PR
     :members:
-
 
 
 
