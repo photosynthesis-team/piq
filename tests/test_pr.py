@@ -26,8 +26,8 @@ def features_x_constant() -> torch.Tensor:
 
 
 def test_forward(features_y_normal, features_x_normal, ) -> None:
-        metric = PR()
-        metric(features_y_normal, features_x_normal)
+    metric = PR()
+    metric(features_y_normal, features_x_normal)
 
 
 def test_fails_for_different_dimensions(features_y_normal: torch.Tensor) -> None:
