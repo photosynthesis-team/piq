@@ -21,7 +21,6 @@ def mdsi(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1., r
          c1: float = 140., c2: float = 55., c3: float = 550., combination: str = 'sum', alpha: float = 0.6,
          beta: float = 0.1, gamma: float = 0.2, rho: float = 1., q: float = 0.25, o: float = 0.25):
     r"""Compute Mean Deviation Similarity Index (MDSI) for a batch of images.
-
     Supports greyscale and colour images with RGB channel order.
 
     Args:
@@ -33,7 +32,7 @@ def mdsi(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1., r
         c1: coefficient to calculate gradient similarity. Default: 140.
         c2: coefficient to calculate gradient similarity. Default: 55.
         c3: coefficient to calculate chromaticity similarity. Default: 550.
-        combination: mode to combine gradient similarity and chromaticity similarity: "sum"|"mult".
+        combination: mode to combine gradient similarity and chromaticity similarity: ``'sum'`` | ``'mult'``.
         alpha: coefficient to combine gradient similarity and chromaticity similarity using summation.
         beta: power to combine gradient similarity with chromaticity similarity using multiplication.
         gamma: to combine gradient similarity and chromaticity similarity using multiplication.
@@ -42,10 +41,22 @@ def mdsi(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1., r
         o: the power pooling applied on the final value of the deviation
 
     Returns:
-        torch.Tensor: the batch of Mean Deviation Similarity Index (MDSI) score reduced accordingly
+        Mean Deviation Similarity Index (MDSI) between 2 tensors.
+
+    References:
+        Nafchi, Hossein Ziaei and Shahkolaei, Atena and Hedjam, Rachid and Cheriet, Mohamed (2016).
+        Mean deviation similarity index: Efficient and reliable full-reference image quality evaluator.
+        IEEE Ieee Access, 4, 5579--5590.
+        https://arxiv.org/pdf/1608.07433.pdf,
+        DOI:`10.1109/ACCESS.2016.2604042`
 
     Note:
-        The ratio between constants is usually equal c3 = 4c1 = 10c2
+        The ratio between constants is usually equal :math:`c_3 = 4c_1 = 10c_2`
+
+    Note:
+        Both inputs are supposed to have RGB channels order in accordance with the original approach.
+        Nevertheless, the method supports greyscale images, which are converted to RGB by copying the grey
+        channel 3 times.
     """
     _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
 
@@ -112,7 +123,6 @@ def mdsi(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1., r
 class MDSILoss(_Loss):
     r"""Creates a criterion that measures Mean Deviation Similarity Index (MDSI) error between the prediction :math:`x`
     and target :math:`y`.
-
     Supports greyscale and colour images with RGB channel order.
 
     Args:
@@ -122,7 +132,7 @@ class MDSILoss(_Loss):
         c1: coefficient to calculate gradient similarity. Default: 140.
         c2: coefficient to calculate gradient similarity. Default: 55.
         c3: coefficient to calculate chromaticity similarity. Default: 550.
-        combination: mode to combine gradient similarity and chromaticity similarity: "sum"|"mult".
+        combination: mode to combine gradient similarity and chromaticity similarity: ``'sum'`` | ``'mult'``.
         alpha: coefficient to combine gradient similarity and chromaticity similarity using summation.
         beta: power to combine gradient similarity with chromaticity similarity using multiplication.
         gamma: to combine gradient similarity and chromaticity similarity using multiplication.
@@ -131,7 +141,6 @@ class MDSILoss(_Loss):
         o: the power pooling applied on the final value of the deviation
 
     Examples:
-
         >>> loss = MDSILoss(data_range=1.)
         >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
         >>> y = torch.rand(3, 3, 256, 256)
@@ -139,12 +148,14 @@ class MDSILoss(_Loss):
         >>> output.backward()
 
     References:
-        .. [1] Nafchi, Hossein Ziaei and Shahkolaei, Atena and Hedjam, Rachid and Cheriet, Mohamed
-           (2016). Mean deviation similarity index: Efficient and reliable full-reference image quality evaluator.
-           IEEE Ieee Access,
-           4, 5579--5590.
-           https://ieeexplore.ieee.org/abstract/document/7556976/,
-           DOI:`10.1109/ACCESS.2016.2604042`
+        Nafchi, Hossein Ziaei and Shahkolaei, Atena and Hedjam, Rachid and Cheriet, Mohamed (2016).
+        Mean deviation similarity index: Efficient and reliable full-reference image quality evaluator.
+        IEEE Ieee Access, 4, 5579--5590.
+        https://arxiv.org/pdf/1608.07433.pdf
+        DOI:`10.1109/ACCESS.2016.2604042`
+
+    Note:
+        The ratio between constants is usually equal :math:`c_3 = 4c_1 = 10c_2`
     """
 
     def __init__(self, data_range: Union[int, float] = 1., reduction: str = 'mean',
@@ -169,7 +180,7 @@ class MDSILoss(_Loss):
             y: A target tensor. Shape :math:`(N, C, H, W)`.
 
         Returns:
-            Value of MDSI loss to be minimized. 0 <= MDSI loss <= 1.
+            Value of MDSI loss to be minimized in [0, 1] range.
 
         Note:
             Both inputs are supposed to have RGB channels order in accordance with the original approach.

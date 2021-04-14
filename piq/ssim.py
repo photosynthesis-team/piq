@@ -21,8 +21,8 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
          data_range: Union[int, float] = 1., reduction: str = 'mean', full: bool = False,
          downsample: bool = True, k1: float = 0.01, k2: float = 0.03) -> List[torch.Tensor]:
     r"""Interface of Structural Similarity (SSIM) index.
-    Inputs supposed to be in range [0, data_range].
-    To match performance with skimage and tensorflow set `downsample` = True.
+    Inputs supposed to be in range ``[0, data_range]``.
+    To match performance with skimage and tensorflow set ``'downsample' = True``.
 
     Args:
         x: An input tensor. Shape :math:`(N, C, H, W)` or :math:`(N, C, H, W, 2)`.
@@ -34,8 +34,8 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         full: Return cs map or not.
         downsample: Perform average pool before SSIM computation. Default: True
-        k1: Algorithm parameter, K1 (small constant, see [1]).
-        k2: Algorithm parameter, K2 (small constant, see [1]).
+        k1: Algorithm parameter, K1 (small constant).
+        k2: Algorithm parameter, K2 (small constant).
             Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
 
     Returns:
@@ -43,12 +43,11 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
         as a tensor of size 2.
 
     References:
-        .. [1] Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P.
-           (2004). Image quality assessment: From error visibility to
-           structural similarity. IEEE Transactions on Image Processing,
-           13, 600-612.
-           https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
-           DOI: `10.1109/TIP.2003.819861`
+        Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P. (2004).
+        Image quality assessment: From error visibility to structural similarity.
+        IEEE Transactions on Image Processing, 13, 600-612.
+        https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
+        DOI: `10.1109/TIP.2003.819861`
     """
     assert kernel_size % 2 == 1, f'Kernel size must be odd, got [{kernel_size}]'
     _validate_input([x, y], dim_range=(4, 5), data_range=(0, data_range))
@@ -84,7 +83,7 @@ class SSIMLoss(_Loss):
     r"""Creates a criterion that measures the structural similarity index error between
     each element in the input :math:`x` and target :math:`y`.
 
-    To match performance with skimage and tensorflow set `downsample` = True.
+    To match performance with skimage and tensorflow set ``'downsample' = True``.
 
     The unreduced (i.e. with :attr:`reduction` set to ``'none'``) loss can be described as:
 
@@ -121,7 +120,7 @@ class SSIMLoss(_Loss):
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         data_range: Maximum value range of images (usually 1.0 or 255).
 
-    Examples::
+    Examples:
         >>> loss = SSIMLoss()
         >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
         >>> y = torch.rand(3, 3, 256, 256)
@@ -129,12 +128,11 @@ class SSIMLoss(_Loss):
         >>> output.backward()
 
     References:
-        .. [1] Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P.
-           (2004). Image quality assessment: From error visibility to
-           structural similarity. IEEE Transactions on Image Processing,
-           13, 600-612.
-           https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
-           DOI:`10.1109/TIP.2003.819861`
+        Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P. (2004).
+        Image quality assessment: From error visibility to structural similarity.
+        IEEE Transactions on Image Processing, 13, 600-612.
+        https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
+        DOI:`10.1109/TIP.2003.819861`
     """
     __constants__ = ['kernel_size', 'k1', 'k2', 'sigma', 'kernel', 'reduction']
 
@@ -165,7 +163,7 @@ class SSIMLoss(_Loss):
             y: A target tensor. Shape :math:`(N, C, H, W)` or :math:`(N, C, H, W, 2)`.
 
         Returns:
-            Value of SSIM loss to be minimized, i.e 1 - `ssim`. 0 <= SSIM loss <= 1. In case of 5D input tensors,
+            Value of SSIM loss to be minimized, i.e ``1 - ssim`` in [0, 1] range. In case of 5D input tensors,
             complex value is returned as a tensor of size 2.
         """
 

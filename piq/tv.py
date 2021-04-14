@@ -12,15 +12,17 @@ def total_variation(x: torch.Tensor, reduction: str = 'mean', norm_type: str = '
 
     Args:
         x: Tensor. Shape :math:`(N, C, H, W)`.
-         reduction: Specifies the reduction type:
+        reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
-        norm_type: {'l1', 'l2', 'l2_squared'}, defines which type of norm to implement, isotropic  or anisotropic.
+        norm_type: ``'l1'`` | ``'l2'`` | ``'l2_squared'``,
+            defines which type of norm to implement, isotropic  or anisotropic.
 
     Returns:
-        score : Total variation of a given tensor
+        Total variation of a given tensor
 
     References:
         https://www.wikiwand.com/en/Total_variation_denoising
+
         https://remi.flamary.com/demos/proxtv.html
     """
     _validate_input([x, ], dim_range=(4, 4), data_range=(0, -1))
@@ -63,11 +65,11 @@ class TVLoss(_Loss):
     where :math:`N` is the batch size, `C` is the channel size.
 
     Args:
-        norm_type: one of {'l1', 'l2', 'l2_squared'}
-         reduction: Specifies the reduction type:
+        norm_type: one of ``'l1'`` | ``'l2'`` | ``'l2_squared'``
+        reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
 
-    Examples::
+    Examples:
 
         >>> loss = TVLoss()
         >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
@@ -76,6 +78,7 @@ class TVLoss(_Loss):
 
     References:
         https://www.wikiwand.com/en/Total_variation_denoising
+
         https://remi.flamary.com/demos/proxtv.html
     """
     def __init__(self, norm_type: str = 'l2', reduction: str = 'mean'):

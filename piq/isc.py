@@ -24,14 +24,17 @@ def inception_score(features: torch.Tensor, num_splits: int = 10):
 
     Args:
         features (torch.Tensor): Low-dimension representation of image set. Shape (N_samples, encoder_dim).
-        num_splits: Number of parts to devide features. IS is computed for them separatly and results are then averaged.
+        num_splits: Number of parts to divide features. Inception Score is computed for them separately and
+            results are then averaged.
 
     Returns:
-        score, variance:
+        score
+
+        variance
 
     References:
-        .. [1] "A Note on the Inception Score"
-           https://arxiv.org/pdf/1801.01973.pdf
+        "A Note on the Inception Score"
+        https://arxiv.org/pdf/1801.01973.pdf
 
     """
     assert len(features.shape) == 2, \
@@ -63,25 +66,27 @@ def inception_score(features: torch.Tensor, num_splits: int = 10):
 class IS(BaseFeatureMetric):
     r"""Creates a criterion that measures difference of Inception Score between two datasets.
 
-    IS is computed separately for predicted (x) and target (y) features and expects raw InceptionV3 model
+    IS is computed separately for predicted :math:`x` and target :math:`y` features and expects raw InceptionV3 model
     logits as inputs.
 
     Args:
-            x_features: Samples from data distribution. Shape :math:`(N_x, D)`
-            y_features: Samples from data distribution. Shape :math:`(N_y, D)`
+        num_splits: Number of parts to divide features.
+            IS is computed for them separately and results are then averaged.
+        distance: How to measure distance between scores: ``'l1'`` | ``'l2'``. Default: ``'l1'``.
 
-    Returns:
-        distance(x_score, y_score): L1 or L2 distance between scores.
+    Examples:
+        >>> loss = IS()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
 
     References:
-        .. [1] https://arxiv.org/pdf/1801.01973.pdf
+        "A Note on the Inception Score" https://arxiv.org/pdf/1801.01973.pdf
     """
     def __init__(self, num_splits: int = 10, distance: str = 'l1') -> None:
         r"""
-        Args:
-            num_splits: Number of parts to divide features.
-                IS is computed for them separately and results are then averaged.
-            distance: How to measure distance between scores. One of {`l1`, `l2`}. Default: `l1`.
+
         """
         super(IS, self).__init__()
         self.num_splits = num_splits
@@ -97,7 +102,7 @@ class IS(BaseFeatureMetric):
             y_features: Samples from data distribution. Shape :math:`(N_y, D)`
 
         Returns:
-            diff: L1 or L2 distance between scores for datasets :math:`x` and :math:`y`.
+            L1 or L2 distance between scores for datasets :math:`x` and :math:`y`.
         """
         _validate_input([x_features, y_features], dim_range=(2, 2), size_range=(0, 2))
         x_is, _ = inception_score(x_features, num_splits=self.num_splits)

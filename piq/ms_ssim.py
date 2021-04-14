@@ -22,8 +22,8 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
                      scale_weights: Optional[torch.Tensor] = None,
                      k1: float = 0.01, k2: float = 0.03) -> torch.Tensor:
     r""" Interface of Multi-scale Structural Similarity (MS-SSIM) index.
-    Inputs supposed to be in range [0, data_range] with RGB channels order for colour images.
-    The size of the image should be at least (kernel_size - 1) * 2 ** (levels - 1) + 1.
+    Inputs supposed to be in range ``[0, data_range]`` with RGB channels order for colour images.
+
     Args:
         x: An input tensor. Shape :math:`(N, C, H, W)` or :math:`(N, C, H, W, 2)`.
         y: A target tensor. Shape :math:`(N, C, H, W)` or :math:`(N, C, H, W, 2)`.
@@ -33,26 +33,29 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
         reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         scale_weights: Weights for different scales.
-            If None, default weights from the paper [1] will be used.
+            If ``None``, default weights from the paper will be used.
             Default weights: (0.0448, 0.2856, 0.3001, 0.2363, 0.1333).
-        k1: Algorithm parameter, K1 (small constant, see [2]).
-        k2: Algorithm parameter, K2 (small constant, see [2]).
+        k1: Algorithm parameter, K1 (small constant).
+        k2: Algorithm parameter, K2 (small constant).
             Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
+
     Returns:
         Value of Multi-scale Structural Similarity (MS-SSIM) index. In case of 5D input tensors,
         complex value is returned as a tensor of size 2.
+
     References:
-        .. [1] Wang, Z., Simoncelli, E. P., Bovik, A. C. (2003).
-           Multi-scale Structural Similarity for Image Quality Assessment.
-           IEEE Asilomar Conference on Signals, Systems and Computers, 37,
-           https://ieeexplore.ieee.org/document/1292216
-           DOI:`10.1109/ACSSC.2003.1292216`
-        .. [2] Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P.
-           (2004). Image quality assessment: From error visibility to
-           structural similarity. IEEE Transactions on Image Processing,
-           13, 600-612.
-           https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
-           DOI: `10.1109/TIP.2003.819861`
+        Wang, Z., Simoncelli, E. P., Bovik, A. C. (2003).
+        Multi-scale Structural Similarity for Image Quality Assessment.
+        IEEE Asilomar Conference on Signals, Systems and Computers, 37,
+        https://ieeexplore.ieee.org/document/1292216 DOI:`10.1109/ACSSC.2003.1292216`
+
+        Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P. (2004).
+        Image quality assessment: From error visibility to structural similarity.
+        IEEE Transactions on Image Processing, 13, 600-612.
+        https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
+        DOI: `10.1109/TIP.2003.819861`
+    Note:
+        The size of the image should be at least ``(kernel_size - 1) * 2 ** (levels - 1) + 1``.
     """
     assert kernel_size % 2 == 1, f'Kernel size must be odd, got [{kernel_size}]'
     _validate_input([x, y], dim_range=(4, 5), data_range=(0, data_range))
@@ -89,22 +92,26 @@ class MultiScaleSSIMLoss(_Loss):
     r"""Creates a criterion that measures the multi-scale structural similarity index error between
     each element in the input :math:`x` and target :math:`y`.
     The unreduced (i.e. with :attr:`reduction` set to ``'none'``) loss can be described as:
+
     .. math::
         MSSIM = \{mssim_1,\dots,mssim_{N \times C}\}, \\
         mssim_{l}(x, y) = \frac{(2 \mu_{x,m} \mu_{y,m} + c_1) }
         {(\mu_{x,m}^2 +\mu_{y,m}^2 + c_1)} \prod_{j=1}^{m - 1}
         \frac{(2 \sigma_{xy,j} + c_2)}{(\sigma_{x,j}^2 +\sigma_{y,j}^2 + c_2)}
+
     where :math:`N` is the batch size, `C` is the channel size, `m` is the scale level (Default: 5).
-    If :attr:`reduction` is not ``'none'``(default ``'mean'``), then:
+    If :attr:`reduction` is not ``'none'`` (default ``'mean'``), then:
+
     .. math::
         MultiscaleSSIMLoss(x, y) =
         \begin{cases}
             \operatorname{mean}(1 - MSSIM), &  \text{if reduction} = \text{'mean';}\\
             \operatorname{sum}(1 - MSSIM),  &  \text{if reduction} = \text{'sum'.}
         \end{cases}
-    The size of the image should be (kernel_size - 1) * 2 ** (levels - 1) + 1.
+
     For colour images channel order is RGB.
     In case of 5D input tensors, complex value is returned as a tensor of size 2.
+
     Args:
         kernel_size: By default, the mean and covariance of a pixel is obtained
             by convolution with given filter_size. Must be an odd value.
@@ -112,29 +119,34 @@ class MultiScaleSSIMLoss(_Loss):
         k1: Coefficient related to c1 in the above equation.
         k2: Coefficient related to c2 in the above equation.
         scale_weights:  Weights for different scales.
-            If None, default weights from the paper [1] will be used.
+            If ``None``, default weights from the paper will be used.
             Default weights: (0.0448, 0.2856, 0.3001, 0.2363, 0.1333).
-        reduction: Specifies the reduction type:
-            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        reduction: Specifies the reduction type: ``'none'`` | ``'mean'`` | ``'sum'``.
+            Default: ``'mean'``
         data_range: Maximum value range of images (usually 1.0 or 255).
-    Examples::
+
+    Examples:
         >>> loss = MultiScaleSSIMLoss()
         >>> input = torch.rand(3, 3, 256, 256, requires_grad=True)
         >>> target = torch.rand(3, 3, 256, 256)
         >>> output = loss(input, target)
         >>> output.backward()
+
     References:
-        .. [1] Wang, Z., Simoncelli, E. P., Bovik, A. C. (2003).
-           Multi-scale Structural Similarity for Image Quality Assessment.
-           IEEE Asilomar Conference on Signals, Systems and Computers, 37,
-           https://ieeexplore.ieee.org/document/1292216
-           DOI:`10.1109/ACSSC.2003.1292216`
-        .. [2] Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P.
-           (2004). Image quality assessment: From error visibility to
-           structural similarity. IEEE Transactions on Image Processing,
-           13, 600-612.
-           https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
-           DOI:`10.1109/TIP.2003.819861`
+        Wang, Z., Simoncelli, E. P., Bovik, A. C. (2003).
+        Multi-scale Structural Similarity for Image Quality Assessment.
+        IEEE Asilomar Conference on Signals, Systems and Computers, 37,
+        https://ieeexplore.ieee.org/document/1292216
+        DOI:`10.1109/ACSSC.2003.1292216`
+
+        Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P. (2004).
+        Image quality assessment: From error visibility to structural similarity.
+        IEEE Transactions on Image Processing, 13, 600-612.
+        https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
+        DOI:`10.1109/TIP.2003.819861`
+
+    Note:
+        The size of the image should be at least ``(kernel_size - 1) * 2 ** (levels - 1) + 1``.
     """
     __constants__ = ['kernel_size', 'k1', 'k2', 'sigma', 'kernel', 'reduction']
 
@@ -166,13 +178,14 @@ class MultiScaleSSIMLoss(_Loss):
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         r"""Computation of Multi-scale Structural Similarity (MS-SSIM) index as a loss function.
-        The size of the image should be at least (kernel_size - 1) * 2 ** (levels - 1) + 1.
         For colour images channel order is RGB.
+
         Args:
             x: An input tensor. Shape :math:`(N, C, H, W)` or :math:`(N, C, H, W, 2)`.
             y: A target tensor. Shape :math:`(N, C, H, W)` or :math:`(N, C, H, W, 2)`.
+
         Returns:
-            Value of MS-SSIM loss to be minimized, i.e. 1-`ms_sim`. 0 <= MS-SSIM loss <= 1. In case of 5D tensor,
+            Value of MS-SSIM loss to be minimized, i.e. ``1 - ms_ssim`` in [0, 1] range. In case of 5D tensor,
             complex value is returned as a tensor of size 2.
         """
         score = multi_scale_ssim(x=x, y=y, kernel_size=self.kernel_size, kernel_sigma=self.kernel_sigma,
