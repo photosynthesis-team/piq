@@ -58,12 +58,13 @@ class PR(BaseFeatureMetric):
     But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
 
     Args:
-        real_features: Samples from data distribution. Shape :math:`(N_x, D)`
-        fake_features: Samples from generated distribution. Shape :math:`(N_y, D)`
-
-    Returns:
-        precision: Scalar value of the precision of image sets features.
-        recall: Scalar value of the recall of image sets features.
+        nearest_k: Nearest neighbor to compute the non-parametric representation. Shape :math:`1`
+        
+    Examples:
+        >>> loss = PR()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> precision, recall = loss(x, y)
 
     References:
         Kynkäänniemi T. et al. (2019).
@@ -90,8 +91,9 @@ class PR(BaseFeatureMetric):
             real_features: Samples from data distribution. Shape :math:`(N_x, D)`
             fake_features: Samples from fake distribution. Shape :math:`(N_x, D)`
         Returns:
-            precision: Scalar value of the precision of the generated images.
-            recall: Scalar value of the recall of the generated images.
+            Scalar value of the precision of the generated images.
+            
+            Scalar value of the recall of the generated images.
         """
         _validate_input([real_features, fake_features], dim_range=(2, 2), size_range=(1, 2))
         real_nearest_neighbour_distances = _compute_nearest_neighbour_distances(real_features, self.nearest_k)
