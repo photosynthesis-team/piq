@@ -39,6 +39,10 @@ Haar Perceptual Similarity Index (HaarPSI)
 ''''''''''''''''''''''''''''''''''''''''''
 .. autofunction:: piq.haarpsi
 
+Mean Deviation Similarity Index (MDSI)
+''''''''''''''''''''''''''''''''''''''
+.. autofunction:: piq.mdsi
+
 No Reference Metrics
 --------------------
 Total Variation
@@ -51,11 +55,6 @@ Blind/Referenceless Image Spatial Quality Evaluator (BRISQUE)
 
 Feature Metrics
 ---------------
-Inseption Score (IS)
+Inception Score (IS)
 ''''''''''''''''''''
 .. autofunction:: piq.inception_score
-
-Multi-Scale Intrinsic Distance(MSID)
-''''''''''''''''''''''''''''''''''''
-.. autofunction:: piq.mdsi
-

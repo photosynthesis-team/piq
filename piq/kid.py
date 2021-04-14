@@ -143,35 +143,30 @@ class KID(BaseFeatureMetric):
     But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
 
     Args:
-        x_features: Samples from data distribution. Shape :math:`(N_x, D)`
-        y_features: Samples from data distribution. Shape :math:`(N_y, D)`
+        degree: Degree of a polynomial functions used in kernels. Default: 3
+        gamma: Kernel parameter. See paper for details
+        coef0: Kernel parameter. See paper for details
+        var_at_m: Kernel variance. Default is `None`
+        average: If `True` recomputes metric `n_subsets` times using `subset_size` elements.
+        n_subsets: Number of repeats. Ignored if `average` is False
+        subset_size: Size of each subset for repeat. Ignored if `average` is False
+        ret_var: Whether to return variance after the distance is computed.
+            This function will return ``Tuple[torch.Tensor, torch.Tensor]`` in this case. Default: False
 
-    Returns:
-        score: Scalar value of the distance between image sets features.
-        variance(Optional[torch.Tensor]): If `ret_var` is True, also returns variance
+    Examples:
+        >>> loss = KID()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
 
-    Reference:
+    References:
         Demystifying MMD GANs https://arxiv.org/abs/1801.01401
     """
 
     def __init__(self, degree: int = 3, gamma: Optional[float] = None, coef0: int = 1, var_at_m: Optional[int] = None,
                  average: bool = False, n_subsets: int = 50, subset_size: Optional[int] = 1000, ret_var: bool = False
                  ) -> None:
-        r"""
-        Creates a criterion that measures Kernel Inception Distance (polynomial MMD) for two datasets of images.
-
-        Args:
-            degree: Degree of a polynomial functions used in kernels. Default: 3
-            gamma: Kernel parameter. See paper for details
-            coef0: Kernel parameter. See paper for details
-            var_at_m: Kernel variance. Default is `None`
-            average: If `True` recomputes metric `n_subsets` times using `subset_size` elements.
-            n_subsets: Number of repeats. Ignored if `average` is False
-            subset_size: Size of each subset for repeat. Ignored if `average` is False
-            ret_var: Whether to return variance after the distance is computed.
-                        This function will return Tuple[torch.Tensor, torch.Tensor] in this case. Default: False
-
-        """
         super().__init__()
 
         self.degree = degree

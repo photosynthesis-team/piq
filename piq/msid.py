@@ -307,34 +307,38 @@ class MSID(BaseFeatureMetric):
     number of samples or different dimensionalities.
 
     Args:
-        x_features: Samples from data distribution. Shape :math:`(N_x, D_x)`
-        y_features: Samples from data distribution. Shape :math:`(N_y, D_y)`
+        ts: Temperature values. If ``None``, the default value ``torch.logspace(-1, 1, 256)`` is used.
+        k: Number of neighbours for graph construction.
+        m: Lanczos steps in SLQ.
+        niters: Number of starting random vectors for SLQ.
+        rademacher: True to use Rademacher distribution,
+            False - standard normal for random vectors in Hutchinson.
+        normalized_laplacian: if True, use normalized Laplacian.
+        normalize: ``'empty'`` for average heat kernel (corresponds to the empty graph normalization of NetLSD),
+            ``'complete'`` for the complete, ``'er'`` for Erdos-Renyi normalization, ``'none'`` for no normalization
+        msid_mode: ``'l2'`` to compute the L2 norm of the distance between `msid1` and `msid2`;
+            ``'max'`` to find the maximum absolute difference between two descriptors over temperature
 
-    Returns:
-        score: Scalar value of the distance between image sets features.
+    Examples:
+        >>> loss = MSID()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
 
-    Reference:
+    References:
+        Tsitsulin, A., Munkhoeva, M., Mottin, D., Karras, P., Bronstein, A., Oseledets, I., & Müller, E. (2019).
+        The shape of data: Intrinsic distance for data distributions.
         https://arxiv.org/abs/1905.11141
     """
 
-    def __init__(self, ts: torch.Tensor = torch.logspace(-1, 1, 256), k: int = 5, m: int = 10, niters: int = 100,
+    def __init__(self, ts: torch.Tensor = None, k: int = 5, m: int = 10, niters: int = 100,
                  rademacher: bool = False, normalized_laplacian: bool = True, normalize: str = 'empty',
                  msid_mode: str = "max") -> None:
-        r"""
-        Args:
-            ts: Temperature values.
-            k: Number of neighbours for graph construction.
-            m: Lanczos steps in SLQ.
-            niters: Number of starting random vectors for SLQ.
-            rademacher: True to use Rademacher distribution,
-                False - standard normal for random vectors in Hutchinson.
-            normalized_laplacian: if True, use normalized Laplacian.
-            normalize: 'empty' for average heat kernel (corresponds to the empty graph normalization of NetLSD),
-                    'complete' for the complete, 'er' for erdos-renyi normalization, 'none' for no normalization
-            msid_mode: 'l2' to compute the l2 norm of the distance between `msid1` and `msid2`;
-                    'max' to find the maximum abosulute difference between two descriptors over temperature
-        """
         super(MSID, self).__init__()
+
+        if ts is None:
+            ts = torch.logspace(-1, 1, 256)
 
         self.ts = ts.numpy()  # MSID works only with Numpy tensors
         self.k = k
@@ -348,23 +352,13 @@ class MSID(BaseFeatureMetric):
     def compute_metric(self, x_features: torch.Tensor, y_features: torch.Tensor) -> torch.Tensor:
 
         r"""Compute MSID score between two sets of samples.
+
         Args:
-            x_features: Samples from data distribution. Shape :math:`(N_x, D)`
-            y_features: Samples from data distribution. Shape :math:`(N_y, D)`
-            ts: Temperature values.
-            k: Number of neighbours for graph construction.
-            m: Lanczos steps in SLQ.
-            niters: Number of starting random vectors for SLQ.
-            rademacher: True to use Rademacher distribution,
-            False - standard normal for random vectors in Hutchinson.
-            msid_mode: 'l2' to compute the l2 norm of the distance between `msid1` and `msid2`;
-            'max' to find the maximum abosulute difference between two descriptors over temperature
-            normalized_laplacian: if True, use normalized Laplacian.
-            normalize: 'empty' for average heat kernel (corresponds to the empty graph normalization of NetLSD),
-            'complete' for the complete, 'er' for erdos-renyi normalization, 'none' for no normalization
+            x_features: Samples from data distribution. Shape :math:`(N_x, D_x)`
+            y_features: Samples from data distribution. Shape :math:`(N_y, D_y)`
 
         Returns:
-            score: Scalar value of the distance between distributions.
+            Scalar value of the distance between distributions.
         """
         _validate_input([x_features, y_features], dim_range=(2, 2), size_range=(1, 2))
         normed_msid_x = _msid_descriptor(

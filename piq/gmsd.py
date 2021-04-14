@@ -33,7 +33,7 @@ def gmsd(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         t: Constant from the reference paper numerical stability of similarity map.
 
     Returns:
-        gmsd : Gradient Magnitude Similarity Deviation between given tensors.
+        Gradient Magnitude Similarity Deviation between given tensors.
 
     References:
         Wufeng Xue et al. Gradient Magnitude Similarity Deviation (2013)
@@ -66,6 +66,7 @@ def _gmsd(x: torch.Tensor, y: torch.Tensor,
           t: float = 170 / (255. ** 2), alpha: float = 0.0) -> torch.Tensor:
     r"""Compute Gradient Magnitude Similarity Deviation
     Supports greyscale images in [0, 1] range.
+
     Args:
         x: Tensor. Shape :math:`(N, 1, H, W)`.
         y: Tensor. Shape :math:`(N, 1, H, W)`.
@@ -102,8 +103,15 @@ class GMSDLoss(_Loss):
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         data_range: Maximum value range of images (usually 1.0 or 255).
         t: Constant from the reference paper numerical stability of similarity map
-            
-    Reference:
+
+    Examples:
+        >>> loss = GMSDLoss()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
+
+    References:
         Wufeng Xue et al. Gradient Magnitude Similarity Deviation (2013)
         https://arxiv.org/pdf/1308.3052.pdf
         
@@ -129,7 +137,7 @@ class GMSDLoss(_Loss):
             y: A target tensor. Shape :math:`(N, C, H, W)`.
 
         Returns:
-            Value of GMSD loss to be minimized. 0 <= GMSD loss <= 1.
+            Value of GMSD loss to be minimized in [0, 1] range.
         """
         return gmsd(x=x, y=y, reduction=self.reduction, data_range=self.data_range, t=self.t)
 
@@ -141,7 +149,7 @@ def multi_scale_gmsd(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, fl
     r"""Computation of Multi scale GMSD.
 
     Supports greyscale and colour images with RGB channel order.
-    The height and width should be at least 2 ** scales + 1.
+    The height and width should be at least ``2 ** scales + 1``.
 
     Args:
         x: An input tensor. Shape :math:`(N, C, H, W)`.
@@ -152,14 +160,18 @@ def multi_scale_gmsd(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, fl
         scale_weights: Weights for different scales. Can contain any number of floating point values.
         chromatic: Flag to use MS-GMSDc algorithm from paper.
             It also evaluates chromatic components of the image. Default: True
-        alpha: Masking coefficient. See [1] for details.
+        alpha: Masking coefficient. See references for details.
         beta1: Algorithm parameter. Weight of chromatic component in the loss.
-        beta2: Algorithm parameter. Small constant, see [1].
-        beta3: Algorithm parameter. Small constant, see [1].
+        beta2: Algorithm parameter. Small constant, see references.
+        beta3: Algorithm parameter. Small constant, see references.
         t: Constant from the reference paper numerical stability of similarity map
 
     Returns:
-        Value of MS-GMSD. 0 <= GMSD loss <= 1.
+        Value of MS-GMSD in [0, 1] range.
+
+    References:
+        Bo Zhang et al. Gradient Magnitude Similarity Deviation on Multiple Scales (2017).
+        http://www.cse.ust.hk/~psander/docs/gradsim.pdf
     """
     _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
     
@@ -239,13 +251,20 @@ class MultiScaleGMSDLoss(_Loss):
         chromatic: Flag to use MS-GMSDc algorithm from paper.
             It also evaluates chromatic components of the image. Default: True
         beta1: Algorithm parameter. Weight of chromatic component in the loss.
-        beta2: Algorithm parameter. Small constant, see [1].
-        beta3: Algorithm parameter. Small constant, see [1].
+        beta2: Algorithm parameter. Small constant, references.
+        beta3: Algorithm parameter. Small constant, references.
         t: Constant from the reference paper numerical stability of similarity map
 
-    Reference:
-        [1] GRADIENT MAGNITUDE SIMILARITY DEVIATION ON MULTIPLE SCALES (2017)
-            http://www.cse.ust.hk/~psander/docs/gradsim.pdf
+    Examples:
+        >>> loss = MultiScaleGMSDLoss()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
+
+    References:
+        Bo Zhang et al. Gradient Magnitude Similarity Deviation on Multiple Scales (2017).
+        http://www.cse.ust.hk/~psander/docs/gradsim.pdf
     """
 
     def __init__(self, reduction: str = 'mean', data_range: Union[int, float] = 1.,
@@ -278,7 +297,7 @@ class MultiScaleGMSDLoss(_Loss):
             y: A target tensor. Shape :math:`(N, C, H, W)`.
 
         Returns:
-            Value of MS-GMSD loss to be minimized. 0 <= MS-GMSD loss <= 1.
+            Value of MS-GMSD loss to be minimized in [0, 1] range.
         """
         return multi_scale_gmsd(x=x, y=y, data_range=self.data_range,
                                 reduction=self.reduction, chromatic=self.chromatic, alpha=self.alpha, beta1=self.beta1,

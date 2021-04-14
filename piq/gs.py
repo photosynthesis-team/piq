@@ -147,39 +147,36 @@ class GS(BaseFeatureMetric):
     Dimensionalities of features should match, otherwise it won't be possible to correctly compute statistics.
 
     Args:
-        x_features: Samples from data distribution. Shape :math:`(N_x, D)`
-        y_features: Samples from data distribution. Shape :math:`(N_y, D)`
+        sample_size: Number of landmarks to use on each iteration.
+            Higher values can give better accuracy, but increase computation cost.
+        num_iters: Number of iterations.
+            Higher values can reduce variance, but increase computation cost.
+        gamma: Parameter determining maximum persistence value. Default is ``1.0 / 128 * N_imgs / 5000``
+        i_max: Upper bound on i in RLT(i, 1, X, L)
+        num_workers: Number of proccess used for GS computation.
 
-    Returns:
-        score: Scalar value of the distance between image sets.
+    Examples:
+        >>> loss = GS()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
 
     References:
-        .. [1] Khrulkov V., Oseledets I. (2018).
-           Geometry score: A method for comparing generative adversarial networks.
-           arXiv preprint, 2018.
-           https://arxiv.org/abs/1802.02664
+        Khrulkov V., Oseledets I. (2018).
+        Geometry score: A method for comparing generative adversarial networks.
+        arXiv preprint, 2018.
+        https://arxiv.org/abs/1802.02664
 
     Note:
-        Computation is heavily CPU dependent, adjust `num_workers` parameter according to your system configuration.
-        GS metric requiers `gudhi` library which is not installed by default.
-        For conda, write: `conda install -c conda-forge gudhi`,
+        Computation is heavily CPU dependent, adjust ``num_workers`` parameter according to your system configuration.
+        GS metric requiers ``gudhi`` library which is not installed by default.
+        For conda, write: ``conda install -c conda-forge gudhi``,
         otherwise follow installation guide: http://gudhi.gforge.inria.fr/python/latest/installation.html
     """
 
     def __init__(self, sample_size: int = 64, num_iters: int = 1000, gamma: Optional[float] = None,
                  i_max: int = 100, num_workers: int = 4) -> None:
-        r"""
-        Args:
-            sample_size: Number of landmarks to use on each iteration.
-                Higher values can give better accuracy, but increase computation cost.
-            num_iters: Number of iterations.
-                Higher values can reduce variance, but increase computation cost.
-            gamma: Parameter determining maximum persistence value. Default is `1.0 / 128 * N_imgs / 5000`
-            i_max: Upper bound on i in RLT(i, 1, X, L)
-            num_workers: Number of proccess used for GS computation.
-
-
-        """
         super().__init__()
         self.sample_size = sample_size
         self.num_iters = num_iters
@@ -195,7 +192,7 @@ class GS(BaseFeatureMetric):
             y_features: Samples from data distribution. Shape :math:`(N_y, D)`
 
         Returns:
-            score: Scalar value of the distance between distributions.
+            Scalar value of the distance between distributions.
         """
         _validate_input([x_features, y_features], dim_range=(2, 2), size_range=(1, 2))
         with Pool(self.num_workers) as p:

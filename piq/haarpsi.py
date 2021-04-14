@@ -22,7 +22,8 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
             data_range: Union[int, float] = 1., scales: int = 3, subsample: bool = True,
             c: float = 30.0, alpha: float = 4.2) -> torch.Tensor:
     r"""Compute Haar Wavelet-Based Perceptual Similarity
-    Inputs supposed to be in range [0, data_range] with RGB channels order for colour images.
+    Inputs supposed to be in range ``[0, data_range]`` with RGB channels order for colour images.
+
     Args:
         x: An input tensor. Shape :math:`(N, C, H, W)`.
         y: A target tensor. Shape :math:`(N, C, H, W)`.
@@ -30,19 +31,20 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         data_range: Maximum value range of images (usually 1.0 or 255).
         scales: Number of Haar wavelets used for image decomposition.
-        subsample: Flag to apply average pooling before HaarPSI computation. See [1] for details.
-        c: Constant from the paper. See [1] for details
-        alpha: Exponent used for similarity maps weightning. See [1] for details
+        subsample: Flag to apply average pooling before HaarPSI computation. See references for details.
+        c: Constant from the paper. See references for details
+        alpha: Exponent used for similarity maps weighting. See references for details
 
     Returns:
-        HaarPSI : Wavelet-Based Perceptual Similarity between two tensors
+        HaarPSI Wavelet-Based Perceptual Similarity between two tensors
     
     References:
-        .. [1] R. Reisenhofer, S. Bosse, G. Kutyniok & T. Wiegand (2017)
-           'A Haar Wavelet-Based Perceptual Similarity Index for Image Quality Assessment'
-           http://www.math.uni-bremen.de/cda/HaarPSI/publications/HaarPSI_preprint_v4.pdf
-        .. [2] Code from authors on MATLAB and Python
-           https://github.com/rgcda/haarpsi
+        R. Reisenhofer, S. Bosse, G. Kutyniok & T. Wiegand (2017)
+        'A Haar Wavelet-Based Perceptual Similarity Index for Image Quality Assessment'
+        http://www.math.uni-bremen.de/cda/HaarPSI/publications/HaarPSI_preprint_v4.pdf
+
+        Code from authors on MATLAB and Python
+        https://github.com/rgcda/haarpsi
     """
     _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
 
@@ -143,11 +145,11 @@ class HaarPSILoss(_Loss):
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         data_range: Maximum value range of images (usually 1.0 or 255).
         scales: Number of Haar wavelets used for image decomposition.
-        subsample: Flag to apply average pooling before HaarPSI computation. See [1] for details.
-        c: Constant from the paper. See [1] for details
-        alpha: Exponent used for similarity maps weightning. See [1] for details
+        subsample: Flag to apply average pooling before HaarPSI computation. See references for details.
+        c: Constant from the paper. See references for details
+        alpha: Exponent used for similarity maps weightning. See references for details
 
-    Examples::
+    Examples:
 
         >>> loss = HaarPSILoss()
         >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
@@ -156,9 +158,9 @@ class HaarPSILoss(_Loss):
         >>> output.backward()
 
     References:
-        .. [1] R. Reisenhofer, S. Bosse, G. Kutyniok & T. Wiegand (2017)
-           'A Haar Wavelet-Based Perceptual Similarity Index for Image Quality Assessment'
-           http://www.math.uni-bremen.de/cda/HaarPSI/publications/HaarPSI_preprint_v4.pdf
+        R. Reisenhofer, S. Bosse, G. Kutyniok & T. Wiegand (2017)
+        'A Haar Wavelet-Based Perceptual Similarity Index for Image Quality Assessment'
+        http://www.math.uni-bremen.de/cda/HaarPSI/publications/HaarPSI_preprint_v4.pdf
     """
     def __init__(self, reduction: Optional[str] = 'mean', data_range: Union[int, float] = 1.,
                  scales: int = 3, subsample: bool = True, c: float = 30.0, alpha: float = 4.2) -> None:
@@ -178,7 +180,7 @@ class HaarPSILoss(_Loss):
             y: A target tensor. Shape :math:`(N, C, H, W)`.
 
         Returns:
-            Value of HaarPSI loss to be minimized. 0 <= HaarPSI loss <= 1.
+            Value of HaarPSI loss to be minimized in [0, 1] range.
         """
 
         return 1. - self.haarpsi(x=x, y=y)

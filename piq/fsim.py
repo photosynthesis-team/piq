@@ -41,8 +41,14 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
             threshold  point, below which phase congruency values get penalized.
         
     Returns:
-        FSIM: Index of similarity betwen two images. Usually in [0, 1] interval.
-            Can be bigger than 1 for predicted (x) images with higher contrast than the original ones.
+        Index of similarity betwen two images. Usually in [0, 1] interval.
+        Can be bigger than 1 for predicted :math:`x` images with higher contrast than the original ones.
+
+    References:
+        L. Zhang, L. Zhang, X. Mou and D. Zhang, "FSIM: A Feature Similarity Index for Image Quality Assessment,"
+        IEEE Transactions on Image Processing, vol. 20, no. 8, pp. 2378-2386, Aug. 2011, doi: 10.1109/TIP.2011.2109730.
+        https://ieeexplore.ieee.org/document/5705575
+
     Note:
         This implementation is based on the original MATLAB code.
         https://www4.comp.polyu.edu.hk/~cslzhang/IQA/FSIM/FSIM.htm
@@ -222,8 +228,9 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
         k: No of standard deviations of the noise energy beyond the mean
             at which we set the noise threshold point, below which phase
             congruency values get penalized.
+
     Returns:
-        PCmap: Tensor with shape BxHxW
+        Phase Congruency map with shape :math:`(N, H, W)`
 
     """
     EPS = torch.finfo(x.dtype).eps
@@ -365,7 +372,7 @@ def _lowpassfilter(size: Tuple[int, int], cutoff: float, n: int) -> torch.Tensor
 class FSIMLoss(_Loss):
     r"""Creates a criterion that measures the FSIM or FSIMc for input :math:`x` and target :math:`y`.
 
-    In order to be considered as a loss, value `1 - clip(FSIM, min=0, max=1)` is returned. If you need FSIM value,
+    In order to be considered as a loss, value ``1 - clip(FSIM, min=0, max=1)`` is returned. If you need FSIM value,
     use function `fsim` instead.
     Supports greyscale and colour images with RGB channel order.
 
@@ -385,8 +392,7 @@ class FSIMLoss(_Loss):
         k: No of standard deviations of the noise energy beyond the mean at which we set the noise
             threshold  point, below which phase congruency values get penalized.
 
-    Examples::
-
+    Examples:
         >>> loss = FSIMLoss()
         >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
         >>> y = torch.rand(3, 3, 256, 256)
@@ -394,8 +400,9 @@ class FSIMLoss(_Loss):
         >>> output.backward()
 
     References:
-        .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
-           https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
+        L. Zhang, L. Zhang, X. Mou and D. Zhang, "FSIM: A Feature Similarity Index for Image Quality Assessment,"
+        IEEE Transactions on Image Processing, vol. 20, no. 8, pp. 2378-2386, Aug. 2011, doi: 10.1109/TIP.2011.2109730.
+        https://ieeexplore.ieee.org/document/5705575
     """
 
     def __init__(self, reduction: str = 'mean', data_range: Union[int, float] = 1., chromatic: bool = True,
@@ -428,7 +435,7 @@ class FSIMLoss(_Loss):
             y: A target tensor. Shape :math:`(N, C, H, W)`.
 
         Returns:
-            Value of FSIM loss to be minimized. 0 <= FSIM <= 1.
+            Value of FSIM loss to be minimized in [0, 1] range.
         """
         # All checks are done inside fsim function
         score = self.fsim(x, y)

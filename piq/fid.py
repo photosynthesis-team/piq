@@ -136,37 +136,37 @@ def _compute_statistics(samples: torch.Tensor) -> Tuple[torch.Tensor, torch.Tens
 
 
 class FID(BaseFeatureMetric):
-    r"""
-    Interface of Frechet Inception Distance.
+    r"""Interface of Frechet Inception Distance.
     It's computed for a whole set of data and uses features from encoder instead of images itself to decrease
     computation cost. FID can compare two data distributions with different number of samples.
     But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
 
-    Args:
-        x_features: Samples from data distribution. Shape :math:`(N_x, D)`
-        y_features: Samples from data distribution. Shape :math:`(N_y, D)`
-
-    Returns:
-        score: Scalar value of the distance between image sets features.
+    Examples:
+        >>> loss = FID()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
 
     References:
-        .. [1] Heusel M. et al. (2017).
-           Gans trained by a two time-scale update rule converge to a local nash equilibrium.
-           Advances in neural information processing systems,
-           https://arxiv.org/abs/1706.08500
+        Heusel M. et al. (2017).
+        Gans trained by a two time-scale update rule converge to a local nash equilibrium.
+        Advances in neural information processing systems,
+        https://arxiv.org/abs/1706.08500
     """
 
     def compute_metric(self, x_features: torch.Tensor, y_features: torch.Tensor) -> torch.Tensor:
         r"""
-        Fits multivariate Gaussians: X ~ N(mu_x, sigma_x) and Y ~ N(mu_y, sigma_y) to image stacks.
-        Then computes FID as d^2 = ||mu_x - mu_y||^2 + Tr(sigma_x + sigma_y - 2*sqrt(sigma_x * sigma_y)).
+        Fits multivariate Gaussians: :math:`X \sim \mathcal{N}(\mu_x, \sigma_x)` and
+        :math:`Y \sim \mathcal{N}(\mu_y, \sigma_y)` to image stacks.
+        Then computes FID as :math:`d^2 = ||\mu_x - \mu_y||^2 + Tr(\sigma_x + \sigma_y - 2\sqrt{\sigma_x \sigma_y})`.
 
         Args:
             x_features: Samples from data distribution. Shape :math:`(N_x, D)`
             y_features: Samples from data distribution. Shape :math:`(N_y, D)`
 
         Returns:
-        --   : The Frechet Distance.
+            The Frechet Distance.
         """
         _validate_input([x_features, y_features], dim_range=(2, 2), size_range=(1, 2))
         # GPU -> CPU
