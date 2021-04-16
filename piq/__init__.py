@@ -5,6 +5,7 @@ from .ms_ssim import multi_scale_ssim, MultiScaleSSIMLoss
 from .msid import MSID
 from .fid import FID
 from .kid import KID
+from .pr import PR
 from .tv import TVLoss, total_variation
 from .gmsd import gmsd, multi_scale_gmsd, GMSDLoss, MultiScaleGMSDLoss
 from .gs import GS

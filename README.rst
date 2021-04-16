@@ -208,6 +208,7 @@ FID          2017    `Frechet Inception Distance <https://arxiv.org/abs/1706.085
 GS           2018    `Geometry Score <https://arxiv.org/abs/1802.02664>`_
 KID          2018    `Kernel Inception Distance <https://arxiv.org/abs/1801.01401>`_
 MSID         2019    `Multi-Scale Intrinsic Distance <https://arxiv.org/abs/1905.11141>`_
+PR           2019    `Improved Precision and Recall <https://arxiv.org/abs/1904.06991>`_
 ===========  ======  ==========
 
 .. list-of-metrics-end
