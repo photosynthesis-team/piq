@@ -239,7 +239,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
 
     # Fourier transform
     filters = _construct_filters(x, scales, orientations, min_length, mult, sigma_f, delta_theta, k)
-    recommended_torch_version = '1.7.0'
+    recommended_torch_version = '1.8.0'
     if _version_tuple(torch.__version__) >= _version_tuple(recommended_torch_version):
         imagefft = torch.fft.fft2(x)
         filters_ifft = torch.fft.ifft2(filters)

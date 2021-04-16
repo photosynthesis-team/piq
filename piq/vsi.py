@@ -212,7 +212,7 @@ def sdsp(x: torch.Tensor, data_range: Union[int, float] = 255, omega_0: float = 
     x_lab = rgb2lab(x, data_range=255)
 
     lg = _log_gabor(size_to_use, omega_0, sigma_f).to(x).view(1, 1, *size_to_use)
-    recommended_torch_version = '1.7.0'
+    recommended_torch_version = '1.8.0'
     if _version_tuple(torch.__version__) >= _version_tuple(recommended_torch_version):
         x_fft = torch.fft.fft2(x_lab)
         x_ifft_real = torch.fft.ifft2(x_fft * lg).real
