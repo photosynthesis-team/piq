@@ -116,11 +116,13 @@ class ContentLoss(_Loss):
     def __init__(self, feature_extractor: Union[str, torch.nn.Module] = "vgg16", layers: Collection[str] = ("relu3_3",),
                  weights: List[Union[float, torch.Tensor]] = [1.], replace_pooling: bool = False,
                  distance: str = "mse", reduction: str = "mean", mean: List[float] = IMAGENET_MEAN,
-                 std: List[float] = IMAGENET_STD, normalize_features: bool = False) -> None:
+                 std: List[float] = IMAGENET_STD, normalize_features: bool = False,
+                 allow_layers_weights_mismatch: bool = False) -> None:
 
-        assert len(layers) == len(weights), f'Lengths of provided layers and weighs mismatch ({len(weights)} ' \
-                                            f'weights and {len(layers)} layers), which will cause ' \
-                                            'incorrect results. Please provide weight for each layer.'
+        if not allow_layers_weights_mismatch and len(layers) != len(weights):
+            raise ValueError(f'Lengths of provided layers and weighs mismatch ({len(weights)} weights and '
+                             f'{len(layers)} layers), which will cause incorrect results. '
+                             f'Please provide weight for each layer.')
 
         super().__init__()
 
@@ -410,8 +412,8 @@ class DISTS(ContentLoss):
         dists_weights.extend(torch.split(weights['beta'], channels, dim=1))
 
         super().__init__("vgg16", layers=dists_layers, weights=dists_weights,
-                         replace_pooling=True, reduction=reduction,
-                         mean=mean, std=std, normalize_features=False)
+                         replace_pooling=True, reduction=reduction, mean=mean, std=std,
+                         normalize_features=False, allow_layers_weights_mismatch=True)
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         r"""
