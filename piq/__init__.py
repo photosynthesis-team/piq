@@ -1,4 +1,4 @@
-__version__ = "0.5.5.1"
+__version__ = "0.5.5.2"
 
 from .ssim import ssim, SSIMLoss
 from .ms_ssim import multi_scale_ssim, MultiScaleSSIMLoss

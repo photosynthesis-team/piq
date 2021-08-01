@@ -1,5 +1,5 @@
 
-.. image:: docs/source/_static/piq_logo_main.png
+.. image:: https://raw.githubusercontent.com/photosynthesis-team/piq/master/docs/source/_static/piq_logo_main.png
     :target: https://github.com/photosynthesis-team/piq
 
 ..
