@@ -1,8 +1,6 @@
 name: deployment to conda
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
   release:
     types: [published]
 
