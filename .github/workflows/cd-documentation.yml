@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - master
-      - docs/issue#10
 
 jobs:
   build:
