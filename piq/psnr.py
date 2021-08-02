@@ -3,7 +3,7 @@ r""" This module implements Peak Signal-to-Noise Ratio (PSNR) in PyTorch.
 import torch
 from typing import Union
 
-from piq.utils import _validate_input, _adjust_dimensions
+from piq.utils import _validate_input, _reduce
 
 
 def psnr(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1.0,
@@ -12,27 +12,27 @@ def psnr(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1.0,
     Supports both greyscale and color images with RGB channel order.
 
     Args:
-        x: Predicted images. Shape (H, W), (C, H, W) or (N, C, H, W).
-        y: Target images. Shape (H, W), (C, H, W) or (N, C, H, W).
-        data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
+        y: A target tensor. Shape :math:`(N, C, H, W)`.
+        data_range: Maximum value range of images (usually 1.0 or 255).
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         convert_to_greyscale: Convert RGB image to YCbCr format and computes PSNR
             only on luminance channel if `True`. Compute on all 3 channels otherwise.
 
     Returns:
-        PSNR: Index of similarity betwen two images.
+        PSNR Index of similarity betwen two images.
 
     References:
         https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio
     """
-    _validate_input((x, y), allow_5d=False)
-    x, y = _adjust_dimensions(input_tensors=(x, y))
+    _validate_input([x, y], dim_range=(4, 5), data_range=(0, data_range))
 
     # Constant for numerical stability
     EPS = 1e-8
 
-    x = x / data_range
-    y = y / data_range
+    x = x / float(data_range)
+    y = y / float(data_range)
 
     if (x.size(1) == 3) and convert_to_greyscale:
         # Convert RGB image to YCbCr and take luminance: Y = 0.299 R + 0.587 G + 0.114 B
@@ -43,9 +43,4 @@ def psnr(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1.0,
     mse = torch.mean((x - y) ** 2, dim=[1, 2, 3])
     score: torch.Tensor = - 10 * torch.log10(mse + EPS)
 
-    if reduction == 'none':
-        return score
-
-    return {'mean': score.mean,
-            'sum': score.sum
-            }[reduction](dim=0)
+    return _reduce(score, reduction)

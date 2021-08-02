@@ -5,17 +5,19 @@ https://sse.tongji.edu.cn/linzhang/IQA/VSI/VSI.htm
 References:
     https://ieeexplore.ieee.org/document/6873260
 """
+import warnings
+import functools
 from typing import Union, Tuple
+
 import torch
 from torch.nn.modules.loss import _Loss
 from torch.nn.functional import avg_pool2d, interpolate, pad
+
 from piq.functional import ifftshift, gradient_map, scharr_filter, rgb2lmn, rgb2lab, similarity_map, get_meshgrid
-from piq.utils import _validate_input, _adjust_dimensions
-import functools
-import warnings
+from piq.utils import _validate_input, _reduce, _version_tuple
 
 
-def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean', data_range: Union[int, float] = 1.,
+def vsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean', data_range: Union[int, float] = 1.,
         c1: float = 1.27, c2: float = 386., c3: float = 130., alpha: float = 0.4, beta: float = 0.02,
         omega_0: float = 0.021, sigma_f: float = 1.34, sigma_d: float = 145., sigma_c: float = 0.001) -> torch.Tensor:
     r"""Compute Visual Saliency-induced Index for a batch of images.
@@ -25,10 +27,11 @@ def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
     channel 3 times.
 
     Args:
-        prediction:  Tensor with shape (H, W), (C, H, W) or (N, C, H, W) holding a distorted image.
-        target: Tensor with shape (H, W), (C, H, W) or (N, C, H, W) holding a target image.
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
-        data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
+        y: A target tensor. Shape :math:`(N, C, H, W)`.
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        data_range: Maximum value range of images (usually 1.0 or 255).
         c1: coefficient to calculate saliency component of VSI
         c2: coefficient to calculate gradient component of VSI
         c3: coefficient to calculate color component of VSI
@@ -40,38 +43,40 @@ def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
         sigma_c: coefficient to get SDSP
 
     Returns:
-        VSI: Index of similarity between two images. Usually in [0, 1] interval.
+        Index of similarity between two images. Usually in [0, 1] range.
 
-    Shape:
-        - Input:  Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
-        - Target: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
+    References:
+        L. Zhang, Y. Shen and H. Li, "VSI: A Visual Saliency-Induced Index for Perceptual Image Quality Assessment,"
+        IEEE Transactions on Image Processing, vol. 23, no. 10, pp. 4270-4281, Oct. 2014, doi: 10.1109/TIP.2014.2346028
+        https://ieeexplore.ieee.org/document/6873260
+
     Note:
         The original method supports only RGB image.
         See https://ieeexplore.ieee.org/document/6873260 for details.
     """
-    _validate_input(input_tensors=(prediction, target), allow_5d=False)
-    prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
-    if prediction.size(1) == 1:
-        prediction = prediction.repeat(1, 3, 1, 1)
-        target = target.repeat(1, 3, 1, 1)
+    _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
+
+    if x.size(1) == 1:
+        x = x.repeat(1, 3, 1, 1)
+        y = y.repeat(1, 3, 1, 1)
         warnings.warn('The original VSI supports only RGB images. The input images were converted to RGB by copying '
                       'the grey channel 3 times.')
 
     # Scale to [0, 255] range to match scale of constant
-    prediction = prediction * 255. / float(data_range)
-    target = target * 255. / float(data_range)
+    x = x * 255. / data_range
+    y = y * 255. / data_range
 
-    vs_prediction = sdsp(prediction, data_range=255, omega_0=omega_0,
-                         sigma_f=sigma_f, sigma_d=sigma_d, sigma_c=sigma_c)
-    vs_target = sdsp(target, data_range=255, omega_0=omega_0, sigma_f=sigma_f,
-                     sigma_d=sigma_d, sigma_c=sigma_c)
+    vs_x = sdsp(x, data_range=255, omega_0=omega_0,
+                sigma_f=sigma_f, sigma_d=sigma_d, sigma_c=sigma_c)
+    vs_y = sdsp(y, data_range=255, omega_0=omega_0, sigma_f=sigma_f,
+                sigma_d=sigma_d, sigma_c=sigma_c)
 
     # Convert to LMN colour space
-    prediction_lmn = rgb2lmn(prediction)
-    target_lmn = rgb2lmn(target)
+    x_lmn = rgb2lmn(x)
+    y_lmn = rgb2lmn(y)
 
     # Averaging image if the size is large enough
-    kernel_size = max(1, round(min(vs_prediction.size()[-2:]) / 256))
+    kernel_size = max(1, round(min(vs_x.size()[-2:]) / 256))
     padding = kernel_size // 2
 
     if padding:
@@ -79,27 +84,27 @@ def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
         bottom_pad = (kernel_size - 1) // 2
         pad_to_use = [upper_pad, bottom_pad, upper_pad, bottom_pad]
         mode = 'replicate'
-        vs_prediction = pad(vs_prediction, pad=pad_to_use, mode=mode)
-        vs_target = pad(vs_target, pad=pad_to_use, mode=mode)
-        prediction_lmn = pad(prediction_lmn, pad=pad_to_use, mode=mode)
-        target_lmn = pad(target_lmn, pad=pad_to_use, mode=mode)
+        vs_x = pad(vs_x, pad=pad_to_use, mode=mode)
+        vs_y = pad(vs_y, pad=pad_to_use, mode=mode)
+        x_lmn = pad(x_lmn, pad=pad_to_use, mode=mode)
+        y_lmn = pad(y_lmn, pad=pad_to_use, mode=mode)
 
-    vs_prediction = avg_pool2d(vs_prediction, kernel_size=kernel_size)
-    vs_target = avg_pool2d(vs_target, kernel_size=kernel_size)
+    vs_x = avg_pool2d(vs_x, kernel_size=kernel_size)
+    vs_y = avg_pool2d(vs_y, kernel_size=kernel_size)
 
-    prediction_lmn = avg_pool2d(prediction_lmn, kernel_size=kernel_size)
-    target_lmn = avg_pool2d(target_lmn, kernel_size=kernel_size)
+    x_lmn = avg_pool2d(x_lmn, kernel_size=kernel_size)
+    y_lmn = avg_pool2d(y_lmn, kernel_size=kernel_size)
 
     # Calculate gradient map
-    kernels = torch.stack([scharr_filter(), scharr_filter().transpose(1, 2)]).to(prediction_lmn)
-    gm_prediction = gradient_map(prediction_lmn[:, :1], kernels)
-    gm_target = gradient_map(target_lmn[:, :1], kernels)
+    kernels = torch.stack([scharr_filter(), scharr_filter().transpose(1, 2)]).to(x_lmn)
+    gm_x = gradient_map(x_lmn[:, :1], kernels)
+    gm_y = gradient_map(y_lmn[:, :1], kernels)
 
     # Calculate all similarity maps
-    s_vs = similarity_map(vs_prediction, vs_target, c1)
-    s_gm = similarity_map(gm_prediction, gm_target, c2)
-    s_m = similarity_map(prediction_lmn[:, 1:2], target_lmn[:, 1:2], c3)
-    s_n = similarity_map(prediction_lmn[:, 2:], target_lmn[:, 2:], c3)
+    s_vs = similarity_map(vs_x, vs_y, c1)
+    s_gm = similarity_map(gm_x, gm_y, c2)
+    s_m = similarity_map(x_lmn[:, 1:2], y_lmn[:, 1:2], c3)
+    s_n = similarity_map(x_lmn[:, 2:], y_lmn[:, 2:], c3)
     s_c = s_m * s_n
 
     s_c_complex = [s_c.abs(), torch.atan2(torch.zeros_like(s_c), s_c)]
@@ -107,16 +112,13 @@ def vsi(prediction: torch.Tensor, target: torch.Tensor, reduction: str = 'mean',
     s_c_real_pow = s_c_complex_pow[0] * torch.cos(s_c_complex_pow[1])
 
     s = s_vs * s_gm.pow(alpha) * s_c_real_pow
-    vs_max = torch.max(vs_prediction, vs_target)
+    vs_max = torch.max(vs_x, vs_y)
 
     eps = torch.finfo(vs_max.dtype).eps
     output = s * vs_max
     output = ((output.sum(dim=(-1, -2)) + eps) / (vs_max.sum(dim=(-1, -2)) + eps)).squeeze(-1)
-    if reduction == 'none':
-        return output
-    return {'mean': torch.mean,
-            'sum': torch.sum
-            }[reduction](output, dim=0)
+
+    return _reduce(output, reduction)
 
 
 class VSILoss(_Loss):
@@ -128,8 +130,9 @@ class VSILoss(_Loss):
     The division by :math:`n` can be avoided if one sets ``reduction = 'sum'``.
 
     Args:
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
-        data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        data_range: Maximum value range of images (usually 1.0 or 255).
         c1: coefficient to calculate saliency component of VSI
         c2: coefficient to calculate gradient component of VSI
         c3: coefficient to calculate color component of VSI
@@ -140,30 +143,20 @@ class VSILoss(_Loss):
         sigma_d: coefficient to get SDSP
         sigma_c: coefficient to get SDSP
 
-    Shape:
-        - Input: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
-        - Target: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
-
-        Both inputs are supposed to have RGB channels order in accordance with the original approach.
-        Nevertheless, the method supports greyscale images, which they are converted to RGB
-        by copying the grey channel 3 times.
-
-    Examples::
+    Examples:
 
         >>> loss = VSILoss()
-        >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
-        >>> target = torch.rand(3, 3, 256, 256)
-        >>> output = loss(prediction, target)
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
         >>> output.backward()
 
     References:
-        .. [1] Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P.
-           (2004). Image quality assessment: From error visibility to
-           structural similarity. IEEE Transactions on Image Processing,
-           13, 600-612.
-           https://ece.uwaterloo.ca/~z70wang/publications/ssim.pdf,
-           :DOI:`10.1109/TIP.2003.819861`
+        L. Zhang, Y. Shen and H. Li, "VSI: A Visual Saliency-Induced Index for Perceptual Image Quality Assessment,"
+        IEEE Transactions on Image Processing, vol. 23, no. 10, pp. 4270-4281, Oct. 2014, doi: 10.1109/TIP.2014.2346028
+        https://ieeexplore.ieee.org/document/6873260
     """
+
     def __init__(self, reduction: str = 'mean', c1: float = 1.27, c2: float = 386., c3: float = 130.,
                  alpha: float = 0.4, beta: float = 0.02, data_range: Union[int, float] = 1.,
                  omega_0: float = 0.021, sigma_f: float = 1.34, sigma_d: float = 145., sigma_c: float = 0.001) -> None:
@@ -175,15 +168,15 @@ class VSILoss(_Loss):
             vsi, c1=c1, c2=c2, c3=c3, alpha=alpha, beta=beta, omega_0=omega_0,
             sigma_f=sigma_f, sigma_d=sigma_d, sigma_c=sigma_c, data_range=data_range, reduction=reduction)
 
-    def forward(self, prediction, target):
+    def forward(self, x, y):
         r"""Computation of VSI as a loss function.
 
         Args:
-            prediction: Tensor of prediction of the network.
-            target: Reference tensor.
+            x: An input tensor. Shape :math:`(N, C, H, W)`.
+            y: A target tensor. Shape :math:`(N, C, H, W)`.
 
         Returns:
-            Value of VSI loss to be minimized. 0 <= VSI loss <= 1.
+            Value of VSI loss to be minimized in [0, 1] range.
 
         Note:
             Both inputs are supposed to have RGB channels order in accordance with the original approach.
@@ -191,16 +184,18 @@ class VSILoss(_Loss):
             channel 3 times.
         """
 
-        return 1. - self.vsi(prediction=prediction, target=target)
+        return 1. - self.vsi(x=x, y=y)
 
 
 def sdsp(x: torch.Tensor, data_range: Union[int, float] = 255, omega_0: float = 0.021, sigma_f: float = 1.34,
          sigma_d: float = 145., sigma_c: float = 0.001) -> torch.Tensor:
     r"""SDSP algorithm for salient region detection from a given image.
 
-    Args :
-        x: an  RGB image with dynamic range [0, 1] or [0, 255] for each channel
-        data_range: dynamic range of the image
+    Supports only colour images with RGB channel order.
+
+    Args:
+        x: Tensor. Shape :math:`(N, 3, H, W)`.
+        data_range: Maximum value range of images (usually 1.0 or 255).
         omega_0: coefficient for log Gabor filter
         sigma_f: coefficient for log Gabor filter
         sigma_d: coefficient for the central areas, which have a bias towards attention
@@ -209,15 +204,22 @@ def sdsp(x: torch.Tensor, data_range: Union[int, float] = 255, omega_0: float = 
     Returns:
         torch.Tensor: Visual saliency map
     """
-    x = x * 255. / float(data_range)
+    x = x / data_range * 255
     size = x.size()
     size_to_use = (256, 256)
     x = interpolate(input=x, size=size_to_use, mode='bilinear', align_corners=False)
 
     x_lab = rgb2lab(x, data_range=255)
-    x_fft = torch.rfft(x_lab, 2, onesided=False)
-    lg = _log_gabor(size_to_use, omega_0, sigma_f).to(x_fft).view(1, 1, *size_to_use, 1)
-    x_ifft_real = torch.ifft(x_fft * lg, 2)[..., 0]
+
+    lg = _log_gabor(size_to_use, omega_0, sigma_f).to(x).view(1, 1, *size_to_use)
+    recommended_torch_version = '1.8.0'
+    if _version_tuple(torch.__version__) >= _version_tuple(recommended_torch_version):
+        x_fft = torch.fft.fft2(x_lab)
+        x_ifft_real = torch.fft.ifft2(x_fft * lg).real
+    else:
+        x_fft = torch.rfft(x_lab, 2, onesided=False)
+        x_ifft_real = torch.ifft(x_fft * lg.unsqueeze(-1), 2)[..., 0]
+
     s_f = x_ifft_real.pow(2).sum(dim=1, keepdim=True).sqrt()
 
     coordinates = torch.stack(get_meshgrid(size_to_use), dim=0).to(x)

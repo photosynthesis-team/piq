@@ -13,31 +13,45 @@ def raise_nothing():
 
 
 @pytest.fixture(scope='module')
-def prediction() -> torch.Tensor:
+def x() -> torch.Tensor:
     return torch.rand(3, 3, 256, 256)
 
 
 @pytest.fixture(scope='module')
-def target() -> torch.Tensor:
+def y() -> torch.Tensor:
     return torch.rand(3, 3, 256, 256)
 
 
 @pytest.fixture(scope='module')
-def prediction_grey() -> torch.Tensor:
-    return torch.rand(3, 3, 256, 256)
+def x_grey() -> torch.Tensor:
+    return torch.rand(3, 1, 256, 256)
 
 
 @pytest.fixture(scope='module')
-def target_grey() -> torch.Tensor:
-    return torch.rand(3, 3, 256, 256)
+def y_grey() -> torch.Tensor:
+    return torch.rand(3, 1, 256, 256)
 
 
 # ================== Test function: `fsim` ==================
+def test_fsim_forward(input_tensors, device: str) -> None:
+    x, y = input_tensors
+    fsim(x.to(device), y.to(device), chromatic=False)
+
+
 @pytest.mark.parametrize("chromatic", [False, True])
-def test_fsim_symmetry(prediction: torch.Tensor, target: torch.Tensor, chromatic: bool, device: str) -> None:
-    measure = fsim(prediction, target, data_range=1., chromatic=chromatic)
-    reverse_measure = fsim(target, prediction, data_range=1., chromatic=chromatic)
+def test_fsim_symmetry(x, y, chromatic: bool, device: str) -> None:
+    measure = fsim(x.to(device), y.to(device), data_range=1., chromatic=chromatic)
+    reverse_measure = fsim(y.to(device), x.to(device), data_range=1., chromatic=chromatic)
     assert (measure == reverse_measure).all(), f'Expect: FSIM(a, b) == FSIM(b, a), got {measure} != {reverse_measure}'
+
+
+@pytest.mark.parametrize(
+    "chromatic,expectation",
+    [(False, raise_nothing()),
+     (True, pytest.raises(AssertionError))])
+def test_fsim_chromatic_raises_for_greyscale(x_grey, y_grey, chromatic: bool, expectation: Any) -> None:
+    with expectation:
+        fsim(x_grey, y_grey, data_range=1., chromatic=chromatic)
 
 
 @pytest.mark.parametrize(
@@ -60,10 +74,34 @@ def test_fsim_for_special_cases(x: torch.Tensor, y: torch.Tensor, expectation: A
                 f'Expected loss value to be equal to target value. Got {score} and {value}'
 
 
+@pytest.mark.parametrize(
+    "data_range", [128, 255],
+)
+def test_fsim_supports_different_data_ranges(x, y, data_range, device: str) -> None:
+    x_scaled = (x * data_range).type(torch.uint8)
+    y_scaled = (y * data_range).type(torch.uint8)
+    measure_scaled = fsim(x_scaled.to(device), y_scaled.to(device), data_range=data_range)
+    measure = fsim(
+        x_scaled.to(device) / float(data_range),
+        y_scaled.to(device) / float(data_range),
+        data_range=1.0
+    )
+    diff = torch.abs(measure_scaled - measure)
+    assert diff <= 1e-5, f'Result for same tensor with different data_range should be the same, got {diff}'
+
+
+def test_fsim_fails_for_incorrect_data_range(x, y, device: str) -> None:
+    # Scale to [0, 255]
+    x_scaled = (x * 255).type(torch.uint8)
+    y_scaled = (y * 255).type(torch.uint8)
+    with pytest.raises(AssertionError):
+        fsim(x_scaled.to(device), y_scaled.to(device), data_range=1.0)
+        
+
 def test_fsim_simmular_to_matlab_implementation():
     # Greyscale images
-    goldhill = torch.tensor(imread('tests/assets/goldhill.gif'))
-    goldhill_jpeg = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'))
+    goldhill = torch.tensor(imread('tests/assets/goldhill.gif'))[None, None, ...]
+    goldhill_jpeg = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'))[None, None, ...]
 
     score = fsim(goldhill_jpeg, goldhill, data_range=255, chromatic=False, reduction='none')
     score_baseline = torch.tensor(0.89691)
@@ -72,8 +110,8 @@ def test_fsim_simmular_to_matlab_implementation():
         f'Expected PyTorch score to be equal to MATLAB prediction. Got {score} and {score_baseline}'
 
     # RGB images
-    I01 = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1)
-    i1_01_5 = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1)
+    I01 = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1)[None, ...]
+    i1_01_5 = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1)[None, ...]
 
     score = fsim(i1_01_5, I01, data_range=255, chromatic=False, reduction='none')
     score_chromatic = fsim(i1_01_5, I01, data_range=255, chromatic=True, reduction='none')
@@ -90,27 +128,27 @@ def test_fsim_simmular_to_matlab_implementation():
 
 
 # ================== Test class: `FSIMLoss` ==================
-def test_fsim_loss_reduction(prediction: torch.Tensor, target: torch.Tensor) -> None:
+def test_fsim_loss_reduction(x, y) -> None:
     loss = FSIMLoss(reduction='mean')
-    measure = loss(prediction, target)
+    measure = loss(x, y)
     assert measure.dim() == 0, f'FSIM with `mean` reduction must return 1 number, got {len(measure)}'
 
     loss = FSIMLoss(reduction='sum')
-    measure = loss(prediction, target)
+    measure = loss(x, y)
     assert measure.dim() == 0, f'FSIM with `mean` reduction must return 1 number, got {len(measure)}'
 
     loss = FSIMLoss(reduction='none')
-    measure = loss(prediction, target)
-    assert len(measure) == prediction.size(0), \
+    measure = loss(x, y)
+    assert len(measure) == x.size(0), \
         f'FSIM with `none` reduction must have length equal to number of images, got {len(measure)}'
     
     loss = FSIMLoss(reduction='random string')
-    with pytest.raises(KeyError):
-        loss(prediction, target)
+    with pytest.raises(ValueError):
+        loss(x, y)
 
 
-def test_fsim_loss_computes_grad(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
-    prediction.requires_grad_()
-    loss_value = FSIMLoss()(prediction, target)
+def test_fsim_loss_computes_grad(x, y, device: str) -> None:
+    x.requires_grad_()
+    loss_value = FSIMLoss()(x.to(device), y.to(device))
     loss_value.backward()
-    assert prediction.grad is not None, 'Expected non None gradient of leaf variable'
+    assert x.grad is not None, 'Expected non None gradient of leaf variable'

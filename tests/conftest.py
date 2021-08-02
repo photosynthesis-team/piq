@@ -14,30 +14,26 @@ def device(request: Any) -> Any:
 
 
 @pytest.fixture(scope='module')
-def prediction() -> torch.Tensor:
+def x() -> torch.Tensor:
     return torch.rand(4, 3, 96, 96)
 
 
 @pytest.fixture(scope='module')
-def target() -> torch.Tensor:
+def y() -> torch.Tensor:
     return torch.rand(4, 3, 96, 96)
 
 
-prediction_tensors = [
+x_tensors = [
     torch.rand(4, 3, 96, 96),  # Random 4D
-    torch.rand(3, 96, 96),  # Random 3D
     torch.rand(4, 1, 96, 96),  # Random 4D greyscale
-    torch.rand(96, 96),  # Random 2D greyscale
 ]
 
-target_tensors = [
+y_tensors = [
     torch.rand(4, 3, 96, 96),  # Random 4D
-    torch.rand(3, 96, 96),  # Random 3D
     torch.rand(4, 1, 96, 96),  # Random 4D greyscale
-    torch.rand(96, 96),  # Random 2D greyscale
 ]
 
 
-@pytest.fixture(params=zip(prediction_tensors, target_tensors))
+@pytest.fixture(params=zip(x_tensors, y_tensors))
 def input_tensors(request: Any) -> Any:
     return request.param

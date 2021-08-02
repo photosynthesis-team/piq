@@ -1,7 +1,7 @@
-from piq.utils.common import _adjust_dimensions, _validate_input, _validate_features
+from piq.utils.common import _validate_input, _reduce, _version_tuple
 
 __all__ = [
-    "_adjust_dimensions",
     "_validate_input",
-    "_validate_features",
+    "_reduce",
+    '_version_tuple'
 ]

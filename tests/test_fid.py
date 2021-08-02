@@ -27,23 +27,23 @@ class TestDataset(torch.utils.data.Dataset):
 
 
 @pytest.fixture(scope='module')
-def features_target_normal() -> torch.Tensor:
+def features_y_normal() -> torch.Tensor:
     return torch.rand(1000, 20)
 
 
 @pytest.fixture(scope='module')
-def features_prediction_normal() -> torch.Tensor:
+def features_x_normal() -> torch.Tensor:
     return torch.rand(1000, 20)
 
 
 @pytest.fixture(scope='module')
-def features_prediction_beta() -> torch.Tensor:
+def features_x_beta() -> torch.Tensor:
     m = torch.distributions.Beta(torch.FloatTensor([2]), torch.FloatTensor([2]))
     return m.sample([1000, 20]).squeeze()
 
 
 @pytest.fixture(scope='module')
-def features_prediction_constant() -> torch.Tensor:
+def features_x_constant() -> torch.Tensor:
     return torch.ones(1000, 20)
 
 
@@ -52,9 +52,9 @@ def test_initialization() -> None:
     FID()
 
 
-def test_forward(features_target_normal: torch.Tensor, features_prediction_normal: torch.Tensor, device: str) -> None:
+def test_forward(features_y_normal, features_x_normal, device: str) -> None:
     fid = FID()
-    fid(features_target_normal.to(device), features_prediction_normal.to(device))
+    fid(features_y_normal.to(device), features_x_normal.to(device))
 
 
 def test_compute_feats(device: str) -> None:
@@ -66,7 +66,7 @@ def test_compute_feats(device: str) -> None:
     )
     fid = FID()
     model = InceptionV3()
-    fid._compute_feats(loader, model, device=device)
+    fid.compute_feats(loader, model, device=device)
 
 
 @pytest.mark.parametrize("input_range,normalize_input,expectation",
@@ -86,4 +86,4 @@ def test_inception_input_range(input_range, normalize_input, expectation) -> Non
         )
         fid = FID()
         model = InceptionV3(normalize_input=normalize_input)
-        fid._compute_feats(loader, model, device='cpu')
+        fid.compute_feats(loader, model, device='cpu')

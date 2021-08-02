@@ -1,9 +1,11 @@
-__version__ = "0.5.3"
+__version__ = "0.5.5"
 
-from .ssim import ssim, multi_scale_ssim, SSIMLoss, MultiScaleSSIMLoss
+from .ssim import ssim, SSIMLoss
+from .ms_ssim import multi_scale_ssim, MultiScaleSSIMLoss
 from .msid import MSID
 from .fid import FID
 from .kid import KID
+from .pr import PR
 from .tv import TVLoss, total_variation
 from .gmsd import gmsd, multi_scale_gmsd, GMSDLoss, MultiScaleGMSDLoss
 from .gs import GS
@@ -16,4 +18,4 @@ from .fsim import fsim, FSIMLoss
 from .vsi import vsi, VSILoss
 from .mdsi import mdsi, MDSILoss
 from .haarpsi import haarpsi, HaarPSILoss
-from .dss import dss, DSSLoss
+from .pieapp import PieAPP

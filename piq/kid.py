@@ -3,14 +3,11 @@ from typing import Optional, Tuple, Union
 import torch
 
 from piq.base import BaseFeatureMetric
+from piq.utils import _validate_input
 
 
-def _polynomial_kernel(
-        X: torch.Tensor,
-        Y: torch.Tensor = None,
-        degree: int = 3,
-        gamma: Optional[float] = None,
-        coef0: float = 1.) -> torch.Tensor:
+def _polynomial_kernel(X: torch.Tensor, Y: torch.Tensor = None, degree: int = 3, gamma: Optional[float] = None,
+                       coef0: float = 1.) -> torch.Tensor:
     """
     Compute the polynomial kernel between x and y
     K(X, Y) = (gamma <X, Y> + coef0)^degree
@@ -50,15 +47,9 @@ def _polynomial_kernel(
     return K
 
 
-def _mmd2_and_variance(
-        K_XX: torch.Tensor,
-        K_XY: torch.Tensor,
-        K_YY: torch.Tensor,
-        unit_diagonal: bool = False,
-        mmd_est: str = 'unbiased',
-        var_at_m: Optional[int] = None,
-        ret_var: bool = False
-) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+def _mmd2_and_variance(K_XX: torch.Tensor, K_XY: torch.Tensor, K_YY: torch.Tensor, unit_diagonal: bool = False,
+                       mmd_est: str = 'unbiased', var_at_m: Optional[int] = None, ret_var: bool = False) \
+        -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
     # based on
     # https://github.com/dougalsutherland/opt-mmd/blob/master/two_sample/mmd.py
     # but changed to not compute the full kernel matrix at once
@@ -152,44 +143,30 @@ class KID(BaseFeatureMetric):
     But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
 
     Args:
-        predicted_features: Low-dimension representation of predicted image set.
-            Shape (N_pred, encoder_dim)
-        target_features: Low-dimension representation of target image set. Shape (N_targ, encoder_dim)
+        degree: Degree of a polynomial functions used in kernels. Default: 3
+        gamma: Kernel parameter. See paper for details
+        coef0: Kernel parameter. See paper for details
+        var_at_m: Kernel variance. Default is `None`
+        average: If `True` recomputes metric `n_subsets` times using `subset_size` elements.
+        n_subsets: Number of repeats. Ignored if `average` is False
+        subset_size: Size of each subset for repeat. Ignored if `average` is False
+        ret_var: Whether to return variance after the distance is computed.
+            This function will return ``Tuple[torch.Tensor, torch.Tensor]`` in this case. Default: False
 
-    Returns:
-        score: Scalar value of the distance between image sets features.
-        variance(Optional[torch.Tensor]): If `ret_var` is True, also returns variance
+    Examples:
+        >>> loss = KID()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
 
-    Reference:
+    References:
         Demystifying MMD GANs https://arxiv.org/abs/1801.01401
     """
 
-    def __init__(
-            self,
-            degree: int = 3,
-            gamma: Optional[float] = None,
-            coef0: int = 1,
-            var_at_m: Optional[int] = None,
-            average: bool = False,
-            n_subsets: int = 50,
-            subset_size: Optional[int] = 1000,
-            ret_var: bool = False
-    ) -> None:
-        r"""
-        Creates a criterion that measures Kernel Inception Distance (polynomial MMD) for two datasets of images.
-
-        Args:
-            degree: Degree of a polynomial functions used in kernels. Default: 3
-            gamma: Kernel parameter. See paper for details
-            coef0: Kernel parameter. See paper for details
-            var_at_m: Kernel variance. Default is `None`
-            average: If `True` recomputes metric `n_subsets` times using `subset_size` elements.
-            n_subsets: Number of repeats. Ignored if `average` is False
-            subset_size: Size of each subset for repeat. Ignored if `average` is False
-            ret_var: Whether to return variance after the distance is computed.
-                        This function will return Tuple[torch.Tensor, torch.Tensor] in this case. Default: False
-
-        """
+    def __init__(self, degree: int = 3, gamma: Optional[float] = None, coef0: int = 1, var_at_m: Optional[int] = None,
+                 average: bool = False, n_subsets: int = 50, subset_size: Optional[int] = 1000, ret_var: bool = False
+                 ) -> None:
         super().__init__()
 
         self.degree = degree
@@ -203,51 +180,48 @@ class KID(BaseFeatureMetric):
             self.n_subsets = 1
             self.subset_size = None
 
-    def compute_metric(
-            self,
-            predicted_features: torch.Tensor,
-            target_features: torch.Tensor,
-    ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+    def compute_metric(self, x_features: torch.Tensor, y_features: torch.Tensor) \
+            -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
         """Computes KID (polynomial MMD) for given sets of features, obtained from Inception net
         or any other feature extractor.
+        Samples must be in range [0, 1].
 
         Args:
-            predicted_features: Samples from data distribution.
-                Shape (N_samples, data_dim), dtype: torch.float32 in range [0, 1].
-            target_features: Samples from data distribution.
-                Shape (N_samples, data_dim), dtype: torch.float32 in range [0, 1].
+            x_features: Samples from data distribution. Shape :math:`(N_x, D)`
+            y_features: Samples from data distribution. Shape :math:`(N_y, D)`
 
         Returns:
             KID score and variance (optional).
         """
-        var_at_m = min(predicted_features.size(0), target_features.size(0))
+        _validate_input([x_features, y_features], dim_range=(2, 2), size_range=(1, 2))
+        var_at_m = min(x_features.size(0), y_features.size(0))
         if self.subset_size is None:
-            subset_size = predicted_features.size(0)
+            subset_size = x_features.size(0)
         else:
             subset_size = self.subset_size
 
         results = []
         for _ in range(self.n_subsets):
-            pred_subset = predicted_features[torch.randperm(len(predicted_features))[:subset_size]]
-            trgt_subset = target_features[torch.randperm(len(target_features))[:subset_size]]
+            x_subset = x_features[torch.randperm(len(x_features))[:subset_size]]
+            y_subset = y_features[torch.randperm(len(y_features))[:subset_size]]
 
             # use  k(x, y) = (gamma <x, y> + coef0)^degree
             # default gamma is 1 / dim
             K_XX = _polynomial_kernel(
-                pred_subset,
+                x_subset,
                 None,
                 degree=self.degree,
                 gamma=self.gamma,
                 coef0=self.coef0)
             K_YY = _polynomial_kernel(
-                trgt_subset,
+                y_subset,
                 None,
                 degree=self.degree,
                 gamma=self.gamma,
                 coef0=self.coef0)
             K_XY = _polynomial_kernel(
-                pred_subset,
-                trgt_subset,
+                x_subset,
+                y_subset,
                 degree=self.degree,
                 gamma=self.gamma,
                 coef0=self.coef0)
