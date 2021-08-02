@@ -45,38 +45,38 @@ def test_dss_raises_if_tensors_have_different_shapes(device: str) -> None:
         dss(prediction, target)
 
 
-def test_dss_raises_if_tensors_have_different_types(target: torch.Tensor) -> None:
+def test_dss_raises_if_tensors_have_different_types(x: torch.Tensor) -> None:
     wrong_type_prediction = list(range(10))
     with pytest.raises(AssertionError):
-        dss(wrong_type_prediction, target)
+        dss(wrong_type_prediction, x)
 
 
-def test_dss_raises_if_incorrect_value(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+def test_dss_raises_if_incorrect_value(x: torch.Tensor, y: torch.Tensor, device: str) -> None:
     # DCT & kernel size
-    size = max(prediction.size(-1), prediction.size(-2)) + 2
+    size = max(x.size(-1), x.size(-2)) + 2
     with pytest.raises(ValueError):
-        dss(prediction.to(device), target.to(device), data_range=1., dct_size=size)
+        dss(x.to(device), y.to(device), data_range=1., dct_size=size)
     with pytest.raises(ValueError):
-        dss(prediction.to(device), target.to(device), data_range=1., kernel_size=size)
+        dss(x.to(device), y.to(device), data_range=1., kernel_size=size)
     # Sigmas
     with pytest.raises(ValueError):
-        dss(prediction.to(device), target.to(device), data_range=1., sigma_weight=0)
+        dss(x.to(device), y.to(device), data_range=1., sigma_weight=0)
     with pytest.raises(ValueError):
-        dss(prediction.to(device), target.to(device), data_range=1., sigma_similarity=0)
+        dss(x.to(device), y.to(device), data_range=1., sigma_similarity=0)
     # Percentile
     for percentile in [-0.5, 0, 0.01, 0.5, 1, 1.5]:
         if percentile <= 0 or percentile > 1:
             with pytest.raises(ValueError):
-                dss(prediction.to(device), target.to(device), data_range=1., percentile=percentile)
+                dss(x.to(device), y.to(device), data_range=1., percentile=percentile)
         else:
-            dss_result = dss(prediction.to(device), target.to(device), data_range=1., percentile=percentile,
+            dss_result = dss(x.to(device), y.to(device), data_range=1., percentile=percentile,
                              reduction='none')
             assert (dss_result > 0 and dss_result <= 1.), f'Out of bounds result'
 
 
-def test_dss_supports_different_data_ranges(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
-    prediction_255 = (prediction * 255).type(torch.uint8)
-    target_255 = (target * 255).type(torch.uint8)
+def test_dss_supports_different_data_ranges(x: torch.Tensor, y: torch.Tensor, device: str) -> None:
+    prediction_255 = (x * 255).type(torch.uint8)
+    target_255 = (y * 255).type(torch.uint8)
     measure_255 = dss(prediction_255.to(device), target_255.to(device), data_range=255)
     measure = dss((prediction_255 / 255.).to(device), (target_255 / 255.).to(device))
 
@@ -84,13 +84,13 @@ def test_dss_supports_different_data_ranges(prediction: torch.Tensor, target: to
     assert diff <= 1e-6, f'Result for same tensor with different data_range should be the same, got {diff}'
 
 
-def test_dss_modes(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
+def test_dss_modes(x: torch.Tensor, y: torch.Tensor, device: str) -> None:
     for reduction in ['mean', 'sum', 'none']:
-        dss(prediction.to(device), target.to(device), reduction=reduction)
+        dss(x.to(device), y.to(device), reduction=reduction)
 
     for reduction in ['DEADBEEF', 'random']:
         with pytest.raises(KeyError):
-            dss(prediction.to(device), target.to(device), reduction=reduction)
+            dss(x.to(device), y.to(device), reduction=reduction)
 
 
 def test_dss_compare_with_matlab(device: str) -> None:
