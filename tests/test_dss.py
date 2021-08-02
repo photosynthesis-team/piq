@@ -1,14 +1,16 @@
 import torch
 import pytest
+
 from piq import dss, DSSLoss
 from skimage.io import imread
 from typing import Tuple
 
+
 def _rgb2gray(x):
-    return 0.2989 * x[:,:,0] + 0.5870 * x[:,:,1] + 0.1140 * x[:,:,2]
+    return 0.2989 * x[:, :, 0] + 0.5870 * x[:, :, 1] + 0.1140 * x[:, :, 2]
 
 
-# ================== Test function: `haarpsi` ==================
+# ================== Test function: `dss` ==================
 def test_dss_to_be_one_for_identical_inputs(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
     prediction, _ = input_tensors
     index = dss(prediction.to(device), prediction.to(device), data_range=1., reduction='none')
@@ -63,12 +65,13 @@ def test_dss_raises_if_incorrect_value(prediction: torch.Tensor, target: torch.T
         dss(prediction.to(device), target.to(device), data_range=1., sigma_similarity=0)
     # Percentile
     for percentile in [-0.5, 0, 0.01, 0.5, 1, 1.5]:
-        if percentile <=0 or percentile>1:
+        if percentile <= 0 or percentile > 1:
             with pytest.raises(ValueError):
                 dss(prediction.to(device), target.to(device), data_range=1., percentile=percentile)
         else:
-            dss_result = dss(prediction.to(device), target.to(device), data_range=1., percentile=percentile, reduction='none')
-            assert (dss_result > 0 and dss_result <= 1.) , f'Out of bounds result'
+            dss_result = dss(prediction.to(device), target.to(device), data_range=1., percentile=percentile,
+                             reduction='none')
+            assert (dss_result > 0 and dss_result <= 1.), f'Out of bounds result'
 
 
 def test_dss_supports_different_data_ranges(prediction: torch.Tensor, target: torch.Tensor, device: str) -> None:
@@ -96,14 +99,14 @@ def test_dss_compare_with_matlab(device: str) -> None:
     target = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'))
     predicted_score = dss(prediction.to(device), target.to(device), data_range=255, reduction='none')
     target_score = torch.tensor([0.45217181]).to(predicted_score)
-    assert torch.isclose(predicted_score, target_score, atol=1e-3),\
+    assert torch.isclose(predicted_score, target_score, atol=1e-3), \
         f'Expected result similar to MATLAB, got diff{predicted_score - target_score}'
     # color image : use same rgb2gray formula as matlab
     prediction = torch.tensor(_rgb2gray(imread('tests/assets/I01.BMP'))).to(torch.uint8)
     target = torch.tensor(_rgb2gray(imread('tests/assets/i01_01_5.bmp'))).to(torch.uint8)
     predicted_score = dss(prediction.to(device), target.to(device), data_range=255, reduction='none')
     target_score = torch.tensor([0.77177436]).to(predicted_score)
-    assert torch.isclose(predicted_score, target_score, atol=1e-4),\
+    assert torch.isclose(predicted_score, target_score, atol=1e-4), \
         f'Expected result similar to MATLAB, got diff{predicted_score - target_score}'
 
 

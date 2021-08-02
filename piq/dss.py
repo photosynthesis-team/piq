@@ -247,8 +247,9 @@ class DSSLoss(_Loss):
     def __init__(self, reduction: str = 'mean',
                 data_range: Union[int, float] = 1.0, dct_size: int = 8,
                 sigma_weight: float = 1.55, kernel_size: int = 3,
-                sigma_similarity: float = 1.5, percentile: float = 0.05) -> torch.Tensor:
+                sigma_similarity: float = 1.5, percentile: float = 0.05) -> None:
         super().__init__()
+
         self.data_range = data_range
         self.reduction = reduction
 
