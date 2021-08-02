@@ -145,7 +145,7 @@ class ContentLoss(_Loss):
             "mae": nn.L1Loss,
         }[distance](reduction='none')
 
-        self.weights = [torch.tensor(w) for w in weights]
+        self.weights = [torch.tensor(w) if not isinstance(w, torch.Tensor) else w for w in weights]
         mean = torch.tensor(mean)
         std = torch.tensor(std)
         self.mean = mean.view(1, -1, 1, 1)
