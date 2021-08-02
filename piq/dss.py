@@ -49,7 +49,7 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
 
     _validate_input(tensors=[x, y])
 
-    for size in (dct_size, kernel_size) :
+    for size in (dct_size, kernel_size):
         if size <= 0 or size > min(x.size(-1), x.size(-2)):
             raise ValueError('DCT and kernels sizes must be included in (0, input size)')
 
@@ -69,8 +69,8 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
 
     # Crop images size to the closest multiplication of 8
     rows, cols = x_lum.size()[-2:]
-    rows = 8*(rows//8)
-    cols = 8*(cols//8)
+    rows = 8 * (rows // 8)
+    cols = 8 * (cols // 8)
     x_lum = x_lum[:, :, 0:rows, 0:cols]
     y_lum = y_lum[:, :, 0:rows, 0:cols]
 
@@ -80,22 +80,22 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
 
     # Create a Gaussian window that will be used to weight subbands scores
     r = torch.arange(1, 9)
-    Y,X = torch.meshgrid(r, r)
-    distance = torch.sqrt((X - 0.5)**2 + (Y - 0.5)**2)
-    weight = torch.exp(- (distance**2 / (2 * sigma_weight**2) ))
+    Y, X = torch.meshgrid(r, r)
+    distance = torch.sqrt((X - 0.5) ** 2 + (Y - 0.5) ** 2)
+    weight = torch.exp(- (distance ** 2 / (2 * sigma_weight ** 2)))
 
     # Compute similarity between each subband in img1 and img2
     subband_sim_matrix = torch.zeros((8, 8))
     thres = 1e-2
     for m in range(8):
         for n in range(8):
-            first_term = (m==0 and n==0) # boolean
+            first_term = (m == 0 and n == 0)  # boolean
 
-            if weight[m,n] < thres: # Skip subbands with very small weight
-                weight[m,n] = 0
+            if weight[m, n] < thres:  # Skip subbands with very small weight
+                weight[m, n] = 0
                 continue
 
-            subband_sim_matrix[m,n] = _subband_similarity(
+            subband_sim_matrix[m, n] = _subband_similarity(
                 dct_x[:, :, m::8, n::8],
                 dct_y[:, :, m::8, n::8],
                 first_term, kernel_size, sigma_similarity, percentile)
@@ -134,11 +134,11 @@ def _subband_similarity(x: torch.Tensor, y: torch.Tensor, first_term: bool,
     # Compute local variance
     kernel = gaussian_filter(kernel_size=kernel_size, sigma=sigma)
     kernel = kernel.view(1, 1, kernel_size, kernel_size).to(x)
-    mu_x = F.conv2d(x, kernel, padding=kernel_size//2)
-    mu_y = F.conv2d(y, kernel, padding=kernel_size//2)
+    mu_x = F.conv2d(x, kernel, padding=kernel_size // 2)
+    mu_y = F.conv2d(y, kernel, padding=kernel_size // 2)
 
-    sigma_xx = F.conv2d(x * x, kernel, padding=kernel_size//2) - mu_x ** 2
-    sigma_yy = F.conv2d(y * y, kernel, padding=kernel_size//2) - mu_y ** 2
+    sigma_xx = F.conv2d(x * x, kernel, padding=kernel_size // 2) - mu_x ** 2
+    sigma_yy = F.conv2d(y * y, kernel, padding=kernel_size // 2) - mu_y ** 2
 
     sigma_xx[sigma_xx < 0] = 0
     sigma_yy[sigma_yy < 0] = 0
@@ -151,7 +151,7 @@ def _subband_similarity(x: torch.Tensor, y: torch.Tensor, first_term: bool,
 
     # For DC, multiply by a right term
     if first_term:
-        sigma_xy = F.conv2d(x * y, kernel, padding=kernel_size//2) - mu_x * mu_y
+        sigma_xy = F.conv2d(x * y, kernel, padding=kernel_size // 2) - mu_x * mu_y
         right_term = ((sigma_xy + C) / (torch.sqrt(sigma_xx * sigma_yy) + C))
         sorted_right = torch.sort(right_term.flatten()).values
         similarity *= torch.mean(sorted_right[:percentile_index])
@@ -166,11 +166,11 @@ def _dct_matrix(N: int) -> torch.Tensor:
     Args:
         N: size of DCT matrix to create (N, N)
     """
-    p = torch.arange(1,N).reshape((N-1, 1))
-    q = torch.arange(1,2*N,2)
+    p = torch.arange(1, N).reshape((N - 1, 1))
+    q = torch.arange(1, 2 * N, 2)
     return torch.cat((
-        math.sqrt(1/N)*torch.ones((1,N)),
-        math.sqrt(2/N) * torch.cos(math.pi / (2 * N) * p * q)), 0)
+        math.sqrt(1 / N) * torch.ones((1, N)),
+        math.sqrt(2 / N) * torch.cos(math.pi / (2 * N) * p * q)), 0)
 
 
 def _dct_decomp(x: torch.Tensor, N: int = 8) -> torch.Tensor:
@@ -188,9 +188,9 @@ def _dct_decomp(x: torch.Tensor, N: int = 8) -> torch.Tensor:
     x = x.view(bs, 1, h, w)
 
     # make NxN blocs out of image
-    blocks = F.unfold(x, kernel_size=(N, N), stride=(N, N)) # shape (1, NxN, block_num)
+    blocks = F.unfold(x, kernel_size=(N, N), stride=(N, N))  # shape (1, NxN, block_num)
     blocks = blocks.transpose(1, 2)
-    blocks = blocks.view(bs, 1, -1, N, N) # shape (bs, 1, block_num, N, N)
+    blocks = blocks.view(bs, 1, -1, N, N)  # shape (bs, 1, block_num, N, N)
 
     # apply DCT transform
     coeffs = _dct_matrix(N)
@@ -198,7 +198,7 @@ def _dct_decomp(x: torch.Tensor, N: int = 8) -> torch.Tensor:
     if x.is_cuda:
         coeffs = coeffs.cuda()
 
-    blocks = coeffs @ blocks @ coeffs.t() # @ does operation on last 2 channels only
+    blocks = coeffs @ blocks @ coeffs.t()  # @ does operation on last 2 channels only
 
     # Reconstruct image
     blocks = blocks.reshape(bs, -1, N ** 2)
@@ -244,10 +244,11 @@ class DSSLoss(_Loss):
     References:
         https://sse.tongji.edu.cn/linzhang/ICIP12/ICIP-SR-SIM.pdf
         """
+
     def __init__(self, reduction: str = 'mean',
-                data_range: Union[int, float] = 1.0, dct_size: int = 8,
-                sigma_weight: float = 1.55, kernel_size: int = 3,
-                sigma_similarity: float = 1.5, percentile: float = 0.05) -> None:
+                 data_range: Union[int, float] = 1.0, dct_size: int = 8,
+                 sigma_weight: float = 1.55, kernel_size: int = 3,
+                 sigma_similarity: float = 1.5, percentile: float = 0.05) -> None:
         super().__init__()
 
         self.data_range = data_range
