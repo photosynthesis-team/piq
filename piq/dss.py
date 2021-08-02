@@ -8,14 +8,14 @@ References:
 """
 import math
 import functools
-from typing import Union
-
 import torch
+
 import torch.nn.functional as F
 
+from typing import Union
 from torch.nn.modules.loss import _Loss
 
-from piq.utils import _adjust_dimensions, _validate_input
+from piq.utils import _validate_input
 from piq.functional import gaussian_filter, rgb2yiq
 
 
@@ -40,7 +40,6 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         DSS: Index of similarity betwen two images. In [0, 1] interval.
     Note:
         This implementation is based on the original MATLAB code (see header).
-
     """
     if sigma_weight == 0 or sigma_similarity == 0:
         raise ValueError('Gaussian sigmas must not be null.')
@@ -48,8 +47,7 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     if percentile <= 0 or percentile > 1:
         raise ValueError('Percentile must be in ]0,1]')
 
-    _validate_input(input_tensors=(x, y), allow_5d=False)
-    x, y = _adjust_dimensions(input_tensors=(x, y))
+    _validate_input(tensors=[x, y])
 
     for size in (dct_size, kernel_size) :
         if size <= 0 or size > min(x.size(-1), x.size(-2)):
@@ -112,7 +110,6 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
             }[reduction](dim=0)
 
 
-# Compute similarity between two subbbands
 def _subband_similarity(x: torch.Tensor, y: torch.Tensor, first_term: bool,
                         kernel_size: int = 3, sigma: float = 1.5,
                         percentile: float = 0.05) -> torch.Tensor:
@@ -129,7 +126,6 @@ def _subband_similarity(x: torch.Tensor, y: torch.Tensor, first_term: bool,
         DSS: Index of similarity betwen two images. In [0, 1] interval.
     Note:
         This implementation is based on the original MATLAB code (see header).
-
     """
     # C takes value of DC or AC coefficient depending on stage
     DC_coeff, AC_coeff = (1000, 300)
@@ -164,9 +160,8 @@ def _subband_similarity(x: torch.Tensor, y: torch.Tensor, first_term: bool,
 
 
 def _dct_matrix(N: int) -> torch.Tensor:
-    r"""
-    Computes the matrix coefficients for DCT transform
-    Following this formula https://fr.mathworks.com/help/images/discrete-cosine-transform.html
+    r""" Computes the matrix coefficients for DCT transform using the following formula:
+    https://fr.mathworks.com/help/images/discrete-cosine-transform.html
 
     Args:
         N: size of DCT matrix to create (N, N)
@@ -179,8 +174,7 @@ def _dct_matrix(N: int) -> torch.Tensor:
 
 
 def _dct_decomp(x: torch.Tensor, N: int = 8) -> torch.Tensor:
-    r"""
-    Computes 2D Discrete Cosine Transform on 8x8 blocks of an image
+    r""" Computes 2D Discrete Cosine Transform on 8x8 blocks of an image
 
     Args:
         x: input image. Shape (Bs, 1, H, W)
@@ -189,7 +183,6 @@ def _dct_decomp(x: torch.Tensor, N: int = 8) -> torch.Tensor:
         decomp: the result of DCT on NxN blocks of the image, same shape.
     Note:
         Inspired by https://gitlab.com/Queuecumber/torchjpeg
-
     """
     bs, _, h, w = x.size()
     x = x.view(bs, 1, h, w)
@@ -242,7 +235,6 @@ class DSSLoss(_Loss):
         - Target: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
 
     Examples::
-
         >>> loss = DSSLoss()
         >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
         >>> target = torch.rand(3, 3, 256, 256)
@@ -274,6 +266,7 @@ class DSSLoss(_Loss):
 
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         r"""Computation of DSS as a loss function.
+
         Args:
             prediction: Tensor of prediction of the network.
             target: Reference tensor.
