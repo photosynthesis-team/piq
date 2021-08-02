@@ -1,6 +1,8 @@
 name: deployment to pypi
 
 on:
+  pull_request:
+    types: [opened, synchronize, reopened]
   release:
     types: [published]
 
