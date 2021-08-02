@@ -123,17 +123,17 @@ def test_content_loss_raises_if_layers_weights_mismatch(x, y) -> None:
 def test_content_loss_doesnt_rise_if_layers_weights_mismatch_but_allowed(x, y) -> None:
     wrong_combinations = (
         {
-            'layers': ['layer1'],
+            'layers': ['relu1_2'],
             'weights': [0.5, 0.5],
             'allow_layers_weights_mismatch': True
         },
         {
-            'layers': ['layer1', 'layer2'],
+            'layers': ['relu1_2', 'relu2_2'],
             'weights': [0.5],
             'allow_layers_weights_mismatch': True
         },
         {
-            'layers': ['layer1'],
+            'layers': ['relu2_2'],
             'weights': [],
             'allow_layers_weights_mismatch': True
         }
