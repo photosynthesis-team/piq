@@ -95,19 +95,34 @@ def test_dss_modes(x: torch.Tensor, y: torch.Tensor, device: str) -> None:
 
 def test_dss_compare_with_matlab(device: str) -> None:
     # greyscale image
-    prediction = torch.tensor(imread('tests/assets/goldhill.gif'))
-    target = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'))
+    prediction = torch.tensor(imread('tests/assets/goldhill.gif')).unsqueeze(0).unsqueeze(0)
+    target = torch.tensor(imread('tests/assets/goldhill_jpeg.gif')).unsqueeze(0).unsqueeze(0)
     predicted_score = dss(prediction.to(device), target.to(device), data_range=255, reduction='none')
     target_score = torch.tensor([0.45217181]).to(predicted_score)
     assert torch.isclose(predicted_score, target_score, atol=1e-3), \
         f'Expected result similar to MATLAB, got diff{predicted_score - target_score}'
+
     # color image : use same rgb2gray formula as matlab
-    prediction = torch.tensor(_rgb2gray(imread('tests/assets/I01.BMP'))).to(torch.uint8)
-    target = torch.tensor(_rgb2gray(imread('tests/assets/i01_01_5.bmp'))).to(torch.uint8)
+    prediction = torch.tensor(_rgb2gray(imread('tests/assets/I01.BMP'))).to(torch.uint8).unsqueeze(0).unsqueeze(0)
+    target = torch.tensor(_rgb2gray(imread('tests/assets/i01_01_5.bmp'))).to(torch.uint8).unsqueeze(0).unsqueeze(0)
     predicted_score = dss(prediction.to(device), target.to(device), data_range=255, reduction='none')
     target_score = torch.tensor([0.77177436]).to(predicted_score)
     assert torch.isclose(predicted_score, target_score, atol=1e-4), \
         f'Expected result similar to MATLAB, got diff{predicted_score - target_score}'
+
+
+def test_dss_raises_if_input_is_not_4d(x: torch.Tensor, y: torch.Tensor) -> None:
+    x_2d, y_2d = x[0, 0, ...], y[0, 0, ...]
+    with pytest.raises(AssertionError):
+        dss(x_2d, y_2d)
+
+    x_3d, y_3d = x[0], y[0]
+    with pytest.raises(AssertionError):
+        dss(x_3d, y_3d)
+
+    x_5d, y_5d = x.unsqueeze(0), y.unsqueeze(0)
+    with pytest.raises(AssertionError):
+        dss(x_5d, y_5d)
 
 
 # ================== Test class: `DSSLoss` =================

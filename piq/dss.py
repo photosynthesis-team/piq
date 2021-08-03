@@ -26,8 +26,8 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     r"""Compute DCT Subband Similarity index for a batch of images.
 
     Args:
-        x: Predicted images. Shape (H, W), (C, H, W) or (N, C, H, W).
-        y: Target images. Shape (H, W), (C, H, W) or (N, C, H, W).
+        x: Predicted images of shape (N, C, H, W).
+        y: Target images of shape (N, C, H, W).
         reduction: Reduction over samples in batch: "mean"|"sum"|"none"
         data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
         dct_size: Size of blocks in 2D Discrete Cosine Transform
@@ -47,7 +47,7 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     if percentile <= 0 or percentile > 1:
         raise ValueError('Percentile must be in ]0,1]')
 
-    _validate_input(tensors=[x, y])
+    _validate_input(tensors=[x, y], dim_range=(4, 4))
 
     for size in (dct_size, kernel_size):
         if size <= 0 or size > min(x.size(-1), x.size(-2)):
@@ -58,11 +58,11 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     y = (y / float(data_range)) * 255
 
     num_channels = x.size(1)
+
     # Use luminance channel in case of RGB images (Y from YIQ or YCrCb)
     if num_channels == 3:
         x_lum = rgb2yiq(x)[:, :1]
         y_lum = rgb2yiq(y)[:, :1]
-
     else:
         x_lum = x
         y_lum = y
