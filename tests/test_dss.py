@@ -71,7 +71,7 @@ def test_dss_raises_if_incorrect_value(x: torch.Tensor, y: torch.Tensor, device:
         else:
             dss_result = dss(x.to(device), y.to(device), data_range=1., percentile=percentile,
                              reduction='none')
-            assert (dss_result > 0 and dss_result <= 1.), f'Out of bounds result'
+            assert (dss_result > 0 and dss_result <= 1.), 'Out of bounds result'
 
 
 def test_dss_supports_different_data_ranges(x: torch.Tensor, y: torch.Tensor, device: str) -> None:
