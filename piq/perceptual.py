@@ -10,7 +10,7 @@ References:
     2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
     https://arxiv.org/abs/1801.03924
 """
-from typing import List, Union, Iterable
+from typing import List, Union, Collection
 
 import torch
 import torch.nn as nn
@@ -113,10 +113,16 @@ class ContentLoss(_Loss):
         https://arxiv.org/abs/1801.03924
     """
 
-    def __init__(self, feature_extractor: Union[str, torch.nn.Module] = "vgg16", layers: Iterable[str] = ("relu3_3", ),
+    def __init__(self, feature_extractor: Union[str, torch.nn.Module] = "vgg16", layers: Collection[str] = ("relu3_3",),
                  weights: List[Union[float, torch.Tensor]] = [1.], replace_pooling: bool = False,
                  distance: str = "mse", reduction: str = "mean", mean: List[float] = IMAGENET_MEAN,
-                 std: List[float] = IMAGENET_STD, normalize_features: bool = False) -> None:
+                 std: List[float] = IMAGENET_STD, normalize_features: bool = False,
+                 allow_layers_weights_mismatch: bool = False) -> None:
+
+        if not allow_layers_weights_mismatch and len(layers) != len(weights):
+            raise ValueError(f'Lengths of provided layers and weighs mismatch ({len(weights)} weights and '
+                             f'{len(layers)} layers), which will cause incorrect results. '
+                             f'Please provide weight for each layer.')
 
         super().__init__()
 
@@ -146,6 +152,7 @@ class ContentLoss(_Loss):
         }[distance](reduction='none')
 
         self.weights = [torch.tensor(w) if not isinstance(w, torch.Tensor) else w for w in weights]
+
         mean = torch.tensor(mean)
         std = torch.tensor(std)
         self.mean = mean.view(1, -1, 1, 1)
@@ -178,7 +185,7 @@ class ContentLoss(_Loss):
 
         return _reduce(loss, self.reduction)
 
-    def compute_distance(self, x_features: torch.Tensor, y_features: torch.Tensor) -> torch.Tensor:
+    def compute_distance(self, x_features: List[torch.Tensor], y_features: List[torch.Tensor]) -> List[torch.Tensor]:
         r"""Take L2 or L1 distance between feature maps depending on ``distance``.
 
         Args:
@@ -209,7 +216,8 @@ class ContentLoss(_Loss):
 
         return features
 
-    def normalize(self, x: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def normalize(x: torch.Tensor) -> torch.Tensor:
         r"""Normalize feature maps in channel direction to unit length.
 
         Args:
@@ -296,7 +304,8 @@ class StyleLoss(ContentLoss):
         y_gram = [self.gram_matrix(x) for x in y_features]
         return [self.distance(x, y) for x, y in zip(x_gram, y_gram)]
 
-    def gram_matrix(self, x: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def gram_matrix(x: torch.Tensor) -> torch.Tensor:
         r"""Compute Gram matrix for batch of features.
 
         Args:
@@ -403,8 +412,8 @@ class DISTS(ContentLoss):
         dists_weights.extend(torch.split(weights['beta'], channels, dim=1))
 
         super().__init__("vgg16", layers=dists_layers, weights=dists_weights,
-                         replace_pooling=True, reduction=reduction,
-                         mean=mean, std=std, normalize_features=False)
+                         replace_pooling=True, reduction=reduction, mean=mean, std=std,
+                         normalize_features=False, allow_layers_weights_mismatch=True)
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         r"""
