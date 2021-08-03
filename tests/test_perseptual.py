@@ -67,7 +67,7 @@ def test_content_loss_replace_pooling(x, y, model: Union[str, Callable]) -> None
 
 
 def test_content_loss_supports_custom_extractor(x, y, device: str) -> None:
-    loss = ContentLoss(feature_extractor=InceptionV3().blocks, layers=['0', '1'])
+    loss = ContentLoss(feature_extractor=InceptionV3().blocks, layers=['0', '1'], weights=[0.5, 0.5])
     loss(x, y)
 
 
@@ -98,6 +98,48 @@ def test_content_loss_forward_for_normalized_input(device: str) -> None:
     y = torch.randn(2, 3, 96, 96).to(device)
     loss = ContentLoss(mean=[0., 0., 0.], std=[1., 1., 1.])
     loss(x.to(device), y.to(device))
+
+
+def test_content_loss_raises_if_layers_weights_mismatch(x, y) -> None:
+    wrong_combinations = (
+        {
+            'layers': ['layer1'],
+            'weights': [0.5, 0.5]
+        },
+        {
+            'layers': ['layer1', 'layer2'],
+            'weights': [0.5]
+        },
+        {
+            'layers': ['layer1'],
+            'weights': []
+        }
+    )
+    for combination in wrong_combinations:
+        with pytest.raises(ValueError):
+            ContentLoss(**combination)
+
+
+def test_content_loss_doesnt_rise_if_layers_weights_mismatch_but_allowed(x, y) -> None:
+    wrong_combinations = (
+        {
+            'layers': ['relu1_2'],
+            'weights': [0.5, 0.5],
+            'allow_layers_weights_mismatch': True
+        },
+        {
+            'layers': ['relu1_2', 'relu2_2'],
+            'weights': [0.5],
+            'allow_layers_weights_mismatch': True
+        },
+        {
+            'layers': ['relu2_2'],
+            'weights': [],
+            'allow_layers_weights_mismatch': True
+        }
+    )
+    for combination in wrong_combinations:
+        ContentLoss(**combination)
 
 
 # ================== Test class: `StyleLoss` ==================
