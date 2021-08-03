@@ -15,7 +15,7 @@ import torch.nn.functional as F
 from typing import Union
 from torch.nn.modules.loss import _Loss
 
-from piq.utils import _validate_input
+from piq.utils import _validate_input, _reduce
 from piq.functional import gaussian_filter, rgb2yiq
 
 
@@ -34,24 +34,26 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         sigma_weight: STD of gaussian that determines the proportion of weight given to low freq and high freq.
             Default: 1.55
         kernel_size: Size of gaussian kernel for computing subband similarity. Default: 3
-        sigma_similarity: STD of gaussian kernel for computing subband similarity. Default: 1.5
+        sigma_similarity: STD of gaussian kernel for computing subband similarity. Default: 1.55
         percentile: % in [0,1] of worst similarity scores which should be kept. Default: 0.05
     Returns:
-        DSS: Index of similarity betwen two images. In [0, 1] interval.
+        DSS: Index of similarity between two images. In [0, 1] interval.
     Note:
         This implementation is based on the original MATLAB code (see header).
+        Image will be scaled to [0, 255] because all constants are computed for this range.
+        Make sure you know what you are doing when changing default coefficient values.
     """
     if sigma_weight == 0 or sigma_similarity == 0:
-        raise ValueError('Gaussian sigmas must not be null.')
+        raise ValueError('Gaussian sigmas must not be 0.')
 
     if percentile <= 0 or percentile > 1:
-        raise ValueError('Percentile must be in ]0,1]')
+        raise ValueError('Percentile must be in [0,1]')
 
     _validate_input(tensors=[x, y], dim_range=(4, 4))
 
     for size in (dct_size, kernel_size):
         if size <= 0 or size > min(x.size(-1), x.size(-2)):
-            raise ValueError('DCT and kernels sizes must be included in (0, input size)')
+            raise ValueError('DCT and kernels sizes must be included in [0, input size)')
 
     # Rescale to [0, 255] range, because all constant are calculated for this factor
     x = (x / float(data_range)) * 255
@@ -67,47 +69,44 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         x_lum = x
         y_lum = y
 
-    # Crop images size to the closest multiplication of 8
+    # Crop images size to the closest multiplication of `dct_size`
     rows, cols = x_lum.size()[-2:]
-    rows = 8 * (rows // 8)
-    cols = 8 * (cols // 8)
+    rows = dct_size * (rows // dct_size)
+    cols = dct_size * (cols // dct_size)
     x_lum = x_lum[:, :, 0:rows, 0:cols]
     y_lum = y_lum[:, :, 0:rows, 0:cols]
 
-    # Channel decomposition for both images by 8x8 2D DCT
+    # Channel decomposition for both images by `dct_size`x`dct_size` 2D DCT
     dct_x = _dct_decomp(x_lum, dct_size)
     dct_y = _dct_decomp(y_lum, dct_size)
 
     # Create a Gaussian window that will be used to weight subbands scores
-    r = torch.arange(1, 9)
+    r = torch.arange(1, dct_size + 1)
     Y, X = torch.meshgrid(r, r)
     distance = torch.sqrt((X - 0.5) ** 2 + (Y - 0.5) ** 2)
     weight = torch.exp(- (distance ** 2 / (2 * sigma_weight ** 2)))
 
     # Compute similarity between each subband in img1 and img2
-    subband_sim_matrix = torch.zeros((8, 8))
-    thres = 1e-2
-    for m in range(8):
-        for n in range(8):
+    subband_sim_matrix = torch.zeros((dct_size, dct_size))
+    threshold = 1e-2
+    for m in range(dct_size):
+        for n in range(dct_size):
             first_term = (m == 0 and n == 0)  # boolean
 
-            if weight[m, n] < thres:  # Skip subbands with very small weight
+            # Skip subbands with very small weight
+            if weight[m, n] < threshold:
                 weight[m, n] = 0
                 continue
 
             subband_sim_matrix[m, n] = _subband_similarity(
-                dct_x[:, :, m::8, n::8],
-                dct_y[:, :, m::8, n::8],
+                dct_x[:, :, m::dct_size, n::dct_size],
+                dct_y[:, :, m::dct_size, n::dct_size],
                 first_term, kernel_size, sigma_similarity, percentile)
 
     # Weight subbands similarity scores
-    result = torch.sum(subband_sim_matrix * (weight / torch.sum(weight)))
-    if reduction == 'none':
-        return result
-
-    return {'mean': result.mean,
-            'sum': result.sum
-            }[reduction](dim=0)
+    similarity_scores = torch.sum(subband_sim_matrix * (weight / torch.sum(weight)))
+    dss_val = _reduce(similarity_scores, reduction)
+    return dss_val
 
 
 def _subband_similarity(x: torch.Tensor, y: torch.Tensor, first_term: bool,
@@ -127,9 +126,9 @@ def _subband_similarity(x: torch.Tensor, y: torch.Tensor, first_term: bool,
     Note:
         This implementation is based on the original MATLAB code (see header).
     """
-    # C takes value of DC or AC coefficient depending on stage
-    DC_coeff, AC_coeff = (1000, 300)
-    C = DC_coeff if first_term else AC_coeff
+    # `c` takes value of DC or AC coefficient depending on stage
+    dc_coeff, ac_coeff = (1000, 300)
+    c = dc_coeff if first_term else ac_coeff
 
     # Compute local variance
     kernel = gaussian_filter(kernel_size=kernel_size, sigma=sigma)
@@ -142,7 +141,7 @@ def _subband_similarity(x: torch.Tensor, y: torch.Tensor, first_term: bool,
 
     sigma_xx[sigma_xx < 0] = 0
     sigma_yy[sigma_yy < 0] = 0
-    left_term = (2 * torch.sqrt(sigma_xx * sigma_yy) + C) / (sigma_xx + sigma_yy + C)
+    left_term = (2 * torch.sqrt(sigma_xx * sigma_yy) + c) / (sigma_xx + sigma_yy + c)
 
     # Spatial pooling of worst scores
     percentile_index = round(percentile * (left_term.size(-2) * left_term.size(-1)))
@@ -152,7 +151,7 @@ def _subband_similarity(x: torch.Tensor, y: torch.Tensor, first_term: bool,
     # For DC, multiply by a right term
     if first_term:
         sigma_xy = F.conv2d(x * y, kernel, padding=kernel_size // 2) - mu_x * mu_y
-        right_term = ((sigma_xy + C) / (torch.sqrt(sigma_xx * sigma_yy) + C))
+        right_term = ((sigma_xy + c) / (torch.sqrt(sigma_xx * sigma_yy) + c))
         sorted_right = torch.sort(right_term.flatten()).values
         similarity *= torch.mean(sorted_right[:percentile_index])
 
@@ -173,12 +172,12 @@ def _dct_matrix(N: int) -> torch.Tensor:
         math.sqrt(2 / N) * torch.cos(math.pi / (2 * N) * p * q)), 0)
 
 
-def _dct_decomp(x: torch.Tensor, N: int = 8) -> torch.Tensor:
+def _dct_decomp(x: torch.Tensor, dct_size: int = 8) -> torch.Tensor:
     r""" Computes 2D Discrete Cosine Transform on 8x8 blocks of an image
 
     Args:
         x: input image. Shape (Bs, 1, H, W)
-        N: size of DCT performed. Default: 8
+        dct_size: size of DCT performed. Default: 8
     Returns:
         decomp: the result of DCT on NxN blocks of the image, same shape.
     Note:
@@ -188,12 +187,12 @@ def _dct_decomp(x: torch.Tensor, N: int = 8) -> torch.Tensor:
     x = x.view(bs, 1, h, w)
 
     # make NxN blocs out of image
-    blocks = F.unfold(x, kernel_size=(N, N), stride=(N, N))  # shape (1, NxN, block_num)
+    blocks = F.unfold(x, kernel_size=(dct_size, dct_size), stride=(dct_size, dct_size))  # shape (1, NxN, block_num)
     blocks = blocks.transpose(1, 2)
-    blocks = blocks.view(bs, 1, -1, N, N)  # shape (bs, 1, block_num, N, N)
+    blocks = blocks.view(bs, 1, -1, dct_size, dct_size)  # shape (bs, 1, block_num, N, N)
 
     # apply DCT transform
-    coeffs = _dct_matrix(N)
+    coeffs = _dct_matrix(dct_size)
 
     if x.is_cuda:
         coeffs = coeffs.cuda()
@@ -201,9 +200,9 @@ def _dct_decomp(x: torch.Tensor, N: int = 8) -> torch.Tensor:
     blocks = coeffs @ blocks @ coeffs.t()  # @ does operation on last 2 channels only
 
     # Reconstruct image
-    blocks = blocks.reshape(bs, -1, N ** 2)
+    blocks = blocks.reshape(bs, -1, dct_size ** 2)
     blocks = blocks.transpose(1, 2)
-    blocks = F.fold(blocks, output_size=x.size()[-2:], kernel_size=(N, N), stride=(N, N))
+    blocks = F.fold(blocks, output_size=x.size()[-2:], kernel_size=(dct_size, dct_size), stride=(dct_size, dct_size))
     decomp = blocks.reshape(bs, 1, x.size(-2), x.size(-1))
 
     return decomp
@@ -231,8 +230,8 @@ class DSSLoss(_Loss):
         percentile: % in [0,1] of worst similarity scores which should be kept. Default: 0.05
 
     Shape:
-        - Input: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
-        - Target: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
+        - Input: Required to be 4D (N, C, H, W). RGB channel order for colour images.
+        - Target: Required to be 4D (N, C, H, W). RGB channel order for colour images.
 
     Examples::
         >>> loss = DSSLoss()
@@ -244,7 +243,6 @@ class DSSLoss(_Loss):
     References:
         https://sse.tongji.edu.cn/linzhang/ICIP12/ICIP-SR-SIM.pdf
         """
-
     def __init__(self, reduction: str = 'mean',
                  data_range: Union[int, float] = 1.0, dct_size: int = 8,
                  sigma_weight: float = 1.55, kernel_size: int = 3,
@@ -275,7 +273,7 @@ class DSSLoss(_Loss):
         Returns:
             Value of DSS loss to be minimized. 0 <= DSS <= 1.
         """
-        # All checks are done inside fsim function
+        # All checks are done inside dss function
         score = self.dss(prediction, target)
 
         # Make sure value to be in [0, 1] range and convert to loss

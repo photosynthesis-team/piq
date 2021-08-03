@@ -89,7 +89,7 @@ def test_dss_modes(x: torch.Tensor, y: torch.Tensor, device: str) -> None:
         dss(x.to(device), y.to(device), reduction=reduction)
 
     for reduction in ['DEADBEEF', 'random']:
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             dss(x.to(device), y.to(device), reduction=reduction)
 
 
