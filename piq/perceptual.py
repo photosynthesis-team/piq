@@ -139,8 +139,6 @@ class ContentLoss(_Loss):
             else:
                 raise ValueError("Unknown feature extractor")
 
-        self.weights = [torch.tensor(w) for w in weights]
-
         if replace_pooling:
             self.model = self.replace_pooling(self.model)
 
