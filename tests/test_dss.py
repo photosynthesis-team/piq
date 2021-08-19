@@ -71,7 +71,8 @@ def test_dss_raises_if_incorrect_value(x: torch.Tensor, y: torch.Tensor, device:
         else:
             dss_result = dss(x.to(device), y.to(device), data_range=1., percentile=percentile,
                              reduction='none')
-            assert (dss_result > 0 and dss_result <= 1.), 'Out of bounds result'
+            assert torch.gt(dss_result, 0).all() and torch.le(dss_result, 1).all(), \
+                'Out of bounds result'
 
 
 def test_dss_supports_different_data_ranges(x: torch.Tensor, y: torch.Tensor, device: str) -> None:
@@ -85,8 +86,13 @@ def test_dss_supports_different_data_ranges(x: torch.Tensor, y: torch.Tensor, de
 
 
 def test_dss_modes(x: torch.Tensor, y: torch.Tensor, device: str) -> None:
-    for reduction in ['mean', 'sum', 'none']:
-        dss(x.to(device), y.to(device), reduction=reduction)
+    for reduction in ['mean', 'sum']:
+        measure = dss(x.to(device), y.to(device), reduction=reduction)
+        assert measure.dim() == 0, f'DSS with `mean` reduction must return 1 number, got {len(measure)}'
+
+    measure = dss(x.to(device), y.to(device), reduction='none')
+    assert len(measure) == x.size(0), \
+        f'DSS with `none` reduction must have length equal to number of images, got {len(measure)}'
 
     for reduction in ['DEADBEEF', 'random']:
         with pytest.raises(ValueError):

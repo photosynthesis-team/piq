@@ -26,10 +26,11 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     r"""Compute DCT Subband Similarity index for a batch of images.
 
     Args:
-        x: Predicted images of shape (N, C, H, W).
-        y: Target images of shape (N, C, H, W).
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
-        data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
+        y: A target tensor. Shape :math:`(N, C, H, W)`.
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        data_range: Maximum value range of images (usually 1.0 or 255).
         dct_size: Size of blocks in 2D Discrete Cosine Transform
         sigma_weight: STD of gaussian that determines the proportion of weight given to low freq and high freq.
             Default: 1.55
@@ -81,13 +82,12 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     dct_y = _dct_decomp(y_lum, dct_size)
 
     # Create a Gaussian window that will be used to weight subbands scores
-    r = torch.arange(1, dct_size + 1)
-    Y, X = torch.meshgrid(r, r)
-    distance = torch.sqrt((X - 0.5) ** 2 + (Y - 0.5) ** 2)
-    weight = torch.exp(- (distance ** 2 / (2 * sigma_weight ** 2)))
+    coords = torch.arange(1, dct_size + 1).to(dtype=torch.float32)
+    weight = (coords - 0.5) ** 2
+    weight = (- (weight.unsqueeze(0) + weight.unsqueeze(1)) / (2 * sigma_weight ** 2)).exp().to(x)
 
     # Compute similarity between each subband in img1 and img2
-    subband_sim_matrix = torch.zeros((dct_size, dct_size))
+    subband_sim_matrix = torch.zeros((x.size(0), dct_size, dct_size))
     threshold = 1e-2
     for m in range(dct_size):
         for n in range(dct_size):
@@ -97,14 +97,15 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
             if weight[m, n] < threshold:
                 weight[m, n] = 0
                 continue
-
-            subband_sim_matrix[m, n] = _subband_similarity(
+            
+            subband_sim_matrix[:, m, n] =  _subband_similarity(
                 dct_x[:, :, m::dct_size, n::dct_size],
                 dct_y[:, :, m::dct_size, n::dct_size],
                 first_term, kernel_size, sigma_similarity, percentile)
 
     # Weight subbands similarity scores
-    similarity_scores = torch.sum(subband_sim_matrix * (weight / torch.sum(weight)))
+    eps = torch.finfo(weight.dtype).eps
+    similarity_scores = torch.sum(subband_sim_matrix * (weight / (torch.sum(weight)) + eps), dim=[1, 2])
     dss_val = _reduce(similarity_scores, reduction)
     return dss_val
 
@@ -145,15 +146,15 @@ def _subband_similarity(x: torch.Tensor, y: torch.Tensor, first_term: bool,
 
     # Spatial pooling of worst scores
     percentile_index = round(percentile * (left_term.size(-2) * left_term.size(-1)))
-    sorted_left = torch.sort(left_term.flatten()).values
-    similarity = torch.mean(sorted_left[:percentile_index])
+    sorted_left = torch.sort(left_term.flatten(start_dim=1)).values
+    similarity = torch.mean(sorted_left[:percentile_index], dim=1)
 
     # For DC, multiply by a right term
     if first_term:
         sigma_xy = F.conv2d(x * y, kernel, padding=kernel_size // 2) - mu_x * mu_y
         right_term = ((sigma_xy + c) / (torch.sqrt(sigma_xx * sigma_yy) + c))
-        sorted_right = torch.sort(right_term.flatten()).values
-        similarity *= torch.mean(sorted_right[:percentile_index])
+        sorted_right = torch.sort(right_term.flatten(start_dim=1)).values
+        similarity *= torch.mean(sorted_right[:percentile_index], dim=1)
 
     return similarity
 
@@ -176,7 +177,7 @@ def _dct_decomp(x: torch.Tensor, dct_size: int = 8) -> torch.Tensor:
     r""" Computes 2D Discrete Cosine Transform on 8x8 blocks of an image
 
     Args:
-        x: input image. Shape (Bs, 1, H, W)
+        x: input image. Shape :math:`(N, 1, H, W)`.
         dct_size: size of DCT performed. Default: 8
     Returns:
         decomp: the result of DCT on NxN blocks of the image, same shape.
@@ -215,13 +216,10 @@ class DSSLoss(_Loss):
     use function `dss` instead.
 
     Args:
-        reduction: Specifies the reduction to apply to the output:
-            ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
-            ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``
-        data_range: The difference between the maximum and minimum of the pixel value,
-            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
-            The pixel value interval of both input and output should remain the same.
+
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        data_range: Maximum value range of images (usually 1.0 or 255).
         dct_size: Size of blocks in 2D Discrete Cosine Transform
         sigma_weight: STD of gaussian that determines the proportion of weight given to low freq and high freq.
             Default: 1.55

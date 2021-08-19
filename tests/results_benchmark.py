@@ -33,6 +33,7 @@ METRICS = {
     "PieAPP": piq.PieAPP(reduction='none'),
     "Content": piq.ContentLoss(reduction='none'),
     "Style": piq.StyleLoss(reduction='none'),
+    "DSS": functools.partial(piq.dss, reduction='none'),
 
     # No Reference
     "BRISQUE": functools.partial(piq.brisque, reduction='none')
