@@ -159,18 +159,18 @@ def _subband_similarity(x: torch.Tensor, y: torch.Tensor, first_term: bool,
     return similarity
 
 
-def _dct_matrix(N: int) -> torch.Tensor:
+def _dct_matrix(size: int) -> torch.Tensor:
     r""" Computes the matrix coefficients for DCT transform using the following formula:
     https://fr.mathworks.com/help/images/discrete-cosine-transform.html
 
     Args:
-        N: size of DCT matrix to create (N, N)
+       size : size of DCT matrix to create.  (`size`, `size`)
     """
-    p = torch.arange(1, N).reshape((N - 1, 1))
-    q = torch.arange(1, 2 * N, 2)
+    p = torch.arange(1, size).reshape((size - 1, 1))
+    q = torch.arange(1, 2 * size, 2)
     return torch.cat((
-        math.sqrt(1 / N) * torch.ones((1, N)),
-        math.sqrt(2 / N) * torch.cos(math.pi / (2 * N) * p * q)), 0)
+        math.sqrt(1 / size) * torch.ones((1, size)),
+        math.sqrt(2 / size) * torch.cos(math.pi / (2 * size) * p * q)), 0)
 
 
 def _dct_decomp(x: torch.Tensor, dct_size: int = 8) -> torch.Tensor:
