@@ -177,8 +177,9 @@ IW-SSIM      2011    `Information Weighted SSIM <https://ece.uwaterloo.ca/~z70wa
 SR-SIM       2012    `Spectral Residual Based Similarity <https://sse.tongji.edu.cn/linzhang/ICIP12/ICIP-SR-SIM.pdf>`_
 GMSD         2013    `Gradient Magnitude Similarity Deviation <https://arxiv.org/abs/1308.3052>`_
 VSI          2014    `Visual Saliency-induced Index <https://ieeexplore.ieee.org/document/6873260>`_
-\-            2016   `Content Score <https://arxiv.org/abs/1508.06576>`_
-\-            2016   `Style Score <https://arxiv.org/abs/1508.06576>`_
+DSS          2015    `DCT Subband Similarity Index <https://ieeexplore.ieee.org/document/7351172>`_
+\-           2016    `Content Score <https://arxiv.org/abs/1508.06576>`_
+\-           2016    `Style Score <https://arxiv.org/abs/1508.06576>`_
 HaarPSI      2016    `Haar Perceptual Similarity Index <https://arxiv.org/abs/1607.06140>`_
 MDSI         2016    `Mean Deviation Similarity Index <https://arxiv.org/abs/1608.07433>`_
 MS-GMSD      2017    `Multi-Scale Gradient Magnitude Similiarity Deviation <https://ieeexplore.ieee.org/document/7952357>`_
@@ -252,6 +253,7 @@ SR-SIM       \- / -             0.8076 / 0.6406 `Eval2019`_       \- / -        
 SR-SIMc      \- / -             \- / -                            \- / -             \- / -
 GMSD         0.8038 / 0.6334    0.8030 / 0.6352 `MS-GMSD`_        0.8474 / 0.6640    0.847 / 0.664 `KADID10k`_
 VSI          0.8949 / 0.7159    0.8965 / 0.7183 `Eval2019`_       0.8780 / 0.6899    0.861 / 0.678 `KADID10k`_
+DSS          0.7914 / 0.6144    0.7921 / - `Eval2019`_            0.8604 / 0.6739    0.860 / 0.674 `KADID10k`_
 Content      0.7049 / 0.5173    \- / -                            0.7237 / 0.5326    \- / -
 Style        0.5384 / 0.3720    \- / -                            0.6470 / 0.4646    \- / -
 HaarPSI      0.8732 / 0.6923    0.8732 / 0.6923 `HaarPSI`_        0.8849 / 0.6995    0.885 / 0.699 `KADID10k`_

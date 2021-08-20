@@ -82,9 +82,9 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     dct_y = _dct_decomp(y_lum, dct_size)
 
     # Create a Gaussian window that will be used to weight subbands scores
-    coords = torch.arange(1, dct_size + 1).to(dtype=torch.float32)
+    coords = torch.arange(1, dct_size + 1).to(device=x.device, dtype=torch.float32)
     weight = (coords - 0.5) ** 2
-    weight = (- (weight.unsqueeze(0) + weight.unsqueeze(1)) / (2 * sigma_weight ** 2)).exp().to(x)
+    weight = (- (weight.unsqueeze(0) + weight.unsqueeze(1)) / (2 * sigma_weight ** 2)).exp()
 
     # Compute similarity between each subband in img1 and img2
     subband_sim_matrix = torch.zeros((x.size(0), dct_size, dct_size))
@@ -98,7 +98,7 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
                 weight[m, n] = 0
                 continue
             
-            subband_sim_matrix[:, m, n] =  _subband_similarity(
+            subband_sim_matrix[:, m, n] = _subband_similarity(
                 dct_x[:, :, m::dct_size, n::dct_size],
                 dct_y[:, :, m::dct_size, n::dct_size],
                 first_term, kernel_size, sigma_similarity, percentile)
@@ -147,14 +147,14 @@ def _subband_similarity(x: torch.Tensor, y: torch.Tensor, first_term: bool,
     # Spatial pooling of worst scores
     percentile_index = round(percentile * (left_term.size(-2) * left_term.size(-1)))
     sorted_left = torch.sort(left_term.flatten(start_dim=1)).values
-    similarity = torch.mean(sorted_left[:percentile_index], dim=1)
+    similarity = torch.mean(sorted_left[:, :percentile_index], dim=1)
 
     # For DC, multiply by a right term
     if first_term:
         sigma_xy = F.conv2d(x * y, kernel, padding=kernel_size // 2) - mu_x * mu_y
         right_term = ((sigma_xy + c) / (torch.sqrt(sigma_xx * sigma_yy) + c))
         sorted_right = torch.sort(right_term.flatten(start_dim=1)).values
-        similarity *= torch.mean(sorted_right[:percentile_index], dim=1)
+        similarity *= torch.mean(sorted_right[:, :percentile_index], dim=1)
 
     return similarity
 
