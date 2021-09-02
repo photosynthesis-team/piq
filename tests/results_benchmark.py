@@ -13,6 +13,7 @@ from pathlib import Path
 from skimage.io import imread
 from scipy.stats import spearmanr, kendalltau
 
+torch.multiprocessing.set_sharing_strategy('file_system')
 
 METRICS = {
     # Full Reference
@@ -100,9 +101,36 @@ class KADID10k(TID2013):
         self.root = root / "images"
 
 
+class PIPAL(TID2013):
+    """Class to evaluate on train set of PIPAL dataset"""
+
+    def __init__(self, root: Path = Path("data/raw/pipal")):
+        assert root.exists(),\
+            "You need to download PIPAL dataset. Check https://www.jasongt.com/projectpages/pipal.html"
+        
+        assert (root / "Train_Dist").exists(),\
+            "Please place all distorted files into single folder named `Train_Dist`."
+
+        # Read files with labels and merge them into single DF
+        dfs = []
+        for filename in (root / "Train_Label").glob("*.txt"):
+            df = pd.read_csv(filename, index_col=None, header=None, names=['dist_img', 'score'])
+            dfs.append(df)
+
+        df = pd.concat(dfs, axis=0, ignore_index=True)
+        
+        df["ref_img"] = df["dist_img"].apply(lambda x: f"Train_Ref/{x[:5] + x[-4:]}")
+        df["dist_img"] = df["dist_img"].apply(lambda x: f"Train_Dist/{x}")
+
+        self.scores = df["score"].to_numpy()
+        self.df = df[["dist_img", 'ref_img', 'score']]
+        self.root = root
+
+
 DATASETS = {
     "tid2013": TID2013,
     "kadid10k": KADID10k,
+    "pipal": PIPAL,
 }
 
 
@@ -142,8 +170,8 @@ def main(dataset_name: str, path: Path, metrics: List, batch_size: int, device: 
 
     for name in metrics:
         gt_scores, metric_scores = eval_metric(loader, METRICS[name], device=device)
-        print(f"{name}: SRCC {abs(spearmanr(gt_scores, metric_scores)[0]):0.4f}",
-              f"KRCC {abs(kendalltau(gt_scores, metric_scores)[0]):0.4f}")
+        print(f"{name}: SRCC {abs(spearmanr(gt_scores, metric_scores)[0]):0.3f}",
+              f"KRCC {abs(kendalltau(gt_scores, metric_scores)[0]):0.3f}")
 
 
 if __name__ == "__main__":
@@ -165,3 +193,4 @@ if __name__ == "__main__":
         batch_size=args.batch_size,
         device=args.device
     )
+
