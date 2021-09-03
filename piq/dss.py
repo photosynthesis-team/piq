@@ -87,7 +87,7 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     weight = (- (weight.unsqueeze(0) + weight.unsqueeze(1)) / (2 * sigma_weight ** 2)).exp()
 
     # Compute similarity between each subband in img1 and img2
-    subband_sim_matrix = torch.zeros((x.size(0), dct_size, dct_size))
+    subband_sim_matrix = torch.zeros((x.size(0), dct_size, dct_size), device=x.device)
     threshold = 1e-2
     for m in range(dct_size):
         for n in range(dct_size):
