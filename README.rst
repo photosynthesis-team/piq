@@ -237,7 +237,7 @@ as it's highly dependent on fitting method and is biased towards simple examples
 For metrics that can take greyscale or colour images, ``c`` means chromatic version.
 
 ===========  =================  ================================  =================  ================================  =================  ================================
-     \                      TID2013                                              KADID10k                                             KADID10k                            
+     \                      TID2013                                              KADID10k                                             PIPAL                            
 -----------  ---------------------------------------------------  ---------------------------------------------------  ---------------------------------------------------
   Acronym    SRCC / KRCC (PIQ)             SRCC / KRCC            SRCC / KRCC (PIQ)             SRCC / KRCC            SRCC / KRCC (PIQ)             SRCC / KRCC          
 ===========  =================  ================================  =================  ================================  =================  ================================
@@ -271,7 +271,6 @@ DISTS        0.805 / 0.613      0.830 / 0.639 `DISTS`_            0.875 / 0.695 
 .. _DISTS: https://arxiv.org/abs/2004.07728
 .. _HaarPSI: https://arxiv.org/abs/1607.06140
 .. _PIPAL: https://arxiv.org/pdf/2011.15002.pdf
-.. _PIPAL_val: https://arxiv.org/pdf/2104.11599.pdf
 
 .. benchmark-section-end
 
