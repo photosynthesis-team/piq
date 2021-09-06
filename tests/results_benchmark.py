@@ -31,6 +31,7 @@ class Metric:
         assert self.category in valid_categories, f'Provided category [{self.category}] is invalid. ' \
                                                   f'Provide one of: {valid_categories}'
 
+torch.multiprocessing.set_sharing_strategy('file_system')
 
 METRICS = {
     # Full-reference
@@ -125,9 +126,36 @@ class KADID10k(TID2013):
         self.root = root / "images"
 
 
+class PIPAL(TID2013):
+    """Class to evaluate on train set of PIPAL dataset"""
+
+    def __init__(self, root: Path = Path("data/raw/pipal")):
+        assert root.exists(),\
+            "You need to download PIPAL dataset. Check https://www.jasongt.com/projectpages/pipal.html"
+        
+        assert (root / "Train_Dist").exists(),\
+            "Please place all distorted files into single folder named `Train_Dist`."
+
+        # Read files with labels and merge them into single DF
+        dfs = []
+        for filename in (root / "Train_Label").glob("*.txt"):
+            df = pd.read_csv(filename, index_col=None, header=None, names=['dist_img', 'score'])
+            dfs.append(df)
+
+        df = pd.concat(dfs, axis=0, ignore_index=True)
+        
+        df["ref_img"] = df["dist_img"].apply(lambda x: f"Train_Ref/{x[:5] + x[-4:]}")
+        df["dist_img"] = df["dist_img"].apply(lambda x: f"Train_Dist/{x}")
+
+        self.scores = df["score"].to_numpy()
+        self.df = df[["dist_img", 'ref_img', 'score']]
+        self.root = root
+
+
 DATASETS = {
     "tid2013": TID2013,
     "kadid10k": KADID10k,
+    "pipal": PIPAL,
 }
 
 
@@ -224,8 +252,8 @@ def main(dataset_name: str, path: Path, metrics: List[str], batch_size: int, dev
     for metric_name in metrics:
         metric: Metric = METRICS[metric_name]
         gt_scores, metric_scores = eval_metric(loader, metric, device=device)
-        print(f"{metric_name}: SRCC {abs(spearmanr(gt_scores, metric_scores)[0]):0.4f}",
-              f"KRCC {abs(kendalltau(gt_scores, metric_scores)[0]):0.4f}")
+        print(f"{metric_name}: SRCC {abs(spearmanr(gt_scores, metric_scores)[0]):0.3f}",
+              f"KRCC {abs(kendalltau(gt_scores, metric_scores)[0]):0.3f}")
 
 
 if __name__ == "__main__":
