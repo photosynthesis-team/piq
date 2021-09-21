@@ -412,7 +412,7 @@ def imresize(
 
     x, dtype = cast_input(x)
 
-    if isinstance(kernel, str) and sizes is not None and scales is not None:
+    if isinstance(kernel, str) and sizes is not None:
         # Core resizing module
         x = resize_1d(x, -2, size=sizes[0], scale=scales[0], kernel=kernel, sigma=sigma, padding_type=padding_type,
                       antialiasing=antialiasing)
@@ -424,37 +424,3 @@ def imresize(
     x = reshape_output(x, b, c)
     x = cast_output(x, dtype)
     return x
-
-
-if __name__ == '__main__':
-    # Just for debugging
-    torch.set_printoptions(precision=4, sci_mode=False, edgeitems=16, linewidth=200)
-    a = torch.arange(64).float().view(1, 1, 8, 8)
-    z = imresize(a, 0.5)
-    print(z)
-    # a = torch.arange(16).float().view(1, 1, 4, 4)
-    '''
-    a = torch.zeros(1, 1, 4, 4)
-    a[..., 0, 0] = 100
-    a[..., 1, 0] = 10
-    a[..., 0, 1] = 1
-    a[..., 0, -1] = 100
-    a = torch.zeros(1, 1, 4, 4)
-    a[..., -1, -1] = 100
-    a[..., -2, -1] = 10
-    a[..., -1, -2] = 1
-    a[..., -1, 0] = 100
-    '''
-    # b = imresize(a, sizes=(3, 8), antialiasing=False)
-    # c = imresize(a, sizes=(11, 13), antialiasing=True)
-    # c = imresize(a, sizes=(4, 4), antialiasing=False, kernel='gaussian', sigma=1)
-    # print(a)
-    # print(b)
-    # print(c)
-
-    # r = discrete_kernel('cubic', 1 / 3)
-    # print(r)
-    '''
-    a = torch.arange(225).float().view(1, 1, 15, 15)
-    imresize(a, sizes=[5, 5])
-    '''
