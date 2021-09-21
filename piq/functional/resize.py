@@ -213,8 +213,7 @@ def reshape_tensor(x: torch.Tensor, dim: int, kernel_size: int) -> torch.Tensor:
     return unfold
 
 
-def reshape_input(
-        x: torch.Tensor) -> typing.Tuple[torch.Tensor, _I, _I, _I, _I]:
+def reshape_input(x: torch.Tensor) -> typing.Tuple[torch.Tensor, _I, _I, int, int]:
     if x.dim() == 4:
         b, c, h, w = x.size()
     elif x.dim() == 3:
@@ -230,8 +229,7 @@ def reshape_input(
     return x, b, c, h, w
 
 
-def reshape_output(
-        x: torch.Tensor, b: _I, c: _I) -> torch.Tensor:
+def reshape_output(x: torch.Tensor, b: _I, c: _I) -> torch.Tensor:
     rh = x.size(-2)
     rw = x.size(-1)
     # Back to the original dimension
@@ -272,8 +270,8 @@ def cast_output(x: torch.Tensor, dtype: _D) -> torch.Tensor:
 def resize_1d(
         x: torch.Tensor,
         dim: int,
-        size: typing.Optional[int],
-        scale: typing.Optional[float],
+        size: int,
+        scale: float,
         kernel: str = 'cubic',
         sigma: float = 2.0,
         padding_type: str = 'reflect',
@@ -373,7 +371,7 @@ def imresize(
         rotation_degree: float = 0,
         padding_type: str = 'reflect',
         antialiasing: bool = True) -> torch.Tensor:
-    '''
+    """
     Args:
         x (torch.Tensor):
         scale (float):
@@ -385,7 +383,7 @@ def imresize(
         antialiasing (bool, default=True):
     Return:
         torch.Tensor:
-    '''
+    """
     if scale is None and sizes is None:
         raise ValueError('One of scale or sizes must be specified!')
     if scale is not None and sizes is not None:
@@ -393,7 +391,7 @@ def imresize(
 
     x, b, c, h, w = reshape_input(x)
 
-    if sizes is None:
+    if sizes is None and scale is not None:
         '''
         # Check if we can apply the convolution algorithm
         scale_inv = 1 / scale
@@ -409,23 +407,18 @@ def imresize(
         sizes = (math.ceil(h * scale), math.ceil(w * scale))
         scales = (scale, scale)
 
-    if scale is None:
+    if scale is None and sizes is not None:
         scales = (sizes[0] / h, sizes[1] / w)
 
     x, dtype = cast_input(x)
 
-    if isinstance(kernel, str):
-        # Shared keyword arguments across dimensions
-        kwargs = {
-            'kernel': kernel,
-            'sigma': sigma,
-            'padding_type': padding_type,
-            'antialiasing': antialiasing,
-        }
+    if isinstance(kernel, str) and sizes is not None and scales is not None:
         # Core resizing module
-        x = resize_1d(x, -2, size=sizes[0], scale=scales[0], **kwargs)
-        x = resize_1d(x, -1, size=sizes[1], scale=scales[1], **kwargs)
-    elif isinstance(kernel, torch.Tensor):
+        x = resize_1d(x, -2, size=sizes[0], scale=scales[0], kernel=kernel, sigma=sigma, padding_type=padding_type,
+                      antialiasing=antialiasing)
+        x = resize_1d(x, -1, size=sizes[1], scale=scales[1], kernel=kernel, sigma=sigma, padding_type=padding_type,
+                      antialiasing=antialiasing)
+    elif isinstance(kernel, torch.Tensor) and scale is not None:
         x = downsampling_2d(x, kernel, scale=int(1 / scale))
 
     x = reshape_output(x, b, c)
