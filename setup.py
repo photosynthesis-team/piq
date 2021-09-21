@@ -20,7 +20,7 @@ def get_version(rel_path: str) -> str:
     raise RuntimeError("Unable to find version string.")
 
 
-with open("README.md", "r") as f, open("requirements.txt", "r") as g:
+with open("README.rst", "r") as f, open("requirements.txt", "r") as g:
     long_description = f.read()
     required = g.read().splitlines()
 
@@ -32,7 +32,7 @@ setuptools.setup(
     author_email="snk4tr@gmail.com",
     description="Measures and metrics for image2image tasks. PyTorch.",
     long_description=long_description,
-    long_description_content_type="text/markdown",
+    long_description_content_type="text/x-rst",
     url="https://github.com/photosynthesis-team/piq",
     install_requires=required,
     packages=setuptools.find_packages(),

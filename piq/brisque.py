@@ -13,7 +13,7 @@ import torch
 from torch.nn.modules.loss import _Loss
 from torch.utils.model_zoo import load_url
 import torch.nn.functional as F
-from piq.utils import _adjust_dimensions, _validate_input
+from piq.utils import _validate_input, _reduce
 from piq.functional import rgb2yiq, gaussian_filter
 
 
@@ -22,25 +22,27 @@ def brisque(x: torch.Tensor,
             data_range: Union[int, float] = 1., reduction: str = 'mean',
             interpolation: str = 'nearest') -> torch.Tensor:
     r"""Interface of BRISQUE index.
+    Supports greyscale and colour images with RGB channel order.
 
     Args:
-        x: Tensor with shape (H, W), (C, H, W) or (N, C, H, W). RGB channel order for colour images.
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
         kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
         kernel_sigma: Sigma of normal distribution.
-        data_range: Maximum value range of input images (usually 1.0 or 255).
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none".
+        data_range: Maximum value range of images (usually 1.0 or 255).
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default: ``'mean'``
         interpolation: Interpolation to be used for scaling.
 
     Returns:
         Value of BRISQUE index.
 
-    Note:
-        The back propagation is not available using torch=1.5.0 due to bug in argmin/argmax back propagation.
-        Update the torch and torchvision to the latest versions.
-
     References:
-        .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
+        Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
         https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
+
+    Note:
+        The back propagation is not available using ``torch=1.5.0`` due to bug in ``argmin`` and ``argmax``
+        backpropagation. Update the torch and torchvision to the latest versions.
     """
     if '1.5.0' in torch.__version__:
         warnings.warn(f'BRISQUE does not support back propagation due to bug in torch={torch.__version__}.'
@@ -48,11 +50,10 @@ def brisque(x: torch.Tensor,
                       f'More info is available at https://github.com/photosynthesis-team/piq/pull/79 and'
                       f'https://github.com/pytorch/pytorch/issues/38869.')
 
-    _validate_input(input_tensors=x, allow_5d=False, kernel_size=kernel_size)
-    x = _adjust_dimensions(input_tensors=x)
+    assert kernel_size % 2 == 1, f'Kernel size must be odd, got [{kernel_size}]'
+    _validate_input([x, ], dim_range=(4, 4), data_range=(0, data_range))
 
-    assert data_range >= x.max(), f'Expected data range greater or equal maximum value, got {data_range} and {x.max()}.'
-    x = x * 255. / data_range
+    x = x / float(data_range) * 255
 
     if x.size(1) == 3:
         x = rgb2yiq(x)[:, :1]
@@ -65,50 +66,36 @@ def brisque(x: torch.Tensor,
     features = torch.cat(features, dim=-1)
     scaled_features = _scale_features(features)
     score = _score_svr(scaled_features)
-    if reduction == 'none':
-        return score
 
-    return {'mean': score.mean,
-            'sum': score.sum
-            }[reduction](dim=0)
+    return _reduce(score, reduction)
 
 
 class BRISQUELoss(_Loss):
     r"""Creates a criterion that measures the BRISQUE score for input :math:`x`.
-    :math:`x` is tensor of 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W).
+    :math:`x` is 4D tensor (N, C, H, W).
     The sum operation still operates over all the elements, and divides by :math:`n`.
     The division by :math:`n` can be avoided by setting ``reduction = 'sum'``.
 
     Args:
         kernel_size: By default, the mean and covariance of a pixel is obtained
-            by convolution with given filter_size.
+            by convolution with given filter_size. Must be an odd value.
         kernel_sigma: Standard deviation for Gaussian kernel.
-        data_range: The difference between the maximum and minimum of the pixel value,
-            i.e., if for image x it holds min(x) = 0 and max(x) = 1, then data_range = 1.
-            The pixel value interval of both input and output should remain the same.
-        reduction: Specifies the reduction to apply to the output:
-            ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
-            ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output, ``'sum'``: the output will be summed. Default: ``'mean'``.
+        data_range: Maximum value range of images (usually 1.0 or 255).
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default: ``'mean'``
         interpolation: Interpolation to be used for scaling.
-
-    Shape:
-        - Input: Required to be 2D (H, W), 3D (C, H, W) or 4D (N, C, H, W). RGB channel order for colour images.
-
-    Examples::
+    Examples:
         >>> loss = BRISQUELoss()
-        >>> prediction = torch.rand(3, 3, 256, 256, requires_grad=True)
-        >>> target = torch.rand(3, 3, 256, 256)
-        >>> output = loss(prediction)
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> output = loss(x)
         >>> output.backward()
+    References:
+        Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
+        https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
 
     Note:
-        The back propagation is not available using torch=1.5.0 due to bug in argmin/argmax back propagation.
-        Update the torch and torchvision to the latest versions.
-
-    References:
-        .. [1] Anish Mittal et al. "No-Reference Image Quality Assessment in the Spatial Domain",
-        https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
+        The back propagation is not available using ``torch=1.5.0`` due to bug in ``argmin`` and ``argmax``
+        backpropagation. Update the torch and torchvision to the latest versions.
     """
     def __init__(self, kernel_size: int = 7, kernel_sigma: float = 7 / 6,
                  data_range: Union[int, float] = 1., reduction: str = 'mean',
@@ -116,20 +103,25 @@ class BRISQUELoss(_Loss):
         super().__init__()
         self.reduction = reduction
         self.kernel_size = kernel_size
+
+        # This check might look redundant because kernel size is checked within the brisque function anyway.
+        # However, this check allows to fail fast when the loss is being initialised and training has not been started.
+        assert kernel_size % 2 == 1, f'Kernel size must be odd, got [{kernel_size}]'
+
         self.kernel_sigma = kernel_sigma
         self.data_range = data_range
         self.interpolation = interpolation
 
-    def forward(self, prediction: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         r"""Computation of BRISQUE score as a loss function.
 
         Args:
-            prediction: Tensor of prediction of the network.
+            x: An input tensor with (N, C, H, W) shape. RGB channel order for colour images.
 
         Returns:
             Value of BRISQUE loss to be minimized.
         """
-        return brisque(prediction, reduction=self.reduction, kernel_size=self.kernel_size,
+        return brisque(x, reduction=self.reduction, kernel_size=self.kernel_size,
                        kernel_sigma=self.kernel_sigma, data_range=self.data_range, interpolation=self.interpolation)
 
 

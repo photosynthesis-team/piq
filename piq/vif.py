@@ -10,154 +10,154 @@ from torch.nn.modules.loss import _Loss
 import torch.nn.functional as F
 from typing import Union
 
-from piq.utils import _adjust_dimensions, _validate_input
+from piq.functional import gaussian_filter
+from piq.utils import _validate_input, _reduce
 
 
-def _gaussian_kernel2d(kernel_size: int = 5, sigma: float = 2.0) -> torch.Tensor:
-    r"""Returns 2D Gaussian kernel N(0,`sigma`)
-    Args:
-        kernel_size: Size
-        sigma: Sigma
-    Returns:
-        gaussian_kernel: 2D kernel with shape (kernel_size x kernel_size)
-        
-    """
-    x = torch.arange(- (kernel_size // 2), kernel_size // 2 + 1).resize(1, kernel_size)
-    y = torch.arange(- (kernel_size // 2), kernel_size // 2 + 1).resize(kernel_size, 1)
-    kernel = torch.exp(-(x * x + y * y) / (2.0 * sigma ** 2))
-    # Normalize
-    kernel = kernel / torch.sum(kernel)
-    return kernel
-
-
-def vif_p(prediction: torch.Tensor, target: torch.Tensor, sigma_n_sq: float = 2.0,
+def vif_p(x: torch.Tensor, y: torch.Tensor, sigma_n_sq: float = 2.0,
           data_range: Union[int, float] = 1.0, reduction: str = 'mean') -> torch.Tensor:
     r"""Compute Visiual Information Fidelity in **pixel** domain for a batch of images.
     This metric isn't symmetric, so make sure to place arguments in correct order.
     Both inputs supposed to have RGB channels order.
 
     Args:
-        prediction: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
-        target: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
+        y: A target tensor. Shape :math:`(N, C, H, W)`.
         sigma_n_sq: HVS model parameter (variance of the visual noise).
-        data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
+        data_range: Maximum value range of images (usually 1.0 or 255).
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         
     Returns:
-        VIF: Index of similarity betwen two images. Usually in [0, 1] interval.
-            Can be bigger than 1 for predicted images with higher contrast than original one.
+        VIF Index of similarity betwen two images. Usually in [0, 1] interval.
+        Can be bigger than 1 for predicted :math:`x` images with higher contrast than original one.
+
+    References:
+        H. R. Sheikh and A. C. Bovik, "Image information and visual quality,"
+        IEEE Transactions on Image Processing, vol. 15, no. 2, pp. 430-444, Feb. 2006
+        https://ieeexplore.ieee.org/abstract/document/1576816/
+        DOI: 10.1109/TIP.2005.859378.
+
     Note:
         In original paper this method was used for bands in discrete wavelet decomposition.
         Later on authors released code to compute VIF approximation in pixel domain.
         See https://live.ece.utexas.edu/research/Quality/VIF.htm for details.
-        
     """
-    _validate_input((prediction, target), allow_5d=False)
-    prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
+    _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
 
     min_size = 41
-    if prediction.size(-1) < min_size or prediction.size(-2) < min_size:
+    if x.size(-1) < min_size or x.size(-2) < min_size:
         raise ValueError(f'Invalid size of the input images, expected at least {min_size}x{min_size}.')
 
-    if data_range == 255:
-        prediction = prediction / 255.
-        target = target / 255.
+    x = x / float(data_range) * 255
+    y = y / float(data_range) * 255
 
     # Convert RGB image to YCbCr and take luminance: Y = 0.299 R + 0.587 G + 0.114 B
-    num_channels = prediction.size(1)
+    num_channels = x.size(1)
     if num_channels == 3:
-        prediction = 0.299 * prediction[:, 0, :, :] + 0.587 * prediction[:, 1, :, :] + 0.114 * prediction[:, 2, :, :]
-        target = 0.299 * target[:, 0, :, :] + 0.587 * target[:, 1, :, :] + 0.114 * target[:, 2, :, :]
+        x = 0.299 * x[:, 0, :, :] + 0.587 * x[:, 1, :, :] + 0.114 * x[:, 2, :, :]
+        y = 0.299 * y[:, 0, :, :] + 0.587 * y[:, 1, :, :] + 0.114 * y[:, 2, :, :]
 
         # Add channel dimension
-        prediction = prediction[:, None, :, :]
-        target = target[:, None, :, :]
-    
+        x = x[:, None, :, :]
+        y = y[:, None, :, :]
+        
     # Constant for numerical stability
     EPS = 1e-8
     
     # Progressively downsample images and compute VIF on different scales
-    prediction_vif, target_vif = 0, 0
-    for scale in range(1, 5):
-        kernel_size = 2 ** (5 - scale) + 1
-        kernel = _gaussian_kernel2d(kernel_size, sigma=kernel_size / 5)
-        kernel = kernel.view(1, 1, kernel_size, kernel_size).to(prediction)
+    x_vif, y_vif = 0, 0
+    for scale in range(4):
+        kernel_size = 2 ** (4 - scale) + 1
+        kernel = gaussian_filter(kernel_size, sigma=kernel_size / 5)
+        kernel = kernel.view(1, 1, kernel_size, kernel_size).to(x)
 
-        if scale > 1:
+        if scale > 0:
             # Convolve and downsample
-            prediction = F.conv2d(prediction, kernel)[:, :, ::2, ::2]  # valid padding
-            target = F.conv2d(target, kernel)[:, :, ::2, ::2]  # valid padding
+            x = F.conv2d(x, kernel)[:, :, ::2, ::2]  # valid padding
+            y = F.conv2d(y, kernel)[:, :, ::2, ::2]  # valid padding
 
-        mu_trgt, mu_pred = F.conv2d(target, kernel), F.conv2d(prediction, kernel)  # valid padding
-        mu_trgt_sq, mu_pred_sq, mu_trgt_pred = mu_trgt * mu_trgt, mu_pred * mu_pred, mu_trgt * mu_pred
+        mu_x, mu_y = F.conv2d(x, kernel), F.conv2d(y, kernel)  # valid padding
+        mu_x_sq, mu_y_sq, mu_xy = mu_x * mu_x, mu_y * mu_y, mu_x * mu_y
 
-        sigma_trgt_sq = F.conv2d(target ** 2, kernel) - mu_trgt_sq
-        sigma_pred_sq = F.conv2d(prediction ** 2, kernel) - mu_pred_sq
-        sigma_trgt_pred = F.conv2d(target * prediction, kernel) - mu_trgt_pred
+        # Good
+        sigma_x_sq = F.conv2d(x ** 2, kernel) - mu_x_sq
+        sigma_y_sq = F.conv2d(y ** 2, kernel) - mu_y_sq
+        sigma_xy = F.conv2d(x * y, kernel) - mu_xy
         
         # Zero small negative values
-        sigma_trgt_sq = torch.relu(sigma_trgt_sq)
-        sigma_pred_sq = torch.relu(sigma_pred_sq)
+        sigma_x_sq = torch.relu(sigma_x_sq)
+        sigma_y_sq = torch.relu(sigma_y_sq)
 
-        g = sigma_trgt_pred / (sigma_trgt_sq + EPS)
-        sigma_v_sq = sigma_pred_sq - g * sigma_trgt_pred
+        g = sigma_xy / (sigma_y_sq + EPS)
+        sigma_v_sq = sigma_x_sq - g * sigma_xy
 
-        g = torch.where(sigma_trgt_sq >= EPS, g, torch.zeros_like(g))
-        sigma_v_sq = torch.where(sigma_trgt_sq >= EPS, sigma_v_sq, sigma_pred_sq)
-        sigma_trgt_sq = torch.where(sigma_trgt_sq >= EPS, sigma_trgt_sq, torch.zeros_like(sigma_trgt_sq))
+        g = torch.where(sigma_y_sq >= EPS, g, torch.zeros_like(g))
+        sigma_v_sq = torch.where(sigma_y_sq >= EPS, sigma_v_sq, sigma_x_sq)
+        sigma_y_sq = torch.where(sigma_y_sq >= EPS, sigma_y_sq, torch.zeros_like(sigma_y_sq))
 
-        g = torch.where(sigma_pred_sq >= EPS, g, torch.zeros_like(g))
-        sigma_v_sq = torch.where(sigma_pred_sq >= EPS, sigma_v_sq, torch.zeros_like(sigma_v_sq))
+        g = torch.where(sigma_x_sq >= EPS, g, torch.zeros_like(g))
+        sigma_v_sq = torch.where(sigma_x_sq >= EPS, sigma_v_sq, torch.zeros_like(sigma_v_sq))
 
-        sigma_v_sq = torch.where(g >= 0, sigma_v_sq, sigma_pred_sq)
+        sigma_v_sq = torch.where(g >= 0, sigma_v_sq, sigma_x_sq)
         g = torch.relu(g)
 
         sigma_v_sq = torch.where(sigma_v_sq > EPS, sigma_v_sq, torch.ones_like(sigma_v_sq) * EPS)
     
-        pred_vif_scale = torch.log10(1.0 + (g ** 2.) * sigma_trgt_sq / (sigma_v_sq + sigma_n_sq))
-        prediction_vif = prediction_vif + torch.sum(pred_vif_scale, dim=[1, 2, 3])
-        target_vif = target_vif + torch.sum(torch.log10(1.0 + sigma_trgt_sq / sigma_n_sq), dim=[1, 2, 3])
+        x_vif_scale = torch.log10(1.0 + (g ** 2.) * sigma_y_sq / (sigma_v_sq + sigma_n_sq))
+        x_vif = x_vif + torch.sum(x_vif_scale, dim=[1, 2, 3])
+        y_vif = y_vif + torch.sum(torch.log10(1.0 + sigma_y_sq / sigma_n_sq), dim=[1, 2, 3])
 
-    score: torch.Tensor = (prediction_vif + EPS) / (target_vif + EPS)
+    score: torch.Tensor = (x_vif + EPS) / (y_vif + EPS)
 
-    # Reduce if needed
-    if reduction == 'none':
-        return score
-
-    return {'mean': score.mean,
-            'sum': score.sum
-            }[reduction](dim=0)
+    return _reduce(score, reduction)
 
 
 class VIFLoss(_Loss):
     r"""Creates a criterion that measures the Visual Information Fidelity loss
-    between predicted and target image. In order to be considered as a loss,
-    value `1 - clip(VIF, min=0, max=1)` is returned.
+    between predicted (x) and target (y) image. In order to be considered as a loss,
+    value ``1 - clip(VIF, min=0, max=1)`` is returned.
+
+    Args:
+        sigma_n_sq: HVS model parameter (variance of the visual noise).
+        data_range: Maximum value range of images (usually 1.0 or 255).
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+
+    Examples:
+        >>> loss = VIFLoss()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
+
+    References:
+        H. R. Sheikh and A. C. Bovik, "Image information and visual quality,"
+        IEEE Transactions on Image Processing, vol. 15, no. 2, pp. 430-444, Feb. 2006
+        https://ieeexplore.ieee.org/abstract/document/1576816/
+        DOI: 10.1109/TIP.2005.859378.
     """
 
     def __init__(self, sigma_n_sq: float = 2.0, data_range: Union[int, float] = 1.0, reduction: str = 'mean'):
-        r"""
-        Args:
-            sigma_n_sq: HVS model parameter (variance of the visual noise).
-            data_range: Value range of input images (usually 1.0 or 255). Default: 1.0
-            reduction: Reduction over samples in batch: "mean"|"sum"|"none"
-        """
         super().__init__()
         self.sigma_n_sq = sigma_n_sq
         self.data_range = data_range
         self.reduction = reduction
 
-    def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         r"""Computation of Visual Information Fidelity (VIF) index as a loss function.
+        Colour images are expected to have RGB channel order.
+        Order of inputs is important! First tensor must contain distorted images, second reference images.
+
         Args:
-            prediction: Tensor of prediction of the network.
-            target: Reference tensor.
+            x: An input tensor. Shape :math:`(N, C, H, W)`.
+            y: A target tensor. Shape :math:`(N, C, H, W)`.
+
         Returns:
-            Value of VIF loss to be minimized. 0 <= VIFLoss <= 1.
+            Value of VIF loss to be minimized in [0, 1] range.
         """
         # All checks are done in vif_p function
-        score = vif_p(
-            prediction, target, sigma_n_sq=self.sigma_n_sq, data_range=self.data_range, reduction=self.reduction)
+        score = vif_p(x, y, sigma_n_sq=self.sigma_n_sq, data_range=self.data_range, reduction=self.reduction)
 
         # Make sure value to be in [0, 1] range and convert to loss
         loss = 1 - torch.clamp(score, 0, 1)

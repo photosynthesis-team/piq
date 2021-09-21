@@ -15,6 +15,7 @@ import torch
 import torch.nn.functional as F
 
 from piq.base import BaseFeatureMetric
+from piq.utils import _validate_input
 
 
 def inception_score(features: torch.Tensor, num_splits: int = 10):
@@ -23,12 +24,15 @@ def inception_score(features: torch.Tensor, num_splits: int = 10):
 
     Args:
         features (torch.Tensor): Low-dimension representation of image set. Shape (N_samples, encoder_dim).
-        num_splits: Number of parts to devide features. IS is computed for them separatly and results are then averaged.
+        num_splits: Number of parts to divide features. Inception Score is computed for them separately and
+            results are then averaged.
 
     Returns:
-        score, variance:
+        score
 
-    Reference:
+        variance
+
+    References:
         "A Note on the Inception Score"
         https://arxiv.org/pdf/1801.01973.pdf
 
@@ -36,18 +40,22 @@ def inception_score(features: torch.Tensor, num_splits: int = 10):
     assert len(features.shape) == 2, \
         f"Features must have shape (N_samples, encoder_dim), got {features.shape}"
     N = features.size(0)
+
     # Convert logits to probabilities
     probas = F.softmax(features)
-    # In paper score computed for 10 splits of dataset and then averaged.
+
+    # In the paper the score is computed for 10 splits of the dataset and then averaged.
     partial_scores = []
     for i in range(num_splits):
         subset = probas[i * (N // num_splits): (i + 1) * (N // num_splits), :]
+
         # Compute KL divergence
         p_y = torch.mean(subset, dim=0)
         scores = []
         for k in range(subset.shape[0]):
             p_yx = subset[k, :]
             scores.append(F.kl_div(p_y.log(), p_yx, reduction='sum'))
+
         # Compute exponential of the mean of the KL-divergence for each split
         partial_scores.append(torch.tensor(scores).mean().exp())
 
@@ -57,48 +65,51 @@ def inception_score(features: torch.Tensor, num_splits: int = 10):
 
 class IS(BaseFeatureMetric):
     r"""Creates a criterion that measures difference of Inception Score between two datasets.
-    IS is computed separatly for predicted and target features and expects raw InceptionV3 model logits as inputs.
+
+    IS is computed separately for predicted :math:`x` and target :math:`y` features and expects raw InceptionV3 model
+    logits as inputs.
 
     Args:
-        predicted_features: Low-dimension representation of predicted image set.
-            Shape (N_pred, encoder_dim).
-        target_features: Low-dimension representation of target image set.
-            Shape (N_targ, encoder_dim).
+        num_splits: Number of parts to divide features.
+            IS is computed for them separately and results are then averaged.
+        distance: How to measure distance between scores: ``'l1'`` | ``'l2'``. Default: ``'l1'``.
 
-    Returns:
-        distance(predicted_score, target_score): L1 or L2 distance between scores.
+    Examples:
+        >>> loss = IS()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
 
-    Reference:
-        https://arxiv.org/pdf/1801.01973.pdf
+    References:
+        "A Note on the Inception Score" https://arxiv.org/pdf/1801.01973.pdf
     """
     def __init__(self, num_splits: int = 10, distance: str = 'l1') -> None:
         r"""
-        Args:
-            num_splits: Number of parts to devide features.
-                IS is computed for them separatly and results are then averaged.
-            distance: How to measure distance between scores. One of {`l1`, `l2`}. Default: `l1`.
+
         """
         super(IS, self).__init__()
         self.num_splits = num_splits
         self.distance = distance
 
-    def compute_metric(
-            self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
-        r"""Compute IS
+    def compute_metric(self, x_features: torch.Tensor, y_features: torch.Tensor) -> torch.Tensor:
+        r"""Compute IS.
+
         Both features should have shape (N_samples, encoder_dim).
 
         Args:
-            predicted_features: Low-dimension representation of predicted image set.
-            target_features: Low-dimension representation of target image set.
+            x_features: Samples from data distribution. Shape :math:`(N_x, D)`
+            y_features: Samples from data distribution. Shape :math:`(N_y, D)`
 
         Returns:
-            diff: L1 or L2 distance between scores for predicted and feature datasets.
+            L1 or L2 distance between scores for datasets :math:`x` and :math:`y`.
         """
-        predicted_is, _ = inception_score(predicted_features, num_splits=self.num_splits)
-        target_is, _ = inception_score(target_features, num_splits=self.num_splits)
+        _validate_input([x_features, y_features], dim_range=(2, 2), size_range=(0, 2))
+        x_is, _ = inception_score(x_features, num_splits=self.num_splits)
+        y_is, _ = inception_score(y_features, num_splits=self.num_splits)
         if self.distance == 'l1':
-            return torch.dist(predicted_is, target_is, 1)
+            return torch.dist(x_is, y_is, 1)
         elif self.distance == 'l2':
-            return torch.dist(predicted_is, target_is, 2)
+            return torch.dist(x_is, y_is, 2)
         else:
             raise ValueError("Distance should be one of {`l1`, `l2`}")

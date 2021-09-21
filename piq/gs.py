@@ -4,15 +4,16 @@ https://github.com/KhrulkovV/geometry-score
 See paper for details:
 https://arxiv.org/pdf/1802.02664.pdf
 """
-from typing import Optional, Tuple
-from multiprocessing import Pool
-
 import torch
-import gudhi
+
 import numpy as np
-from scipy.spatial.distance import cdist
+
+from typing import Optional, Tuple, Union
+from multiprocessing import Pool
+from warnings import warn
 
 from piq.base import BaseFeatureMetric
+from piq.utils import _validate_input, _version_tuple
 
 
 def relative(intervals: np.ndarray, alpha_max: float, i_max: int = 100) -> np.ndarray:
@@ -75,6 +76,19 @@ def lmrk_table(witnesses: np.ndarray, landmarks: np.ndarray) -> Tuple[np.ndarray
             in L, e.g., D[i, :, :] = [[0, 0.1], [1, 0.2], [3, 0.3], [2, 0.4]]
         max_dist: Maximal distance between W and L
     """
+    try:
+        import scipy
+    except ImportError:
+        raise ImportError("Scipy is required for computation of the Geometry Score but not installed. "
+                          "Please install scipy using the following command: pip install --user scipy")
+
+    recommended_scipy_version = "1.3.3"
+    if _version_tuple(scipy.__version__) < _version_tuple(recommended_scipy_version):
+        warn(f'Scipy of version {scipy.__version__} is used while version >= {recommended_scipy_version} is '
+             f'recommended. Consider updating scipy to avoid potential long compute time with older versions.')
+
+    from scipy.spatial.distance import cdist
+
     a = cdist(witnesses, landmarks)
     max_dist = np.max(a)
     idx = np.argsort(a)
@@ -83,8 +97,7 @@ def lmrk_table(witnesses: np.ndarray, landmarks: np.ndarray) -> Tuple[np.ndarray
     return distances, max_dist
 
 
-def witness(
-        features: np.ndarray, sample_size: int = 64, gamma: Optional[float] = None) \
+def witness(features: np.ndarray, sample_size: int = 64, gamma: Optional[float] = None) \
         -> Tuple[np.ndarray, np.ndarray]:
     """Compute the persistence intervals for the dataset of features using the witness complex.
 
@@ -96,6 +109,17 @@ def witness(
     Returns
         A list of persistence intervals and the maximal persistence value.
     """
+    try:
+        import gudhi
+    except ImportError:
+        raise ImportError("GUDHI is required for computation of the Geometry Score but not installed. "
+                          "Please install scipy using the following command: pip install --user gudhi")
+
+    recommended_gudhi_version = "3.2"
+    if _version_tuple(gudhi.__version__) < _version_tuple(recommended_gudhi_version):
+        warn(f'GUDHI of version {gudhi.__version__} is used while version >= {recommended_gudhi_version} is '
+             f'recommended. Consider updating GUDHI to avoid potential problems.')
+
     N = features.shape[0]
     if gamma is None:
         gamma = 1.0 / 128 * N / 5000
@@ -123,41 +147,36 @@ class GS(BaseFeatureMetric):
     Dimensionalities of features should match, otherwise it won't be possible to correctly compute statistics.
 
     Args:
-        predicted_features: Low-dimension representation of predicted image set.
-            Shape (N_pred, encoder_dim)
-        target_features: Low-dimension representation of target image set.
-            Shape (N_targ, encoder_dim)
+        sample_size: Number of landmarks to use on each iteration.
+            Higher values can give better accuracy, but increase computation cost.
+        num_iters: Number of iterations.
+            Higher values can reduce variance, but increase computation cost.
+        gamma: Parameter determining maximum persistence value. Default is ``1.0 / 128 * N_imgs / 5000``
+        i_max: Upper bound on i in RLT(i, 1, X, L)
+        num_workers: Number of proccess used for GS computation.
 
-    Returns:
-        score: Scalar value of the distance between image sets.
+    Examples:
+        >>> loss = GS()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
 
     References:
-        .. [1] Khrulkov V., Oseledets I. (2018).
+        Khrulkov V., Oseledets I. (2018).
         Geometry score: A method for comparing generative adversarial networks.
         arXiv preprint, 2018.
         https://arxiv.org/abs/1802.02664
 
     Note:
-        Computation is heavily CPU dependent, adjust `num_workers` parameter according to your system configuration.
-        GS metric requiers `gudhi` library which is not installed by default.
-        For conda, write: `conda install -c conda-forge gudhi`,
-            otherwise follow installation guide: http://gudhi.gforge.inria.fr/python/latest/installation.html
-
+        Computation is heavily CPU dependent, adjust ``num_workers`` parameter according to your system configuration.
+        GS metric requiers ``gudhi`` library which is not installed by default.
+        For conda, write: ``conda install -c conda-forge gudhi``,
+        otherwise follow installation guide: http://gudhi.gforge.inria.fr/python/latest/installation.html
     """
+
     def __init__(self, sample_size: int = 64, num_iters: int = 1000, gamma: Optional[float] = None,
                  i_max: int = 100, num_workers: int = 4) -> None:
-        r"""
-        Args:
-            sample_size: Number of landmarks to use on each iteration.
-                Higher values can give better accuracy, but increase computation cost.
-            num_iters: Number of iterations.
-                Higher values can reduce variance, but increase computation cost.
-            gamma: Parameter determining maximum persistence value. Default is `1.0 / 128 * N_imgs / 5000`
-            i_max: Upper bound on i in RLT(i, 1, X, L)
-            num_workers: Number of proccess used for GS computation.
-
-
-        """
         super().__init__()
         self.sample_size = sample_size
         self.num_iters = num_iters
@@ -165,30 +184,31 @@ class GS(BaseFeatureMetric):
         self.i_max = i_max
         self.num_workers = num_workers
 
-    def compute_metric(self, predicted_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
+    def compute_metric(self, x_features: torch.Tensor, y_features: torch.Tensor) -> torch.Tensor:
         r"""Implements Algorithm 2 from the paper.
+
         Args:
-            predicted_features: Samples from data distribution.
-                Shape (N_samples, data_dim).
-            target_features: Samples from data distribution.
-                Shape (N_samples, data_dim).
+            x_features: Samples from data distribution. Shape :math:`(N_x, D)`
+            y_features: Samples from data distribution. Shape :math:`(N_y, D)`
+
         Returns:
-            score: Scalar value of the distance between distributions.
+            Scalar value of the distance between distributions.
         """
+        _validate_input([x_features, y_features], dim_range=(2, 2), size_range=(1, 2))
         with Pool(self.num_workers) as p:
-            self.features = predicted_features.detach().cpu().numpy()
+            self.features = x_features.detach().cpu().numpy()
             pool_results = p.map(self._relative_living_times, range(self.num_iters))
-            mean_rlt_predicted = np.vstack(pool_results).mean(axis=0)
+            mean_rlt_x = np.vstack(pool_results).mean(axis=0)
 
-            self.features = target_features.detach().cpu().numpy()
+            self.features = y_features.detach().cpu().numpy()
             pool_results = p.map(self._relative_living_times, range(self.num_iters))
-            mean_rlt_target = np.vstack(pool_results).mean(axis=0)
+            mean_rlt_y = np.vstack(pool_results).mean(axis=0)
 
-        score = np.sum((mean_rlt_predicted - mean_rlt_target) ** 2)
+        score = np.sum((mean_rlt_x - mean_rlt_y) ** 2)
 
-        return torch.tensor(score, device=predicted_features.device) * 1000
+        return torch.tensor(score, device=x_features.device) * 1000
 
-    def _relative_living_times(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _relative_living_times(self, idx: int) -> Union[np.ndarray, np.ndarray, np.ndarray]:
         r"""Implements Algorithm 1 for two samples of landmarks.
     
         Args:
@@ -198,8 +218,6 @@ class GS(BaseFeatureMetric):
             An array of size (i_max, ) containing RLT(i, 1, X, L)
             for randomly sampled landmarks.
         """
-        intervals, alpha_max = witness(
-            self.features, sample_size=self.sample_size, gamma=self.gamma)
+        intervals, alpha_max = witness(self.features, sample_size=self.sample_size, gamma=self.gamma)
         rlt = relative(intervals, alpha_max, i_max=self.i_max)
-
         return rlt

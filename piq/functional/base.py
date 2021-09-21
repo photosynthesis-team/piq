@@ -59,7 +59,7 @@ def gradient_map(x: torch.Tensor, kernels: torch.Tensor) -> torch.Tensor:
 
 
 def pow_for_complex(base: torch.Tensor, exp: Union[int, float]) -> torch.Tensor:
-    r""" Takes the power of each element in  a 4D tensor with negative values or 5D tensor with complex values.
+    r""" Takes the power of each element in a 4D tensor with negative values or 5D tensor with complex values.
     Complex numbers are represented by modulus and argument: r * \exp(i * \phi).
 
     It will likely to be redundant with introduction of torch.ComplexTensor.
@@ -84,3 +84,18 @@ def pow_for_complex(base: torch.Tensor, exp: Union[int, float]) -> torch.Tensor:
     x_real_pow = x_complex_pow_r * torch.cos(x_complex_pow_phi)
     x_imag_pow = x_complex_pow_r * torch.sin(x_complex_pow_phi)
     return torch.stack((x_real_pow, x_imag_pow), dim=-1)
+
+
+def crop_patches(x: torch.Tensor, size=64, stride=32) -> torch.Tensor:
+    r"""Crop tensor with images into small patches
+    Args:
+        x: Tensor with shape (N, C, H, W), expected to be images-like entities
+        size: Size of a square patch
+        stride: Step between patches
+    """
+    assert (x.shape[2] >= size) and (x.shape[3] >= size), \
+        f"Images must be bigger than patch size. Got ({x.shape[2], x.shape[3]}) and ({size}, {size})"
+    channels = x.shape[1]
+    patches = x.unfold(1, channels, channels).unfold(2, size, stride).unfold(3, size, stride)
+    patches = patches.reshape(-1, channels, size, size)
+    return patches

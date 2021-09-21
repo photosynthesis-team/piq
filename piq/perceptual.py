@@ -10,14 +10,14 @@ References:
     2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
     https://arxiv.org/abs/1801.03924
 """
-from typing import List, Union, Iterable
+from typing import List, Union, Collection
 
 import torch
 import torch.nn as nn
 from torch.nn.modules.loss import _Loss
 from torchvision.models import vgg16, vgg19
 
-from piq.utils import _validate_input, _adjust_dimensions
+from piq.utils import _validate_input, _reduce
 from piq.functional import similarity_map, L2Pool2d
 
 
@@ -80,34 +80,49 @@ class ContentLoss(_Loss):
     Expects input to be in range [0, 1] or normalized with ImageNet statistics into range [-1, 1]
 
     Args:
-        feature_extractor: Model to extract features or model name in {`vgg16`, `vgg19`}.
-        layers: List of strings with layer names. Default: [`relu3_3`]
+        feature_extractor: Model to extract features or model name: ``'vgg16'`` | ``'vgg19'``.
+        layers: List of strings with layer names. Default: ``'relu3_3'``
         weights: List of float weight to balance different layers
-        replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See [1] for details.
-        distance: Method to compute distance between features. One of {`mse`, `mae`}.
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
-        mean: List of float values used for data standartization. Default: ImageNet mean.
+        replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See references for details.
+        distance: Method to compute distance between features: ``'mse'`` | ``'mae'``.
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        mean: List of float values used for data standardization. Default: ImageNet mean.
             If there is no need to normalize data, use [0., 0., 0.].
-        std: List of float values used for data standartization. Default: ImageNet std.
+        std: List of float values used for data standardization. Default: ImageNet std.
             If there is no need to normalize data, use [1., 1., 1.].
         normalize_features: If true, unit-normalize each feature in channel dimension before scaling
-            and computing distance. See [2] for details.
+            and computing distance. See references for details.
+
+    Examples:
+        >>> loss = ContentLoss()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
 
     References:
-        .. [1] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
-        (2016). A Neural Algorithm of Artistic Style}
+        Gatys, Leon and Ecker, Alexander and Bethge, Matthias (2016).
+        A Neural Algorithm of Artistic Style
         Association for Research in Vision and Ophthalmology (ARVO)
         https://arxiv.org/abs/1508.06576
-        .. [2] Zhang, Richard and Isola, Phillip and Efros, et al.
-        (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
-        2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
+
+        Zhang, Richard and Isola, Phillip and Efros, et al. (2018)
+        The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
+        IEEE/CVF Conference on Computer Vision and Pattern Recognition
         https://arxiv.org/abs/1801.03924
     """
 
-    def __init__(self, feature_extractor: Union[str, torch.nn.Module] = "vgg16", layers: Iterable[str] = ("relu3_3", ),
+    def __init__(self, feature_extractor: Union[str, torch.nn.Module] = "vgg16", layers: Collection[str] = ("relu3_3",),
                  weights: List[Union[float, torch.Tensor]] = [1.], replace_pooling: bool = False,
                  distance: str = "mse", reduction: str = "mean", mean: List[float] = IMAGENET_MEAN,
-                 std: List[float] = IMAGENET_STD, normalize_features: bool = False) -> None:
+                 std: List[float] = IMAGENET_STD, normalize_features: bool = False,
+                 allow_layers_weights_mismatch: bool = False) -> None:
+
+        if not allow_layers_weights_mismatch and len(layers) != len(weights):
+            raise ValueError(f'Lengths of provided layers and weighs mismatch ({len(weights)} weights and '
+                             f'{len(layers)} layers), which will cause incorrect results. '
+                             f'Please provide weight for each layer.')
 
         super().__init__()
 
@@ -136,7 +151,8 @@ class ContentLoss(_Loss):
             "mae": nn.L1Loss,
         }[distance](reduction='none')
 
-        self.weights = [torch.tensor(w) for w in weights]
+        self.weights = [torch.tensor(w) if not isinstance(w, torch.Tensor) else w for w in weights]
+
         mean = torch.tensor(mean)
         std = torch.tensor(std)
         self.mean = mean.view(1, -1, 1, 1)
@@ -145,42 +161,49 @@ class ContentLoss(_Loss):
         self.normalize_features = normalize_features
         self.reduction = reduction
 
-    def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        r"""Computation of Content loss between feature representations of prediction and target tensors.
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        r"""Computation of Content loss between feature representations of prediction :math:`x` and
+        target :math:`y` tensors.
+
         Args:
-            prediction: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
-            target: Tensor with shape (H, W), (C, H, W) or (N, C, H, W).
+            x: An input tensor. Shape :math:`(N, C, H, W)`.
+            y: A target tensor. Shape :math:`(N, C, H, W)`.
+
+        Returns:
+            Content loss between feature representations
         """
-        _validate_input(input_tensors=(prediction, target), allow_5d=False, allow_negative=True)
-        prediction, target = _adjust_dimensions(input_tensors=(prediction, target))
+        _validate_input([x, y], dim_range=(4, 4), data_range=(0, -1))
 
-        self.model.to(prediction)
-        prediction_features = self.get_features(prediction)
-        target_features = self.get_features(target)
+        self.model.to(x)
+        x_features = self.get_features(x)
+        y_features = self.get_features(y)
 
-        distances = self.compute_distance(prediction_features, target_features)
+        distances = self.compute_distance(x_features, y_features)
 
         # Scale distances, then average in spatial dimensions, then stack and sum in channels dimension
         loss = torch.cat([(d * w.to(d)).mean(dim=[2, 3]) for d, w in zip(distances, self.weights)], dim=1).sum(dim=1)
 
-        if self.reduction == 'none':
-            return loss
+        return _reduce(loss, self.reduction)
 
-        return {'mean': loss.mean,
-                'sum': loss.sum
-                }[self.reduction](dim=0)
+    def compute_distance(self, x_features: List[torch.Tensor], y_features: List[torch.Tensor]) -> List[torch.Tensor]:
+        r"""Take L2 or L1 distance between feature maps depending on ``distance``.
 
-    def compute_distance(self, prediction_features: torch.Tensor, target_features: torch.Tensor) -> torch.Tensor:
-        r"""Take L2 or L1 distance between feature maps"""
-        return [self.distance(x, y) for x, y in zip(prediction_features, target_features)]
+        Args:
+            x_features: Features of the input tensor.
+            y_features: Features of the target tensor.
+
+        Returns:
+            Distance between feature maps
+        """
+        return [self.distance(x, y) for x, y in zip(x_features, y_features)]
 
     def get_features(self, x: torch.Tensor) -> List[torch.Tensor]:
         r"""
         Args:
-            x: Tensor with shape (N, C, H, W)
+            x: Tensor. Shape :math:`(N, C, H, W)`.
         
         Returns:
-            features: List of features extracted from intermediate layers
+            List of features extracted from intermediate layers
         """
         # Normalize input
         x = (x - self.mean.to(x)) / self.std.to(x)
@@ -190,20 +213,32 @@ class ContentLoss(_Loss):
             x = module(x)
             if name in self.layers:
                 features.append(self.normalize(x) if self.normalize_features else x)
+
         return features
 
-    def normalize(self, x: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def normalize(x: torch.Tensor) -> torch.Tensor:
         r"""Normalize feature maps in channel direction to unit length.
+
         Args:
-            x: Tensor with shape (N, C, H, W)
+            x: Tensor. Shape :math:`(N, C, H, W)`.
+
         Returns:
-            x_norm: Normalized input
+            Normalized input
         """
         norm_factor = torch.sqrt(torch.sum(x ** 2, dim=1, keepdim=True))
         return x / (norm_factor + EPS)
 
     def replace_pooling(self, module: torch.nn.Module) -> torch.nn.Module:
-        r"""Turn All MaxPool layers into AveragePool"""
+        r"""Turn All MaxPool layers into AveragePool
+
+        Args:
+            module: Module to change MaxPool int AveragePool
+
+        Returns:
+            Module with AveragePool instead MaxPool
+
+        """
         module_output = module
         if isinstance(module, torch.nn.MaxPool2d):
             module_output = torch.nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
@@ -215,46 +250,69 @@ class ContentLoss(_Loss):
 
 class StyleLoss(ContentLoss):
     r"""Creates Style loss that can be used for image style transfer or as a measure in
-    image to image tasks. Computes distance between Gram matrixes of feature maps.
+    image to image tasks. Computes distance between Gram matrices of feature maps.
     Uses pretrained VGG models from torchvision.
 
     By default expects input to be in range [0, 1], which is then normalized by ImageNet statistics into range [-1, 1].
-    If no normaliation is requiered, change `mean` and `std` values accordingly.
+    If no normalisation is required, change `mean` and `std` values accordingly.
 
     Args:
-        feature_extractor: Model to extract features or model name in {`vgg16`, `vgg19`}.
-        layers: List of strings with layer names. Default: [`relu3_3`]
+        feature_extractor: Model to extract features or model name: ``'vgg16'`` | ``'vgg19'``.
+        layers: List of strings with layer names. Default: ``'relu3_3'``
         weights: List of float weight to balance different layers
-        replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See [1] for details.
-        distance: Method to compute distance between features. One of {`mse`, `mae`}.
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
-        mean: List of float values used for data standartization. Default: ImageNet mean.
+        replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See references for details.
+        distance: Method to compute distance between features: ``'mse'`` | ``'mae'``.
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        mean: List of float values used for data standardization. Default: ImageNet mean.
             If there is no need to normalize data, use [0., 0., 0.].
-        std: List of float values used for data standartization. Default: ImageNet std.
+        std: List of float values used for data standardization. Default: ImageNet std.
             If there is no need to normalize data, use [1., 1., 1.].
         normalize_features: If true, unit-normalize each feature in channel dimension before scaling
-            and computing distance. See [2] for details.
+            and computing distance. See references for details.
+
+    Examples:
+        >>> loss = StyleLoss()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
+
     References:
-        .. [1] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
-        (2016). A Neural Algorithm of Artistic Style}
+        Gatys, Leon and Ecker, Alexander and Bethge, Matthias (2016).
+        A Neural Algorithm of Artistic Style
         Association for Research in Vision and Ophthalmology (ARVO)
         https://arxiv.org/abs/1508.06576
-        .. [2] Zhang, Richard and Isola, Phillip and Efros, et al.
-        (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
-        2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
+
+        Zhang, Richard and Isola, Phillip and Efros, et al. (2018)
+        The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
+        IEEE/CVF Conference on Computer Vision and Pattern Recognition
         https://arxiv.org/abs/1801.03924
     """
 
-    def compute_distance(self, prediction_features: torch.Tensor, target_features: torch.Tensor):
-        """Take L2 or L1 distance between Gram matrixes of feature maps"""
-        prediction_gram = [self.gram_matrix(x) for x in prediction_features]
-        target_gram = [self.gram_matrix(x) for x in target_features]
-        return [self.distance(x, y) for x, y in zip(prediction_gram, target_gram)]
+    def compute_distance(self, x_features: torch.Tensor, y_features: torch.Tensor):
+        r"""Take L2 or L1 distance between Gram matrices of feature maps depending on ``distance``.
 
-    def gram_matrix(self, x: torch.Tensor) -> torch.Tensor:
-        r"""Compute Gram matrix for batch of features.
         Args:
-            x: Tensor with shape (N, C, H, W).
+            x_features: Features of the input tensor.
+            y_features: Features of the target tensor.
+
+        Returns:
+            Distance between Gram matrices
+        """
+        x_gram = [self.gram_matrix(x) for x in x_features]
+        y_gram = [self.gram_matrix(x) for x in y_features]
+        return [self.distance(x, y) for x, y in zip(x_gram, y_gram)]
+
+    @staticmethod
+    def gram_matrix(x: torch.Tensor) -> torch.Tensor:
+        r"""Compute Gram matrix for batch of features.
+
+        Args:
+            x: Tensor. Shape :math:`(N, C, H, W)`.
+
+        Returns:
+            Gram matrix for given input
         """
         B, C, H, W = x.size()
         gram = []
@@ -263,6 +321,7 @@ class StyleLoss(ContentLoss):
 
             # Add fake channel dimension
             gram.append(torch.mm(features, features.t()).unsqueeze(0))
+
         return torch.stack(gram)
 
 
@@ -270,24 +329,34 @@ class LPIPS(ContentLoss):
     r"""Learned Perceptual Image Patch Similarity metric. Only VGG16 learned weights are supported.
 
     By default expects input to be in range [0, 1], which is then normalized by ImageNet statistics into range [-1, 1].
-    If no normaliation is requiered, change `mean` and `std` values accordingly.
+    If no normalisation is required, change `mean` and `std` values accordingly.
 
     Args:
-        replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See [1] for details.
-        distance: Method to compute distance between features. One of {`mse`, `mae`}.
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
-        mean: List of float values used for data standartization. Default: ImageNet mean.
+        replace_pooling: Flag to replace MaxPooling layer with AveragePooling. See references for details.
+        distance: Method to compute distance between features: ``'mse'`` | ``'mae'``.
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        mean: List of float values used for data standardization. Default: ImageNet mean.
             If there is no need to normalize data, use [0., 0., 0.].
-        std: List of float values used for data standartization. Default: ImageNet std.
+        std: List of float values used for data standardization. Default: ImageNet std.
             If there is no need to normalize data, use [1., 1., 1.].
+
+    Examples:
+        >>> loss = LPIPS()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
+
     References:
-        .. [1] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
-        (2016). A Neural Algorithm of Artistic Style}
+        Gatys, Leon and Ecker, Alexander and Bethge, Matthias (2016).
+        A Neural Algorithm of Artistic Style
         Association for Research in Vision and Ophthalmology (ARVO)
         https://arxiv.org/abs/1508.06576
-        .. [2] Zhang, Richard and Isola, Phillip and Efros, et al.
-        (2018) The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
-        2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition
+
+        Zhang, Richard and Isola, Phillip and Efros, et al. (2018)
+        The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
+        IEEE/CVF Conference on Computer Vision and Pattern Recognition
         https://arxiv.org/abs/1801.03924
         https://github.com/richzhang/PerceptualSimilarity
     """
@@ -308,19 +377,28 @@ class DISTS(ContentLoss):
     r"""Deep Image Structure and Texture Similarity metric.
 
     By default expects input to be in range [0, 1], which is then normalized by ImageNet statistics into range [-1, 1].
-    If no normaliation is requiered, change `mean` and `std` values accordingly.
+    If no normalisation is required, change `mean` and `std` values accordingly.
 
     Args:
-        reduction: Reduction over samples in batch: "mean"|"sum"|"none"
-        mean: List of float values used for data standartization. Default: ImageNet mean.
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        mean: List of float values used for data standardization. Default: ImageNet mean.
             If there is no need to normalize data, use [0., 0., 0.].
-        std: List of float values used for data standartization. Default: ImageNet std.
+        std: List of float values used for data standardization. Default: ImageNet std.
             If there is no need to normalize data, use [1., 1., 1.].
+
+    Examples:
+        >>> loss = DISTS()
+        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> y = torch.rand(3, 3, 256, 256)
+        >>> output = loss(x, y)
+        >>> output.backward()
+
     References:
-        .. [1] Keyan Ding, Kede Ma, Shiqi Wang, Eero P. Simoncelli
-        (2020). Image Quality Assessment: Unifying Structure and Texture Similarity.
+        Keyan Ding, Kede Ma, Shiqi Wang, Eero P. Simoncelli (2020).
+        Image Quality Assessment: Unifying Structure and Texture Similarity.
         https://arxiv.org/abs/2004.07728
-        .. [2] https://github.com/dingkeyan93/DISTS
+        https://github.com/dingkeyan93/DISTS
     """
     _weights_url = "https://github.com/photosynthesis-team/piq/releases/download/v0.4.1/dists_weights.pt"
 
@@ -334,20 +412,45 @@ class DISTS(ContentLoss):
         dists_weights.extend(torch.split(weights['beta'], channels, dim=1))
 
         super().__init__("vgg16", layers=dists_layers, weights=dists_weights,
-                         replace_pooling=True, reduction=reduction,
-                         mean=mean, std=std, normalize_features=False)
+                         replace_pooling=True, reduction=reduction, mean=mean, std=std,
+                         normalize_features=False, allow_layers_weights_mismatch=True)
 
-    def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        loss = super().forward(prediction, target)
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        r"""
+
+        Args:
+            x: An input tensor. Shape :math:`(N, C, H, W)`.
+            y: A target tensor. Shape :math:`(N, C, H, W)`.
+
+        Returns:
+            Deep Image Structure and Texture Similarity loss, i.e. ``1-DISTS`` in range [0, 1].
+        """
+        _, _, H, W = x.shape
+
+        if min(H, W) > 256:
+            x = torch.nn.functional.interpolate(
+                x, scale_factor=256 / min(H, W), recompute_scale_factor=False, mode='bilinear')
+            y = torch.nn.functional.interpolate(
+                y, scale_factor=256 / min(H, W), recompute_scale_factor=False, mode='bilinear')
+
+        loss = super().forward(x, y)
         return 1 - loss
 
-    def compute_distance(self, prediction_features: torch.Tensor, target_features: torch.Tensor) -> List[torch.Tensor]:
-        r"""Compute structure similarity between feature maps"""
+    def compute_distance(self, x_features: torch.Tensor, y_features: torch.Tensor) -> List[torch.Tensor]:
+        r"""Compute structure similarity between feature maps
+
+        Args:
+            x_features: Features of the input tensor.
+            y_features: Features of the target tensor.
+
+        Returns:
+            Structural similarity distance between feature maps
+        """
         structure_distance, texture_distance = [], []
         # Small constant for numerical stability
         EPS = 1e-6
 
-        for x, y in zip(prediction_features, target_features):
+        for x, y in zip(x_features, y_features):
             x_mean = x.mean([2, 3], keepdim=True)
             y_mean = y.mean([2, 3], keepdim=True)
             structure_distance.append(similarity_map(x_mean, y_mean, constant=EPS))
@@ -360,6 +463,14 @@ class DISTS(ContentLoss):
         return structure_distance + texture_distance
 
     def get_features(self, x: torch.Tensor) -> List[torch.Tensor]:
+        r"""
+
+        Args:
+            x: Input tensor
+
+        Returns:
+            List of features extracted from input tensor
+        """
         features = super().get_features(x)
 
         # Add input tensor as an additional feature
@@ -367,11 +478,19 @@ class DISTS(ContentLoss):
         return features
 
     def replace_pooling(self, module: torch.nn.Module) -> torch.nn.Module:
-        r"""Turn All MaxPool layers into L2Pool"""
+        r"""Turn All MaxPool layers into L2Pool
+
+        Args:
+            module: Module to change MaxPool into L2Pool
+
+        Returns:
+            Module with L2Pool instead of MaxPool
+        """
         module_output = module
         if isinstance(module, torch.nn.MaxPool2d):
             module_output = L2Pool2d(kernel_size=3, stride=2, padding=1)
             
         for name, child in module.named_children():
             module_output.add_module(name, self.replace_pooling(child))
+
         return module_output
