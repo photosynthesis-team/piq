@@ -13,7 +13,7 @@ import torch.nn.functional as F
 
 from torch.nn.modules.loss import _Loss
 
-from piq.utils import _adjust_dimensions, _validate_input
+from piq.utils import _validate_input, _version_tuple
 from piq.functional import ifftshift, get_meshgrid, similarity_map, gradient_map, \
     scharr_filter, gaussian_filter, rgb2yiq, imresize
 
@@ -42,8 +42,7 @@ def srsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         https://sse.tongji.edu.cn/linzhang/IQA/SR-SIM/Files/SR_SIM.m
 
     """
-    _validate_input(input_tensors=(x, y), allow_5d=False)
-    x, y = _adjust_dimensions(input_tensors=(x, y))
+    _validate_input(tensors=[x, y], dim_range=(4, 4), data_range=(0, data_range))
 
     # Rescale to [0, 255] range, because all constant are calculated for this factor
     x = (x / float(data_range)) * 255
@@ -156,12 +155,18 @@ def _spectral_residual_visual_saliency(x: torch.Tensor, scale: float = 0.25, ker
     in_img = imresize(x, scale=scale)
 
     # Fourier transform (use complex format [a,b] instead of a + ib
-    # because torch autograd does not support the latter)
-    imagefft = torch.rfft(in_img, 2, onesided=False)
+    # because torch<1.8.0 autograd does not support the latter)
+    recommended_torch_version = '1.8.0'
+    if _version_tuple(torch.__version__) >= _version_tuple(recommended_torch_version):
+        imagefft = torch.fft.fft2(in_img)
+        log_amplitude = torch.log(imagefft.abs() + eps)
+        phase = torch.angle(imagefft)
+    else:
+        imagefft = torch.rfft(in_img, 2, onesided=False)
+        # Compute log of absolute value and angle of fourier transform
+        log_amplitude = torch.log(imagefft.pow(2).sum(dim=-1).sqrt() + eps)
+        phase = torch.atan2(imagefft[..., 1], imagefft[..., 0] + eps)
 
-    # Compute log of absolute value and angle of fourier transform
-    log_amplitude = torch.log(imagefft.pow(2).sum(dim=-1).sqrt() + eps)
-    phase = torch.atan2(imagefft[..., 1], imagefft[..., 0] + eps)
 
     # Compute spectral residual using average filtering
     padding = kernel_size // 2
@@ -180,7 +185,13 @@ def _spectral_residual_visual_saliency(x: torch.Tensor, scale: float = 0.25, ker
     compx = torch.stack((
         torch.exp(spectral_residual) * torch.cos(phase),
         torch.exp(spectral_residual) * torch.sin(phase)), -1)
-    saliency_map = torch.sum(torch.ifft(compx, 2) ** 2, dim=-1)
+
+    if _version_tuple(torch.__version__) >= _version_tuple(recommended_torch_version):
+        saliency_map = torch.abs(torch.fft.ifft2(torch.view_as_complex(compx))) ** 2
+
+    else:
+        saliency_map = torch.sum(torch.ifft(compx, 2) ** 2, dim=-1)
+
 
     # After effect for SR-SIM
     # Apply gaussian blur
