@@ -35,6 +35,8 @@ METRICS = {
     "Content": piq.ContentLoss(reduction='none'),
     "Style": piq.StyleLoss(reduction='none'),
     "DSS": functools.partial(piq.dss, reduction='none'),
+    "SR-SIM": functools.partial(piq.srsim, chromatic=False, reduction='none'),
+    "SR-SIMc": functools.partial(piq.srsim, chromatic=True, reduction='none'),
 
     # No Reference
     "BRISQUE": functools.partial(piq.brisque, reduction='none')
