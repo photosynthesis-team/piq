@@ -8,7 +8,7 @@ def main():
     # Read RGB image and it's noisy version
     x = torch.tensor(imread('tests/assets/i01_01_5.bmp')).permute(2, 0, 1)[None, ...] / 255.
     y = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1)[None, ...] / 255.
-    
+
     if torch.cuda.is_available():
         # Move to GPU to make computaions faster
         x = x.cuda()
@@ -27,7 +27,7 @@ def main():
     # Don't forget to adjust layers names accordingly. Features from different layers can be weighted differently.
     # Use weights parameter. See other options in class docstring.
     content_loss = piq.ContentLoss(
-        feature_extractor="vgg16", layers=("relu3_3", ), reduction='none')(x, y)
+        feature_extractor="vgg16", layers=("relu3_3",), reduction='none')(x, y)
     print(f"ContentLoss: {content_loss.item():0.4f}")
 
     # To compute DISTS as a loss function, use corresponding PyTorch module
@@ -94,7 +94,7 @@ def main():
     # To compute PSNR as a measure, use lower case function from the library.
     psnr_index = piq.psnr(x, y, data_range=1., reduction='none')
     print(f"PSNR index: {psnr_index.item():0.4f}")
-    
+
     # To compute PieAPP as a loss function, use corresponding PyTorch module:
     pieapp_loss: torch.Tensor = piq.PieAPP(reduction='none', stride=32)(x, y)
     print(f"PieAPP loss: {pieapp_loss.item():0.4f}")
@@ -109,7 +109,7 @@ def main():
     # By default VGG16 model is used, but any feature extractor model is supported.
     # Don't forget to adjust layers names accordingly. Features from different layers can be weighted differently.
     # Use weights parameter. See other options in class docstring.
-    style_loss = piq.StyleLoss(feature_extractor="vgg16", layers=("relu3_3", ))(x, y)
+    style_loss = piq.StyleLoss(feature_extractor="vgg16", layers=("relu3_3",))(x, y)
     print(f"Style: {style_loss.item():0.4f}")
 
     # To compute TV as a measure, use lower case function from the library:
@@ -131,10 +131,11 @@ def main():
     print(f"VSI index: {vsi_index.item():0.4f}, loss: {vsi_loss.item():0.4f}")
 
     # To compute SR-SIM score as a measure, use lower case function from the library:
-    srsim_index: torch.Tensor = piq.srsim(prediction, target, data_range=1.)
+    srsim_index: torch.Tensor = piq.srsim(x, y, data_range=1.)
     # In order to use VSI as a loss function, use corresponding PyTorch module:
-    srsim_loss: torch.Tensor = piq.SRSIMLoss(data_range=1.)(prediction, target)
+    srsim_loss: torch.Tensor = piq.SRSIMLoss(data_range=1.)(x, y)
     print(f"SR-SIM index: {srsim_index.item():0.4f}, loss: {srsim_loss.item():0.4f}")
+
 
 if __name__ == '__main__':
     main()

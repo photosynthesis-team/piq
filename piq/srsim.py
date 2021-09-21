@@ -4,9 +4,8 @@ https://github.com/Netflix/vmaf/blob/master/matlab/strred/SR_SIM.m
 References:
     https://sse.tongji.edu.cn/linzhang/ICIP12/ICIP-SR-SIM.pdf
 """
-import math
 import functools
-from typing import Union, Tuple
+from typing import Union
 
 import torch
 import torch.nn.functional as F
@@ -14,8 +13,7 @@ import torch.nn.functional as F
 from torch.nn.modules.loss import _Loss
 
 from piq.utils import _validate_input, _version_tuple
-from piq.functional import ifftshift, get_meshgrid, similarity_map, gradient_map, \
-    scharr_filter, gaussian_filter, rgb2yiq, imresize
+from piq.functional import similarity_map, gradient_map, scharr_filter, gaussian_filter, rgb2yiq, imresize
 
 
 def srsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
@@ -167,7 +165,6 @@ def _spectral_residual_visual_saliency(x: torch.Tensor, scale: float = 0.25, ker
         log_amplitude = torch.log(imagefft.pow(2).sum(dim=-1).sqrt() + eps)
         phase = torch.atan2(imagefft[..., 1], imagefft[..., 0] + eps)
 
-
     # Compute spectral residual using average filtering
     padding = kernel_size // 2
     if padding:
@@ -191,7 +188,6 @@ def _spectral_residual_visual_saliency(x: torch.Tensor, scale: float = 0.25, ker
 
     else:
         saliency_map = torch.sum(torch.ifft(compx, 2) ** 2, dim=-1)
-
 
     # After effect for SR-SIM
     # Apply gaussian blur

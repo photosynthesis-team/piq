@@ -1,8 +1,7 @@
-from typing import Any, Tuple
+from typing import Tuple
 import torch
 import pytest
 from skimage.io import imread
-from contextlib import contextmanager
 
 from piq import srsim, SRSIMLoss
 
