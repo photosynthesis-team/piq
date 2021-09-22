@@ -12,7 +12,7 @@ import torch.nn.functional as F
 
 from torch.nn.modules.loss import _Loss
 
-from piq.utils import _validate_input, _version_tuple
+from piq.utils import _validate_input, _version_tuple, _reduce
 from piq.functional import similarity_map, gradient_map, scharr_filter, gaussian_filter, rgb2yiq, imresize
 
 
@@ -118,12 +118,7 @@ def srsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     eps = torch.finfo(score.dtype).eps
     result = score.sum(dim=[1, 2, 3]) / (svrs_max.sum(dim=[1, 2, 3]) + eps)
 
-    if reduction == 'none':
-        return result
-
-    return {'mean': result.mean,
-            'sum': result.sum
-            }[reduction](dim=0)
+    return _reduce(result, reduction)
 
 
 def _spectral_residual_visual_saliency(x: torch.Tensor, scale: float = 0.25, kernel_size: int = 3,
