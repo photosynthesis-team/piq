@@ -68,7 +68,7 @@ def test_srsim_modes(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: s
         srsim(prediction.to(device), target.to(device), reduction=reduction)
 
     for reduction in ['DEADBEEF', 'random']:
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             srsim(prediction.to(device), target.to(device), reduction=reduction)
 
 
