@@ -172,8 +172,6 @@ SSIM         2003    `Structural Similarity <https://en.wikipedia.org/wiki/Struc
 MS-SSIM      2004    `Multi-Scale Structural Similarity <https://ieeexplore.ieee.org/abstract/document/1292216>`_
 VIFp         2004    `Visual Information Fidelity <https://ieeexplore.ieee.org/document/1576816>`_
 FSIM         2011    `Feature Similarity Index Measure <https://ieeexplore.ieee.org/document/5705575>`_
-IW-PSNR      2011    `Information Weighted PSNR <https://ece.uwaterloo.ca/~z70wang/publications/IWSSIM.pdf>`_
-IW-SSIM      2011    `Information Weighted SSIM <https://ece.uwaterloo.ca/~z70wang/publications/IWSSIM.pdf)>`_
 SR-SIM       2012    `Spectral Residual Based Similarity <https://sse.tongji.edu.cn/linzhang/ICIP12/ICIP-SR-SIM.pdf>`_
 GMSD         2013    `Gradient Magnitude Similarity Deviation <https://arxiv.org/abs/1308.3052>`_
 VSI          2014    `Visual Saliency-induced Index <https://ieeexplore.ieee.org/document/6873260>`_
