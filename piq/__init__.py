@@ -1,4 +1,4 @@
-__version__ = "0.5.5"
+__version__ = "0.6.0"
 
 from .ssim import ssim, SSIMLoss
 from .ms_ssim import multi_scale_ssim, MultiScaleSSIMLoss
@@ -18,5 +18,6 @@ from .fsim import fsim, FSIMLoss
 from .vsi import vsi, VSILoss
 from .mdsi import mdsi, MDSILoss
 from .haarpsi import haarpsi, HaarPSILoss
+from .srsim import srsim, SRSIMLoss
 from .pieapp import PieAPP
 from .dss import dss, DSSLoss
