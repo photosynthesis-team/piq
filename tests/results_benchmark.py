@@ -31,6 +31,7 @@ class Metric:
         assert self.category in valid_categories, f'Provided category [{self.category}] is invalid. ' \
                                                   f'Provide one of: {valid_categories}'
 
+
 torch.multiprocessing.set_sharing_strategy('file_system')
 
 METRICS = {
@@ -130,10 +131,10 @@ class PIPAL(TID2013):
     """Class to evaluate on train set of PIPAL dataset"""
 
     def __init__(self, root: Path = Path("data/raw/pipal")):
-        assert root.exists(),\
+        assert root.exists(), \
             "You need to download PIPAL dataset. Check https://www.jasongt.com/projectpages/pipal.html"
-        
-        assert (root / "Train_Dist").exists(),\
+
+        assert (root / "Train_Dist").exists(), \
             "Please place all distorted files into single folder named `Train_Dist`."
 
         # Read files with labels and merge them into single DF
@@ -143,7 +144,7 @@ class PIPAL(TID2013):
             dfs.append(df)
 
         df = pd.concat(dfs, axis=0, ignore_index=True)
-        
+
         df["ref_img"] = df["dist_img"].apply(lambda x: f"Train_Ref/{x[:5] + x[-4:]}")
         df["dist_img"] = df["dist_img"].apply(lambda x: f"Train_Dist/{x}")
 
