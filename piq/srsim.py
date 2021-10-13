@@ -151,7 +151,7 @@ def _spectral_residual_visual_saliency(x: torch.Tensor, scale: float = 0.25, ker
     # because torch<1.8.0 autograd does not support the latter)
     recommended_torch_version = _parse_version('1.8.0')
     torch_version = _parse_version(torch.__version__)
-    if torch_version is not None and torch_version >= recommended_torch_version:
+    if len(torch_version) != 0 and torch_version >= recommended_torch_version:
         imagefft = torch.fft.fft2(in_img)
         log_amplitude = torch.log(imagefft.abs() + eps)
         phase = torch.angle(imagefft)

@@ -287,7 +287,7 @@ def _msid_descriptor(x: np.ndarray, ts: np.ndarray = np.logspace(-1, 1, 256), k:
 
     recommended_scipy_version = _parse_version("1.3.3")
     scipy_version = _parse_version(scipy.__version__)
-    if scipy_version is not None and scipy_version < recommended_scipy_version:
+    if len(scipy_version) != 0 and scipy_version < recommended_scipy_version:
         warn(f'Scipy of version {scipy.__version__} is used while version >= {recommended_scipy_version} is '
              f'recommended. Consider updating scipy to avoid potential long compute time with older versions.')
 

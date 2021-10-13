@@ -84,7 +84,7 @@ def lmrk_table(witnesses: np.ndarray, landmarks: np.ndarray) -> Tuple[np.ndarray
 
     recommended_scipy_version = _parse_version("1.3.3")
     scipy_version = _parse_version(scipy.__version__)
-    if scipy_version is not None and scipy_version < recommended_scipy_version:
+    if len(scipy_version) != 0 and scipy_version < recommended_scipy_version:
         warn(f'Scipy of version {scipy.__version__} is used while version >= {recommended_scipy_version} is '
              f'recommended. Consider updating scipy to avoid potential long compute time with older versions.')
 
@@ -118,7 +118,7 @@ def witness(features: np.ndarray, sample_size: int = 64, gamma: Optional[float] 
 
     recommended_gudhi_version = _parse_version("3.2.0")
     gudhi_version = _parse_version(gudhi.__version__)
-    if gudhi_version is not None and gudhi_version < recommended_gudhi_version:
+    if len(gudhi_version) != 0 and gudhi_version < recommended_gudhi_version:
         warn(f'GUDHI of version {gudhi.__version__} is used while version >= {recommended_gudhi_version} is '
              f'recommended. Consider updating GUDHI to avoid potential problems.')
 

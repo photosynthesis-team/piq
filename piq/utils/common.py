@@ -87,7 +87,7 @@ def _reduce(x: torch.Tensor, reduction: str = 'mean') -> torch.Tensor:
         raise ValueError("Uknown reduction. Expected one of {'none', 'mean', 'sum'}")
 
 
-def _parse_version(version: Union[str, bytes]) -> Optional[Tuple[int, ...]]:
+def _parse_version(version: Union[str, bytes]) -> Tuple[int, ...]:
     """ Parses valid semver versions. More more on semver check: https://semver.org/.
 
     Implementation is inspired by: https://github.com/python-semver
@@ -100,15 +100,15 @@ def _parse_version(version: Union[str, bytes]) -> Optional[Tuple[int, ...]]:
     """
     if isinstance(version, bytes):
         version = version.decode("UTF-8")
-    elif not isinstance(version, Union[str, bytes].__args__):
+    elif not isinstance(version, str) or not isinstance(version, bytes):
         raise TypeError("not expecting type '%s'" % type(version))
 
     match = _REGEX.match(version)
     if match is None:
-        warnings.warn(f"{version} is not valid SemVer string")
-        return
+        warnings.warn(f"{version} is not a valid SemVer string")
+        return tuple()
 
     matched_version_parts: Dict[str, Any] = match.groupdict()
-    main_version_part = [int(matched_version_parts[k]) for k in ['major', 'minor', 'patch']]
+    main_version_part = tuple([int(matched_version_parts[k]) for k in ['major', 'minor', 'patch']])
 
     return main_version_part
