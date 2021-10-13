@@ -100,8 +100,8 @@ def _parse_version(version: Union[str, bytes]) -> Tuple[int, ...]:
     """
     if isinstance(version, bytes):
         version = version.decode("UTF-8")
-    elif not isinstance(version, str) or not isinstance(version, bytes):
-        raise TypeError("not expecting type '%s'" % type(version))
+    elif not isinstance(version, str) and not isinstance(version, bytes):
+        raise TypeError(f"not expecting type {type(version)}")
 
     match = _REGEX.match(version)
     if match is None:
