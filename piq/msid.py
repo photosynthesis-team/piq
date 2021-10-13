@@ -8,7 +8,7 @@ import torch
 import numpy as np
 
 from piq.base import BaseFeatureMetric
-from piq.utils import _validate_input, _version_tuple
+from piq.utils import _validate_input, _parse_version
 
 
 EPSILON = 1e-6
@@ -285,8 +285,9 @@ def _msid_descriptor(x: np.ndarray, ts: np.ndarray = np.logspace(-1, 1, 256), k:
         raise ImportError("Scipy is required for computation of the Geometry Score but not installed. "
                           "Please install scipy using the following command: pip install --user scipy")
 
-    recommended_scipy_version = "1.3.3"
-    if _version_tuple(scipy.__version__) < _version_tuple(recommended_scipy_version):
+    recommended_scipy_version = _parse_version("1.3.3")
+    scipy_version = _parse_version(scipy.__version__)
+    if scipy_version is not None and scipy_version < recommended_scipy_version:
         warn(f'Scipy of version {scipy.__version__} is used while version >= {recommended_scipy_version} is '
              f'recommended. Consider updating scipy to avoid potential long compute time with older versions.')
 

@@ -3,7 +3,7 @@ import pytest
 
 import numpy as np
 
-from piq.utils import _validate_input, _reduce
+from piq.utils import _validate_input, _reduce, _parse_version
 
 
 @pytest.fixture(scope='module')
@@ -89,3 +89,48 @@ def test_reduce_function() -> None:
     for reduction in [None, 'n', 2]:
         with pytest.raises(ValueError):
             _reduce(x, reduction=reduction)
+
+
+# =============== Test function: `_parse_version` ==============
+# Test cases are examples of valid semver versioning options
+# See https://semver.org/ for more details.
+# Test cases are inspired by https://github.com/python-semver
+valid_semver_versions = ("version,expected",
+                         [
+                             # no. 1
+                             ("1.2.3-alpha.1.2+build.11.e0f985a", [1, 2, 3]),
+                             # no. 2
+                             ("1.2.3-alpha-1+build.11.e0f985a", [1, 2, 3]),
+                             # no. 3
+                             ("0.1.0-0f", [0, 1, 0]),
+                             # no. 4
+                             ("0.0.0-0foo.1", [0, 0, 0]),
+                             # no. 5
+                             ("0.0.0-0foo.1+build.1", [0, 0, 0]),
+                             # no. 6
+                             ("1.3.5-alpha", [1, 3, 5]),
+                             # no. 7
+                             ("1.3.5", [1, 3, 5])
+                         ])
+
+
+@pytest.mark.parametrize(*valid_semver_versions)
+def test_version_tuple_doesnt_fail_valid_input(version, expected) -> None:
+    try:
+        _parse_version(version)
+    except Exception as e:
+        pytest.fail(f"Unexpected error occurred wile parsing valid semver versions: {e}")
+
+
+@pytest.mark.parametrize(*valid_semver_versions)
+def test_version_tuple_parses_correctly(version, expected) -> None:
+    parsed = _parse_version(version)
+    assert parsed == expected, "Wrong parsing result of a valid semver version"
+
+
+@pytest.mark.parametrize("version", ["01.2.3", "1.02.3", "1.2.03", "1.3.5.post1"])
+def test_version_tuple_warns_on_invalid_input(version) -> None:
+    with pytest.warns(UserWarning):
+        _parse_version(version)
+
+

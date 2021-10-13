@@ -12,7 +12,7 @@ import torch.nn.functional as F
 
 from torch.nn.modules.loss import _Loss
 
-from piq.utils import _validate_input, _version_tuple, _reduce
+from piq.utils import _validate_input, _parse_version, _reduce
 from piq.functional import similarity_map, gradient_map, scharr_filter, gaussian_filter, rgb2yiq, imresize
 
 
@@ -149,8 +149,9 @@ def _spectral_residual_visual_saliency(x: torch.Tensor, scale: float = 0.25, ker
 
     # Fourier transform (use complex format [a,b] instead of a + ib
     # because torch<1.8.0 autograd does not support the latter)
-    recommended_torch_version = '1.8.0'
-    if _version_tuple(torch.__version__) >= _version_tuple(recommended_torch_version):
+    recommended_torch_version = _parse_version('1.8.0')
+    torch_version = _parse_version(torch.__version__)
+    if torch_version is not None and torch_version >= recommended_torch_version:
         imagefft = torch.fft.fft2(in_img)
         log_amplitude = torch.log(imagefft.abs() + eps)
         phase = torch.angle(imagefft)
@@ -178,7 +179,7 @@ def _spectral_residual_visual_saliency(x: torch.Tensor, scale: float = 0.25, ker
         torch.exp(spectral_residual) * torch.cos(phase),
         torch.exp(spectral_residual) * torch.sin(phase)), -1)
 
-    if _version_tuple(torch.__version__) >= _version_tuple(recommended_torch_version):
+    if torch_version is not None and torch_version >= recommended_torch_version:
         saliency_map = torch.abs(torch.fft.ifft2(torch.view_as_complex(compx))) ** 2
 
     else:

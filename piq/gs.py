@@ -13,7 +13,7 @@ from multiprocessing import Pool
 from warnings import warn
 
 from piq.base import BaseFeatureMetric
-from piq.utils import _validate_input, _version_tuple
+from piq.utils import _validate_input, _parse_version
 
 
 def relative(intervals: np.ndarray, alpha_max: float, i_max: int = 100) -> np.ndarray:
@@ -82,8 +82,9 @@ def lmrk_table(witnesses: np.ndarray, landmarks: np.ndarray) -> Tuple[np.ndarray
         raise ImportError("Scipy is required for computation of the Geometry Score but not installed. "
                           "Please install scipy using the following command: pip install --user scipy")
 
-    recommended_scipy_version = "1.3.3"
-    if _version_tuple(scipy.__version__) < _version_tuple(recommended_scipy_version):
+    recommended_scipy_version = _parse_version("1.3.3")
+    scipy_version = _parse_version(scipy.__version__)
+    if scipy_version is not None and scipy_version < recommended_scipy_version:
         warn(f'Scipy of version {scipy.__version__} is used while version >= {recommended_scipy_version} is '
              f'recommended. Consider updating scipy to avoid potential long compute time with older versions.')
 
@@ -115,8 +116,9 @@ def witness(features: np.ndarray, sample_size: int = 64, gamma: Optional[float] 
         raise ImportError("GUDHI is required for computation of the Geometry Score but not installed. "
                           "Please install scipy using the following command: pip install --user gudhi")
 
-    recommended_gudhi_version = "3.2"
-    if _version_tuple(gudhi.__version__) < _version_tuple(recommended_gudhi_version):
+    recommended_gudhi_version = _parse_version("3.2.0")
+    gudhi_version = _parse_version(gudhi.__version__)
+    if gudhi_version is not None and gudhi_version < recommended_gudhi_version:
         warn(f'GUDHI of version {gudhi.__version__} is used while version >= {recommended_gudhi_version} is '
              f'recommended. Consider updating GUDHI to avoid potential problems.')
 

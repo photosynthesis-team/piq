@@ -1,6 +1,6 @@
 import pytest
 
-from piq.utils import _version_tuple as vt
+from piq.utils import _parse_version as vt
 
 
 def test_version_tuple_fails_on_empty_string() -> None:
