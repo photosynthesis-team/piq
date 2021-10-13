@@ -132,5 +132,3 @@ def test_version_tuple_parses_correctly(version, expected) -> None:
 def test_version_tuple_warns_on_invalid_input(version) -> None:
     with pytest.warns(UserWarning):
         _parse_version(version)
-
-
