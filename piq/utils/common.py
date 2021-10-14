@@ -88,7 +88,7 @@ def _reduce(x: torch.Tensor, reduction: str = 'mean') -> torch.Tensor:
 
 
 def _parse_version(version: Union[str, bytes]) -> Tuple[int, ...]:
-    """ Parses valid semver versions. More more on semver check: https://semver.org/.
+    """ Parses valid semver versions. More on semver check: https://semver.org/.
 
     Implementation is inspired by: https://github.com/python-semver
 
