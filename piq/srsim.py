@@ -179,7 +179,7 @@ def _spectral_residual_visual_saliency(x: torch.Tensor, scale: float = 0.25, ker
         torch.exp(spectral_residual) * torch.cos(phase),
         torch.exp(spectral_residual) * torch.sin(phase)), -1)
 
-    if len(torch_version) != 0  and torch_version >= recommended_torch_version:
+    if len(torch_version) != 0 and torch_version >= recommended_torch_version:
         saliency_map = torch.abs(torch.fft.ifft2(torch.view_as_complex(compx))) ** 2
 
     else:
