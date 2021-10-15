@@ -1,13 +1,37 @@
-from typing import Tuple, List, Optional
 import torch
+import re
+import warnings
+
+from typing import Tuple, List, Optional, Union, Dict, Any
+
+_REGEX = re.compile(
+    r"""
+        ^
+        (?P<major>0|[1-9]\d*)
+        \.
+        (?P<minor>0|[1-9]\d*)
+        \.
+        (?P<patch>0|[1-9]\d*)
+        (?:-(?P<prerelease>
+            (?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)
+            (?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*
+        ))?
+        (?:\+(?P<build>
+            [0-9a-zA-Z-]+
+            (?:\.[0-9a-zA-Z-]+)*
+        ))?
+        $
+    """,
+    re.VERBOSE,
+)
 
 
 def _validate_input(
-    tensors: List[torch.Tensor],
-    dim_range: Tuple[int, int] = (0, -1),
-    data_range: Tuple[float, float] = (0., -1.),
-    # size_dim_range: Tuple[float, float] = (0., -1.),
-    size_range: Optional[Tuple[int, int]] = None,
+        tensors: List[torch.Tensor],
+        dim_range: Tuple[int, int] = (0, -1),
+        data_range: Tuple[float, float] = (0., -1.),
+        # size_dim_range: Tuple[float, float] = (0., -1.),
+        size_range: Optional[Tuple[int, int]] = None,
 ) -> None:
     r"""Check that input(-s)  satisfies the requirements
     Args:
@@ -63,6 +87,28 @@ def _reduce(x: torch.Tensor, reduction: str = 'mean') -> torch.Tensor:
         raise ValueError("Uknown reduction. Expected one of {'none', 'mean', 'sum'}")
 
 
-def _version_tuple(v):
-    # Split by dot and plus
-    return tuple(map(int, v.split('+')[0].split('.')))
+def _parse_version(version: Union[str, bytes]) -> Tuple[int, ...]:
+    """ Parses valid semver versions. More on semver check: https://semver.org/.
+
+    Implementation is inspired by: https://github.com/python-semver
+
+    Args:
+        version: unparsed information about the library of interest.
+
+    Returns:
+        parsed information about the library of interest.
+    """
+    if isinstance(version, bytes):
+        version = version.decode("UTF-8")
+    elif not isinstance(version, str) and not isinstance(version, bytes):
+        raise TypeError(f"not expecting type {type(version)}")
+
+    match = _REGEX.match(version)
+    if match is None:
+        warnings.warn(f"{version} is not a valid SemVer string")
+        return tuple()
+
+    matched_version_parts: Dict[str, Any] = match.groupdict()
+    main_version_part = tuple([int(matched_version_parts[k]) for k in ['major', 'minor', 'patch']])
+
+    return main_version_part
