@@ -62,8 +62,10 @@ METRICS = {
     # Distribution-based
     "IS": Metric(name="IS", functor=piq.IS(distance='l1'), category='DB'),
     "FID": Metric(name="FID", functor=piq.FID(), category='DB'),
+    "GS": Metric(name="GS", functor=piq.GS(), category='DB'),
     "KID": Metric(name="KID", functor=piq.KID(), category='DB'),
-    "MSID": Metric(name="MSID", functor=piq.MSID(), category='DB')
+    "MSID": Metric(name="MSID", functor=piq.MSID(), category='DB'),
+    "PR": Metric(name="PR", functor=piq.PR(), category='DB')
 }
 
 
