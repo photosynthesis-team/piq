@@ -11,7 +11,7 @@ from typing import Union, Tuple
 import torch
 from torch.nn.modules.loss import _Loss
 
-from piq.utils import _validate_input, _reduce, _version_tuple
+from piq.utils import _validate_input, _reduce, _parse_version
 from piq.functional import ifftshift, get_meshgrid, similarity_map, gradient_map, scharr_filter, rgb2yiq
 
 
@@ -239,8 +239,9 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
 
     # Fourier transform
     filters = _construct_filters(x, scales, orientations, min_length, mult, sigma_f, delta_theta, k)
-    recommended_torch_version = '1.8.0'
-    if _version_tuple(torch.__version__) >= _version_tuple(recommended_torch_version):
+    recommended_torch_version = _parse_version('1.8.0')
+    torch_version = _parse_version(torch.__version__)
+    if len(torch_version) != 0 and torch_version >= recommended_torch_version:
         imagefft = torch.fft.fft2(x)
         filters_ifft = torch.fft.ifft2(filters)
         filters_ifft = filters_ifft.real * math.sqrt(H * W)
