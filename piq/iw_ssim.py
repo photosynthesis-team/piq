@@ -11,13 +11,13 @@ import torch
 from torch.nn.modules.loss import _Loss
 import torch.nn.functional as F
 from piq.utils import _validate_input, _reduce
-from piq.functional import gaussian_filter, binomial_filter2d, average_filter2d
+from piq.functional import gaussian_filter, binomial_filter2d, average_filter2d, rgb2yiq
 from typing import Union, Optional, Tuple
 
 
 def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1.,
                               kernel_size: int = 11, kernel_sigma: float = 1.5, k1: float = 0.01, k2: float = 0.03,
-                              parent: bool = True,
+                              parent: bool = True, blk_size: int = 3, sigma_nsq: float = 0.4,
                               scale_weights: Optional[torch.Tensor] = None,
                               reduction: str = 'mean') -> torch.Tensor:
     r"""
@@ -41,9 +41,12 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
 
     _validate_input(tensors=[x, y], dim_range=(4, 4), data_range=(0., data_range))
 
-
     x = x.type(torch.float32) / data_range * 255
     y = y.type(torch.float32) / data_range * 255
+
+    if x.size(1) == 3:
+        x = rgb2yiq(x)[:, :1]
+        y = rgb2yiq(y)[:, :1]
 
     if scale_weights is None:
         scale_weights = torch.tensor([0.0448, 0.2856, 0.3001, 0.2363, 0.1333])
@@ -54,6 +57,9 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
     min_size = (kernel_size - 1) * 2 ** (levels - 1) + 1
     if x.size(-1) < min_size or x.size(-2) < min_size:
         raise ValueError(f'Invalid size of the input images, expected at least {min_size}x{min_size}.')
+
+    bound = (kernel_size - 1) // 2
+    bound1 = bound - int((blk_size - 1) / 2)
 
     gauss_kernel = gaussian_filter(kernel_size, kernel_sigma).repeat(x.size(1), 1, 1, 1).to(x)
 
@@ -70,8 +76,10 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
 
     x = lo_x
     y = lo_y
+    wmcs = []
 
     for i in range(levels):
+        print(i)
         if i < levels - 2:
             # BLur and downsample
             lo_x = _blur_and_downsample(x, bin_filter)
@@ -87,34 +95,33 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
             x_diff = x
             y_diff = y
 
-        ssim_map, cs_map = _ssim_per_channel(x=x_diff_old, y=y_diff_old, kernel=gauss_kernel, data_range=data_range,
+        ssim_map, cs_map = _ssim_per_channel(x=x_diff_old, y=y_diff_old, kernel=gauss_kernel, data_range=255,
                                              k1=k1, k2=k2)
 
-        bound = (kernel_size - 1) // 2
-        blk_size = 3
-        bound1 = bound - int((blk_size - 1) / 2)
 
         if parent and i < levels - 2:
-            iw_map = _information_content(x_diff_old, y_diff_old, y_diff)
+            iw_map = _information_content(x=x_diff_old, y=y_diff_old, y_parent=y_diff, kernel_size=blk_size,
+                                          sigma_nsq=sigma_nsq)
             iw_map = iw_map[:, :, bound1:-bound1, bound1:-bound1]
 
         elif i == levels - 1:
             iw_map = torch.ones_like(cs_map)
             cs_map = ssim_map
 
-        #elif not parent or i == levels - 2:
         else:
-            iw_map = _information_content(x_diff_old, y_diff_old)
+            iw_map = _information_content(x=x_diff_old, y=y_diff_old, y_parent=None, kernel_size=blk_size,
+                                          sigma_nsq=sigma_nsq)
             iw_map = iw_map[:, :, bound1:-bound1, bound1:-bound1]
 
-
-        wmcs = torch.sum(cs_map * iw_map, dim=(-2, -1)) / torch.sum(iw_map, dim=(-2, -1))
-
+        wmcs.append(torch.sum(cs_map * iw_map, dim=(-2, -1)) / torch.sum(iw_map, dim=(-2, -1)))
 
         x_diff_old = x_diff
         y_diff_old = y_diff
 
-    score = torch.prod((wmcs ** scale_weights.view(-1, 1, 1)), dim=0).mean(1)
+    # TODO: It contains negative values leading to NaN result.
+    wmcs = torch.stack(wmcs, dim=0)
+
+    score = torch.prod((wmcs ** scale_weights.view(-1, 1, 1)), dim=0)[:, 0]
 
     return _reduce(x=score, reduction=reduction)
 
@@ -249,7 +256,7 @@ def _information_content(x: torch.Tensor, y: torch.Tensor, y_parent: torch.Tenso
     g = g.masked_fill(sigma_xx < EPS, 0)
     vv = vv.masked_fill(sigma_xx < EPS, 0)
 
-    block = [3, 3]  # blsxz blsxy
+    block = [kernel_size, kernel_size]
 
     nblv = y.size(-2) - block[0] + 1
     nblh = y.size(-1) - block[1] + 1
@@ -306,7 +313,8 @@ def _information_content(x: torch.Tensor, y: torch.Tensor, y_parent: torch.Tenso
     # Calculate mutual information
     scaled_eig_values = torch.diagonal(L, offset=0, dim1=-2, dim2=-1).unsqueeze(2).unsqueeze(3)
 
-    iw_map = torch.sum(torch.log2(1 + ((vv.unsqueeze(-1) + (1 + g.unsqueeze(-1) * g.unsqueeze(-1)) * sigma_nsq) * ss.unsqueeze(-1) * scaled_eig_values + sigma_nsq * vv.unsqueeze(-1)) / (sigma_nsq * sigma_nsq)), dim=-1)
+    iw_map = torch.sum(torch.log2(1 + ((vv.unsqueeze(-1) + (1 + g.unsqueeze(-1) * g.unsqueeze(-1)) * sigma_nsq)
+        * ss.unsqueeze(-1) * scaled_eig_values + sigma_nsq * vv.unsqueeze(-1)) / (sigma_nsq * sigma_nsq)), dim=-1)
 
     iw_map[iw_map < EPS] = 0
 
