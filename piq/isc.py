@@ -75,11 +75,10 @@ class IS(BaseFeatureMetric):
         distance: How to measure distance between scores: ``'l1'`` | ``'l2'``. Default: ``'l1'``.
 
     Examples:
-        >>> loss = IS()
-        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
-        >>> y = torch.rand(3, 3, 256, 256)
-        >>> output = loss(x, y)
-        >>> output.backward()
+        >>> is_metric = IS()
+        >>> x_feats = torch.rand(10000, 1024)
+        >>> y_feats = torch.rand(10000, 1024)
+        >>> is: torch.Tensor = is_metric(x_feats, y_feats)
 
     References:
         "A Note on the Inception Score" https://arxiv.org/pdf/1801.01973.pdf
