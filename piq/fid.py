@@ -142,11 +142,10 @@ class FID(BaseFeatureMetric):
     But dimensionalities should match, otherwise it won't be possible to correctly compute statistics.
 
     Examples:
-        >>> loss = FID()
-        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
-        >>> y = torch.rand(3, 3, 256, 256)
-        >>> output = loss(x, y)
-        >>> output.backward()
+        >>> fid_metric = FID()
+        >>> x_feats = torch.rand(10000, 1024)
+        >>> y_feats = torch.rand(10000, 1024)
+        >>> fid: torch.Tensor = fid_metric(x_feats, y_feats)
 
     References:
         Heusel M. et al. (2017).

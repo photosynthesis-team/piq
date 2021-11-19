@@ -321,11 +321,10 @@ class MSID(BaseFeatureMetric):
             ``'max'`` to find the maximum absolute difference between two descriptors over temperature
 
     Examples:
-        >>> loss = MSID()
-        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
-        >>> y = torch.rand(3, 3, 256, 256)
-        >>> output = loss(x, y)
-        >>> output.backward()
+        >>> msid_metric = MSID()
+        >>> x_feats = torch.rand(10000, 1024)
+        >>> y_feats = torch.rand(10000, 1024)
+        >>> msid: torch.Tensor = msid_metric(x_feats, y_feats)
 
     References:
         Tsitsulin, A., Munkhoeva, M., Mottin, D., Karras, P., Bronstein, A., Oseledets, I., & Müller, E. (2019).

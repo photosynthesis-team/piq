@@ -158,11 +158,10 @@ class GS(BaseFeatureMetric):
         num_workers: Number of proccess used for GS computation.
 
     Examples:
-        >>> loss = GS()
-        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
-        >>> y = torch.rand(3, 3, 256, 256)
-        >>> output = loss(x, y)
-        >>> output.backward()
+        >>> gs_metric = GS()
+        >>> x_feats = torch.rand(10000, 1024)
+        >>> y_feats = torch.rand(10000, 1024)
+        >>> gs: torch.Tensor = gs_metric(x_feats, y_feats)
 
     References:
         Khrulkov V., Oseledets I. (2018).
