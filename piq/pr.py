@@ -61,10 +61,10 @@ class PR(BaseFeatureMetric):
         nearest_k: Nearest neighbor to compute the non-parametric representation. Shape :math:`1`
         
     Examples:
-        >>> loss = PR()
-        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
-        >>> y = torch.rand(3, 3, 256, 256)
-        >>> precision, recall = loss(x, y)
+        >>> pr_metric = PR()
+        >>> x_feats = torch.rand(10000, 1024)
+        >>> y_feats = torch.rand(10000, 1024)
+        >>> precision, recall = pr_metric(x_feats, y_feats)
 
     References:
         Kynkäänniemi T. et al. (2019).
