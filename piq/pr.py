@@ -96,16 +96,18 @@ class PR(BaseFeatureMetric):
             Scalar value of the recall of the generated images.
         """
         _validate_input([real_features, fake_features], dim_range=(2, 2), size_range=(1, 2))
-        real_nearest_neighbour_distances = _compute_nearest_neighbour_distances(real_features, self.nearest_k)
-        fake_nearest_neighbour_distances = _compute_nearest_neighbour_distances(fake_features, self.nearest_k)
+        real_nearest_neighbour_distances = _compute_nearest_neighbour_distances(real_features, self.nearest_k).unsqueeze(1)
+        fake_nearest_neighbour_distances = _compute_nearest_neighbour_distances(fake_features, self.nearest_k).unsqueeze(0)
         distance_real_fake = _compute_pairwise_distance(real_features, fake_features)
 
+        # noinspection PyTypeChecker
         precision = (
-                distance_real_fake < real_nearest_neighbour_distances.unsqueeze(1)
+            torch.logical_or(distance_real_fake < real_nearest_neighbour_distances, torch.isclose(distance_real_fake, real_nearest_neighbour_distances))
         ).any(dim=0).float().mean()
 
+        # noinspection PyTypeChecker
         recall = (
-                distance_real_fake < fake_nearest_neighbour_distances.unsqueeze(0)
+            torch.logical_or(distance_real_fake < fake_nearest_neighbour_distances, torch.isclose(distance_real_fake, real_nearest_neighbour_distances))
         ).any(dim=1).float().mean()
 
         return precision, recall
