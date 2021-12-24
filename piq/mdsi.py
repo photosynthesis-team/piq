@@ -187,4 +187,4 @@ class MDSILoss(_Loss):
             Nevertheless, the method supports greyscale images, which are converted to RGB by copying the grey
             channel 3 times.
         """
-        return 1. - torch.clamp(self.mdsi(x=x, y=y), min=0., max=1.)
+        return self.mdsi(x=x, y=y)
