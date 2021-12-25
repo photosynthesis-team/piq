@@ -49,3 +49,11 @@ def test_return_two_scores(features_y_normal, features_x_normal) -> None:
     print(result)
     assert len(result) == 2, \
         f'Expected to get precision and recall, got {result}'
+
+
+def test_ones_on_same_features(features_y_normal) -> None:
+    features_x_normal = features_y_normal
+    metric = PR()
+    precision, recall = metric(features_y_normal, features_x_normal)
+    assert torch.isclose(precision, torch.ones_like(precision)) and torch.isclose(recall, torch.ones_like(recall)), \
+        f"Expected precision == 1.0 and recall == 1.0, got {precision=}, {recall=}"
