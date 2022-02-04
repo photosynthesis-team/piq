@@ -142,7 +142,6 @@ def _parse_version(version: Union[str, bytes]) -> Tuple[int, ...]:
     # Semver processing
     match = SEMVER_VERSION_PATTERN.match(version)
     if match:
-        print("match", match)
         matched_version_parts: Dict[str, Any] = match.groupdict()
         release = tuple([int(matched_version_parts[k]) for k in ['major', 'minor', 'patch']])
         return release
