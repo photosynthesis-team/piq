@@ -110,7 +110,11 @@ valid_semver_versions = ("version,expected",
                              # no. 6
                              ("1.3.5-alpha", (1, 3, 5)),
                              # no. 7
-                             ("1.3.5", (1, 3, 5))
+                             ("1.3.5", (1, 3, 5)),
+                             # no. 8
+                             ("1.10.0a0+ecc3718", (1, 10, 0)),
+                             # no. 9
+                             ("1.8.0a0+17f8c32", (1, 8, 0))
                          ])
 
 
@@ -128,7 +132,7 @@ def test_version_tuple_parses_correctly(version, expected) -> None:
     assert parsed == expected, "Wrong parsing result of a valid semver version"
 
 
-@pytest.mark.parametrize("version", ["01.2.3", "1.02.3", "1.2.03", "1.3.5.post1"])
+@pytest.mark.parametrize("version", ["01a.2.3", "1.2.03a.a.a.a", "a.1.3.5.post1"])
 def test_version_tuple_warns_on_invalid_input(version) -> None:
     with pytest.warns(UserWarning):
         _parse_version(version)
