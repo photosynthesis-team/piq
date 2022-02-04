@@ -57,7 +57,7 @@ METRICS = {
     "DSS": Metric(name="DSS", functor=functools.partial(piq.dss, reduction='none'), category='FR'),
 
     # No-reference
-    "BRISQUE": Metric(name="BRISQUE", functor=functools.partial(piq.brisque, reduction='none'), category='NR'),
+    "BRISQUE": Metric(name="BRISQUE", functor=functools.partial(piq.brisque, data_range=255., reduction='none'), category='NR'),
 
     # Distribution-based
     "IS": Metric(name="IS", functor=piq.IS(distance='l1'), category='DB'),
@@ -103,8 +103,9 @@ class TID2013(Dataset):
         score = self.scores[index]
 
         # Load image and ref. Convert to tensor and [0, 1] range
-        x = torch.tensor(imread(x_path)).permute(2, 0, 1) / 255
-        y = torch.tensor(imread(y_path)).permute(2, 0, 1) / 255
+        # x = torch.tensor(imread(x_path)).permute(2, 0, 1) / 255
+        x = torch.tensor(imread(x_path), dtype=torch.float32).permute(2, 0, 1)
+        y = torch.tensor(imread(y_path), dtype=torch.float32).permute(2, 0, 1)
 
         return x, y, score
 
