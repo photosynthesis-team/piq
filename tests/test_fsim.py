@@ -126,6 +126,13 @@ def test_fsim_simmular_to_matlab_implementation():
         'Expected PyTorch chromatic score to be equal to MATLAB prediction.' \
         f'Got {score_chromatic} and {score_baseline_chromatic}'
 
+@pytest.mark.parametrize(
+    "dtype", [torch.float32, torch.float64],
+)
+def test_fsim_preserves_dtype(input_tensors: torch.Tensor, dtype, device: str) -> None:
+    x, y = input_tensors
+    output = fsim(x.to(device=device, dtype=dtype), y.to(device=device, dtype=dtype), chromatic=False)
+    assert output.dtype == dtype
 
 # ================== Test class: `FSIMLoss` ==================
 def test_fsim_loss_reduction(x, y) -> None:
