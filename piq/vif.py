@@ -27,7 +27,7 @@ def vif_p(x: torch.Tensor, y: torch.Tensor, sigma_n_sq: float = 2.0,
         data_range: Maximum value range of images (usually 1.0 or 255).
         reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
-        
+
     Returns:
         VIF Index of similarity between two images. Usually in [0, 1] interval.
         Can be bigger than 1 for predicted :math:`x` images with higher contrast than original one.
@@ -61,10 +61,10 @@ def vif_p(x: torch.Tensor, y: torch.Tensor, sigma_n_sq: float = 2.0,
         # Add channel dimension
         x = x[:, None, :, :]
         y = y[:, None, :, :]
-        
+
     # Constant for numerical stability
     EPS = 1e-8
-    
+
     # Progressively downsample images and compute VIF on different scales
     x_vif, y_vif = 0, 0
     for scale in range(4):
@@ -84,7 +84,7 @@ def vif_p(x: torch.Tensor, y: torch.Tensor, sigma_n_sq: float = 2.0,
         sigma_x_sq = F.conv2d(x ** 2, kernel) - mu_x_sq
         sigma_y_sq = F.conv2d(y ** 2, kernel) - mu_y_sq
         sigma_xy = F.conv2d(x * y, kernel) - mu_xy
-        
+
         # Zero small negative values
         sigma_x_sq = torch.relu(sigma_x_sq)
         sigma_y_sq = torch.relu(sigma_y_sq)
@@ -103,7 +103,7 @@ def vif_p(x: torch.Tensor, y: torch.Tensor, sigma_n_sq: float = 2.0,
         g = torch.relu(g)
 
         sigma_v_sq = torch.where(sigma_v_sq > EPS, sigma_v_sq, torch.ones_like(sigma_v_sq) * EPS)
-    
+
         x_vif_scale = torch.log10(1.0 + (g ** 2.) * sigma_y_sq / (sigma_v_sq + sigma_n_sq))
         x_vif = x_vif + torch.sum(x_vif_scale, dim=[1, 2, 3])
         y_vif = y_vif + torch.sum(torch.log10(1.0 + sigma_y_sq / sigma_n_sq), dim=[1, 2, 3])

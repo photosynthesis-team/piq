@@ -105,7 +105,7 @@ def test_vif_loss_forward(x, y, device: str) -> None:
     loss = VIFLoss()
     loss(x.to(device), y.to(device))
 
-    
+
 def test_vif_loss_zero_for_equal_tensors(x):
     loss = VIFLoss()
     y = x.clone()
@@ -126,7 +126,7 @@ def test_vif_loss_reduction(x, y) -> None:
     measure = loss(x, y)
     assert len(measure) == x.size(0), \
         f'VIF with `none` reduction must have length equal to number of images, got {len(measure)}'
-    
+
     loss = VIFLoss(reduction='random string')
     with pytest.raises(ValueError):
         loss(x, y)

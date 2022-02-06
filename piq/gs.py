@@ -211,10 +211,10 @@ class GS(BaseFeatureMetric):
 
     def _relative_living_times(self, idx: int) -> Union[np.ndarray, np.ndarray, np.ndarray]:
         r"""Implements Algorithm 1 for two samples of landmarks.
-    
+
         Args:
             idx : Dummy argument. Used for multiprocessing.Pool to work correctly
-        
+
         Returns:
             An array of size (i_max, ) containing RLT(i, 1, X, L)
             for randomly sampled landmarks.

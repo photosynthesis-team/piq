@@ -97,7 +97,7 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
             if weight[m, n] < threshold:
                 weight[m, n] = 0
                 continue
-            
+
             subband_sim_matrix[:, m, n] = _subband_similarity(
                 dct_x[:, :, m::dct_size, n::dct_size],
                 dct_y[:, :, m::dct_size, n::dct_size],
