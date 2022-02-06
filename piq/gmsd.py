@@ -247,7 +247,7 @@ class MultiScaleGMSDLoss(_Loss):
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         data_range: Maximum value range of images (usually 1.0 or 255).
         scale_weights: Weights for different scales. Can contain any number of floating point values.
-            By defualt weights are initialized with values from the paper.
+            By default weights are initialized with values from the paper.
         chromatic: Flag to use MS-GMSDc algorithm from paper.
             It also evaluates chromatic components of the image. Default: True
         beta1: Algorithm parameter. Weight of chromatic component in the loss.

@@ -84,7 +84,7 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         kernel_size = 2 ** (scale + 1)
         kernels = torch.stack([haar_filter(kernel_size), haar_filter(kernel_size).transpose(-1, -2)])
     
-        # Assymetrical padding due to even kernel size. Matches MATLAB conv2(A, B, 'same')
+        # Asymmetrical padding due to even kernel size. Matches MATLAB conv2(A, B, 'same')
         upper_pad = kernel_size // 2 - 1
         bottom_pad = kernel_size // 2
         pad_to_use = [upper_pad, bottom_pad, upper_pad, bottom_pad]

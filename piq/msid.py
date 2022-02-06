@@ -1,4 +1,4 @@
-r"""Implemetation of Multi-scale Evaluation metric, based on paper
+r"""Implementation of Multi-scale Evaluation metric, based on paper
  https://arxiv.org/abs/1905.11141 and author's repository https://github.com/xgfs/msid
 """
 from typing import List, Tuple, Optional

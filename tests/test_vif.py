@@ -35,14 +35,14 @@ def test_vif_p(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) ->
 def test_vif_p_one_for_equal_tensors(x) -> None:
     y = x.clone()
     measure = vif_p(x, y)
-    assert torch.isclose(measure, torch.tensor(1.0)), f'VIF for equal tensors shouls be 1.0, got {measure}.'
+    assert torch.isclose(measure, torch.tensor(1.0)), f'VIF for equal tensors should be 1.0, got {measure}.'
 
 
 def test_vif_p_works_for_zeros_tensors() -> None:
     x = torch.zeros(4, 3, 256, 256)
     y = torch.zeros(4, 3, 256, 256)
     measure = vif_p(x, y, data_range=1.)
-    assert torch.isclose(measure, torch.tensor(1.0)), f'VIF for 2 zero tensors shouls be 1.0, got {measure}.'
+    assert torch.isclose(measure, torch.tensor(1.0)), f'VIF for 2 zero tensors should be 1.0, got {measure}.'
 
 
 def test_vif_p_fails_for_small_images() -> None:

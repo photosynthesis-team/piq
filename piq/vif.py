@@ -1,4 +1,4 @@
-r"""Implemetation of Visual Information Fidelity metric
+r"""Implementation of Visual Information Fidelity metric
 Code is based on MATLAB version for computations in pixel domain
 https://live.ece.utexas.edu/research/Quality/VIF.htm
 
@@ -29,7 +29,7 @@ def vif_p(x: torch.Tensor, y: torch.Tensor, sigma_n_sq: float = 2.0,
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         
     Returns:
-        VIF Index of similarity betwen two images. Usually in [0, 1] interval.
+        VIF Index of similarity between two images. Usually in [0, 1] interval.
         Can be bigger than 1 for predicted :math:`x` images with higher contrast than original one.
 
     References:

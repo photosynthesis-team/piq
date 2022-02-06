@@ -81,7 +81,7 @@ def main():
 
     # To compute Multi-Scale GMSD as a measure, use lower case function from the library
     # It can be used both as a measure and as a loss function. In any case it should me minimized.
-    # By defualt scale weights are initialized with values from the paper.
+    # By default scale weights are initialized with values from the paper.
     # You can change them by passing a list of 4 variables to scale_weights argument during initialization
     # Note that input tensors should contain images with height and width equal 2 ** number_of_scales + 1 at least.
     ms_gmsd_index: torch.Tensor = piq.multi_scale_gmsd(

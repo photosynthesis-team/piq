@@ -155,7 +155,7 @@ class GS(BaseFeatureMetric):
             Higher values can reduce variance, but increase computation cost.
         gamma: Parameter determining maximum persistence value. Default is ``1.0 / 128 * N_imgs / 5000``
         i_max: Upper bound on i in RLT(i, 1, X, L)
-        num_workers: Number of proccess used for GS computation.
+        num_workers: Number of processes used for GS computation.
 
     Examples:
         >>> gs_metric = GS()

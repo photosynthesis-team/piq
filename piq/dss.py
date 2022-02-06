@@ -1,4 +1,4 @@
-r"""Implemetation of DCT Subbands Similarity
+r"""Implementation of DCT Subbands Similarity
 Code is based on MATLAB version for computations in pixel domain
 https://fr.mathworks.com/matlabcentral/fileexchange/\
     53708-dct-subband-similarity-index-for-measuring-image-quality
@@ -123,7 +123,7 @@ def _subband_similarity(x: torch.Tensor, y: torch.Tensor, first_term: bool,
         sigma: STD of gaussian kernel for computing local variance. Default: 1.5
         percentile: % in [0,1] of worst similarity scores which should be kept. Default: 0.05
     Returns:
-        DSS: Index of similarity betwen two images. In [0, 1] interval.
+        DSS: Index of similarity between two images. In [0, 1] interval.
     Note:
         This implementation is based on the original MATLAB code (see header).
     """
@@ -187,7 +187,7 @@ def _dct_decomp(x: torch.Tensor, dct_size: int = 8) -> torch.Tensor:
     bs, _, h, w = x.size()
     x = x.view(bs, 1, h, w)
 
-    # make NxN blocs out of image
+    # make NxN blocks out of image
     blocks = F.unfold(x, kernel_size=(dct_size, dct_size), stride=(dct_size, dct_size))  # shape (1, NxN, block_num)
     blocks = blocks.transpose(1, 2)
     blocks = blocks.view(bs, 1, -1, dct_size, dct_size)  # shape (bs, 1, block_num, N, N)
