@@ -139,6 +139,7 @@ def test_dss_preserves_dtype(input_tensors: torch.Tensor, dtype, device: str) ->
     output = dss(x.to(device=device, dtype=dtype), y.to(device=device, dtype=dtype))
     assert output.dtype == dtype
 
+
 # ================== Test class: `DSSLoss` =================
 def test_dss_loss(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
     prediction, target = input_tensors

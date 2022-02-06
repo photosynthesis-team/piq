@@ -117,6 +117,15 @@ def test_srsim_chromatic(device: str) -> None:
                                                           f'got diff{predicted_score - target_score}'
 
 
+@pytest.mark.parametrize(
+    "dtype", [torch.float32, torch.float64],
+)
+def test_srsim_preserves_dtype(input_tensors: Tuple[torch.Tensor, torch.Tensor], dtype, device: str) -> None:
+    x, y = input_tensors
+    output = srsim(x.to(device=device, dtype=dtype), y.to(device=device, dtype=dtype))
+    assert output.dtype == dtype
+
+
 # ================== Test class: `srsimLoss` =================
 def test_srsim_loss(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
     prediction, target = input_tensors

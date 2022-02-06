@@ -154,7 +154,7 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     grid_x, grid_y = get_meshgrid((H, W))
 
     # Move grid to GPU early on, so that all math heavy stuff computes faster.
-    grid_x, grid_y = grid_x.to(x), grid_y.to(x) 
+    grid_x, grid_y = grid_x.to(x), grid_y.to(x)
     radius = torch.sqrt(grid_x ** 2 + grid_y ** 2)
     theta = torch.atan2(-grid_y, grid_x)
 
@@ -177,7 +177,7 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     # away to zero at the boundaries.  All log Gabor filters are multiplied by
     # this to ensure no extra frequencies at the 'corners' of the FFT are
     # incorporated as this seems to upset the normalisation process when
-    lp = _lowpassfilter(size=(H, W), cutoff=.45, n=15)
+    lp = _lowpassfilter(size=(H, W), cutoff=.45, n=15).to(x)
 
     # Construct the radial filter components...
     log_gabor = []
@@ -207,7 +207,7 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     log_gabor = torch.stack(log_gabor)
 
     # Multiply, add batch dimension and transfer to correct device.
-    filters = (spread.repeat_interleave(scales, dim=0) * log_gabor.repeat(orientations, 1, 1)).unsqueeze(0) # .to(x)
+    filters = (spread.repeat_interleave(scales, dim=0) * log_gabor.repeat(orientations, 1, 1)).unsqueeze(0)
     return filters
 
 

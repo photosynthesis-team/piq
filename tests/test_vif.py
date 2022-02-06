@@ -100,6 +100,14 @@ def test_vif_simmular_to_matlab_implementation():
         f'Expected PyTorch score to be equal to MATLAB prediction. Got {score} and {score_baseline}'
 
 
+@pytest.mark.parametrize(
+    "dtype", [torch.float32, torch.float64],
+)
+def test_vif_preserves_dtype(x, y, dtype, device: str) -> None:
+    output = vif_p(x.to(device=device, dtype=dtype), y.to(device=device, dtype=dtype))
+    assert output.dtype == dtype
+
+
 # ================== Test class: `VIFLoss` ==================
 def test_vif_loss_forward(x, y, device: str) -> None:
     loss = VIFLoss()
