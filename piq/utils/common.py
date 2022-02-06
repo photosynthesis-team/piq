@@ -4,7 +4,7 @@ import warnings
 
 from typing import Tuple, List, Optional, Union, Dict, Any
 
-_REGEX = re.compile(
+SEMVER_VERSION_PATTERN = re.compile(
     r"""
         ^
         (?P<major>0|[1-9]\d*)
@@ -24,6 +24,38 @@ _REGEX = re.compile(
     """,
     re.VERBOSE,
 )
+
+
+PEP_440_VERSION_PATTERN = r"""
+    v?
+    (?:
+        (?:(?P<epoch>[0-9]+)!)?                           # epoch
+        (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
+        (?P<pre>                                          # pre-release
+            [-_\.]?
+            (?P<pre_l>(a|b|c|rc|alpha|beta|pre|preview))
+            [-_\.]?
+            (?P<pre_n>[0-9]+)?
+        )?
+        (?P<post>                                         # post release
+            (?:-(?P<post_n1>[0-9]+))
+            |
+            (?:
+                [-_\.]?
+                (?P<post_l>post|rev|r)
+                [-_\.]?
+                (?P<post_n2>[0-9]+)?
+            )
+        )?
+        (?P<dev>                                          # dev release
+            [-_\.]?
+            (?P<dev_l>dev)
+            [-_\.]?
+            (?P<dev_n>[0-9]+)?
+        )?
+    )
+    (?:\+(?P<local>[a-z0-9]+(?:[-_\.][a-z0-9]+)*))?       # local version
+"""
 
 
 def _validate_input(
@@ -88,9 +120,13 @@ def _reduce(x: torch.Tensor, reduction: str = 'mean') -> torch.Tensor:
 
 
 def _parse_version(version: Union[str, bytes]) -> Tuple[int, ...]:
-    """ Parses valid semver versions. More on semver check: https://semver.org/.
+    """ Parses valid Python versions according to Semver and PEP 440 specifications.
+    For more on Semver check: https://semver.org/
+    For more on PEP 440 check: https://www.python.org/dev/peps/pep-0440/.
 
-    Implementation is inspired by: https://github.com/python-semver
+    Implementation is inspired by:
+    - https://github.com/python-semver
+    - https://github.com/pypa/packaging
 
     Args:
         version: unparsed information about the library of interest.
@@ -103,12 +139,20 @@ def _parse_version(version: Union[str, bytes]) -> Tuple[int, ...]:
     elif not isinstance(version, str) and not isinstance(version, bytes):
         raise TypeError(f"not expecting type {type(version)}")
 
-    match = _REGEX.match(version)
+    # Semver processing
+    match = SEMVER_VERSION_PATTERN.match(version)
+    if match:
+        matched_version_parts: Dict[str, Any] = match.groupdict()
+        release = tuple([int(matched_version_parts[k]) for k in ['major', 'minor', 'patch']])
+        return release
+
+    # PEP 440 processing
+    regex = re.compile(r"^\s*" + PEP_440_VERSION_PATTERN + r"\s*$", re.VERBOSE | re.IGNORECASE)
+    match = regex.search(version)
+
     if match is None:
-        warnings.warn(f"{version} is not a valid SemVer string")
+        warnings.warn(f"{version} is not a valid SemVer or PEP 440 string")
         return tuple()
 
-    matched_version_parts: Dict[str, Any] = match.groupdict()
-    main_version_part = tuple([int(matched_version_parts[k]) for k in ['major', 'minor', 'patch']])
-
-    return main_version_part
+    release = tuple(int(i) for i in match.group("release").split("."))
+    return release
