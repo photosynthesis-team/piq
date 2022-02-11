@@ -20,13 +20,13 @@ jobs:
         torchvision-version: [0.6.1, 0.9.1]
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
       - name: Cache pip
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.cache/pip # This path is specific to Ubuntu
           # Look to see if there is a cache hit for the corresponding requirements file
