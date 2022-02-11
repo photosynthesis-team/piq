@@ -117,8 +117,3 @@ Improved Precision and Recall (P&R)
 '''''''''''''''''''''''''''''''''''
 .. autoclass:: piq.PR
     :members:
-
-
-
-
-

@@ -1,4 +1,4 @@
-r"""Implemetation of Total Variation metric, based on article
+r"""Implementation of Total Variation metric, based on article
  remi.flamary.com/demos/proxtv.html and www.wikiwand.com/en/Total_variation_denoising
 """
 

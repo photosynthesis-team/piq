@@ -60,7 +60,7 @@ class PR(BaseFeatureMetric):
 
     Args:
         nearest_k: Nearest neighbor to compute the non-parametric representation. Shape :math:`1`
-        
+
     Examples:
         >>> pr_metric = PR()
         >>> x_feats = torch.rand(10000, 1024)
@@ -93,7 +93,7 @@ class PR(BaseFeatureMetric):
             fake_features: Samples from fake distribution. Shape :math:`(N_x, D)`
         Returns:
             Scalar value of the precision of the generated images.
-            
+
             Scalar value of the recall of the generated images.
         """
         _validate_input([real_features, fake_features], dim_range=(2, 2), size_range=(1, 2))

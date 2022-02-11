@@ -20,7 +20,7 @@ class BaseFeatureMetric(torch.nn.Module):
             loader: torch.utils.data.DataLoader,
             feature_extractor: torch.nn.Module = None,
             device: str = 'cuda') -> torch.Tensor:
-        r"""Generate low-dimensional image desciptors
+        r"""Generate low-dimensional image descriptors
 
         Args:
             loader: Should return dict with key `images` in it

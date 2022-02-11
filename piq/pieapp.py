@@ -21,7 +21,7 @@ class PieAPPModel(nn.Module):
     r""" Model used for PieAPP score computation """
     # Base feature size, which is multiplied by 2 every 2 blocks
     FEATURES = 64
-    
+
     def __init__(self):
         super().__init__()
 
@@ -102,7 +102,7 @@ class PieAPPModel(nn.Module):
 class PieAPP(_Loss):
     r"""
     Implementation of Perceptual Image-Error Assessment through Pairwise Preference.
-    
+
     Expects input to be in range ``[0, data_range]`` with no normalization and RGB channel order.
     Input images are cropped into smaller patches. Score for each individual image is mean of it's patch scores.
 
@@ -134,7 +134,7 @@ class PieAPP(_Loss):
     def __init__(self, reduction: str = "mean", data_range: Union[int, float] = 1.0, stride: int = 27,
                  enable_grad: bool = False) -> None:
         super().__init__()
-        
+
         # Load weights and initialize model
         weights = torch.hub.load_state_dict_from_url(self._weights_url, progress=False)
         # Fix small bug in original weights
@@ -193,7 +193,7 @@ class PieAPP(_Loss):
 
         Args:
             x: Tensor. Shape :math:`(N, C, H, W)`.
-        
+
         Returns:
             List of features extracted from intermediate layers weights
         """

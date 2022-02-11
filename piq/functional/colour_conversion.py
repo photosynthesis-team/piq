@@ -1,4 +1,4 @@
-r"""Colour space convertion functions"""
+r"""Colour space conversion functions"""
 from typing import Union, Dict
 import torch
 
