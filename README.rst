@@ -31,7 +31,7 @@
 
 .. intro-section-start
 
-`PyTorch Image Quality (PIQ) <https://github.com/photosynthesis-team/piq>`_ is a collection of measures and metrics for 
+`PyTorch Image Quality (PIQ) <https://github.com/photosynthesis-team/piq>`_ is a collection of measures and metrics for
 image quality assessment. PIQ helps you to concentrate on your experiments without the boilerplate code.
 The library contains a set of measures and metrics that is continually getting extended.
 For measures/metrics that can be used as loss functions, corresponding PyTorch modules are implemented.
@@ -59,14 +59,14 @@ Installation
 If you use ``pip``, you can install it with:
 
 .. code-block:: sh
-    
+
     $ pip install piq
 
 
 If you use ``conda``, you can install it with:
 
 .. code-block:: sh
-    
+
     $ conda install piq -c photosynthesis-team -c conda-forge -c PyTorch
 
 
@@ -180,7 +180,7 @@ DSS          2015    `DCT Subband Similarity Index <https://ieeexplore.ieee.org/
 \-           2016    `Style Score <https://arxiv.org/abs/1508.06576>`_
 HaarPSI      2016    `Haar Perceptual Similarity Index <https://arxiv.org/abs/1607.06140>`_
 MDSI         2016    `Mean Deviation Similarity Index <https://arxiv.org/abs/1608.07433>`_
-MS-GMSD      2017    `Multi-Scale Gradient Magnitude Similiarity Deviation <https://ieeexplore.ieee.org/document/7952357>`_
+MS-GMSD      2017    `Multi-Scale Gradient Magnitude Similarity Deviation <https://ieeexplore.ieee.org/document/7952357>`_
 LPIPS        2018    `Learned Perceptual Image Patch Similarity <https://arxiv.org/abs/1801.03924>`_
 PieAPP       2018    `Perceptual Image-Error Assessment through Pairwise Preference <https://arxiv.org/abs/1806.02067>`_
 DISTS        2020    `Deep Image Structure and Texture Similarity <https://arxiv.org/abs/2004.07728>`_
@@ -227,23 +227,23 @@ Here is an example how to evaluate SSIM and MS-SSIM metrics on TID2013 dataset:
 
    python3 tests/results_benchmark.py --dataset tid2013 --metrics SSIM MS-SSIM --path ~/datasets/tid2013 --batch_size 16
 
-We report `Spearman's Rank Correlation cCoefficient <https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient>`_ (SRCC) 
-and `Kendall rank correlation coefficient <https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient>`_ (KRCC). 
-We do not report `Pearson linear correlation coefficient <https://en.wikipedia.org/wiki/Pearson_correlation_coefficient>`_ (PLCC) 
+We report `Spearman's Rank Correlation cCoefficient <https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient>`_ (SRCC)
+and `Kendall rank correlation coefficient <https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient>`_ (KRCC).
+We do not report `Pearson linear correlation coefficient <https://en.wikipedia.org/wiki/Pearson_correlation_coefficient>`_ (PLCC)
 as it's highly dependent on fitting method and is biased towards simple examples.
 
 For metrics that can take greyscale or colour images, ``c`` means chromatic version.
 
 ===========  =================  ================================  =================  ================================  =================  ================================
-     \                      TID2013                                              KADID10k                                             PIPAL                            
+     \                      TID2013                                              KADID10k                                             PIPAL
 -----------  ---------------------------------------------------  ---------------------------------------------------  ---------------------------------------------------
-  Acronym    SRCC / KRCC (PIQ)             SRCC / KRCC            SRCC / KRCC (PIQ)             SRCC / KRCC            SRCC / KRCC (PIQ)             SRCC / KRCC          
+  Acronym    SRCC / KRCC (PIQ)             SRCC / KRCC            SRCC / KRCC (PIQ)             SRCC / KRCC            SRCC / KRCC (PIQ)             SRCC / KRCC
 ===========  =================  ================================  =================  ================================  =================  ================================
 PSNR         0.687 / 0.496      0.687 / 0.496 `TID2013`_          0.676 / 0.488      \- / -                            0.407 / 0.276      0.407 / 0.277 `PIPAL`_
 SSIM         0.720 / 0.527      0.637 / 0.464 `TID2013`_          0.724 / 0.537      0.718 / 0.532 `KADID10k`_         0.498 / 0.345      0.529 / 0.369 `PIPAL`_
-MS-SSIM      0.798 / 0.597      0.787 / 0.608 `TID2013`_          0.802 / 0.609      0.802 / 0.609 `KADID10k`_         0.552 / 0.389      0.462 / - 
+MS-SSIM      0.798 / 0.597      0.787 / 0.608 `TID2013`_          0.802 / 0.609      0.802 / 0.609 `KADID10k`_         0.552 / 0.389      0.462 / -
 VIFp         0.610 / 0.458      0.610 / 0.457 `TID2013`_          0.650 / 0.477      0.650 / 0.477 `KADID10k`_         0.497 / 0.345      \- / -
-FSIM         0.802 / 0.629      0.801 / 0.630 `TID2013`_          0.830 / 0.639      0.829 / 0.639 `KADID10k`_         0.588 / 0.415      0.596 / 0.421 `PIPAL`_ 
+FSIM         0.802 / 0.629      0.801 / 0.630 `TID2013`_          0.830 / 0.639      0.829 / 0.639 `KADID10k`_         0.588 / 0.415      0.596 / 0.421 `PIPAL`_
 FSIMc        0.851 / 0.667      0.851 / 0.667 `TID2013`_          0.854 / 0.665      0.854 / 0.665 `KADID10k`_         0.590 / 0.416      \- / -
 SR-SIM       0.807 / 0.641      0.808 / 0.641 `Eval2019`_         0.839 / 0.652      0.839 / 0.652 `KADID10k`_         0.565 / 0.399      \- / -
 SR-SIMc      0.870 / 0.692      \- / -                            0.869 / 0.685      \- / -                            0.569 / 0.401      \- / -
@@ -317,7 +317,7 @@ If you use PIQ in your project, please, cite it as follows.
 Contacts
 --------
 
-**Sergey Kastryulin** - `@snk4tr <https://github.com/snk4tr>`_ - ``snk4tr@gmail.com`` 
+**Sergey Kastryulin** - `@snk4tr <https://github.com/snk4tr>`_ - ``snk4tr@gmail.com``
 
 **Djamil Zakirov** - `@zakajd <https://github.com/zakajd>`_ - ``djamilzak@gmail.com``
 

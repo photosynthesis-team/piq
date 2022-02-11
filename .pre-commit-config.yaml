@@ -1,0 +1,29 @@
+repos:
+  # Pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1
+    hooks:
+      # list of supported hooks: https://pre-commit.com/hooks.html
+      - id: trailing-whitespace
+      - id: debug-statements
+      - id: check-added-large-files
+      - id: end-of-file-fixer
+
+  # Python code analysis
+  - repo: https://github.com/PyCQA/flake8
+    rev: 3.9.2
+    hooks:
+      - id: flake8
+        args: [
+          --max-line-length, "120",
+          "--max-complexity", "10",
+          "--ignore", "W293,W503,W504,E126,E741",
+          "--exclude", ".git,__pycache__,workflows,./piq/__init__.py",
+          ]
+
+  # codespell
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.1.0
+    hooks:
+      - id: codespell
+        args: ["--ignore-words-list", "ist"]
