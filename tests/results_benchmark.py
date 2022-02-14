@@ -19,8 +19,6 @@ from torch.utils.data import DataLoader, Dataset
 from dataclasses import dataclass
 from torch import nn
 
-from piq.feature_extractors import InceptionV3
-
 
 @dataclass
 class Metric:
@@ -59,7 +57,8 @@ METRICS = {
     "DSS": Metric(name="DSS", functor=functools.partial(piq.dss, reduction='none'), category='FR'),
 
     # No-reference
-    "BRISQUE": Metric(name="BRISQUE", functor=functools.partial(piq.brisque, data_range=255., reduction='none'), category='NR'),
+    "BRISQUE": Metric(name="BRISQUE", functor=functools.partial(piq.brisque, data_range=255., reduction='none'),
+                      category='NR'),
 
     # Distribution-based
     "IS": Metric(name="IS", functor=piq.IS(distance='l1'), category='DB'),
@@ -141,7 +140,6 @@ class PIPAL(TID2013):
         assert root.exists(), \
             "You need to download PIPAL dataset. Check https://www.jasongt.com/projectpages/pipal.html"
 
-
         assert (root / "Train_Dist").exists(), \
             "Please place all distorted files into single folder named `Train_Dist`."
 
@@ -168,13 +166,15 @@ DATASETS = {
 }
 
 
-def eval_metric(loader: DataLoader, metric: Metric, device: str, feature_extractor: str) -> Tuple[np.ndarray, np.ndarray]:
+def eval_metric(loader: DataLoader, metric: Metric, device: str, feature_extractor: str) \
+        -> Tuple[np.ndarray, np.ndarray]:
     """Evaluate metric on a given dataset.
 
     Args:
         loader: PyTorch dataloader that returns batch of distorted images, reference images and scores.
         metric: General metric that satisfies the Metric interface.
         device: Computation device.
+        feature_extractor: name of the neural network to be used to extract features from images
     Returns:
         gt_scores: Ground truth values.
         metric_scores: Predicted values as torch.Tensors.
@@ -190,7 +190,8 @@ def eval_metric(loader: DataLoader, metric: Metric, device: str, feature_extract
         distorted_images, reference_images = distorted_images.to(device), reference_images.to(device)
         gt_scores.append(scores.cpu())
 
-        metric_score: torch.Tensor = compute_function(metric.functor, distorted_images, reference_images, device, feature_extractor)
+        metric_score: torch.Tensor = \
+            compute_function(metric.functor, distorted_images, reference_images, device, feature_extractor)
 
         if np.isnan(metric_score):
             metric_score = torch.Tensor([0])
@@ -211,6 +212,7 @@ def determine_compute_function(metric_category: str) -> Callable:
 
 
 def get_feature_extractor(feature_extractor_name: str, device: str) -> nn.Module:
+    """ A factory to initialize feature extractor from its name. """
     if feature_extractor_name == "vgg16":
         return torchvision.models.vgg16(pretrained=True, progress=True).features.to(device)
     elif feature_extractor_name == "vgg19":
@@ -255,7 +257,6 @@ def extract_features(distorted_patch_loader: torch.Tensor, feature_extractor: nn
 def compute_distribution_based(metric_functor: Callable, distorted_images: torch.Tensor,
                                reference_images: torch.Tensor, device: str, feature_extractor_name: str) -> np.ndarray:
     feature_extractor = get_feature_extractor(feature_extractor_name=feature_extractor_name, device=device)
-    distorted_features, reference_features = [], []
 
     # Create patches
     distorted_patches = crop_patches(distorted_images, size=96, stride=32)
@@ -301,7 +302,6 @@ def main(dataset_name: str, path: Path, metrics: List[str], batch_size: int, dev
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Benchmark PIQ metrics")
 
-    # General
     parser.add_argument("--dataset", type=str, help="Dataset name", choices=list(DATASETS.keys()))
     parser.add_argument("--path", type=Path, help="Path to dataset")
     parser.add_argument('--metrics', nargs='+', default=[], help='Metrics to benchmark', choices=list(METRICS.keys()))
@@ -312,6 +312,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     print(f"Parameters used for benchmark: {args}")
+
     main(
         dataset_name=args.dataset,
         path=args.path,
