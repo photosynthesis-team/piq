@@ -6,6 +6,7 @@ import tqdm
 import torch
 import argparse
 import functools
+import torchvision
 
 import pandas as pd
 import numpy as np
@@ -16,6 +17,7 @@ from skimage.io import imread
 from scipy.stats import spearmanr, kendalltau
 from torch.utils.data import DataLoader, Dataset
 from dataclasses import dataclass
+from torch import nn
 
 from piq.feature_extractors import InceptionV3
 
@@ -114,12 +116,14 @@ class TID2013(Dataset):
 
 
 class KADID10k(TID2013):
+    """ One can get the dataset via the direct link: https://datasets.vqa.mmsp-kn.de/archives/kadid10k.zip """
     _filename = "dmos.csv"
 
     def __init__(self, root: Path = "datasets/kadid10k"):
-        super().__init__()
         assert root.exists(), \
-            "You need to download KADID10K dataset first. Check http://database.mmsp-kn.de/kadid-10k-database.html"
+            "You need to download KADID10K dataset first. " \
+            "Check http://database.mmsp-kn.de/kadid-10k-database.html " \
+            "or download via the direct link https://datasets.vqa.mmsp-kn.de/archives/kadid10k.zip"
 
         # Read file mith DMOS
         self.df = pd.read_csv(root / self._filename)
@@ -163,8 +167,9 @@ DATASETS = {
 }
 
 
-def eval_metric(loader: DataLoader, metric: Metric, device: str) -> Tuple[np.ndarray, np.ndarray]:
+def eval_metric(loader: DataLoader, metric: Metric, device: str, feature_extractor: str) -> Tuple[np.ndarray, np.ndarray]:
     """Evaluate metric on a given dataset.
+
     Args:
         loader: PyTorch dataloader that returns batch of distorted images, reference images and scores.
         metric: General metric that satisfies the Metric interface.
@@ -184,7 +189,10 @@ def eval_metric(loader: DataLoader, metric: Metric, device: str) -> Tuple[np.nda
         distorted_images, reference_images = distorted_images.to(device), reference_images.to(device)
         gt_scores.append(scores.cpu())
 
-        metric_score = compute_function(metric.functor, distorted_images, reference_images, device)
+        metric_score: torch.Tensor = compute_function(metric.functor, distorted_images, reference_images, device, feature_extractor)
+
+        if np.isnan(metric_score):
+            metric_score = torch.Tensor([0])
         if metric_score.dim() == 0:
             metric_score = metric_score.unsqueeze(0)
 
@@ -201,18 +209,51 @@ def determine_compute_function(metric_category: str) -> Callable:
     }[metric_category]
 
 
+def get_feature_extractor(feature_extractor_name: str, device: str) -> nn.Module:
+    if feature_extractor_name == "vgg16":
+        return torchvision.models.vgg16(pretrained=True, progress=True).features.to(device)
+    elif feature_extractor_name == "vgg19":
+        return torchvision.models.vgg19(pretrained=True, progress=True).features.to(device)
+    elif feature_extractor_name == "inception":
+        return piq.feature_extractors.InceptionV3(
+            resize_input=False, use_fid_inception=True, normalize_input=True).to(device)
+    else:
+        raise ValueError(f"Wrong feature extractor name {feature_extractor_name}")
+
+
 def compute_full_reference(metric_functor: Callable, distorted_images: torch.Tensor,
-                           reference_images: torch.Tensor, _) -> np.ndarray:
+                           reference_images: torch.Tensor, _, __) -> torch.Tensor:
     return metric_functor(distorted_images, reference_images).cpu()
 
 
-def compute_no_reference(metric_functor: Callable, distorted_images: torch.Tensor, _, __) -> np.ndarray:
+def compute_no_reference(metric_functor: Callable, distorted_images: torch.Tensor, _, __, ___) -> torch.Tensor:
     return metric_functor(distorted_images).cpu()
 
 
+def extract_features(distorted_patch_loader: torch.Tensor, feature_extractor: nn.Module, feature_extractor_name: str,
+                     reference_patch_loader: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    distorted_features, reference_features = [], []
+    for distorted, reference in zip(distorted_patch_loader, reference_patch_loader):
+        with torch.no_grad():
+            if feature_extractor_name == "inception":
+                reference_features.append(feature_extractor(reference)[0].squeeze())
+                distorted_features.append(feature_extractor(distorted)[0].squeeze())
+            elif feature_extractor_name == "vgg16":
+                reference_features.append(torch.nn.functional.avg_pool2d(feature_extractor(reference), 3).squeeze())
+                distorted_features.append(torch.nn.functional.avg_pool2d(feature_extractor(distorted), 3).squeeze())
+            elif feature_extractor_name == "vgg19":
+                reference_features.append(torch.nn.functional.avg_pool2d(feature_extractor(reference), 3).squeeze())
+                distorted_features.append(torch.nn.functional.avg_pool2d(feature_extractor(distorted), 3).squeeze())
+
+    distorted_features = torch.cat(distorted_features, dim=0)
+    reference_features = torch.cat(reference_features, dim=0)
+
+    return distorted_features, reference_features
+
+
 def compute_distribution_based(metric_functor: Callable, distorted_images: torch.Tensor,
-                               reference_images: torch.Tensor, device: str) -> np.ndarray:
-    feature_extractor = InceptionV3().to(device)
+                               reference_images: torch.Tensor, device: str, feature_extractor_name: str) -> np.ndarray:
+    feature_extractor = get_feature_extractor(feature_extractor_name=feature_extractor_name, device=device)
     distorted_features, reference_features = [], []
 
     # Create patches
@@ -222,16 +263,9 @@ def compute_distribution_based(metric_functor: Callable, distorted_images: torch
     # Extract features from distorted images
     distorted_patch_loader = distorted_patches.view(-1, 10, *distorted_patches.shape[-3:])
     reference_patch_loader = reference_patches.view(-1, 10, *reference_patches.shape[-3:])
-    for distorted in distorted_patch_loader:
-        with torch.no_grad():
-            distorted_features.append(feature_extractor(distorted)[0].squeeze())
 
-    for reference in reference_patch_loader:
-        with torch.no_grad():
-            reference_features.append(feature_extractor(reference)[0].squeeze())
-
-    distorted_features = torch.cat(distorted_features, dim=0)
-    reference_features = torch.cat(reference_features, dim=0)
+    distorted_features, reference_features = extract_features(distorted_patch_loader, feature_extractor,
+                                                              feature_extractor_name, reference_patch_loader)
 
     return metric_functor(distorted_features, reference_features).cpu()
 
@@ -248,14 +282,17 @@ def crop_patches(images: torch.Tensor, size=64, stride=32):
     return patches
 
 
-def main(dataset_name: str, path: Path, metrics: List[str], batch_size: int, device: str) -> None:
+def main(dataset_name: str, path: Path, metrics: List[str], batch_size: int, device: str, feature_extractor: str) \
+        -> None:
     # Init dataset and dataloader
     dataset = DATASETS[dataset_name](root=path)
     loader = DataLoader(dataset, batch_size=batch_size, num_workers=4)
 
     for metric_name in metrics:
         metric: Metric = METRICS[metric_name]
-        gt_scores, metric_scores = eval_metric(loader, metric, device=device)
+        gt_scores, metric_scores = eval_metric(loader, metric, device=device, feature_extractor=feature_extractor)
+        print('gt_scores', gt_scores)
+        print('metric_scores', metric_scores)
         print(f"{metric_name}: SRCC {abs(spearmanr(gt_scores, metric_scores)[0]):0.3f}",
               f"KRCC {abs(kendalltau(gt_scores, metric_scores)[0]):0.3f}")
 
@@ -269,6 +306,8 @@ if __name__ == "__main__":
     parser.add_argument('--metrics', nargs='+', default=[], help='Metrics to benchmark', choices=list(METRICS.keys()))
     parser.add_argument('--batch_size', type=int, default=1, help='Batch size')
     parser.add_argument('--device', default='cuda', choices=['cpu', 'cuda'], help='Computation device')
+    parser.add_argument('--feature_extractor', default='inception', choices=['inception', 'vgg16', 'vgg19'],
+                        help='Select a feature extractor. For distribution-based metrics only')
 
     args = parser.parse_args()
     print(f"Parameters used for benchmark: {args}")
@@ -277,5 +316,6 @@ if __name__ == "__main__":
         path=args.path,
         metrics=args.metrics,
         batch_size=args.batch_size,
-        device=args.device
+        device=args.device,
+        feature_extractor=args.feature_extractor
     )
