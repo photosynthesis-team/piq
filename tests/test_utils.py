@@ -123,7 +123,7 @@ def test_version_tuple_doesnt_fail_valid_input(version, expected) -> None:
     try:
         _parse_version(version)
     except Exception as e:
-        pytest.fail(f"Unexpected error occurred wile parsing valid semver versions: {e}")
+        pytest.fail(f"Unexpected error occurred while parsing valid semver versions: {e}")
 
 
 @pytest.mark.parametrize(*valid_semver_versions)

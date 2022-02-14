@@ -157,7 +157,7 @@ class ContentLoss(_Loss):
         std = torch.tensor(std)
         self.mean = mean.view(1, -1, 1, 1)
         self.std = std.view(1, -1, 1, 1)
-        
+
         self.normalize_features = normalize_features
         self.reduction = reduction
 
@@ -201,7 +201,7 @@ class ContentLoss(_Loss):
         r"""
         Args:
             x: Tensor. Shape :math:`(N, C, H, W)`.
-        
+
         Returns:
             List of features extracted from intermediate layers
         """
@@ -242,7 +242,7 @@ class ContentLoss(_Loss):
         module_output = module
         if isinstance(module, torch.nn.MaxPool2d):
             module_output = torch.nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
-            
+
         for name, child in module.named_children():
             module_output.add_module(name, self.replace_pooling(child))
         return module_output
@@ -489,7 +489,7 @@ class DISTS(ContentLoss):
         module_output = module
         if isinstance(module, torch.nn.MaxPool2d):
             module_output = L2Pool2d(kernel_size=3, stride=2, padding=1)
-            
+
         for name, child in module.named_children():
             module_output.add_module(name, self.replace_pooling(child))
 

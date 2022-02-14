@@ -1,4 +1,4 @@
-r"""Implemetation of Mean Deviation Similarity Index (MDSI)
+r"""Implementation of Mean Deviation Similarity Index (MDSI)
 Code supports the functionality proposed with the original MATLAB version for computations in pixel domain
 https://www.mathworks.com/matlabcentral/fileexchange/59809
 

@@ -141,6 +141,7 @@ class PIPAL(TID2013):
         assert root.exists(), \
             "You need to download PIPAL dataset. Check https://www.jasongt.com/projectpages/pipal.html"
 
+
         assert (root / "Train_Dist").exists(), \
             "Please place all distorted files into single folder named `Train_Dist`."
 

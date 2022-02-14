@@ -116,7 +116,7 @@ def _reduce(x: torch.Tensor, reduction: str = 'mean') -> torch.Tensor:
     elif reduction == 'sum':
         return x.sum(dim=0)
     else:
-        raise ValueError("Uknown reduction. Expected one of {'none', 'mean', 'sum'}")
+        raise ValueError("Unknown reduction. Expected one of {'none', 'mean', 'sum'}")
 
 
 def _parse_version(version: Union[str, bytes]) -> Tuple[int, ...]:
