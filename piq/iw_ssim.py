@@ -15,7 +15,6 @@ References:
   [2] https://ece.uwaterloo.ca/~z70wang/research/iwssim/
 """
 
-
 import torch
 from torch.nn.modules.loss import _Loss
 import torch.nn.functional as F
@@ -85,7 +84,7 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
 
     # Size of the kernel size to build Laplacian pyramid
     pyramid_kernel_size = 5
-    bin_filter = binomial_filter1d(kernel_size=pyramid_kernel_size).to(x) * 2**0.5
+    bin_filter = binomial_filter1d(kernel_size=pyramid_kernel_size).to(x) * 2 ** 0.5
 
     lo_x, x_diff_old = _pyr_step(x, bin_filter)
     lo_y, y_diff_old = _pyr_step(y, bin_filter)
@@ -95,7 +94,6 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
     wmcs = []
 
     for i in range(levels):
-        print(i)
         if i < levels - 2:
             lo_x, x_diff = _pyr_step(x, bin_filter)
             lo_y, y_diff = _pyr_step(y, bin_filter)
@@ -108,7 +106,6 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
 
         ssim_map, cs_map = _ssim_per_channel(x=x_diff_old, y=y_diff_old, kernel=gauss_kernel, data_range=255,
                                              k1=k1, k2=k2)
-
 
         if parent and i < levels - 2:
             iw_map = _information_content(x=x_diff_old, y=y_diff_old, y_parent=y_diff, kernel_size=blk_size,
@@ -181,6 +178,7 @@ class InformationWeightedSSIMLoss(_Loss):
         https://ece.uwaterloo.ca/~z70wang/publications/IWSSIM.pdf DOI:`10.1109/TIP.2010.2092435`
 
     """
+
     def __init__(self, data_range: Union[int, float] = 1., kernel_size: int = 11, kernel_sigma: float = 1.5,
                  k1: float = 0.01, k2: float = 0.03, parent: bool = True, blk_size: int = 3, sigma_nsq: float = 0.4,
                  scale_weights: Optional[torch.Tensor] = None, reduction: str = 'mean'):
@@ -349,7 +347,7 @@ def _information_content(x: torch.Tensor, y: torch.Tensor, y_parent: torch.Tenso
     nexp = nblv * nblh
     N = block[0] * block[1]
 
-    assert block[0] % 2 == 1 and block[1] % 2  == 1, f'Expected odd block dimensions, got {block}'
+    assert block[0] % 2 == 1 and block[1] % 2 == 1, f'Expected odd block dimensions, got {block}'
 
     Ly = (block[0] - 1) // 2
     Lx = (block[1] - 1) // 2
@@ -363,7 +361,7 @@ def _information_content(x: torch.Tensor, y: torch.Tensor, y_parent: torch.Tenso
     Y = torch.zeros(y.size(0), y.size(1), nexp, N)
 
     n = -1
-    for ny in range(-Ly, Ly+1):
+    for ny in range(-Ly, Ly + 1):
         for nx in range(-Lx, Lx + 1):
             n = n + 1
             foo = _shift(y, [ny, nx])
@@ -371,7 +369,7 @@ def _information_content(x: torch.Tensor, y: torch.Tensor, y_parent: torch.Tenso
             Y[..., n] = foo.flatten(start_dim=-2, end_dim=-1)
 
     if y_parent is not None:
-        n = n+1
+        n = n + 1
         foo = y_parent_up
         foo = foo[:, :, Ly:Ly + nblv, Lx:Lx + nblh]
         Y[..., n] = foo.flatten(start_dim=-2, end_dim=-1)
@@ -399,7 +397,8 @@ def _information_content(x: torch.Tensor, y: torch.Tensor, y_parent: torch.Tenso
     scaled_eig_values = torch.diagonal(L, offset=0, dim1=-2, dim2=-1).unsqueeze(2).unsqueeze(3)
 
     iw_map = torch.sum(torch.log2(1 + ((vv.unsqueeze(-1) + (1 + g.unsqueeze(-1) * g.unsqueeze(-1)) * sigma_nsq)
-        * ss.unsqueeze(-1) * scaled_eig_values + sigma_nsq * vv.unsqueeze(-1)) / (sigma_nsq * sigma_nsq)), dim=-1)
+                                       * ss.unsqueeze(-1) * scaled_eig_values + sigma_nsq * vv.unsqueeze(-1)) / (
+                                              sigma_nsq * sigma_nsq)), dim=-1)
 
     iw_map[iw_map < EPS] = 0
 
