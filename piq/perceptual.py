@@ -161,15 +161,14 @@ class ContentLoss(_Loss):
         self.reduction = reduction
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        r"""Computation of Content loss between feature representations of prediction :math:`x` and
-        target :math:`y` tensors.
+        r"""Loss computation between :math:`x` and :math:`y` tensors.
 
         Args:
             x: An input tensor. Shape :math:`(N, C, H, W)`.
             y: A target tensor. Shape :math:`(N, C, H, W)`.
 
         Returns:
-            Content loss between feature representations
+            Loss value between inputs
         """
         _validate_input([x, y], dim_range=(4, 4), data_range=(0, -1))
 
@@ -230,7 +229,7 @@ class ContentLoss(_Loss):
         return x / (norm_factor + EPS)
 
     def replace_pooling(self, module: torch.nn.Module) -> torch.nn.Module:
-        r"""Turn All MaxPool layers into AveragePool
+        r"""Turn all MaxPool layers into AveragePool
 
         Args:
             module: Module to change MaxPool int AveragePool

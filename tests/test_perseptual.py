@@ -4,7 +4,7 @@ from typing import Any, Tuple, Callable, Union
 from contextlib import contextmanager
 
 from skimage.io import imread
-from piq import ContentLoss, StyleLoss, LPIPS, DISTS
+from piq import ContentLoss, StyleLoss
 from piq.feature_extractors import InceptionV3
 
 

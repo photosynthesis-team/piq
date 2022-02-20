@@ -26,10 +26,15 @@ def test_lpips_loss_forward(input_tensors: Tuple[torch.Tensor, torch.Tensor], de
 
 def test_lpips_computes_grad(x, y, device: str) -> None:
     x.requires_grad_()
-    loss_value = LPIPS()(x.to(device), y.to(device))
+    loss_value = LPIPS(enable_grad=True)(x.to(device), y.to(device))
     loss_value.backward()
-    assert x.grad is not None, NONE_GRAD_ERR_MSG
+    assert x.grad is not None, 'Expected non None gradient of leaf variable'
 
+def test_lpips_loss_does_not_compute_grad(x, y, device: str) -> None:
+    x.requires_grad_()
+    loss_value = LPIPS(enable_grad=False)(x.to(device), y.to(device))
+    with pytest.raises(RuntimeError):
+        loss_value.backward()
 
 def test_lpips_loss_raises_if_wrong_reduction(x, y) -> None:
     for mode in ['mean', 'sum', 'none']:
