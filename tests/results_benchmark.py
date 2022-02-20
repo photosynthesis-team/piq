@@ -51,7 +51,7 @@ METRICS = {
     "MDSI": Metric(name="MDSI", functor=functools.partial(piq.mdsi, reduction='none'), category='FR'),
     "LPIPS-vgg": Metric(name="LPIPS-vgg", functor=piq.LPIPS(replace_pooling=False, reduction='none'), category='FR'),
     "DISTS": Metric(name="DISTS", functor=piq.DISTS(reduction='none'), category='FR'),
-    "PieAPP": Metric(name="PieAPP", functor=piq.PieAPP(reduction='none'), category='FR'),
+    "PieAPP": Metric(name="PieAPP", functor=piq.PieAPP(data_range=255., reduction='none'), category='FR'),
     "Content": Metric(name="Content", functor=piq.ContentLoss(reduction='none'), category='FR'),
     "Style": Metric(name="Style", functor=piq.StyleLoss(reduction='none'), category='FR'),
     "DSS": Metric(name="DSS", functor=functools.partial(piq.dss, reduction='none'), category='FR'),
