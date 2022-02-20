@@ -2,7 +2,8 @@ r"""PyTorch implementation of Improved Precision and Recall (P&R). Based on Impr
 Assessing Generative Models https://arxiv.org/abs/1904.06991 and repository
 https://github.com/clovaai/generative-evaluation-prdc/blob/master/prdc/prdc.py
 """
-from typing import Tuple, Optional
+from typing import Optional, Tuple
+
 import torch
 
 from piq.base import BaseFeatureMetric
@@ -59,12 +60,12 @@ class PR(BaseFeatureMetric):
 
     Args:
         nearest_k: Nearest neighbor to compute the non-parametric representation. Shape :math:`1`
-        
+
     Examples:
-        >>> loss = PR()
-        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
-        >>> y = torch.rand(3, 3, 256, 256)
-        >>> precision, recall = loss(x, y)
+        >>> pr_metric = PR()
+        >>> x_feats = torch.rand(10000, 1024)
+        >>> y_feats = torch.rand(10000, 1024)
+        >>> precision, recall = pr_metric(x_feats, y_feats)
 
     References:
         Kynkäänniemi T. et al. (2019).
@@ -92,20 +93,30 @@ class PR(BaseFeatureMetric):
             fake_features: Samples from fake distribution. Shape :math:`(N_x, D)`
         Returns:
             Scalar value of the precision of the generated images.
-            
+
             Scalar value of the recall of the generated images.
         """
         _validate_input([real_features, fake_features], dim_range=(2, 2), size_range=(1, 2))
-        real_nearest_neighbour_distances = _compute_nearest_neighbour_distances(real_features, self.nearest_k)
-        fake_nearest_neighbour_distances = _compute_nearest_neighbour_distances(fake_features, self.nearest_k)
+        real_nearest_neighbour_distances = _compute_nearest_neighbour_distances(real_features, self.nearest_k) \
+            .unsqueeze(1)
+        fake_nearest_neighbour_distances = _compute_nearest_neighbour_distances(fake_features, self.nearest_k) \
+            .unsqueeze(0)
         distance_real_fake = _compute_pairwise_distance(real_features, fake_features)
 
+        # noinspection PyTypeChecker
         precision = (
-                distance_real_fake < real_nearest_neighbour_distances.unsqueeze(1)
+            torch.logical_or(
+                distance_real_fake < real_nearest_neighbour_distances,
+                torch.isclose(distance_real_fake, real_nearest_neighbour_distances)
+            )
         ).any(dim=0).float().mean()
 
+        # noinspection PyTypeChecker
         recall = (
-                distance_real_fake < fake_nearest_neighbour_distances.unsqueeze(0)
+            torch.logical_or(
+                distance_real_fake < fake_nearest_neighbour_distances,
+                torch.isclose(distance_real_fake, real_nearest_neighbour_distances)
+            )
         ).any(dim=1).float().mean()
 
         return precision, recall

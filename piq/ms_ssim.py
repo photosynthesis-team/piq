@@ -60,11 +60,8 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
     assert kernel_size % 2 == 1, f'Kernel size must be odd, got [{kernel_size}]'
     _validate_input([x, y], dim_range=(4, 5), data_range=(0, data_range))
 
-    x = x.type(torch.float32)
-    y = y.type(torch.float32)
-
-    x = x / data_range
-    y = y / data_range
+    x = x / float(data_range)
+    y = y / float(data_range)
 
     if scale_weights is None:
         # Values from MS-SSIM the paper
@@ -74,7 +71,7 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
         scale_weights = (scale_weights / scale_weights.sum()).to(x)
 
     kernel = gaussian_filter(kernel_size, kernel_sigma).repeat(x.size(1), 1, 1, 1).to(x)
-    
+
     _compute_msssim = _multi_scale_ssim_complex if x.dim() == 5 else _multi_scale_ssim
     msssim_val = _compute_msssim(
         x=x,

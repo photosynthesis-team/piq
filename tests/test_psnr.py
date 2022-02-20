@@ -47,8 +47,8 @@ def test_psnr_fails_for_incorrect_data_range(x, y, device: str) -> None:
     y_scaled = (y * 255).type(torch.uint8)
     with pytest.raises(AssertionError):
         psnr(x_scaled.to(device), y_scaled.to(device), data_range=1.0)
-        
-        
+
+
 def test_psnr_works_for_zero_tensors() -> None:
     x = torch.zeros(4, 3, 256, 256)
     y = torch.zeros(4, 3, 256, 256)
@@ -98,6 +98,14 @@ def test_psnr_matches_skimage_rgb():
 
     assert torch.isclose(pm_measure, torch.tensor(sk_measure, dtype=pm_measure.dtype)), \
         f"Must match Sklearn version. Got: {pm_measure} and skimage: {sk_measure}"
+
+
+@pytest.mark.parametrize(
+    "dtype", [torch.float32, torch.float64],
+)
+def test_psnr_preserves_dtype(x, y, dtype, device: str) -> None:
+    output = psnr(x.to(device=device, dtype=dtype), y.to(device=device, dtype=dtype))
+    assert output.dtype == dtype
 
 
 def test_psnr_loss_backward():

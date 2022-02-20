@@ -1,4 +1,4 @@
-r"""Implemetation of Visual Saliency-induced Index
+r"""Implementation of Visual Saliency-induced Index
 Code is based on the MATLAB version for computations in pixel domain
 https://sse.tongji.edu.cn/linzhang/IQA/VSI/VSI.htm
 
@@ -63,8 +63,8 @@ def vsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean', data_range: U
                       'the grey channel 3 times.')
 
     # Scale to [0, 255] range to match scale of constant
-    x = x * 255. / data_range
-    y = y * 255. / data_range
+    x = x * 255. / float(data_range)
+    y = y * 255. / float(data_range)
 
     vs_x = sdsp(x, data_range=255, omega_0=omega_0,
                 sigma_f=sigma_f, sigma_d=sigma_d, sigma_c=sigma_c)
@@ -204,7 +204,7 @@ def sdsp(x: torch.Tensor, data_range: Union[int, float] = 255, omega_0: float = 
     Returns:
         torch.Tensor: Visual saliency map
     """
-    x = x / data_range * 255
+    x = x / float(data_range) * 255
     size = x.size()
     size_to_use = (256, 256)
     x = interpolate(input=x, size=size_to_use, mode='bilinear', align_corners=False)

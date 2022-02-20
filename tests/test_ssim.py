@@ -73,13 +73,13 @@ def test_ssim_reduction(x: torch.Tensor, y: torch.Tensor, device: str) -> None:
     for mode in [None, 'n', 2]:
         with pytest.raises(ValueError):
             ssim(x.to(device), y.to(device), reduction=mode)
-            
+
 
 def test_ssim_returns_full(x: torch.Tensor, y: torch.Tensor, device: str) -> None:
     x = x.to(device)
     y = y.to(device)
     assert len(ssim(x, y, full=True)) == 2, "Expected 2 output values, got 1"
-        
+
 
 def test_ssim_measure_is_less_or_equal_to_one(ones_zeros_4d_5d: Tuple[torch.Tensor, torch.Tensor],
                                               device: str) -> None:
@@ -165,6 +165,14 @@ def test_ssim_fails_for_incorrect_data_range(x: torch.Tensor, y: torch.Tensor, d
     y_scaled = (y * 255).type(torch.uint8)
     with pytest.raises(AssertionError):
         ssim(x_scaled.to(device), y_scaled.to(device), data_range=1.0)
+
+
+@pytest.mark.parametrize(
+    "dtype", [torch.float32, torch.float64],
+)
+def test_ssim_preserves_dtype(x, y, dtype, device: str) -> None:
+    output = ssim(x.to(device=device, dtype=dtype), y.to(device=device, dtype=dtype))
+    assert output.dtype == dtype
 
 
 # ================== Test class: `SSIMLoss` ==================

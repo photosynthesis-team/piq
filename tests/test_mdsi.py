@@ -83,6 +83,14 @@ def test_mdsi_compare_with_matlab(input_images_score: Tuple[torch.Tensor, torch.
                                                     f'got {score.item():.8f}, while MATLAB equals {y_value}'
 
 
+@pytest.mark.parametrize(
+    "dtype", [torch.float32, torch.float64],
+)
+def test_mdsi_preserves_dtype(x, y, dtype, device: str) -> None:
+    output = mdsi(x.to(device=device, dtype=dtype), y.to(device=device, dtype=dtype))
+    assert output.dtype == dtype
+
+
 # ================== Test function: `MDSILoss` ==================
 def test_mdsi_loss(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
     x, y = input_tensors
@@ -100,7 +108,7 @@ def test_mdsi_loss_compare_with_matlab(input_images_score: Tuple[torch.Tensor, t
     x = x.requires_grad_()
     score = MDSILoss(data_range=255, combination=combination)(x=x.to(device), y=y.to(device))
     score.backward()
-    assert torch.isclose(score, 1. - y_value.to(score)), f'The estimated value must be equal to MATLAB ' \
-                                                         f'provided one, got {score.item():.8f}, ' \
-                                                         f'while MATLAB equals {1. - y_value}'
+    assert torch.isclose(score, y_value.to(score)), f'The estimated value must be equal to MATLAB ' \
+                                                    f'provided one, got {score.item():.8f}, ' \
+                                                    f'while MATLAB equals {y_value}'
     assert torch.isfinite(x.grad).all(), f'Expected finite gradient values, got {x.grad}'

@@ -200,7 +200,7 @@ class ContentLoss(_Loss):
         r"""
         Args:
             x: Tensor. Shape :math:`(N, C, H, W)`.
-        
+
         Returns:
             List of features extracted from intermediate layers
         """
@@ -241,7 +241,7 @@ class ContentLoss(_Loss):
         module_output = module
         if isinstance(module, torch.nn.MaxPool2d):
             module_output = torch.nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
-            
+
         for name, child in module.named_children():
             module_output.add_module(name, self.replace_pooling(child))
         return module_output
@@ -322,4 +322,3 @@ class StyleLoss(ContentLoss):
             gram.append(torch.mm(features, features.t()).unsqueeze(0))
 
         return torch.stack(gram)
-

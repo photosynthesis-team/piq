@@ -96,7 +96,7 @@ def test_fsim_fails_for_incorrect_data_range(x, y, device: str) -> None:
     y_scaled = (y * 255).type(torch.uint8)
     with pytest.raises(AssertionError):
         fsim(x_scaled.to(device), y_scaled.to(device), data_range=1.0)
-        
+
 
 def test_fsim_simmular_to_matlab_implementation():
     # Greyscale images
@@ -127,6 +127,15 @@ def test_fsim_simmular_to_matlab_implementation():
         f'Got {score_chromatic} and {score_baseline_chromatic}'
 
 
+@pytest.mark.parametrize(
+    "dtype", [torch.float32, torch.float64],
+)
+def test_fsim_preserves_dtype(input_tensors: torch.Tensor, dtype, device: str) -> None:
+    x, y = input_tensors
+    output = fsim(x.to(device=device, dtype=dtype), y.to(device=device, dtype=dtype), chromatic=False)
+    assert output.dtype == dtype
+
+
 # ================== Test class: `FSIMLoss` ==================
 def test_fsim_loss_reduction(x, y) -> None:
     loss = FSIMLoss(reduction='mean')
@@ -141,7 +150,7 @@ def test_fsim_loss_reduction(x, y) -> None:
     measure = loss(x, y)
     assert len(measure) == x.size(0), \
         f'FSIM with `none` reduction must have length equal to number of images, got {len(measure)}'
-    
+
     loss = FSIMLoss(reduction='random string')
     with pytest.raises(ValueError):
         loss(x, y)

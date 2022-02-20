@@ -1,4 +1,4 @@
-r"""Implemetation of Multi-scale Evaluation metric, based on paper
+r"""Implementation of Multi-scale Evaluation metric, based on paper
  https://arxiv.org/abs/1905.11141 and author's repository https://github.com/xgfs/msid
 """
 from typing import List, Tuple, Optional
@@ -321,11 +321,10 @@ class MSID(BaseFeatureMetric):
             ``'max'`` to find the maximum absolute difference between two descriptors over temperature
 
     Examples:
-        >>> loss = MSID()
-        >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
-        >>> y = torch.rand(3, 3, 256, 256)
-        >>> output = loss(x, y)
-        >>> output.backward()
+        >>> msid_metric = MSID()
+        >>> x_feats = torch.rand(10000, 1024)
+        >>> y_feats = torch.rand(10000, 1024)
+        >>> msid: torch.Tensor = msid_metric(x_feats, y_feats)
 
     References:
         Tsitsulin, A., Munkhoeva, M., Mottin, D., Karras, P., Bronstein, A., Oseledets, I., & Müller, E. (2019).

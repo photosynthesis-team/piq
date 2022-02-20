@@ -52,11 +52,8 @@ def ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, kernel_sigma: 
     assert kernel_size % 2 == 1, f'Kernel size must be odd, got [{kernel_size}]'
     _validate_input([x, y], dim_range=(4, 5), data_range=(0, data_range))
 
-    x = x.type(torch.float32)
-    y = y.type(torch.float32)
-
-    x = x / data_range
-    y = y / data_range
+    x = x / float(data_range)
+    y = y / float(data_range)
 
     # Averagepool image if the size is large enough
     f = max(1, round(min(x.size()[-2:]) / 256))
@@ -104,7 +101,7 @@ class SSIMLoss(_Loss):
 
     :math:`x` and :math:`y` are tensors of arbitrary shapes with a total
     of :math:`n` elements each.
-    
+
     The sum operation still operates over all the elements, and divides by :math:`n`.
     The division by :math:`n` can be avoided if one sets ``reduction = 'sum'``.
     In case of 5D input tensors, complex value is returned as a tensor of size 2.

@@ -153,6 +153,14 @@ def test_multi_scale_ssim_fails_for_incorrect_data_range(x, y, device: str) -> N
         multi_scale_ssim(x_scaled.to(device), y_scaled.to(device), data_range=1.0)
 
 
+@pytest.mark.parametrize(
+    "dtype", [torch.float32, torch.float64],
+)
+def test_multi_scale_ssim_preserves_dtype(x, y, dtype, device: str) -> None:
+    output = multi_scale_ssim(x.to(device=device, dtype=dtype), y.to(device=device, dtype=dtype))
+    assert output.dtype == dtype
+
+
 # ================== Test class: `MultiScaleSSIMLoss` ==================
 def test_multi_scale_ssim_loss_grad(x_y_4d_5d, device: str) -> None:
     x = x_y_4d_5d[0].to(device)

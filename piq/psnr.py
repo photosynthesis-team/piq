@@ -21,7 +21,7 @@ def psnr(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1.0,
             only on luminance channel if `True`. Compute on all 3 channels otherwise.
 
     Returns:
-        PSNR Index of similarity betwen two images.
+        PSNR Index of similarity between two images.
 
     References:
         https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio

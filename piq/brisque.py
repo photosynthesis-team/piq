@@ -239,5 +239,5 @@ def _score_svr(features: torch.Tensor) -> torch.Tensor:
     rho = -153.591
     sv.t_()
     kernel_features = _rbf_kernel(features=features, sv=sv, gamma=gamma)
-    score = kernel_features @ sv_coef
+    score = kernel_features @ sv_coef.to(dtype=features.dtype)
     return score - rho

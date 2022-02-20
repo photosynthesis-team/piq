@@ -37,7 +37,7 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
 
     Returns:
         HaarPSI Wavelet-Based Perceptual Similarity between two tensors
-    
+
     References:
         R. Reisenhofer, S. Bosse, G. Kutyniok & T. Wiegand (2017)
         'A Haar Wavelet-Based Perceptual Similarity Index for Image Quality Assessment'
@@ -77,20 +77,20 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
 
         x_yiq = F.avg_pool2d(x_yiq, kernel_size=2, stride=2, padding=0)
         y_yiq = F.avg_pool2d(y_yiq, kernel_size=2, stride=2, padding=0)
-    
+
     # Haar wavelet decomposition
     coefficients_x, coefficients_y = [], []
     for scale in range(scales):
         kernel_size = 2 ** (scale + 1)
         kernels = torch.stack([haar_filter(kernel_size), haar_filter(kernel_size).transpose(-1, -2)])
-    
-        # Assymetrical padding due to even kernel size. Matches MATLAB conv2(A, B, 'same')
+
+        # Asymmetrical padding due to even kernel size. Matches MATLAB conv2(A, B, 'same')
         upper_pad = kernel_size // 2 - 1
         bottom_pad = kernel_size // 2
         pad_to_use = [upper_pad, bottom_pad, upper_pad, bottom_pad]
         coeff_x = torch.nn.functional.conv2d(F.pad(x_yiq[:, : 1], pad=pad_to_use, mode='constant'), kernels.to(x))
         coeff_y = torch.nn.functional.conv2d(F.pad(y_yiq[:, : 1], pad=pad_to_use, mode='constant'), kernels.to(y))
-    
+
         coefficients_x.append(coeff_x)
         coefficients_y.append(coeff_y)
 
@@ -101,7 +101,7 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     # Low-frequency coefficients used as weights
     # Shape (N, 2, H, W)
     weights = torch.max(torch.abs(coefficients_x[:, 4:]), torch.abs(coefficients_y[:, 4:]))
-    
+
     # High-frequency coefficients used for similarity computation in 2 orientations (horizontal and vertical)
     sim_map = []
     for orientation in range(2):
@@ -115,14 +115,14 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         y_yiq = F.pad(y_yiq, pad=pad_to_use)
         coefficients_x_iq = torch.abs(F.avg_pool2d(x_yiq[:, 1:], kernel_size=2, stride=1, padding=0))
         coefficients_y_iq = torch.abs(F.avg_pool2d(y_yiq[:, 1:], kernel_size=2, stride=1, padding=0))
-    
+
         # Compute weights and simmilarity
         weights = torch.cat([weights, weights.mean(dim=1, keepdims=True)], dim=1)
         sim_map.append(
             similarity_map(coefficients_x_iq, coefficients_y_iq, constant=c).sum(dim=1, keepdims=True) / 2)
 
     sim_map = torch.cat(sim_map, dim=1)
-    
+
     # Calculate the final score
     eps = torch.finfo(sim_map.dtype).eps
     score = (((sim_map * alpha).sigmoid() * weights).sum(dim=[1, 2, 3]) + eps) /\
