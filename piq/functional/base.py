@@ -1,5 +1,7 @@
 r"""General purpose functions"""
-from typing import Tuple, Union
+import itertools
+from typing import Tuple, Union, Generator
+
 import torch
 
 
@@ -86,16 +88,27 @@ def pow_for_complex(base: torch.Tensor, exp: Union[int, float]) -> torch.Tensor:
     return torch.stack((x_real_pow, x_imag_pow), dim=-1)
 
 
-def crop_patches(x: torch.Tensor, size=64, stride=32) -> torch.Tensor:
-    r"""Crop tensor with images into small patches
+def crop_patches(x: torch.Tensor, size=64, stride=32) -> Generator[torch.Tensor]:
+    r"""Creates a generator that returns patches croped from large image
     Args:
-        x: Tensor with shape (N, C, H, W), expected to be images-like entities
+        x: Image tensor. Shape :math:`(N, 3, H, W)`.
         size: Size of a square patch
         stride: Step between patches
     """
-    assert (x.shape[2] >= size) and (x.shape[3] >= size), \
-        f"Images must be bigger than patch size. Got ({x.shape[2], x.shape[3]}) and ({size}, {size})"
-    channels = x.shape[1]
-    patches = x.unfold(1, channels, channels).unfold(2, size, stride).unfold(3, size, stride)
-    patches = patches.reshape(-1, channels, size, size)
-    return patches
+    assert (x.size(2) >= size) and (x.size(3) >= size), \
+        f"Images must be bigger than patch size. Got ({x.size(2), x.size(3)}) and ({size}, {size})"
+
+    lefts = range(0, x.size(3) - size + 1, stride)
+    tops = range(0, x.size(2) - size + 1, stride)
+    # Loop over all patch coordinates.
+    for left, top in itertools.product(lefts, tops):
+        right = left + size
+        bottom = top + size
+
+        patch = x[
+            ...,
+            top:bottom,  # height
+            left:right,  # width
+        ]
+
+        yield patch

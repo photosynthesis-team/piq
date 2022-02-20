@@ -78,3 +78,10 @@ def test_pieapp_fails_for_incorrect_data_range(x, y, device: str) -> None:
     y_scaled = (y * 255).type(torch.uint8)
     with pytest.raises(AssertionError):
         PieAPP(data_range=1.0, stride=27)(x_scaled.to(device), y_scaled.to(device))
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="This test is only relevant for GPU")
+def test_pieapp_supports_dense_sampling(x, y,) -> None:
+    x = torch.rand(2, 3, 256, 256)
+    y = torch.rand(2, 3, 256, 256)
+    PieAPP(data_range=1.0, stride=5)(x.cuda(), y.cuda())
