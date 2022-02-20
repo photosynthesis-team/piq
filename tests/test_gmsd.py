@@ -105,6 +105,14 @@ def test_gmsd_compare_with_matlab(input_images_score: Tuple[torch.Tensor, torch.
                                                     f'got {score.item():.8f}, while MATLAB equals {y_value}'
 
 
+@pytest.mark.parametrize(
+    "dtype", [torch.float32, torch.float64],
+)
+def test_gmsd_preserves_dtype(x, y, dtype, device: str) -> None:
+    output = gmsd(x.to(device=device, dtype=dtype), y.to(device=device, dtype=dtype))
+    assert output.dtype == dtype
+
+
 # ================== Test class: `GMSDLoss` ==================
 def test_gmsd_loss_forward_backward(x, y, device: str) -> None:
     x.requires_grad_()

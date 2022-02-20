@@ -131,6 +131,15 @@ def test_dss_raises_if_input_is_not_4d(x: torch.Tensor, y: torch.Tensor) -> None
         dss(x_5d, y_5d)
 
 
+@pytest.mark.parametrize(
+    "dtype", [torch.float32, torch.float64],
+)
+def test_dss_preserves_dtype(input_tensors: torch.Tensor, dtype, device: str) -> None:
+    x, y = input_tensors
+    output = dss(x.to(device=device, dtype=dtype), y.to(device=device, dtype=dtype))
+    assert output.dtype == dtype
+
+
 # ================== Test class: `DSSLoss` =================
 def test_dss_loss(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
     prediction, target = input_tensors
