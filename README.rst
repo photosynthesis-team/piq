@@ -170,6 +170,7 @@ Acronym      Year    Metric
 PSNR         \-      `Peak Signal-to-Noise Ratio <https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio>`_
 SSIM         2003    `Structural Similarity <https://en.wikipedia.org/wiki/Structural_similarity>`_
 MS-SSIM      2004    `Multi-Scale Structural Similarity <https://ieeexplore.ieee.org/abstract/document/1292216>`_
+IW-SSIM      2011    `Information Content Weighted Structural Similarity Index <https://ece.uwaterloo.ca/~z70wang/publications/IWSSIM.pdf>`_
 VIFp         2004    `Visual Information Fidelity <https://ieeexplore.ieee.org/document/1576816>`_
 FSIM         2011    `Feature Similarity Index Measure <https://ieeexplore.ieee.org/document/5705575>`_
 SR-SIM       2012    `Spectral Residual Based Similarity <https://sse.tongji.edu.cn/linzhang/ICIP12/ICIP-SR-SIM.pdf>`_
@@ -242,6 +243,7 @@ For metrics that can take greyscale or colour images, ``c`` means chromatic vers
 PSNR         0.687 / 0.496      0.687 / 0.496 `TID2013`_          0.676 / 0.488      \- / -                            0.407 / 0.276      0.407 / 0.277 `PIPAL`_
 SSIM         0.720 / 0.527      0.637 / 0.464 `TID2013`_          0.724 / 0.537      0.718 / 0.532 `KADID10k`_         0.498 / 0.345      0.529 / 0.369 `PIPAL`_
 MS-SSIM      0.798 / 0.597      0.787 / 0.608 `TID2013`_          0.802 / 0.609      0.802 / 0.609 `KADID10k`_         0.552 / 0.389      0.462 / -
+IW-SSIM      \- / -             \- / -                            \- / -             \- / \                            \- / -             \- / -
 VIFp         0.610 / 0.458      0.610 / 0.457 `TID2013`_          0.650 / 0.477      0.650 / 0.477 `KADID10k`_         0.497 / 0.345      \- / -
 FSIM         0.802 / 0.629      0.801 / 0.630 `TID2013`_          0.830 / 0.639      0.829 / 0.639 `KADID10k`_         0.588 / 0.415      0.596 / 0.421 `PIPAL`_
 FSIMc        0.851 / 0.667      0.851 / 0.667 `TID2013`_          0.854 / 0.665      0.854 / 0.665 `KADID10k`_         0.590 / 0.416      \- / -

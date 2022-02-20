@@ -1,4 +1,4 @@
-r""" Implementation of Information Content Weighted Structural Similarity Index (IW-SSIM) index.
+r""" Implementation of Information Content Weighted Structural Similarity Index (IW-SSIM).
 
 Information Content Weighted Structural Similarity Index (IW-SSIM) [1] is an extension of
 the structural similarity (SSIM). IW-SSIM uses the idea of information content weighted pooling for similarity
@@ -9,7 +9,7 @@ Estimation values produced by presented implementation corresponds to MATLAB bas
 References:
   [1] Wang, Zhou, and Qiang Li.
     "Information content weighting for perceptual image quality assessment."
-    IEEE Transactions on image processing 20.5 (2010): 1185-1198.
+    IEEE Transactions on image processing 20.5 (2011): 1185-1198.
     https://ece.uwaterloo.ca/~z70wang/publications/IWSSIM.pdf
 
   [2] https://ece.uwaterloo.ca/~z70wang/research/iwssim/
@@ -52,9 +52,9 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
         Value of Information Content Weighted Structural Similarity (IW-SSIM) index.
 
     References:
-        Wang, Zhou, and Qiang Li. (2010).
+        Wang, Zhou, and Qiang Li..
         Information content weighting for perceptual image quality assessment.
-        IEEE Transactions on image processing 20.5 (2010): 1185-1198.
+        IEEE Transactions on image processing 20.5 (2011): 1185-1198.
         https://ece.uwaterloo.ca/~z70wang/publications/IWSSIM.pdf DOI:`10.1109/TIP.2010.2092435`
     """
     assert kernel_size % 2 == 1, f'Kernel size must be odd, got [{kernel_size}]'
@@ -172,9 +172,9 @@ class InformationWeightedSSIMLoss(_Loss):
         >>> output.backward()
 
     References:
-        Wang, Zhou, and Qiang Li. (2010).
+        Wang, Zhou, and Qiang Li..
         Information content weighting for perceptual image quality assessment.
-        IEEE Transactions on image processing 20.5 (2010): 1185-1198.
+        IEEE Transactions on image processing 20.5 (2011): 1185-1198.
         https://ece.uwaterloo.ca/~z70wang/publications/IWSSIM.pdf DOI:`10.1109/TIP.2010.2092435`
 
     """
