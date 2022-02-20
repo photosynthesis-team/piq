@@ -1,5 +1,5 @@
 """
-Implementation of Content loss, Style loss, LPIPS and DISTS metrics
+Implementation of Content and Style losses
 References:
     .. [1] Gatys, Leon and Ecker, Alexander and Bethge, Matthias
     (2016). A Neural Algorithm of Artistic Style}
@@ -15,6 +15,7 @@ from typing import List, Union, Collection
 import torch
 import torch.nn as nn
 from torch.nn.modules.loss import _Loss
+import torchvision
 from torchvision.models import vgg16, vgg19
 
 from piq.utils import _validate_input, _reduce
@@ -67,6 +68,7 @@ VGG19_LAYERS = {
     "pool5": '36',
 }
 
+# Normalization values
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
 
@@ -130,10 +132,10 @@ class ContentLoss(_Loss):
             self.model = feature_extractor
             self.layers = layers
         elif feature_extractor == "vgg16":
-            self.model = vgg16(pretrained=True, progress=False).features
+            self.model = torchvision.models.vgg16(pretrained=True, progress=False).features
             self.layers = [VGG16_LAYERS[l] for l in layers]
         elif feature_extractor == "vgg19":
-            self.model = vgg19(pretrained=True, progress=False).features
+            self.model = torchvision.models.vgg19(pretrained=True, progress=False).features
             self.layers = [VGG19_LAYERS[l] for l in layers]
         else:
             raise ValueError("Unknown feature extractor")

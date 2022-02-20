@@ -1,3 +1,13 @@
+"""
+Implementation of Learned Perceptual Image Patch Similarity (LPIPS) metric
+References:
+    Zhang, Richard and Isola, Phillip and Efros, et al. (2018)
+    The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
+    IEEE/CVF Conference on Computer Vision and Pattern Recognition
+    https://arxiv.org/abs/1801.03924
+    https://github.com/richzhang/PerceptualSimilarity
+"""
+
 from typing import List, Union, Collection
 
 import torch

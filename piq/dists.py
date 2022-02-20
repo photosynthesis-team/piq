@@ -1,5 +1,17 @@
 
-class DISTS(ContentLoss):
+from typing import List, Union, Collection
+
+import torch
+import torch.nn as nn
+from torch.nn.modules.loss import _Loss
+from torchvision.models import vgg16, vgg19
+
+from piq.utils import _validate_input, _reduce
+from piq.functional import similarity_map, L2Pool2d
+from piq.perceptual import VGG16_LAYERS, VGG19_LAYERS, IMAGENET_MEAN, IMAGENET_STD
+
+
+class DISTS(_Loss):
     r"""Deep Image Structure and Texture Similarity metric.
 
     By default expects input to be in range [0, 1], which is then normalized by ImageNet statistics into range [-1, 1].
