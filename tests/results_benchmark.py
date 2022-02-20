@@ -233,20 +233,19 @@ def compute_no_reference(metric_functor: Callable, distorted_images: torch.Tenso
     return metric_functor(distorted_images).cpu()
 
 
-def extract_features(distorted_patch_loader: torch.Tensor, feature_extractor: nn.Module, feature_extractor_name: str,
-                     reference_patch_loader: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+def extract_features(distorted_patches: torch.Tensor, feature_extractor: nn.Module, feature_extractor_name: str,
+                     reference_patches: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
     distorted_features, reference_features = [], []
-    for distorted, reference in zip(distorted_patch_loader, reference_patch_loader):
-        with torch.no_grad():
-            if feature_extractor_name == "inception":
-                reference_features.append(feature_extractor(reference)[0].squeeze())
-                distorted_features.append(feature_extractor(distorted)[0].squeeze())
-            elif feature_extractor_name == "vgg16":
-                reference_features.append(torch.nn.functional.avg_pool2d(feature_extractor(reference), 3).squeeze())
-                distorted_features.append(torch.nn.functional.avg_pool2d(feature_extractor(distorted), 3).squeeze())
-            elif feature_extractor_name == "vgg19":
-                reference_features.append(torch.nn.functional.avg_pool2d(feature_extractor(reference), 3).squeeze())
-                distorted_features.append(torch.nn.functional.avg_pool2d(feature_extractor(distorted), 3).squeeze())
+    with torch.no_grad():
+        if feature_extractor_name == "inception":
+            reference_features.append(feature_extractor(reference_patches)[0].squeeze())
+            distorted_features.append(feature_extractor(distorted_patches)[0].squeeze())
+        elif feature_extractor_name == "vgg16":
+            reference_features.append(torch.nn.functional.avg_pool2d(feature_extractor(reference_patches), 3).squeeze())
+            distorted_features.append(torch.nn.functional.avg_pool2d(feature_extractor(distorted_patches), 3).squeeze())
+        elif feature_extractor_name == "vgg19":
+            reference_features.append(torch.nn.functional.avg_pool2d(feature_extractor(reference_patches), 3).squeeze())
+            distorted_features.append(torch.nn.functional.avg_pool2d(feature_extractor(distorted_patches), 3).squeeze())
 
     distorted_features = torch.cat(distorted_features, dim=0)
     reference_features = torch.cat(reference_features, dim=0)
@@ -254,20 +253,29 @@ def extract_features(distorted_patch_loader: torch.Tensor, feature_extractor: nn
     return distorted_features, reference_features
 
 
+def normalize_tensor(tensor: torch.Tensor) -> torch.Tensor:
+    """ Map tensor values to [0, 1] """
+    return (tensor - tensor.min()) / (tensor.max() - tensor.min())
+
+
 def compute_distribution_based(metric_functor: Callable, distorted_images: torch.Tensor,
                                reference_images: torch.Tensor, device: str, feature_extractor_name: str) -> np.ndarray:
     feature_extractor = get_feature_extractor(feature_extractor_name=feature_extractor_name, device=device)
+
+    if feature_extractor_name == 'inception':
+        distorted_images = normalize_tensor(distorted_images)
+        reference_images = normalize_tensor(reference_images)
 
     # Create patches
     distorted_patches = crop_patches(distorted_images, size=96, stride=32)
     reference_patches = crop_patches(reference_images, size=96, stride=32)
 
     # Extract features from distorted images
-    distorted_patch_loader = distorted_patches.view(-1, 10, *distorted_patches.shape[-3:])
-    reference_patch_loader = reference_patches.view(-1, 10, *reference_patches.shape[-3:])
+    distorted_patches = distorted_patches.view(-1, *distorted_patches.shape[-3:])
+    reference_patches = reference_patches.view(-1, *reference_patches.shape[-3:])
 
-    distorted_features, reference_features = extract_features(distorted_patch_loader, feature_extractor,
-                                                              feature_extractor_name, reference_patch_loader)
+    distorted_features, reference_features = extract_features(distorted_patches, feature_extractor,
+                                                              feature_extractor_name, reference_patches)
 
     return metric_functor(distorted_features, reference_features).cpu()
 
@@ -284,11 +292,11 @@ def crop_patches(images: torch.Tensor, size=64, stride=32):
     return patches
 
 
-def main(dataset_name: str, path: Path, metrics: List[str], batch_size: int, device: str, feature_extractor: str) \
+def main(dataset_name: str, path: Path, metrics: List[str], device: str, feature_extractor: str) \
         -> None:
     # Init dataset and dataloader
     dataset = DATASETS[dataset_name](root=path)
-    loader = DataLoader(dataset, batch_size=batch_size, num_workers=4)
+    loader = DataLoader(dataset, batch_size=1, num_workers=4)
 
     for metric_name in metrics:
         metric: Metric = METRICS[metric_name]
@@ -305,7 +313,6 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str, help="Dataset name", choices=list(DATASETS.keys()))
     parser.add_argument("--path", type=Path, help="Path to dataset")
     parser.add_argument('--metrics', nargs='+', default=[], help='Metrics to benchmark', choices=list(METRICS.keys()))
-    parser.add_argument('--batch_size', type=int, default=1, help='Batch size')
     parser.add_argument('--device', default='cuda', choices=['cpu', 'cuda'], help='Computation device')
     parser.add_argument('--feature_extractor', default='inception', choices=['inception', 'vgg16', 'vgg19'],
                         help='Select a feature extractor. For distribution-based metrics only')
