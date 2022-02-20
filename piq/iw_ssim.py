@@ -1,9 +1,18 @@
-r""" This module implements Information Content Weighted Structural Similarity Index (IW-SSIM) index in PyTorch.
+r""" Implementation of Information Content Weighted Structural Similarity Index (IW-SSIM) index.
 
-It is based on original MATLAB code from authors [1] and PyTorch port by Jack Guo Xy [2].
+Information Content Weighted Structural Similarity Index (IW-SSIM) [1] is an extension of
+the structural similarity (SSIM). IW-SSIM uses the idea of information content weighted pooling for similarity
+evaluation.
+
+Estimation values produced by presented implementation corresponds to MATLAB based estimations [2].
+
 References:
- [1] https://ece.uwaterloo.ca/~z70wang/research/iwssim/iwssim_iwpsnr.zip
- [2] https://github.com/Jack-guo-xy/Python-IW-SSIM
+  [1] Wang, Zhou, and Qiang Li.
+    "Information content weighting for perceptual image quality assessment."
+    IEEE Transactions on image processing 20.5 (2010): 1185-1198.
+    https://ece.uwaterloo.ca/~z70wang/publications/IWSSIM.pdf
+
+  [2] https://ece.uwaterloo.ca/~z70wang/research/iwssim/
 """
 
 
@@ -21,22 +30,33 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
                               parent: bool = True, blk_size: int = 3, sigma_nsq: float = 0.4,
                               scale_weights: Optional[torch.Tensor] = None,
                               reduction: str = 'mean') -> torch.Tensor:
-    r"""
+    r"""Interface of Information Content Weighted Structural Similarity (IW-SSIM) index.
+    Inputs supposed to be in range ``[0, data_range]``.
 
     Args:
-        x:
-        y:
-        data_range:
-        kernel_size:
-        kernel_sigma:
-        k1:
-        k2:
-        parent:
-        scale_weights:
-        reduction:
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
+        y: A target tensor. Shape :math:`(N, C, H, W)`.
+        data_range: Maximum value range of images (usually 1.0 or 255).
+        kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
+        kernel_sigma: Sigma of normal distribution for sliding window used in comparison.
+        k1: Algorithm parameter, K1 (small constant).
+        k2: Algorithm parameter, K2 (small constant).
+            Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
+        parent: Flag to control dependency on previous layer of pyramid.
+        blk_size: The side-length of the sliding window used in comparison for information content.
+        sigma_nsq: Parameter of visual distortion model.
+        scale_weights: Weights for scaling.
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
 
     Returns:
+        Value of Information Content Weighted Structural Similarity (IW-SSIM) index.
 
+    References:
+        Wang, Zhou, and Qiang Li. (2010).
+        Information content weighting for perceptual image quality assessment.
+        IEEE Transactions on image processing 20.5 (2010): 1185-1198.
+        https://ece.uwaterloo.ca/~z70wang/publications/IWSSIM.pdf DOI:`10.1109/TIP.2010.2092435`
     """
     assert kernel_size % 2 == 1, f'Kernel size must be odd, got [{kernel_size}]'
 
@@ -63,28 +83,12 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
     bound1 = bound - math.floor((blk_size - 1) / 2)  # floor
     gauss_kernel = gaussian_filter(kernel_size, kernel_sigma).repeat(x.size(1), 1, 1, 1).to(x)
 
+    # Size of the kernel size to build Laplacian pyramid
     pyramid_kernel_size = 5
     bin_filter = binomial_filter1d(kernel_size=pyramid_kernel_size).to(x) * 2**0.5
-    #print(bin_filter.size())
-    # Blur and downsample
-    #lo_x = _blur_and_downsample(x, bin_filter)
-    #lo_y = _blur_and_downsample(y, bin_filter)
-
-    # Upsample and blur
-    #x_diff_old = x - _upsample_and_blur(lo_x, bin_filter)[:, :, :x.size(-2), :x.size(-1)]
-    #y_diff_old = y - _upsample_and_blur(lo_y, bin_filter)[:, :, :y.size(-2), :y.size(-1)]
 
     lo_x, x_diff_old = _pyr_step(x, bin_filter)
     lo_y, y_diff_old = _pyr_step(y, bin_filter)
-
-    #print(lo_x.size())
-    #print(lo_x[0, 0, :10, :10])
-    #print(x_diff_old.size())
-    #print(x_diff_old[0,0,:10,:10])
-    #print(lo_y.size())
-    #print(lo_y[0, 0, :10, :10])
-    #print(y_diff_old.size())
-    #print(y_diff_old[0, 0, :10, :10])
 
     x = lo_x
     y = lo_y
@@ -126,7 +130,6 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
         x_diff_old = x_diff
         y_diff_old = y_diff
 
-    # TODO: It contains negative values leading to NaN result.
     wmcs = torch.stack(wmcs, dim=0)
 
     score = torch.prod((wmcs ** scale_weights.view(-1, 1, 1)), dim=0)[:, 0]
@@ -135,27 +138,90 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
 
 
 class InformationWeightedSSIMLoss(_Loss):
-    r"""
+    r""".
+    Creates a criterion that measures the Interface of Information Content Weighted Structural Similarity (IW-SSIM)
+    index error betweeneach element in the input :math:`x` and target :math:`y`.
 
-    """
+    Inputs supposed to be in range ``[0, data_range]``.
 
-    def __init__(self, data_range: Union[int, float] = 1., reduction: str = 'mean'):
-        self.reduction = reduction
-        self.data_range = data_range
+    If :attr:`reduction` is not ``'none'`` (default ``'mean'``), then:
 
-    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        return information_weighted_ssim(x=x, y=y, data_range=self.data_range, reduction=self.reduction)
-
-
-def _pyr_step(x: torch.Tensor, kernel:torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-    r"""
+    .. math::
+        InformationWeightedSSIMLoss(x, y) =
+        \begin{cases}
+            \operatorname{mean}(1 - IWSSIM), &  \text{if reduction} = \text{'mean';}\\
+            \operatorname{sum}(1 - IWSSIM),  &  \text{if reduction} = \text{'sum'.}
+        \end{cases}
 
     Args:
-        x:
-        kernel:
+        data_range: Maximum value range of images (usually 1.0 or 255).
+        kernel_size: The side-length of the sliding window used in comparison. Must be an odd value.
+        kernel_sigma: Sigma of normal distribution for sliding window used in comparison.
+        k1: Algorithm parameter, K1 (small constant).
+        k2: Algorithm parameter, K2 (small constant).
+            Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
+        parent: Flag to control dependency on previous layer of pyramid.
+        blk_size: The side-length of the sliding window used in comparison for information content.
+        sigma_nsq: Sigma of normal distribution for sliding window used in comparison for information content.
+        scale_weights: Weights for scaling.
+        reduction: Specifies the reduction type:
+            ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+
+    Examples:
+        >>> loss = InformationWeightedSSIMLoss()
+        >>> input = torch.rand(3, 3, 256, 256, requires_grad=True)
+        >>> target = torch.rand(3, 3, 256, 256)
+        >>> output = loss(input, target)
+        >>> output.backward()
+
+    References:
+        Wang, Zhou, and Qiang Li. (2010).
+        Information content weighting for perceptual image quality assessment.
+        IEEE Transactions on image processing 20.5 (2010): 1185-1198.
+        https://ece.uwaterloo.ca/~z70wang/publications/IWSSIM.pdf DOI:`10.1109/TIP.2010.2092435`
+
+    """
+    def __init__(self, data_range: Union[int, float] = 1., kernel_size: int = 11, kernel_sigma: float = 1.5,
+                 k1: float = 0.01, k2: float = 0.03, parent: bool = True, blk_size: int = 3, sigma_nsq: float = 0.4,
+                 scale_weights: Optional[torch.Tensor] = None, reduction: str = 'mean'):
+        self.data_range = data_range
+        self.kernel_size = kernel_size
+        self.kernel_sigma = kernel_sigma
+        self.k1 = k1
+        self.k2 = k2
+        self.parent = parent
+        self.blk_size = blk_size
+        self.sigma_nsq = sigma_nsq
+        self.scale_weights = scale_weights
+        self.reduction = reduction
+
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        r"""Computation of Information Content Weighted Structural Similarity (IW-SSIM) index as a loss function.
+            For colour images channel order is RGB.
+
+        Args:
+            x: An input tensor. Shape :math:`(N, C, H, W)`.
+            y: A target tensor. Shape :math:`(N, C, H, W)`.
+
+        Returns:
+            Value of IW-SSIM loss to be minimized, i.e. ``1 - information_weighted_ssim`` in [0, 1] range.
+        """
+        score = information_weighted_ssim(x=x, y=y, data_range=self.data_range, kernel_size=self.kernel_size,
+                                          kernel_sigma=self.kernel_sigma, k1=self.k1, k2=self.k2,
+                                          parent=self.parent, blk_size=self.blk_size, sigma_nsq=self.sigma_nsq,
+                                          scale_weights=self.scale_weights, reduction=self.reduction)
+        return torch.ones_like(score) - score
+
+
+def _pyr_step(x: torch.Tensor, kernel: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    r""" Computes one step of Laplacian pyramid generation.
+
+    Args:
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
+        kernel: Kernel to perform blurring.
 
     Returns:
-
+        Tuple of tensors with downscaled low resolution image and high-resolution difference.
     """
     # Blur and Downsampling
     up_pad = (kernel.size(-1) - 1) // 2  # 5 -> 2, 4 -> 1
@@ -191,8 +257,8 @@ def _pyr_step(x: torch.Tensor, kernel:torch.Tensor) -> Tuple[torch.Tensor, torch
 
 def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
                       data_range: Union[float, int] = 1., k1: float = 0.01,
-                      k2: float = 0.03) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
-    r"""Calculate Structural Similarity (SSIM) index for X and Y per channel.
+                      k2: float = 0.03) -> Tuple[torch.Tensor, torch.Tensor]:
+    r"""Computes Structural Similarity (SSIM) index for X and Y per channel.
 
     Args:
         x: An input tensor. Shape :math:`(N, C, H, W)`.
@@ -204,7 +270,7 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
             Try a larger K2 constant (e.g. 0.4) if you get a negative or NaN results.
 
     Returns:
-
+        Tuple with Structural Similarity maps and Contrast maps.
     """
     if x.size(-1) < kernel.size(-1) or x.size(-2) < kernel.size(-2):
         raise ValueError(f'Kernel size can\'t be greater than actual input size. Input size: {x.size()}. '
@@ -237,8 +303,19 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
 
 
 def _information_content(x: torch.Tensor, y: torch.Tensor, y_parent: torch.Tensor = None,
-                         kernel_size: int = 3, sigma_nsq: float = 0.4):
-    r""""""
+                         kernel_size: int = 3, sigma_nsq: float = 0.4) -> torch.Tensor:
+    r"""Computes Information Content Map for weighting the Structural Similarity.
+
+    Args:
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
+        y: A target tensor. Shape :math:`(N, C, H, W)`.
+        y_parent: Flag to control dependency on previous layer of pyramid.
+        kernel_size: The side-length of the sliding window used in comparison for information content.
+        sigma_nsq: Parameter of visual distortion model.
+
+    Returns:
+        Information Content Maps.
+    """
 
     EPS = torch.finfo(x.dtype).eps
     n_channels = x.size(1)
@@ -261,7 +338,7 @@ def _information_content(x: torch.Tensor, y: torch.Tensor, y_parent: torch.Tenso
     vv = sigma_xx - g * sigma_xy
     g = g.masked_fill(sigma_yy < EPS, 0)
     vv[sigma_yy < EPS] = sigma_xx[sigma_yy < EPS]
-    sigma_yy = sigma_yy.masked_fill(sigma_yy < EPS, 0)
+    # sigma_yy = sigma_yy.masked_fill(sigma_yy < EPS, 0)
     g = g.masked_fill(sigma_xx < EPS, 0)
     vv = vv.masked_fill(sigma_xx < EPS, 0)
 
@@ -271,7 +348,6 @@ def _information_content(x: torch.Tensor, y: torch.Tensor, y_parent: torch.Tenso
     nblh = y.size(-1) - block[1] + 1
     nexp = nblv * nblh
     N = block[0] * block[1]
-
 
     assert block[0] % 2 == 1 and block[1] % 2  == 1, f'Expected odd block dimensions, got {block}'
 
@@ -331,6 +407,14 @@ def _information_content(x: torch.Tensor, y: torch.Tensor, y_parent: torch.Tenso
 
 
 def _image_enlarge(x: torch.Tensor) -> torch.Tensor:
+    r"""Bilinear upscaling of the image.
+
+    Args:
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
+
+    Returns:
+        Upscaled tensor.
+    """
     t1 = F.interpolate(x, size=(int(4 * x.size(-2) - 3), int(4 * x.size(-1) - 3)), mode='bilinear', align_corners=False)
     t2 = torch.zeros([x.size(0), 1, 4 * x.size(-2) - 1, 4 * x.size(-1) - 1]).to(x)
     t2[:, :, 1: -1, 1:-1] = t1
@@ -343,6 +427,15 @@ def _image_enlarge(x: torch.Tensor) -> torch.Tensor:
 
 
 def _shift(x: torch.Tensor, shift: list) -> torch.Tensor:
+    r""" Circular shift 2D matrix samples by OFFSET (a [Y,X] 2-vector), such that  RES(POS) = MTX(POS-OFFSET).
+
+    Args:
+        x: An input tensor. Shape :math:`(N, C, H, W)`.
+        shift: Offset list.
+
+    Returns:
+        The circular shiftet tensor.
+    """
     tmp = torch.cat((x[..., -shift[0]:, :], x[..., :-shift[0], :]), dim=-2)
     tmp = torch.cat((tmp[..., -shift[1]:], tmp[..., :-shift[1]]), dim=-1)
     return tmp
