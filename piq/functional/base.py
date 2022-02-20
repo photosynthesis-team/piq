@@ -37,7 +37,7 @@ def similarity_map(map_x: torch.Tensor, map_y: torch.Tensor, constant: float, al
         map_x: Tensor with map to be compared
         map_y: Tensor with map to be compared
         constant: Used for numerical stability
-        alpha: Masking coefficient. Substracts - `alpha` * map_x * map_y from denominator and nominator
+        alpha: Masking coefficient. Subtracts - `alpha` * map_x * map_y from denominator and nominator
     """
     return (2.0 * map_x * map_y - alpha * map_x * map_y + constant) / \
            (map_x ** 2 + map_y ** 2 - alpha * map_x * map_y + constant)

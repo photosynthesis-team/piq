@@ -5,7 +5,7 @@ The resulting values are the same to MATLAB function imresize('bicubic').
 ## Email:       sonsang35@gmail.com (primary), thstkdgus35@snu.ac.kr (secondary)
 ## Version:     1.2.0
 ## Last update: July 9th, 2020 (KST)
-Depencency: torch
+Dependency: torch
 Example::
 >>> import torch
 >>> import core

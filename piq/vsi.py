@@ -1,4 +1,4 @@
-r"""Implemetation of Visual Saliency-induced Index
+r"""Implementation of Visual Saliency-induced Index
 Code is based on the MATLAB version for computations in pixel domain
 https://sse.tongji.edu.cn/linzhang/IQA/VSI/VSI.htm
 

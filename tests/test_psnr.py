@@ -47,8 +47,8 @@ def test_psnr_fails_for_incorrect_data_range(x, y, device: str) -> None:
     y_scaled = (y * 255).type(torch.uint8)
     with pytest.raises(AssertionError):
         psnr(x_scaled.to(device), y_scaled.to(device), data_range=1.0)
-        
-        
+
+
 def test_psnr_works_for_zero_tensors() -> None:
     x = torch.zeros(4, 3, 256, 256)
     y = torch.zeros(4, 3, 256, 256)

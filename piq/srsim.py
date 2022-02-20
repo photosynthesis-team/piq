@@ -1,4 +1,4 @@
-r"""Implemetation of Spectral Residual based Similarity
+r"""Implementation of Spectral Residual based Similarity
 Code is based on MATLAB version for computations in pixel domain
 https://github.com/Netflix/vmaf/blob/master/matlab/strred/SR_SIM.m
 References:
@@ -33,7 +33,7 @@ def srsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         sigma: Sigma of gaussian filter applied on saliency map
         gaussian_size: Size of gaussian filter applied on saliency map
     Returns:
-        SR-SIM: Index of similarity betwen two images. Usually in [0, 1] interval.
+        SR-SIM: Index of similarity between two images. Usually in [0, 1] interval.
             Can be bigger than 1 for predicted images with higher contrast than the original ones.
     Note:
         This implementation is based on the original MATLAB code.

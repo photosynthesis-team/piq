@@ -10,13 +10,12 @@ Closes #
   -
   -
   -
-  
+
 ## Checklist (new metrics only)
 - [ ] Add docstrings for functional and class interfaces
 - [ ] Add tests
-- [ ] Compute values for `i01_01_5.bmp` <-> `I01.BMP` and `goldhill_jpeg.gif` <-> `goldhill.gif` 
+- [ ] Compute values for `i01_01_5.bmp` <-> `I01.BMP` and `goldhill_jpeg.gif` <-> `goldhill.gif`
 (in `tests/assets`) using original implementation, verify that your results match.
 - [ ] Update table with metrics in `README.rst`
 - [ ] Update benchmark values in `docs/source/_static/benchmark.csv`
-- [ ] Update examples 
-
+- [ ] Update examples

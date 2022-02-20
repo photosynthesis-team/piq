@@ -1,4 +1,4 @@
-r"""Implemetation of Feature Similarity Index Measure
+r"""Implementation of Feature Similarity Index Measure
 Code is based on MATLAB version for computations in pixel domain
 https://www4.comp.polyu.edu.hk/~cslzhang/IQA/FSIM/Files/FeatureSIM.m
 References:
@@ -39,9 +39,9 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
             of the angular Gaussian function used to construct filters in the frequency plane.
         k: No of standard deviations of the noise energy beyond the mean at which we set the noise
             threshold  point, below which phase congruency values get penalized.
-        
+
     Returns:
-        Index of similarity betwen two images. Usually in [0, 1] interval.
+        Index of similarity between two images. Usually in [0, 1] interval.
         Can be bigger than 1 for predicted :math:`x` images with higher contrast than the original ones.
 
     References:
@@ -52,7 +52,7 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     Note:
         This implementation is based on the original MATLAB code.
         https://www4.comp.polyu.edu.hk/~cslzhang/IQA/FSIM/FSIM.htm
-        
+
     """
     _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
 
@@ -127,7 +127,7 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
                        min_length: int = 6, mult: int = 2, sigma_f: float = 0.55,
                        delta_theta: float = 1.2, k: float = 2.0):
     """Creates a stack of filters used for computation of phase congruensy maps
-    
+
     Args:
         x: Tensor. Shape :math:`(N, 1, H, W)`.
         scales: Number of wavelets
@@ -350,17 +350,17 @@ def _lowpassfilter(size: Tuple[int, int], cutoff: float, n: int) -> torch.Tensor
     Constructs a low-pass Butterworth filter.
 
     Args:
-        size: Tuple with heigth and width of filter to construct
+        size: Tuple with height and width of filter to construct
         cutoff: Cutoff frequency of the filter in (0, 0.5()
         n: Filter order. Higher `n` means sharper transition.
             Note that `n` is doubled so that it is always an even integer.
-        
+
     Returns:
         f = 1 / (1 + w/cutoff) ^ 2n
-    
+
     Note:
         The frequency origin of the returned filter is at the corners.
-    
+
     """
     assert 0 < cutoff <= 0.5, "Cutoff frequency must be between 0 and 0.5"
     assert n > 1 and int(n) == n, "n must be an integer >= 1"
