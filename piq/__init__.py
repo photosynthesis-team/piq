@@ -21,4 +21,4 @@ from .haarpsi import haarpsi, HaarPSILoss
 from .srsim import srsim, SRSIMLoss
 from .pieapp import PieAPP
 from .dss import dss, DSSLoss
-from .iw_ssim import information_weighted_ssim
+from .iw_ssim import information_weighted_ssim, InformationWeightedSSIMLoss
