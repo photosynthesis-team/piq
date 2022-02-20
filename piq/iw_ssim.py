@@ -11,8 +11,9 @@ import torch
 from torch.nn.modules.loss import _Loss
 import torch.nn.functional as F
 from piq.utils import _validate_input, _reduce
-from piq.functional import gaussian_filter, binomial_filter2d, average_filter2d, rgb2yiq
+from piq.functional import gaussian_filter, binomial_filter1d, average_filter2d, rgb2yiq
 from typing import Union, Optional, Tuple
+import math
 
 
 def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1.,
@@ -41,16 +42,16 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
 
     _validate_input(tensors=[x, y], dim_range=(4, 4), data_range=(0., data_range))
 
-    x = x.type(torch.float32) / data_range * 255
-    y = y.type(torch.float32) / data_range * 255
+    x = x / float(data_range) * 255
+    y = y / float(data_range) * 255
 
     if x.size(1) == 3:
         x = rgb2yiq(x)[:, :1]
         y = rgb2yiq(y)[:, :1]
 
     if scale_weights is None:
-        scale_weights = torch.tensor([0.0448, 0.2856, 0.3001, 0.2363, 0.1333])
-    scale_weights = (scale_weights / scale_weights.sum()).to(x)
+        scale_weights = torch.tensor([0.0448, 0.2856, 0.3001, 0.2363, 0.1333], dtype=x.dtype, device=x.device)
+    scale_weights = scale_weights / scale_weights.sum()
 
     levels = scale_weights.size(0)
 
@@ -58,21 +59,32 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
     if x.size(-1) < min_size or x.size(-2) < min_size:
         raise ValueError(f'Invalid size of the input images, expected at least {min_size}x{min_size}.')
 
-    bound = (kernel_size - 1) // 2
-    bound1 = bound - int((blk_size - 1) / 2)
-
+    bound = math.ceil((kernel_size - 1) / 2)  # Ceil
+    bound1 = bound - math.floor((blk_size - 1) / 2)  # floor
     gauss_kernel = gaussian_filter(kernel_size, kernel_sigma).repeat(x.size(1), 1, 1, 1).to(x)
 
     pyramid_kernel_size = 5
-    bin_filter = binomial_filter2d(kernel_size=pyramid_kernel_size).to(x)
-
+    bin_filter = binomial_filter1d(kernel_size=pyramid_kernel_size).to(x) * 2**0.5
+    #print(bin_filter.size())
     # Blur and downsample
-    lo_x = _blur_and_downsample(x, bin_filter)
-    lo_y = _blur_and_downsample(y, bin_filter)
+    #lo_x = _blur_and_downsample(x, bin_filter)
+    #lo_y = _blur_and_downsample(y, bin_filter)
 
     # Upsample and blur
-    x_diff_old = x - _upsample_and_blur(lo_x, bin_filter)[:, :, :x.size(-2), :x.size(-1)]
-    y_diff_old = y - _upsample_and_blur(lo_y, bin_filter)[:, :, :y.size(-2), :y.size(-1)]
+    #x_diff_old = x - _upsample_and_blur(lo_x, bin_filter)[:, :, :x.size(-2), :x.size(-1)]
+    #y_diff_old = y - _upsample_and_blur(lo_y, bin_filter)[:, :, :y.size(-2), :y.size(-1)]
+
+    lo_x, x_diff_old = _pyr_step(x, bin_filter)
+    lo_y, y_diff_old = _pyr_step(y, bin_filter)
+
+    #print(lo_x.size())
+    #print(lo_x[0, 0, :10, :10])
+    #print(x_diff_old.size())
+    #print(x_diff_old[0,0,:10,:10])
+    #print(lo_y.size())
+    #print(lo_y[0, 0, :10, :10])
+    #print(y_diff_old.size())
+    #print(y_diff_old[0, 0, :10, :10])
 
     x = lo_x
     y = lo_y
@@ -81,13 +93,8 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
     for i in range(levels):
         print(i)
         if i < levels - 2:
-            # BLur and downsample
-            lo_x = _blur_and_downsample(x, bin_filter)
-            lo_y = _blur_and_downsample(y, bin_filter)
-            # Upsample and blur
-            x_diff = x - _upsample_and_blur(lo_x, bin_filter)[:, :, :x.size(-2), :x.size(-1)]
-            y_diff = y - _upsample_and_blur(lo_y, bin_filter)[:, :, :y.size(-2), :y.size(-1)]
-
+            lo_x, x_diff = _pyr_step(x, bin_filter)
+            lo_y, y_diff = _pyr_step(y, bin_filter)
             x = lo_x
             y = lo_y
 
@@ -102,6 +109,7 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
         if parent and i < levels - 2:
             iw_map = _information_content(x=x_diff_old, y=y_diff_old, y_parent=y_diff, kernel_size=blk_size,
                                           sigma_nsq=sigma_nsq)
+
             iw_map = iw_map[:, :, bound1:-bound1, bound1:-bound1]
 
         elif i == levels - 1:
@@ -139,8 +147,7 @@ class InformationWeightedSSIMLoss(_Loss):
         return information_weighted_ssim(x=x, y=y, data_range=self.data_range, reduction=self.reduction)
 
 
-
-def _blur_and_downsample(x: torch.Tensor, kernel: torch.Tensor) -> torch.Tensor:
+def _pyr_step(x: torch.Tensor, kernel:torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
     r"""
 
     Args:
@@ -150,34 +157,36 @@ def _blur_and_downsample(x: torch.Tensor, kernel: torch.Tensor) -> torch.Tensor:
     Returns:
 
     """
-    up_pad = (kernel.size(-1) - 1) // 2 # 5 -> 2, 4 -> 1
-    down_pad = kernel.size(-1) - 1 - up_pad # 5 -> 2, 4 -> 2
-
-    out = F.pad(x, pad=[up_pad, down_pad, up_pad, down_pad], mode='reflect')
-    out = F.conv2d(input=out, weight=kernel.unsqueeze(0), padding='valid')[:, :, ::2, ::2]
-
-    return out
-
-
-def _upsample_and_blur(x: torch.Tensor, kernel: torch.Tensor):
-    r"""
-
-    Args:
-        x:
-        kernel:
-
-    Returns:
-
-    """
+    # Blur and Downsampling
     up_pad = (kernel.size(-1) - 1) // 2  # 5 -> 2, 4 -> 1
     down_pad = kernel.size(-1) - 1 - up_pad  # 5 -> 2, 4 -> 2
+    kernel_t = kernel.transpose(-2, -1)
+    lo_x = x
+    if x.size(-1) > 1:
+        lo_x = F.pad(lo_x, pad=[up_pad, down_pad, 0, 0], mode='reflect')
+        lo_x = F.conv2d(input=lo_x, weight=kernel.unsqueeze(0), padding='valid')[:, :, :, ::2]
+    if x.size(-2) > 1:
+        lo_x = F.pad(lo_x, pad=[0, 0, up_pad, down_pad], mode='reflect')
+        lo_x = F.conv2d(input=lo_x, weight=kernel_t.unsqueeze(0), padding='valid')[:, :, ::2, :]
 
-    upsampling_kernel = torch.tensor([[[[1., 0.], [0., 0.]]]], dtype=x.dtype, device=x.device)
-    out = F.conv_transpose2d(input=x, weight=upsampling_kernel, stride=2, padding=0)
-    out = F.pad(out, pad=[up_pad, down_pad, up_pad, down_pad], mode='reflect')
-    out = F.conv2d(input=out, weight=kernel.unsqueeze(0), padding='valid')
+    # Upsampling and Blur
+    up_pad = (kernel.size(-1) - 1) // 2  # 5 -> 2, 4 -> 1
+    down_pad = kernel.size(-1) - 1 - up_pad  # 5 -> 2, 4 -> 2
+    hi_x = lo_x
 
-    return out
+    if x.size(-1) > 1:
+        upsampling_kernel = torch.tensor([[[[1., 0.]]]], dtype=x.dtype, device=x.device)
+        hi_x = F.conv_transpose2d(input=hi_x, weight=upsampling_kernel, stride=(1, 2), padding=0)
+        hi_x = F.pad(hi_x, pad=[up_pad, down_pad, 0, 0], mode='reflect')
+        hi_x = F.conv2d(input=hi_x, weight=kernel.unsqueeze(0), padding='valid')[:, :, :, :x.size(-1)]
+    if x.size(-2) > 1:
+        upsampling_kernel = torch.tensor([[[[1.], [0.]]]], dtype=x.dtype, device=x.device)
+        hi_x = F.conv_transpose2d(input=hi_x, weight=upsampling_kernel, stride=(2, 1), padding=0)
+        hi_x = F.pad(hi_x, pad=[0, 0, up_pad, down_pad], mode='reflect')
+        hi_x = F.conv2d(input=hi_x, weight=kernel_t.unsqueeze(0), padding='valid')[:, :, :x.size(-2), :]
+
+    hi_x = x - hi_x
+    return lo_x, hi_x
 
 
 def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
