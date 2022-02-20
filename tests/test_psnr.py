@@ -100,6 +100,14 @@ def test_psnr_matches_skimage_rgb():
         f"Must match Sklearn version. Got: {pm_measure} and skimage: {sk_measure}"
 
 
+@pytest.mark.parametrize(
+    "dtype", [torch.float32, torch.float64],
+)
+def test_psnr_preserves_dtype(x, y, dtype, device: str) -> None:
+    output = psnr(x.to(device=device, dtype=dtype), y.to(device=device, dtype=dtype))
+    assert output.dtype == dtype
+
+
 def test_psnr_loss_backward():
     x = torch.rand(1, 3, 256, 256, requires_grad=True)
     y = torch.rand(1, 3, 256, 256)

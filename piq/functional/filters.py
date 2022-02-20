@@ -33,7 +33,7 @@ def gaussian_filter(kernel_size: int, sigma: float) -> torch.Tensor:
     Returns:
         gaussian_kernel: Tensor with shape (1, kernel_size, kernel_size)
     """
-    coords = torch.arange(kernel_size).to(dtype=torch.float32)
+    coords = torch.arange(kernel_size, dtype=torch.float32)
     coords -= (kernel_size - 1) / 2.
 
     g = coords ** 2
