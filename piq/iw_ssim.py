@@ -56,6 +56,9 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
         Information content weighting for perceptual image quality assessment.
         IEEE Transactions on image processing 20.5 (2011): 1185-1198.
         https://ece.uwaterloo.ca/~z70wang/publications/IWSSIM.pdf DOI:`10.1109/TIP.2010.2092435`
+
+    Note:
+        Lack of content in the image could lead to NaN values.
     """
     assert kernel_size % 2 == 1, f'Kernel size must be odd, got [{kernel_size}]'
 
@@ -71,6 +74,8 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
     if scale_weights is None:
         scale_weights = torch.tensor([0.0448, 0.2856, 0.3001, 0.2363, 0.1333], dtype=x.dtype, device=x.device)
     scale_weights = scale_weights / scale_weights.sum()
+    assert scale_weights.size(0) == scale_weights.numel(),\
+        f'Expected a vector of weights, got {scale_weights.dim()}D tensor'
 
     levels = scale_weights.size(0)
 
@@ -182,6 +187,7 @@ class InformationWeightedSSIMLoss(_Loss):
     def __init__(self, data_range: Union[int, float] = 1., kernel_size: int = 11, kernel_sigma: float = 1.5,
                  k1: float = 0.01, k2: float = 0.03, parent: bool = True, blk_size: int = 3, sigma_nsq: float = 0.4,
                  scale_weights: Optional[torch.Tensor] = None, reduction: str = 'mean'):
+        super().__init__()
         self.data_range = data_range
         self.kernel_size = kernel_size
         self.kernel_sigma = kernel_sigma
