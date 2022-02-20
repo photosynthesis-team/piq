@@ -114,7 +114,7 @@ class GMSDLoss(_Loss):
     References:
         Wufeng Xue et al. Gradient Magnitude Similarity Deviation (2013)
         https://arxiv.org/pdf/1308.3052.pdf
-        
+
     """
 
     def __init__(self, reduction: str = 'mean', data_range: Union[int, float] = 1.,
@@ -174,11 +174,11 @@ def multi_scale_gmsd(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, fl
         http://www.cse.ust.hk/~psander/docs/gradsim.pdf
     """
     _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
-    
+
     # Rescale
     x = x / float(data_range) * 255
     y = y / float(data_range) * 255
-    
+
     # Values from the paper
     if scale_weights is None:
         scale_weights = torch.tensor([0.096, 0.596, 0.289, 0.019], device=x.device)
@@ -247,7 +247,7 @@ class MultiScaleGMSDLoss(_Loss):
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         data_range: Maximum value range of images (usually 1.0 or 255).
         scale_weights: Weights for different scales. Can contain any number of floating point values.
-            By defualt weights are initialized with values from the paper.
+            By default weights are initialized with values from the paper.
         chromatic: Flag to use MS-GMSDc algorithm from paper.
             It also evaluates chromatic components of the image. Default: True
         beta1: Algorithm parameter. Weight of chromatic component in the loss.
@@ -286,7 +286,7 @@ class MultiScaleGMSDLoss(_Loss):
         self.beta2 = beta2
         self.beta3 = beta3
         self.t = t
-            
+
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         r"""Computation of Multi Scale GMSD index as a loss function.
         Supports greyscale and colour images with RGB channel order.

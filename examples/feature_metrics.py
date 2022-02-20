@@ -25,7 +25,7 @@ def main():
     print(f"GS: {gs:0.4f}")
 
     # Use inception_score function to compute IS from image features, pre-extracted from some feature extractor network.
-    # Note, that we follow recomendations from paper "A Note on the Inception Score"
+    # Note, that we follow recommendations from paper "A Note on the Inception Score"
     isc_mean, _ = piq.inception_score(x_features, num_splits=10)
     # To compute difference between IS for 2 sets of image features, use IS class.
     isc: torch.Tensor = piq.IS(distance='l1')(x_features, y_features)

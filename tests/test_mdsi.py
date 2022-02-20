@@ -100,7 +100,7 @@ def test_mdsi_loss_compare_with_matlab(input_images_score: Tuple[torch.Tensor, t
     x = x.requires_grad_()
     score = MDSILoss(data_range=255, combination=combination)(x=x.to(device), y=y.to(device))
     score.backward()
-    assert torch.isclose(score, 1. - y_value.to(score)), f'The estimated value must be equal to MATLAB ' \
-                                                         f'provided one, got {score.item():.8f}, ' \
-                                                         f'while MATLAB equals {1. - y_value}'
+    assert torch.isclose(score, y_value.to(score)), f'The estimated value must be equal to MATLAB ' \
+                                                    f'provided one, got {score.item():.8f}, ' \
+                                                    f'while MATLAB equals {y_value}'
     assert torch.isfinite(x.grad).all(), f'Expected finite gradient values, got {x.grad}'
