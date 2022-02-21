@@ -200,6 +200,7 @@ def test_multi_scale_ssim_loss_is_less_or_equal_to_one(ones_zeros_4d_5d: Tuple[t
 
 
 def test_multi_scale_ssim_loss_raises_if_tensors_have_different_shapes(x_y_4d_5d, device: str) -> None:
+    x = x_y_4d_5d[0].to(device)
     y = x_y_4d_5d[1].to(device)
     dims = [[3], [2, 3], [161, 162], [161, 162]]
     if y.dim() == 5:
