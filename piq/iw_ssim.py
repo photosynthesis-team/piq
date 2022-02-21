@@ -349,7 +349,6 @@ def _information_content(x: torch.Tensor, y: torch.Tensor, y_parent: torch.Tenso
     vv = sigma_xx - g * sigma_xy
     g = g.masked_fill(sigma_yy < EPS, 0)
     vv[sigma_yy < EPS] = sigma_xx[sigma_yy < EPS]
-    # sigma_yy = sigma_yy.masked_fill(sigma_yy < EPS, 0)
     g = g.masked_fill(sigma_xx < EPS, 0)
     vv = vv.masked_fill(sigma_xx < EPS, 0)
 
