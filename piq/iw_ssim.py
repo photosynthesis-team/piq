@@ -18,7 +18,7 @@ References:
 import torch
 from torch.nn.modules.loss import _Loss
 import torch.nn.functional as F
-from piq.utils import _validate_input, _reduce
+from piq.utils import _validate_input, _reduce, _parse_version
 from piq.functional import gaussian_filter, binomial_filter1d, average_filter2d, rgb2yiq
 from typing import Union, Optional, Tuple
 import math
@@ -389,7 +389,13 @@ def _information_content(x: torch.Tensor, y: torch.Tensor, y_parent: torch.Tenso
         Y[..., n] = foo.flatten(start_dim=-2, end_dim=-1)
 
     C_u = torch.matmul(Y.transpose(-2, -1), Y) / nexp
-    eig_values, eig_vectors = torch.linalg.eigh(C_u)
+
+    recommended_torch_version = _parse_version('1.7.0')
+    torch_version = _parse_version(torch.__version__)
+    if len(torch_version) != 0 and torch_version >= recommended_torch_version:
+        eig_values, eig_vectors = torch.linalg.eigh(C_u)
+    else:
+        eig_values, eig_vectors = torch.symeig(C_u, eigenvectors=True)
 
     sum_eig_values = torch.sum(eig_values, dim=-1).view(y.size(0), y.size(1), 1, 1)
     non_zero_eig_values_matrix = torch.diag_embed(eig_values * (eig_values > 0))
@@ -399,7 +405,7 @@ def _information_content(x: torch.Tensor, y: torch.Tensor, y_parent: torch.Tenso
 
     C_u = torch.matmul(torch.matmul(eig_vectors, L), eig_vectors.transpose(-2, -1))
 
-    C_u_inv = torch.linalg.inv(C_u)
+    C_u_inv = torch.inverse(C_u)
 
     ss = torch.matmul(Y, C_u_inv) * Y / N
     ss = torch.sum(ss, dim=-1, keepdim=True)
