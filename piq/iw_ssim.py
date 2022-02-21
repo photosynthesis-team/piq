@@ -140,8 +140,7 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
 
 
 class InformationWeightedSSIMLoss(_Loss):
-    r""".
-    Creates a criterion that measures the Interface of Information Content Weighted Structural Similarity (IW-SSIM)
+    r"""Creates a criterion that measures the Interface of Information Content Weighted Structural Similarity (IW-SSIM)
     index error betweeneach element in the input :math:`x` and target :math:`y`.
 
     Inputs supposed to be in range ``[0, data_range]``.
