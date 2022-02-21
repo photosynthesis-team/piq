@@ -243,7 +243,7 @@ For metrics that can take greyscale or colour images, ``c`` means chromatic vers
 PSNR         0.687 / 0.496      0.687 / 0.496 `TID2013`_          0.676 / 0.488      \- / -                            0.407 / 0.276      0.407 / 0.277 `PIPAL`_
 SSIM         0.720 / 0.527      0.637 / 0.464 `TID2013`_          0.724 / 0.537      0.718 / 0.532 `KADID10k`_         0.498 / 0.345      0.529 / 0.369 `PIPAL`_
 MS-SSIM      0.798 / 0.597      0.787 / 0.608 `TID2013`_          0.802 / 0.609      0.802 / 0.609 `KADID10k`_         0.552 / 0.389      0.462 / -
-IW-SSIM      0.778 / 0.598      0.778 / - `IW-SSIM`_              0.850 / 0.666      0.850 / - `KADID10k`_             0.595 / 0.427      \- / -
+IW-SSIM      0.778 / 0.598      0.778 / 0.598 `IW-SSIM`_          0.850 / 0.666      0.850 / 0.666 `KADID10k`_         0.595 / 0.427      \- / -
 VIFp         0.610 / 0.458      0.610 / 0.457 `TID2013`_          0.650 / 0.477      0.650 / 0.477 `KADID10k`_         0.497 / 0.345      \- / -
 FSIM         0.802 / 0.629      0.801 / 0.630 `TID2013`_          0.830 / 0.639      0.829 / 0.639 `KADID10k`_         0.588 / 0.415      0.596 / 0.421 `PIPAL`_
 FSIMc        0.851 / 0.667      0.851 / 0.667 `TID2013`_          0.854 / 0.665      0.854 / 0.665 `KADID10k`_         0.590 / 0.416      \- / -
@@ -271,7 +271,7 @@ DISTS        0.805 / 0.613      0.830 / 0.639 `DISTS`_            0.875 / 0.695 
 .. _DISTS: https://arxiv.org/abs/2004.07728
 .. _HaarPSI: https://arxiv.org/abs/1607.06140
 .. _PIPAL: https://arxiv.org/pdf/2011.15002.pdf
-.. _IW-SSIM: https://github.com/Jack-guo-xy/Python-IW-SSIM/blob/f9de37cdb4c459fd188c611e377a87a54516d3cd/README.txt#L63
+.. _IW-SSIM: https://ieeexplore.ieee.org/document/7442122
 
 .. benchmark-section-end
 
