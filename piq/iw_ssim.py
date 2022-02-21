@@ -234,10 +234,10 @@ def _pyr_step(x: torch.Tensor, kernel: torch.Tensor) -> Tuple[torch.Tensor, torc
     lo_x = x
     if x.size(-1) > 1:
         lo_x = F.pad(lo_x, pad=[up_pad, down_pad, 0, 0], mode='reflect')
-        lo_x = F.conv2d(input=lo_x, weight=kernel.unsqueeze(0), padding='valid')[:, :, :, ::2]
+        lo_x = F.conv2d(input=lo_x, weight=kernel.unsqueeze(0), padding=0)[:, :, :, ::2]
     if x.size(-2) > 1:
         lo_x = F.pad(lo_x, pad=[0, 0, up_pad, down_pad], mode='reflect')
-        lo_x = F.conv2d(input=lo_x, weight=kernel_t.unsqueeze(0), padding='valid')[:, :, ::2, :]
+        lo_x = F.conv2d(input=lo_x, weight=kernel_t.unsqueeze(0), padding=0)[:, :, ::2, :]
 
     # Upsampling and Blur
     up_pad = (kernel.size(-1) - 1) // 2  # 5 -> 2, 4 -> 1
@@ -248,12 +248,12 @@ def _pyr_step(x: torch.Tensor, kernel: torch.Tensor) -> Tuple[torch.Tensor, torc
         upsampling_kernel = torch.tensor([[[[1., 0.]]]], dtype=x.dtype, device=x.device)
         hi_x = F.conv_transpose2d(input=hi_x, weight=upsampling_kernel, stride=(1, 2), padding=0)
         hi_x = F.pad(hi_x, pad=[up_pad, down_pad, 0, 0], mode='reflect')
-        hi_x = F.conv2d(input=hi_x, weight=kernel.unsqueeze(0), padding='valid')[:, :, :, :x.size(-1)]
+        hi_x = F.conv2d(input=hi_x, weight=kernel.unsqueeze(0), padding=0)[:, :, :, :x.size(-1)]
     if x.size(-2) > 1:
         upsampling_kernel = torch.tensor([[[[1.], [0.]]]], dtype=x.dtype, device=x.device)
         hi_x = F.conv_transpose2d(input=hi_x, weight=upsampling_kernel, stride=(2, 1), padding=0)
         hi_x = F.pad(hi_x, pad=[0, 0, up_pad, down_pad], mode='reflect')
-        hi_x = F.conv2d(input=hi_x, weight=kernel_t.unsqueeze(0), padding='valid')[:, :, :x.size(-2), :]
+        hi_x = F.conv2d(input=hi_x, weight=kernel_t.unsqueeze(0), padding=0)[:, :, :x.size(-2), :]
 
     hi_x = x - hi_x
     return lo_x, hi_x
