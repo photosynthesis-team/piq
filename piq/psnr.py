@@ -17,7 +17,7 @@ def psnr(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1.0,
         data_range: Maximum value range of images (usually 1.0 or 255).
         reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
-        convert_to_greyscale: Convert RGB image to YCbCr format and computes PSNR
+        convert_to_greyscale: Convert RGB image to YIQ format and computes PSNR
             only on luminance channel if `True`. Compute on all 3 channels otherwise.
 
     Returns:
@@ -35,7 +35,7 @@ def psnr(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1.0,
     y = y / float(data_range)
 
     if (x.size(1) == 3) and convert_to_greyscale:
-        # Convert RGB image to YCbCr and take luminance: Y = 0.299 R + 0.587 G + 0.114 B
+        # Convert RGB image to YIQ and take luminance: Y = 0.299 R + 0.587 G + 0.114 B
         rgb_to_grey = torch.tensor([0.299, 0.587, 0.114]).view(1, -1, 1, 1).to(x)
         x = torch.sum(x * rgb_to_grey, dim=1, keepdim=True)
         y = torch.sum(y * rgb_to_grey, dim=1, keepdim=True)
