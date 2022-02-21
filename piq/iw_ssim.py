@@ -201,7 +201,7 @@ class InformationWeightedSSIMLoss(_Loss):
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         r"""Computation of Information Content Weighted Structural Similarity (IW-SSIM) index as a loss function.
-            For colour images channel order is RGB.
+        For colour images channel order is RGB.
 
         Args:
             x: An input tensor. Shape :math:`(N, C, H, W)`.
