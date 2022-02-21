@@ -132,7 +132,7 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
         x_diff_old = x_diff
         y_diff_old = y_diff
 
-    wmcs = torch.stack(wmcs, dim=0)
+    wmcs = torch.stack(wmcs, dim=0).abs()
 
     score = torch.prod((wmcs ** scale_weights.view(-1, 1, 1)), dim=0)[:, 0]
 
