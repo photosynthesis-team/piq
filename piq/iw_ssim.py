@@ -324,16 +324,24 @@ def _information_content(x: torch.Tensor, y: torch.Tensor, y_parent: torch.Tenso
     EPS = torch.finfo(x.dtype).eps
     n_channels = x.size(1)
     kernel = average_filter2d(kernel_size=kernel_size).repeat(x.size(1), 1, 1, 1).to(x)
-    mu_x = F.conv2d(input=x, weight=kernel, padding='same', groups=n_channels)
-    mu_y = F.conv2d(input=y, weight=kernel, padding='same', groups=n_channels)
+    padding_up = kernel.size(-1) // 2
+    padding_down = kernel.size(-1) - padding_up
+
+    mu_x = F.conv2d(input=F.pad(x, pad=[padding_up, padding_down, padding_up, padding_down]), weight=kernel, padding=0,
+                    groups=n_channels)
+    mu_y = F.conv2d(input=F.pad(y, pad=[padding_up, padding_down, padding_up, padding_down]), weight=kernel, padding=0,
+                    groups=n_channels)
 
     mu_xx = mu_x ** 2
     mu_yy = mu_y ** 2
     mu_xy = mu_x * mu_y
 
-    sigma_xx = F.conv2d(x ** 2, weight=kernel, stride=1, padding='same', groups=n_channels) - mu_xx
-    sigma_yy = F.conv2d(y ** 2, weight=kernel, stride=1, padding='same', groups=n_channels) - mu_yy
-    sigma_xy = F.conv2d(x * y, weight=kernel, stride=1, padding='same', groups=n_channels) - mu_xy
+    sigma_xx = F.conv2d(F.pad(x ** 2, pad=[padding_up, padding_down, padding_up, padding_down]), weight=kernel,
+                        stride=1, padding=0, groups=n_channels) - mu_xx
+    sigma_yy = F.conv2d(F.pad(y ** 2, pad=[padding_up, padding_down, padding_up, padding_down]), weight=kernel,
+                        stride=1, padding=0, groups=n_channels) - mu_yy
+    sigma_xy = F.conv2d(F.pad(x * y, pad=[padding_up, padding_down, padding_up, padding_down]), weight=kernel,
+                        stride=1, padding=0, groups=n_channels) - mu_xy
 
     sigma_xx = F.relu(sigma_xx)
     sigma_yy = F.relu(sigma_yy)
