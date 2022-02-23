@@ -66,25 +66,10 @@ def binomial_filter1d(kernel_size: int) -> torch.Tensor:
         kernel_size (int): kernel size
 
     Returns:
-        Binominal kernel with shape (1, 1, kernel_size)
+        Binomial kernel with shape (1, 1, kernel_size)
     """
     kernel = np.poly1d([0.5, 0.5]) ** (kernel_size - 1)
     return torch.tensor(kernel.c).view(1, 1, kernel_size)
-
-
-def binomial_filter2d(kernel_size: int) -> torch.Tensor:
-    r"""Creates 2D normalized binomial filter
-
-    Args:
-        kernel_size (int): kernels size
-
-    Returns:
-        Binominal kernel with shape (1, kernel_size, kernel_size)
-
-    """
-    window = binomial_filter1d(kernel_size)
-    kernel = window * window.transpose(1, 2)
-    return kernel
 
 
 def average_filter2d(kernel_size: int) -> torch.Tensor:

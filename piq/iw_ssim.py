@@ -80,8 +80,8 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
     levels = scale_weights.size(0)
 
     min_size = (kernel_size - 1) * 2 ** (levels - 1) + 1
-    if x.size(-1) < min_size or x.size(-2) < min_size:
-        raise ValueError(f'Invalid size of the input images, expected at least {min_size}x{min_size}.')
+    assert x.size(-1) >= min_size and x.size(-2) >= min_size,\
+        f'Invalid size of the input images, expected at least {min_size}x{min_size}.'
 
     bound = math.ceil((kernel_size - 1) / 2)  # Ceil
     bound1 = bound - math.floor((blk_size - 1) / 2)  # floor
@@ -275,9 +275,8 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
     Returns:
         Tuple with Structural Similarity maps and Contrast maps.
     """
-    if x.size(-1) < kernel.size(-1) or x.size(-2) < kernel.size(-2):
-        raise ValueError(f'Kernel size can\'t be greater than actual input size. Input size: {x.size()}. '
-                         f'Kernel size: {kernel.size()}')
+    assert x.size(-1) >= kernel.size(-1) and x.size(-2) >= kernel.size(-2),\
+        f'Kernel size can\'t be greater than actual input size. Input size: {x.size()}. Kernel size: {kernel.size()}'
 
     c1 = (k1 * data_range) ** 2
     c2 = (k2 * data_range) ** 2
@@ -424,7 +423,9 @@ def _information_content(x: torch.Tensor, y: torch.Tensor, y_parent: torch.Tenso
 
 
 def _image_enlarge(x: torch.Tensor) -> torch.Tensor:
-    r"""Bilinear upscaling of the image.
+    r"""Custom bilinear upscaling of an image.
+    The function upscales an input image with upscaling factor 4x-3, adds padding on boundaries as difference
+    and downscaled by the factor of 2.
 
     Args:
         x: An input tensor. Shape :math:`(N, C, H, W)`.
@@ -453,6 +454,6 @@ def _shift(x: torch.Tensor, shift: list) -> torch.Tensor:
     Returns:
         The circular shiftet tensor.
     """
-    tmp = torch.cat((x[..., -shift[0]:, :], x[..., :-shift[0], :]), dim=-2)
-    tmp = torch.cat((tmp[..., -shift[1]:], tmp[..., :-shift[1]]), dim=-1)
-    return tmp
+    x_shifted = torch.cat((x[..., -shift[0]:, :], x[..., :-shift[0], :]), dim=-2)
+    x_shifted = torch.cat((x_shifted[..., -shift[1]:], x_shifted[..., :-shift[1]]), dim=-1)
+    return x_shifted

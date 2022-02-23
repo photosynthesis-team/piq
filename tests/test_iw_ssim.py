@@ -61,7 +61,7 @@ def test_iw_ssim_reduction(x_rand: torch.Tensor, y_rand: torch.Tensor, device: s
 
 
 def test_iw_ssim_raises_if_tensors_have_different_shapes(x_rand: torch.Tensor, y_rand: torch.Tensor,
-                                                         device: str) -> None:
+                                                         scale_weights: torch.Tensor, device: str) -> None:
 
     dims = [[3], [2, 3], [160, 161], [160, 161]]
 
@@ -73,9 +73,12 @@ def test_iw_ssim_raises_if_tensors_have_different_shapes(x_rand: torch.Tensor, y
         else:
             with pytest.raises(AssertionError):
                 information_weighted_ssim(wrong_shape_x.to(device), x_rand.to(device))
-    scale_weights = torch.rand(2, 2)
+
+    information_weighted_ssim(x_rand.to(device), y_rand.to(device), scale_weights=scale_weights.to(device))
+
+    wrong_scale_weights = torch.rand(2, 2)
     with pytest.raises(AssertionError):
-        information_weighted_ssim(x_rand.to(device), y_rand.to(device), scale_weights=scale_weights.to(device))
+        information_weighted_ssim(x_rand.to(device), y_rand.to(device), scale_weights=wrong_scale_weights.to(device))
 
 
 def test_iw_ssim_raises_if_tensors_have_different_types(x_rand: torch.Tensor, device: str) -> None:
@@ -91,18 +94,18 @@ def test_iw_ssim_raises_if_kernel_size_greater_than_image(x_rand: torch.Tensor, 
     min_size = (kernel_size - 1) * 2 ** (levels - 1) + 1
     wrong_size_x = x_rand[:, :, :min_size - 1, :min_size - 1]
     wrong_size_y = y_rand[:, :, :min_size - 1, :min_size - 1]
-    with pytest.raises(ValueError):
+    with pytest.raises(AssertionError):
         information_weighted_ssim(wrong_size_x.to(device), wrong_size_y.to(device), kernel_size=kernel_size)
 
 
 @pytest.mark.parametrize(
     "data_range", [128, 255],
 )
-def test_iw_ssim_supports_different_data_ranges(test_images: List, data_range, device: str) -> None:
+def test_iw_ssim_supports_different_data_ranges(x_rand: torch.Tensor, y_rand: torch.Tensor, data_range: int,
+                                                device: str) -> None:
 
-    x, y = test_images[0]
-    x_scaled = (x * data_range).type(torch.uint8)
-    y_scaled = (y * data_range).type(torch.uint8)
+    x_scaled = (x_rand * data_range).type(torch.uint8)
+    y_scaled = (y_rand * data_range).type(torch.uint8)
 
     measure_scaled = information_weighted_ssim(x_scaled.to(device), y_scaled.to(device), data_range=data_range)
     measure = information_weighted_ssim(
@@ -170,7 +173,7 @@ def test_iw_ssim_loss_reduction(x_rand: torch.Tensor, y_rand: torch.Tensor, devi
 
 
 def test_iw_ssim_loss_raises_if_tensors_have_different_shapes(x_rand: torch.Tensor, y_rand: torch.Tensor,
-                                                              device: str) -> None:
+                                                              scale_weights: torch.Tensor, device: str) -> None:
 
     dims = [[3], [2, 3], [160, 161], [160, 161]]
     loss = InformationWeightedSSIMLoss(data_range=1.)
@@ -182,8 +185,11 @@ def test_iw_ssim_loss_raises_if_tensors_have_different_shapes(x_rand: torch.Tens
         else:
             with pytest.raises(AssertionError):
                 loss(wrong_shape_x.to(device), x_rand.to(device))
-    scale_weights = torch.rand(2, 2)
+
     loss = InformationWeightedSSIMLoss(data_range=1., scale_weights=scale_weights)
+    loss(x_rand.to(device), y_rand.to(device))
+    wrong_scale_weights = torch.rand(2, 2)
+    loss = InformationWeightedSSIMLoss(data_range=1., scale_weights=wrong_scale_weights)
     with pytest.raises(AssertionError):
         loss(x_rand.to(device), y_rand.to(device))
 
@@ -203,18 +209,18 @@ def test_iw_ssim_loss_raises_if_kernel_size_greater_than_image(x_rand: torch.Ten
     wrong_size_x = x_rand[:, :, :min_size - 1, :min_size - 1]
     wrong_size_y = y_rand[:, :, :min_size - 1, :min_size - 1]
     loss = InformationWeightedSSIMLoss(data_range=1., kernel_size=kernel_size)
-    with pytest.raises(ValueError):
+    with pytest.raises(AssertionError):
         loss(wrong_size_x.to(device), wrong_size_y.to(device))
 
 
 @pytest.mark.parametrize(
     "data_range", [128, 255],
 )
-def test_iw_ssim_loss_supports_different_data_ranges(test_images: List, data_range, device: str) -> None:
+def test_iw_ssim_loss_supports_different_data_ranges(x_rand: torch.Tensor, y_rand: torch.Tensor, data_range: int,
+                                                     device: str) -> None:
 
-    x, y = test_images[0]
-    x_scaled = (x * data_range).type(torch.uint8)
-    y_scaled = (y * data_range).type(torch.uint8)
+    x_scaled = (x_rand * data_range).type(torch.uint8)
+    y_scaled = (y_rand * data_range).type(torch.uint8)
 
     loss = InformationWeightedSSIMLoss(data_range=1.)
     loss_scaled = InformationWeightedSSIMLoss(data_range=data_range)
@@ -265,12 +271,9 @@ def test_iw_ssim_loss_corresponds_to_matlab(test_images: List, device: str):
         f'Expected {matlab_rgb:.8f}, got {score_rgb:.8f} for rgb case.'
 
 
-def test_iw_ssim_loss_backprop(test_images: List, device: str):
-    x, y = test_images[0]
-    x = x / float(255)
-    y = y / float(255)
-    x.requires_grad_(True)
+def test_iw_ssim_loss_backprop(x_rand: torch.Tensor, y_rand: torch.Tensor, device: str):
+    x_rand.requires_grad_(True)
     loss = InformationWeightedSSIMLoss(data_range=1.)
-    score_gray = loss(x.to(device), y.to(device))
+    score_gray = loss(x_rand.to(device), y_rand.to(device))
     score_gray.backward()
-    assert torch.isfinite(x.grad).all(), f'Expected finite gradient values, got {x.grad}.'
+    assert torch.isfinite(x_rand.grad).all(), f'Expected finite gradient values, got {x_rand.grad}.'
