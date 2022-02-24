@@ -105,9 +105,8 @@ def _cov(m: torch.Tensor, rowvar: bool = True) -> torch.Tensor:
     Returns:
         The covariance matrix of the variables.
     """
-    if m.dim() > 2:
-        raise ValueError('Tensor for covariance computations has more than 2 dimensions. '
-                         'Only 1 or 2 dimensional arrays are allowed')
+    assert 1 <= m.dim() <= 2, 'Tensor for covariance computations has more than 2 dimensions. ' \
+                              'Only 1 or 2 dimensional arrays are allowed'
 
     if m.dim() < 2:
         m = m.view(1, -1)
