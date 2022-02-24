@@ -46,8 +46,8 @@ def vif_p(x: torch.Tensor, y: torch.Tensor, sigma_n_sq: float = 2.0,
     _validate_input([x, y], dim_range=(4, 4), data_range=(0, data_range))
 
     min_size = 41
-    if x.size(-1) < min_size or x.size(-2) < min_size:
-        raise ValueError(f'Invalid size of the input images, expected at least {min_size}x{min_size}.')
+    assert x.size(-1) >= min_size and x.size(-2) >= min_size, \
+        f'Invalid size of the input images, expected at least {min_size}x{min_size}.'
 
     x = x / float(data_range) * 255
     y = y / float(data_range) * 255

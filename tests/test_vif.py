@@ -48,7 +48,7 @@ def test_vif_p_works_for_zeros_tensors() -> None:
 def test_vif_p_fails_for_small_images() -> None:
     x = torch.rand(2, 3, 32, 32)
     y = torch.rand(2, 3, 32, 32)
-    with pytest.raises(ValueError):
+    with pytest.raises(AssertionError):
         vif_p(x, y)
 
 
