@@ -54,19 +54,19 @@ def test_dss_raises_if_tensors_have_different_types(x: torch.Tensor) -> None:
 def test_dss_raises_if_incorrect_value(x: torch.Tensor, y: torch.Tensor, device: str) -> None:
     # DCT & kernel size
     size = max(x.size(-1), x.size(-2)) + 2
-    with pytest.raises(ValueError):
+    with pytest.raises(AssertionError):
         dss(x.to(device), y.to(device), data_range=1., dct_size=size)
-    with pytest.raises(ValueError):
+    with pytest.raises(AssertionError):
         dss(x.to(device), y.to(device), data_range=1., kernel_size=size)
     # Sigmas
-    with pytest.raises(ValueError):
+    with pytest.raises(AssertionError):
         dss(x.to(device), y.to(device), data_range=1., sigma_weight=0)
-    with pytest.raises(ValueError):
+    with pytest.raises(AssertionError):
         dss(x.to(device), y.to(device), data_range=1., sigma_similarity=0)
     # Percentile
     for percentile in [-0.5, 0, 0.01, 0.5, 1, 1.5]:
         if percentile <= 0 or percentile > 1:
-            with pytest.raises(ValueError):
+            with pytest.raises(AssertionError):
                 dss(x.to(device), y.to(device), data_range=1., percentile=percentile)
         else:
             dss_result = dss(x.to(device), y.to(device), data_range=1., percentile=percentile,
