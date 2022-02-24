@@ -50,9 +50,8 @@ def haarpsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
 
     # Assert minimal image size
     kernel_size = 2 ** (scales + 1)
-    if x.size(-1) < kernel_size or x.size(-2) < kernel_size:
-        raise ValueError(f'Kernel size can\'t be greater than actual input size. Input size: {x.size()}. '
-                         f'Kernel size: {kernel_size}')
+    assert x.size(-1) >= kernel_size and x.size(-2) >= kernel_size, \
+        f'Kernel size can\'t be greater than actual input size. Input size: {x.size()}. Kernel size: {kernel_size}'
 
     # Rescale images
     x = x / float(data_range) * 255

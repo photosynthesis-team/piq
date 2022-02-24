@@ -36,7 +36,7 @@ def test_haarpsi_zeros_ones_inputs(device: str) -> None:
 def test_haarpsi_small_input(device: str) -> None:
     x = torch.rand(1, 3, 10, 10, device=device)
     y = torch.rand(1, 3, 10, 10, device=device)
-    with pytest.raises(ValueError):
+    with pytest.raises(AssertionError):
         haarpsi(x, y, data_range=1.)
 
 
