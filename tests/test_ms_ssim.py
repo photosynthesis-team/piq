@@ -106,7 +106,7 @@ def test_ms_ssim_raises_if_kernel_size_greater_than_image(x_y_4d_5d, device: str
     min_size = (kernel_size - 1) * 2 ** (levels - 1) + 1
     wrong_size_x = x[:, :, :min_size - 1, :min_size - 1]
     wrong_size_y = y[:, :, :min_size - 1, :min_size - 1]
-    with pytest.raises(ValueError):
+    with pytest.raises(AssertionError):
         multi_scale_ssim(wrong_size_x, wrong_size_y, kernel_size=kernel_size)
 
 
@@ -230,5 +230,5 @@ def test_ms_ssim_loss_raises_if_kernel_size_greater_than_image(x_y_4d_5d, device
     min_size = (kernel_size - 1) * 2 ** (levels - 1) + 1
     wrong_size_x = x[:, :, :min_size - 1, :min_size - 1]
     wrong_size_y = y[:, :, :min_size - 1, :min_size - 1]
-    with pytest.raises(ValueError):
+    with pytest.raises(AssertionError):
         MultiScaleSSIMLoss(kernel_size=kernel_size)(wrong_size_x, wrong_size_y)

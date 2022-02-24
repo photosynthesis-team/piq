@@ -208,8 +208,8 @@ def _multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, f
     """
     levels = scale_weights.size(0)
     min_size = (kernel.size(-1) - 1) * 2 ** (levels - 1) + 1
-    if x.size(-1) < min_size or x.size(-2) < min_size:
-        raise ValueError(f'Invalid size of the input images, expected at least {min_size}x{min_size}.')
+    assert x.size(-1) >= min_size or x.size(-2) >= min_size, \
+        f'Invalid size of the input images, expected at least {min_size}x{min_size}.'
 
     mcs = []
     ssim_val = None
@@ -250,8 +250,8 @@ def _multi_scale_ssim_complex(x: torch.Tensor, y: torch.Tensor, data_range: Unio
     """
     levels = scale_weights.size(0)
     min_size = (kernel.size(-1) - 1) * 2 ** (levels - 1) + 1
-    if x.size(-2) < min_size or x.size(-3) < min_size:
-        raise ValueError(f'Invalid size of the input images, expected at least {min_size}x{min_size}.')
+    assert x.size(-2) >= min_size and x.size(-3) >= min_size, \
+        f'Invalid size of the input images, expected at least {min_size}x{min_size}.'
     mcs = []
     ssim_val = None
     for iteration in range(levels):
