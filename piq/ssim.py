@@ -186,9 +186,8 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
     Returns:
         Full Value of Structural Similarity (SSIM) index.
     """
-    if x.size(-1) < kernel.size(-1) or x.size(-2) < kernel.size(-2):
-        raise ValueError(f'Kernel size can\'t be greater than actual input size. Input size: {x.size()}. '
-                         f'Kernel size: {kernel.size()}')
+    assert x.size(-1) >= kernel.size(-1) and x.size(-2) >= kernel.size(-2), \
+        f'Kernel size can\'t be greater than actual input size. Input size: {x.size()}. Kernel size: {kernel.size()}'
 
     c1 = k1 ** 2
     c2 = k2 ** 2
@@ -233,9 +232,8 @@ def _ssim_per_channel_complex(x: torch.Tensor, y: torch.Tensor, kernel: torch.Te
         Full Value of Complex Structural Similarity (SSIM) index.
     """
     n_channels = x.size(1)
-    if x.size(-2) < kernel.size(-1) or x.size(-3) < kernel.size(-2):
-        raise ValueError(f'Kernel size can\'t be greater than actual input size. Input size: {x.size()}. '
-                         f'Kernel size: {kernel.size()}')
+    assert x.size(-2) >= kernel.size(-1) and x.size(-3) >= kernel.size(-2), \
+        f'Kernel size can\'t be greater than actual input size. Input size: {x.size()}. Kernel size: {kernel.size()}'
 
     c1 = k1 ** 2
     c2 = k2 ** 2
