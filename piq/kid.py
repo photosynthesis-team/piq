@@ -29,13 +29,11 @@ def _polynomial_kernel(X: torch.Tensor, Y: torch.Tensor = None, degree: int = 3,
     if Y is None:
         Y = X
 
-    if X.dim() != 2 or Y.dim() != 2:
-        raise ValueError('Incompatible dimension for X and Y matrices: '
-                         'X.dim() == {} while Y.dim() == {}'.format(X.dim(), Y.dim()))
+    assert X.dim() == 2 and Y.dim() == 2,\
+        f'Incompatible dimension for X and Y matrices: X.dim() = {X.dim()}, while Y.dim() = {Y.dim()}'
 
-    if X.size(1) != Y.size(1):
-        raise ValueError('Incompatible dimension for X and Y matrices: '
-                         'X.size(1) == {} while Y.size(1) == {}'.format(X.size(1), Y.size(1)))
+    assert X.size(1) == Y.size(1), \
+        f'Incompatible dimension for X and Y matrices: X.size(1) == {X.size(1)} while Y.size(1) == {Y.size(1)}'
 
     if gamma is None:
         gamma = 1.0 / X.size(1)
