@@ -76,8 +76,7 @@ def srsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         y_q = y_yiq[:, 2:]
 
     else:
-        if chromatic:
-            raise ValueError('Chromatic component can be computed only for RGB images!')
+        assert not chromatic, 'Chromatic component can be computed only for RGB images!'
         x_lum = x
         y_lum = y
 
@@ -140,9 +139,9 @@ def _spectral_residual_visual_saliency(x: torch.Tensor, scale: float = 0.25, ker
     """
     eps = torch.finfo(x.dtype).eps
     for kernel in kernel_size, gaussian_size:
-        if x.size(-1) * scale < kernel or x.size(-2) * scale < kernel:
-            raise ValueError(f'Kernel size can\'t be greater than actual input size. Input size: {x.size()} x {scale}. '
-                             f'Kernel size: {kernel}')
+        assert x.size(-1) * scale >= kernel and x.size(-2) * scale >= kernel, \
+            f'Kernel size can\'t be greater than actual input size. ' \
+            f'Input size: {x.size()} x {scale}. Kernel size: {kernel}'
 
     # Downsize image
     in_img = imresize(x, scale=scale)

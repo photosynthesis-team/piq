@@ -42,9 +42,9 @@ def test_ssim_raises_if_bigger_kernel(device: str) -> None:
     # kernels bigger than image * scale
     prediction = torch.rand(1, 3, 50, 50, device=device)
     target = torch.rand(1, 3, 50, 50, device=device)
-    with pytest.raises(ValueError):
+    with pytest.raises(AssertionError):
         srsim(prediction, target, kernel_size=15)
-    with pytest.raises(ValueError):
+    with pytest.raises(AssertionError):
         srsim(prediction, target, gaussian_size=15)
     assert torch.isfinite(srsim(prediction, target, kernel_size=15, scale=0.5)).all()
     assert torch.isfinite(srsim(prediction, target, gaussian_size=15, scale=0.5)).all()
@@ -106,7 +106,7 @@ def test_srsim_chromatic(device: str) -> None:
     # Greyscale image
     prediction = torch.tensor(imread('tests/assets/goldhill.gif')).unsqueeze(0).unsqueeze(0)
     target = torch.tensor(imread('tests/assets/goldhill_jpeg.gif')).unsqueeze(0).unsqueeze(0)
-    with pytest.raises(ValueError):
+    with pytest.raises(AssertionError):
         srsim(prediction.to(device), target.to(device), data_range=255, chromatic=True, reduction='none')
     # RBG image
     prediction = torch.tensor(imread('tests/assets/I01.BMP')).permute(2, 0, 1).unsqueeze(0)
