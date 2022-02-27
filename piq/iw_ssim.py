@@ -84,8 +84,8 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
     assert x.size(-1) >= min_size and x.size(-2) >= min_size,\
         f'Invalid size of the input images, expected at least {min_size}x{min_size}.'
 
-    bound = math.ceil((kernel_size - 1) / 2)  # Ceil
-    bound1 = bound - math.floor((blk_size - 1) / 2)  # floor
+    blur_pad = math.ceil((kernel_size - 1) / 2)  # Ceil
+    iw_pad = blur_pad - math.floor((blk_size - 1) / 2)  # floor
     gauss_kernel = gaussian_filter(kernel_size, kernel_sigma).repeat(x.size(1), 1, 1, 1).to(x)
 
     # Size of the kernel size to build Laplacian pyramid
@@ -117,7 +117,7 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
             iw_map = _information_content(x=x_diff_old, y=y_diff_old, y_parent=y_diff, kernel_size=blk_size,
                                           sigma_nsq=sigma_nsq)
 
-            iw_map = iw_map[:, :, bound1:-bound1, bound1:-bound1]
+            iw_map = iw_map[:, :, iw_pad:-iw_pad, iw_pad:-iw_pad]
 
         elif i == levels - 1:
             iw_map = torch.ones_like(cs_map)
@@ -126,7 +126,7 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
         else:
             iw_map = _information_content(x=x_diff_old, y=y_diff_old, y_parent=None, kernel_size=blk_size,
                                           sigma_nsq=sigma_nsq)
-            iw_map = iw_map[:, :, bound1:-bound1, bound1:-bound1]
+            iw_map = iw_map[:, :, iw_pad:-iw_pad, iw_pad:-iw_pad]
 
         wmcs.append(torch.sum(cs_map * iw_map, dim=(-2, -1)) / torch.sum(iw_map, dim=(-2, -1)))
 
