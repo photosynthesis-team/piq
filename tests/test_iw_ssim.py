@@ -41,7 +41,7 @@ def scale_weights() -> torch.Tensor:
     return torch.tensor([0.0448, 0.2856, 0.3001, 0.2363, 0.1333])
 
 
-# ================== Test function: `multi_scale_ssim` ==================
+# ================== Test function: `information_weighted_ssim` ==================
 def test_iw_ssim_measure_is_one_for_equal_tensors(x_rand: torch.Tensor, device: str) -> None:
     x_rand = x_rand.to(device)
     y_rand = x_rand.clone()
@@ -150,7 +150,7 @@ def test_iw_ssim_corresponds_to_matlab(test_images: List, device: str):
         f'Expected {matlab_rgb:.8f}, got {score_rgb:.8f} for rgb case.'
 
 
-# ================== Test class: `MultiScaleSSIMLoss` ==================
+# ================== Test class: `InformationWeightedSSIMLoss` ==================
 def test_iw_ssim_loss_is_one_for_equal_tensors(x_rand: torch.Tensor, device: str) -> None:
     x_rand = x_rand.to(device)
     y_rand = x_rand.clone()

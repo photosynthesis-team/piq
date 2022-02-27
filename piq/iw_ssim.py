@@ -58,7 +58,8 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
         https://ece.uwaterloo.ca/~z70wang/publications/IWSSIM.pdf DOI:`10.1109/TIP.2010.2092435`
 
     Note:
-        Lack of content in the image could lead to NaN values.
+        Lack of content in target image could lead to RuntimeError due to singular information content matrix,
+        which cannot be inverted.
     """
     assert kernel_size % 2 == 1, f'Kernel size must be odd, got [{kernel_size}]'
 
