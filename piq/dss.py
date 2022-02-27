@@ -31,12 +31,13 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         data_range: Maximum value range of images (usually 1.0 or 255).
-        dct_size: Size of blocks in 2D Discrete Cosine Transform
+        dct_size: Size of blocks in 2D Discrete Cosine Transform. DCT sizes must be in (0, input size].
         sigma_weight: STD of gaussian that determines the proportion of weight given to low freq and high freq.
             Default: 1.55
-        kernel_size: Size of gaussian kernel for computing subband similarity. Default: 3
+        kernel_size: Size of gaussian kernel for computing subband similarity. Kernels size must be in (0, input size].
+            Default: 3
         sigma_similarity: STD of gaussian kernel for computing subband similarity. Default: 1.55
-        percentile: % in [0,1] of worst similarity scores which should be kept. Default: 0.05
+        percentile: % in (0, 1] of the worst similarity scores which should be kept. Default: 0.05
     Returns:
         DSS: Index of similarity between two images. In [0, 1] interval.
     Note:
@@ -118,7 +119,8 @@ def _subband_similarity(x: torch.Tensor, y: torch.Tensor, first_term: bool,
         x: First input subband. Shape (N, 1, H, W).
         y: Second input subband. Shape (N, 1, H, W).
         first_term: whether this is is the first element of subband sim matrix to be calculated
-        kernel_size: Size of gaussian kernel for computing local variance. Default: 3
+        kernel_size: Size of gaussian kernel for computing local variance. Kernels size must be in (0, input size].
+            Default: 3
         sigma: STD of gaussian kernel for computing local variance. Default: 1.5
         percentile: % in [0,1] of worst similarity scores which should be kept. Default: 0.05
     Returns:
@@ -177,7 +179,7 @@ def _dct_decomp(x: torch.Tensor, dct_size: int = 8) -> torch.Tensor:
 
     Args:
         x: input image. Shape :math:`(N, 1, H, W)`.
-        dct_size: size of DCT performed. Default: 8
+        dct_size: size of DCT performed. DCT size must be in (0, input size]. Default: 8
     Returns:
         decomp: the result of DCT on NxN blocks of the image, same shape.
     Note:
@@ -216,12 +218,13 @@ class DSSLoss(_Loss):
         reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         data_range: Maximum value range of images (usually 1.0 or 255).
-        dct_size: Size of blocks in 2D Discrete Cosine Transform
+        dct_size: Size of blocks in 2D Discrete Cosine Transform. DCT sizes must be in (0, input size].
         sigma_weight: STD of gaussian that determines the proportion of weight given to low freq and high freq.
             Default: 1.55
-        kernel_size: Size of gaussian kernel for computing subband similarity. Default: 3
+        kernel_size: Size of gaussian kernel for computing subband similarity. Kernels size must be in (0, input size].
+            Default: 3
         sigma_similarity: STD of gaussian kernel for computing subband similarity. Default: 1.5
-        percentile: % in [0,1] of worst similarity scores which should be kept. Default: 0.05
+        percentile: % in (0,1] of worst similarity scores which should be kept. Default: 0.05
 
     Shape:
         - Input: Required to be 4D (N, C, H, W). RGB channel order for colour images.
