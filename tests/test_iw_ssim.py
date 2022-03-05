@@ -77,7 +77,7 @@ def test_iw_ssim_raises_if_tensors_have_different_shapes(x_rand: torch.Tensor, y
     information_weighted_ssim(x_rand.to(device), y_rand.to(device), scale_weights=scale_weights.to(device))
 
     wrong_scale_weights = torch.rand(2, 2)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         information_weighted_ssim(x_rand.to(device), y_rand.to(device), scale_weights=wrong_scale_weights.to(device))
 
 
@@ -94,7 +94,7 @@ def test_iw_ssim_raises_if_kernel_size_greater_than_image(x_rand: torch.Tensor, 
     min_size = (kernel_size - 1) * 2 ** (levels - 1) + 1
     wrong_size_x = x_rand[:, :, :min_size - 1, :min_size - 1]
     wrong_size_y = y_rand[:, :, :min_size - 1, :min_size - 1]
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         information_weighted_ssim(wrong_size_x.to(device), wrong_size_y.to(device), kernel_size=kernel_size)
 
 
@@ -190,7 +190,7 @@ def test_iw_ssim_loss_raises_if_tensors_have_different_shapes(x_rand: torch.Tens
     loss(x_rand.to(device), y_rand.to(device))
     wrong_scale_weights = torch.rand(2, 2)
     loss = InformationWeightedSSIMLoss(data_range=1., scale_weights=wrong_scale_weights)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         loss(x_rand.to(device), y_rand.to(device))
 
 
@@ -209,7 +209,7 @@ def test_iw_ssim_loss_raises_if_kernel_size_greater_than_image(x_rand: torch.Ten
     wrong_size_x = x_rand[:, :, :min_size - 1, :min_size - 1]
     wrong_size_y = y_rand[:, :, :min_size - 1, :min_size - 1]
     loss = InformationWeightedSSIMLoss(data_range=1., kernel_size=kernel_size)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         loss(wrong_size_x.to(device), wrong_size_y.to(device))
 
 

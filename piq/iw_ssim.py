@@ -75,14 +75,14 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
     if scale_weights is None:
         scale_weights = torch.tensor([0.0448, 0.2856, 0.3001, 0.2363, 0.1333], dtype=x.dtype, device=x.device)
     scale_weights = scale_weights / scale_weights.sum()
-    assert scale_weights.size(0) == scale_weights.numel(),\
-        f'Expected a vector of weights, got {scale_weights.dim()}D tensor'
+    if scale_weights.size(0) != scale_weights.numel():
+        raise ValueError(f'Expected a vector of weights, got {scale_weights.dim()}D tensor')
 
     levels = scale_weights.size(0)
 
     min_size = (kernel_size - 1) * 2 ** (levels - 1) + 1
-    assert x.size(-1) >= min_size and x.size(-2) >= min_size,\
-        f'Invalid size of the input images, expected at least {min_size}x{min_size}.'
+    if x.size(-1) < min_size or x.size(-2) < min_size:
+        raise ValueError(f'Invalid size of the input images, expected at least {min_size}x{min_size}.')
 
     blur_pad = math.ceil((kernel_size - 1) / 2)  # Ceil
     iw_pad = blur_pad - math.floor((blk_size - 1) / 2)  # floor
@@ -276,9 +276,6 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
     Returns:
         Tuple with Structural Similarity maps and Contrast maps.
     """
-    assert x.size(-1) >= kernel.size(-1) and x.size(-2) >= kernel.size(-2),\
-        f'Kernel size can\'t be greater than actual input size. Input size: {x.size()}. Kernel size: {kernel.size()}'
-
     c1 = (k1 * data_range) ** 2
     c2 = (k2 * data_range) ** 2
     n_channels = x.size(1)
