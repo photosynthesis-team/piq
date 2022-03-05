@@ -89,7 +89,7 @@ def test_multi_scale_ssim_raises_if_tensors_have_different_shapes(x_y_4d_5d, dev
             with pytest.raises(AssertionError):
                 multi_scale_ssim(wrong_shape_x, y)
     scale_weights = torch.rand(2, 2)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         multi_scale_ssim(x, y, scale_weights=scale_weights)
 
 
@@ -214,7 +214,7 @@ def test_multi_scale_ssim_loss_raises_if_tensors_have_different_shapes(x_y_4d_5d
                 MultiScaleSSIMLoss()(wrong_shape_x, y)
 
     scale_weights = torch.rand(2, 2)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         MultiScaleSSIMLoss(scale_weights=scale_weights)(x, y)
 
 
