@@ -190,8 +190,8 @@ def multi_scale_gmsd(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, fl
     num_scales = scale_weights.size(0)
     min_size = 2 ** num_scales + 1
 
-    assert x.size(-1) >= min_size and x.size(-2) >= min_size,\
-        f'Invalid size of the input images, expected at least {min_size}x{min_size}.'
+    if x.size(-1) < min_size or x.size(-2) < min_size:
+        raise ValueError(f'Invalid size of the input images, expected at least {min_size}x{min_size}.')
 
     num_channels = x.size(1)
     if num_channels == 3:

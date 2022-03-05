@@ -45,16 +45,18 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         Image will be scaled to [0, 255] because all constants are computed for this range.
         Make sure you know what you are doing when changing default coefficient values.
     """
-    assert sigma_weight != 0 and sigma_similarity != 0,\
-        f'Gaussian sigmas must not be 0, got {sigma_weight} and {sigma_similarity}'
+    if sigma_weight == 0 or sigma_similarity == 0:
+        raise ValueError(f'Gaussian sigmas must not be 0, got sigma_weight: {sigma_weight} and '
+                         f'sigma_similarity: {sigma_similarity}')
 
-    assert 0 < percentile <= 1, f'Percentile must be in (0,1], got {percentile}'
+    if percentile <= 0 or percentile > 1:
+        raise ValueError(f'Percentile must be in (0,1], got {percentile}')
 
     _validate_input(tensors=[x, y], dim_range=(4, 4))
 
     for size in (dct_size, kernel_size):
-        assert 0 < size <= min(x.size(-1), x.size(-2)),\
-            'DCT and kernels sizes must be included in (0, input size]'
+        if size <= 0 or size > min(x.size(-1), x.size(-2)):
+            raise ValueError('DCT and kernels sizes must be included in (0, input size]')
 
     # Rescale to [0, 255] range, because all constant are calculated for this factor
     x = (x / float(data_range)) * 255

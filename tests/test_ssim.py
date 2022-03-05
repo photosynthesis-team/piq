@@ -119,7 +119,7 @@ def test_ssim_raises_if_kernel_size_greater_than_image(x_y_4d_5d, device: str) -
     kernel_size = 11
     wrong_size_x = x[:, :, :kernel_size - 1, :kernel_size - 1]
     wrong_size_y = y[:, :, :kernel_size - 1, :kernel_size - 1]
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         ssim(wrong_size_x, wrong_size_y, kernel_size=kernel_size)
 
 
@@ -239,7 +239,7 @@ def test_ssim_loss_raises_if_kernel_size_greater_than_image(x_y_4d_5d, device: s
     kernel_size = 11
     wrong_size_x = x[:, :, :kernel_size - 1, :kernel_size - 1]
     wrong_size_y = y[:, :, :kernel_size - 1, :kernel_size - 1]
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         SSIMLoss(kernel_size=kernel_size)(wrong_size_x, wrong_size_y)
 
 
