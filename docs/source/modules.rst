@@ -13,6 +13,11 @@ Multi-Scale Structural Similarity (MS-SSIM)
 .. autoclass:: piq.MultiScaleSSIMLoss
     :members:
 
+Information Content Weighted Structural Similarity (IW-SSIM)
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+.. autoclass:: piq.InformationWeightedSSIMLoss
+    :members:
+
 Visual Information Fidelity (VIFp)
 ''''''''''''''''''''''''''''''''''
 .. autoclass:: piq.VIFLoss
