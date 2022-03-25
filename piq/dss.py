@@ -31,12 +31,13 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         data_range: Maximum value range of images (usually 1.0 or 255).
-        dct_size: Size of blocks in 2D Discrete Cosine Transform
+        dct_size: Size of blocks in 2D Discrete Cosine Transform. DCT sizes must be in (0, input size].
         sigma_weight: STD of gaussian that determines the proportion of weight given to low freq and high freq.
             Default: 1.55
-        kernel_size: Size of gaussian kernel for computing subband similarity. Default: 3
+        kernel_size: Size of gaussian kernel for computing subband similarity. Kernels size must be in (0, input size].
+            Default: 3
         sigma_similarity: STD of gaussian kernel for computing subband similarity. Default: 1.55
-        percentile: % in [0,1] of worst similarity scores which should be kept. Default: 0.05
+        percentile: % in (0, 1] of the worst similarity scores which should be kept. Default: 0.05
     Returns:
         DSS: Index of similarity between two images. In [0, 1] interval.
     Note:
@@ -45,16 +46,17 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         Make sure you know what you are doing when changing default coefficient values.
     """
     if sigma_weight == 0 or sigma_similarity == 0:
-        raise ValueError('Gaussian sigmas must not be 0.')
+        raise ValueError(f'Gaussian sigmas must not be 0, got sigma_weight: {sigma_weight} and '
+                         f'sigma_similarity: {sigma_similarity}')
 
     if percentile <= 0 or percentile > 1:
-        raise ValueError('Percentile must be in [0,1]')
+        raise ValueError(f'Percentile must be in (0,1], got {percentile}')
 
     _validate_input(tensors=[x, y], dim_range=(4, 4))
 
     for size in (dct_size, kernel_size):
         if size <= 0 or size > min(x.size(-1), x.size(-2)):
-            raise ValueError('DCT and kernels sizes must be included in [0, input size)')
+            raise ValueError('DCT and kernels sizes must be included in (0, input size]')
 
     # Rescale to [0, 255] range, because all constant are calculated for this factor
     x = (x / float(data_range)) * 255
@@ -82,7 +84,7 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     dct_y = _dct_decomp(y_lum, dct_size)
 
     # Create a Gaussian window that will be used to weight subbands scores
-    coords = torch.arange(1, dct_size + 1).to(device=x.device, dtype=torch.float32)
+    coords = torch.arange(1, dct_size + 1).to(x)
     weight = (coords - 0.5) ** 2
     weight = (- (weight.unsqueeze(0) + weight.unsqueeze(1)) / (2 * sigma_weight ** 2)).exp()
 
@@ -119,7 +121,8 @@ def _subband_similarity(x: torch.Tensor, y: torch.Tensor, first_term: bool,
         x: First input subband. Shape (N, 1, H, W).
         y: Second input subband. Shape (N, 1, H, W).
         first_term: whether this is is the first element of subband sim matrix to be calculated
-        kernel_size: Size of gaussian kernel for computing local variance. Default: 3
+        kernel_size: Size of gaussian kernel for computing local variance. Kernels size must be in (0, input size].
+            Default: 3
         sigma: STD of gaussian kernel for computing local variance. Default: 1.5
         percentile: % in [0,1] of worst similarity scores which should be kept. Default: 0.05
     Returns:
@@ -178,7 +181,7 @@ def _dct_decomp(x: torch.Tensor, dct_size: int = 8) -> torch.Tensor:
 
     Args:
         x: input image. Shape :math:`(N, 1, H, W)`.
-        dct_size: size of DCT performed. Default: 8
+        dct_size: size of DCT performed. DCT size must be in (0, input size]. Default: 8
     Returns:
         decomp: the result of DCT on NxN blocks of the image, same shape.
     Note:
@@ -193,10 +196,7 @@ def _dct_decomp(x: torch.Tensor, dct_size: int = 8) -> torch.Tensor:
     blocks = blocks.view(bs, 1, -1, dct_size, dct_size)  # shape (bs, 1, block_num, N, N)
 
     # apply DCT transform
-    coeffs = _dct_matrix(dct_size)
-
-    if x.is_cuda:
-        coeffs = coeffs.cuda()
+    coeffs = _dct_matrix(dct_size).to(x)
 
     blocks = coeffs @ blocks @ coeffs.t()  # @ does operation on last 2 channels only
 
@@ -220,12 +220,13 @@ class DSSLoss(_Loss):
         reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
         data_range: Maximum value range of images (usually 1.0 or 255).
-        dct_size: Size of blocks in 2D Discrete Cosine Transform
+        dct_size: Size of blocks in 2D Discrete Cosine Transform. DCT sizes must be in (0, input size].
         sigma_weight: STD of gaussian that determines the proportion of weight given to low freq and high freq.
             Default: 1.55
-        kernel_size: Size of gaussian kernel for computing subband similarity. Default: 3
+        kernel_size: Size of gaussian kernel for computing subband similarity. Kernels size must be in (0, input size].
+            Default: 3
         sigma_similarity: STD of gaussian kernel for computing subband similarity. Default: 1.5
-        percentile: % in [0,1] of worst similarity scores which should be kept. Default: 0.05
+        percentile: % in (0,1] of worst similarity scores which should be kept. Default: 0.05
 
     Shape:
         - Input: Required to be 4D (N, C, H, W). RGB channel order for colour images.

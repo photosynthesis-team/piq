@@ -81,6 +81,15 @@ def test_brisque_fails_for_incorrect_data_range(x_rgb: torch.Tensor, device: str
         brisque(x_scaled.to(device), data_range=1.0)
 
 
+@pytest.mark.parametrize(
+    "dtype", [torch.float32, torch.float64],
+)
+def test_brisque_preserves_dtype(input_tensors: torch.Tensor, dtype, device: str) -> None:
+    x, _ = input_tensors
+    output = brisque(x.to(device=device, dtype=dtype))
+    assert output.dtype == dtype
+
+
 # ================== Test class: `BRISQUELoss` ==================
 def test_brisque_loss_if_works_with_grey(x_grey: torch.Tensor, device: str) -> None:
     x_grey_grad = x_grey.clone().to(device)

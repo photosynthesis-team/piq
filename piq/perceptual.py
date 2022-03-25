@@ -119,10 +119,9 @@ class ContentLoss(_Loss):
                  std: List[float] = IMAGENET_STD, normalize_features: bool = False,
                  allow_layers_weights_mismatch: bool = False) -> None:
 
-        if not allow_layers_weights_mismatch and len(layers) != len(weights):
-            raise ValueError(f'Lengths of provided layers and weighs mismatch ({len(weights)} weights and '
-                             f'{len(layers)} layers), which will cause incorrect results. '
-                             f'Please provide weight for each layer.')
+        assert allow_layers_weights_mismatch or len(layers) == len(weights), \
+            f'Lengths of provided layers and weighs mismatch ({len(weights)} weights and {len(layers)} layers), ' \
+            f'which will cause incorrect results. Please provide weight for each layer.'
 
         super().__init__()
 
