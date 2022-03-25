@@ -327,7 +327,7 @@ If you use PIQ in your project, please, cite it as follows.
 
 .. related-publications-section-start
 
-.. _Related Publications:
+Related Publications
 --------
 [1] S. Kastryulin, J. Zakirov, N. Pezzotti, and D. V. Dylov `"Image Quality Assessment for Magnetic Resonance Imaging." <https://arxiv.org/abs/2203.07809>`_ *arXiv preprint arXiv:2203.07809* (2022).
 
