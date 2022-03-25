@@ -116,7 +116,7 @@ def test_content_loss_raises_if_layers_weights_mismatch(x, y) -> None:
         }
     )
     for combination in wrong_combinations:
-        with pytest.raises(ValueError):
+        with pytest.raises(AssertionError):
             ContentLoss(**combination)
 
 
