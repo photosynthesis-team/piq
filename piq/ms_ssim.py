@@ -69,6 +69,8 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
     else:
         # Normalize scale weights
         scale_weights = (scale_weights / scale_weights.sum()).to(x)
+    if scale_weights.size(0) != scale_weights.numel():
+        raise ValueError(f'Expected a vector of weights, got {scale_weights.dim()}D tensor')
 
     kernel = gaussian_filter(kernel_size, kernel_sigma).repeat(x.size(1), 1, 1, 1).to(x)
 

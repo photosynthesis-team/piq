@@ -170,6 +170,7 @@ Acronym      Year    Metric
 PSNR         \-      `Peak Signal-to-Noise Ratio <https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio>`_
 SSIM         2003    `Structural Similarity <https://en.wikipedia.org/wiki/Structural_similarity>`_
 MS-SSIM      2004    `Multi-Scale Structural Similarity <https://ieeexplore.ieee.org/abstract/document/1292216>`_
+IW-SSIM      2011    `Information Content Weighted Structural Similarity Index <https://ece.uwaterloo.ca/~z70wang/publications/IWSSIM.pdf>`_
 VIFp         2004    `Visual Information Fidelity <https://ieeexplore.ieee.org/document/1576816>`_
 FSIM         2011    `Feature Similarity Index Measure <https://ieeexplore.ieee.org/document/5705575>`_
 SR-SIM       2012    `Spectral Residual Based Similarity <https://sse.tongji.edu.cn/linzhang/ICIP12/ICIP-SR-SIM.pdf>`_
@@ -274,6 +275,7 @@ GS           0.37 / 0.26        \- / -                            0.37 / 0.26   
 .. _DISTS: https://arxiv.org/abs/2004.07728
 .. _HaarPSI: https://arxiv.org/abs/1607.06140
 .. _PIPAL: https://arxiv.org/pdf/2011.15002.pdf
+.. _IW-SSIM: https://ieeexplore.ieee.org/document/7442122
 
 .. benchmark-section-end
 
