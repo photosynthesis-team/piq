@@ -187,8 +187,8 @@ def _ssim_per_channel(x: torch.Tensor, y: torch.Tensor, kernel: torch.Tensor,
         Full Value of Structural Similarity (SSIM) index.
     """
     if x.size(-1) < kernel.size(-1) or x.size(-2) < kernel.size(-2):
-        raise ValueError(f'Kernel size can\'t be greater than actual input size. Input size: {x.size()}. '
-                         f'Kernel size: {kernel.size()}')
+        raise ValueError(f'Kernel size can\'t be greater than actual input size. '
+                         f'Input size: {x.size()}. Kernel size: {kernel.size()}')
 
     c1 = k1 ** 2
     c2 = k2 ** 2
