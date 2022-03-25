@@ -236,7 +236,7 @@ as it's highly dependent on fitting method and is biased towards simple examples
 For metrics that can take greyscale or colour images, ``c`` means chromatic version.
 
 Unlike FR and NR IQMs, designed to compute an image-wise distance, the DB metrics compare distributions of *sets* of images.
-To address these problems, we adopt a different way of computing the DB IQMs proposed in :[1]:`related-publications-section-label`.
+To address these problems, we adopt a different way of computing the DB IQMs proposed in `[1]`_.
 Instead of extracting features from the whole images, we crop them into overlapping tiles of size ``96 × 96`` with ``stride = 32``.
 This pre-processing allows us to treat each pair of images as a pair of distributions of tiles, enabling further comparison.
 The other stages of computing the DB IQMs are kept intact.
@@ -326,10 +326,10 @@ If you use PIQ in your project, please, cite it as follows.
 .. citation-section-end
 
 .. related-publications-section-start
-.. _related-publications-section-label:
+
 Related Publications
 --------
-[1] S. Kastryulin, J. Zakirov, N. Pezzotti, and D. V. Dylov `"Image Quality Assessment for Magnetic Resonance Imaging." <https://arxiv.org/abs/2203.07809>`_ *arXiv preprint arXiv:2203.07809* (2022).
+_`[1]` S. Kastryulin, J. Zakirov, N. Pezzotti, and D. V. Dylov `"Image Quality Assessment for Magnetic Resonance Imaging." <https://arxiv.org/abs/2203.07809>`_ *arXiv preprint arXiv:2203.07809* (2022).
 
 .. related-publications-section-end
 
