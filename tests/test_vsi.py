@@ -1,7 +1,9 @@
+from typing import Tuple
+
 import torch
+import pytest
 from piq import vsi, VSILoss
 from skimage.io import imread
-from typing import Tuple
 
 
 # ================== Test function: `vsi` ==================
@@ -41,6 +43,15 @@ def test_vsi_compare_with_matlab(device: str) -> None:
     target_score = torch.tensor([0.96405]).to(predicted_score)
     assert torch.allclose(predicted_score, target_score), f'Expected result similar to MATLAB,' \
                                                           f'got diff{predicted_score - target_score}'
+
+
+@pytest.mark.parametrize(
+    "dtype", [torch.float32, torch.float64],
+)
+def test_vsi_preserves_dtype(input_tensors: Tuple[torch.Tensor, torch.Tensor], dtype, device: str) -> None:
+    x, y = input_tensors
+    output = vsi(x.to(device=device, dtype=dtype), y.to(device=device, dtype=dtype))
+    assert output.dtype == dtype
 
 
 # ================== Test class: `VSILoss` =================

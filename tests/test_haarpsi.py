@@ -76,6 +76,14 @@ def test_haarpsi_compare_with_matlab(device: str) -> None:
         f'Expected result similar to MATLAB, got diff{predicted_score - target_score}'
 
 
+@pytest.mark.parametrize(
+    "dtype", [torch.float32, torch.float64],
+)
+def test_haarpsi_preserves_dtype(x, y, dtype, device: str) -> None:
+    output = haarpsi(x.to(device=device, dtype=dtype), y.to(device=device, dtype=dtype))
+    assert output.dtype == dtype
+
+
 # ================== Test class: `HaarPSILoss` =================
 def test_haarpsi_loss(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
     x, y = input_tensors
