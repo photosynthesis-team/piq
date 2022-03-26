@@ -108,7 +108,7 @@ class TID2013(Dataset):
         y_path = self.root / self.df.iloc[index][1]
         score = self.scores[index]
 
-        # Load image and ref. Convert to tensor and [0, 1] range
+        # Load image and ref, convert to tensor.
         # x = torch.tensor(imread(x_path)).permute(2, 0, 1) / 255
         x = torch.tensor(imread(x_path), dtype=torch.float32).permute(2, 0, 1)
         y = torch.tensor(imread(y_path), dtype=torch.float32).permute(2, 0, 1)
