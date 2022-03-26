@@ -18,6 +18,7 @@ from scipy.stats import spearmanr, kendalltau
 from torch.utils.data import DataLoader, Dataset
 from dataclasses import dataclass
 from torch import nn
+from itertools import chain
 
 
 @dataclass
@@ -75,6 +76,8 @@ METRICS = {
     "MSID": Metric(name="MSID", functor=piq.MSID(), category='DB'),
     "PR": Metric(name="PR", functor=piq.PR(), category='DB')
 }
+
+METRIC_CATEGORIES = {cat: [k for k, v in METRICS.items() if v.category == cat] for cat in ['FR', 'NR', 'DB']}
 
 
 class TID2013(Dataset):
@@ -302,6 +305,13 @@ def main(dataset_name: str, path: Path, metrics: List[str], batch_size: int, dev
     # Init dataset and dataloader
     dataset = DATASETS[dataset_name](root=path)
     loader = DataLoader(dataset, batch_size=batch_size, num_workers=4)
+
+    # If category of metrics is selected instead of a list of metrics, take all metrics from this category
+    if metrics[0] in METRIC_CATEGORIES:
+        metrics = METRIC_CATEGORIES[metrics[0]]
+
+    if metrics[0] == 'all':
+        metrics = list(chain(*METRIC_CATEGORIES.values()))
 
     for metric_name in metrics:
         metric: Metric = METRICS[metric_name]
