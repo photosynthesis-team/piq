@@ -198,8 +198,6 @@ def eval_metric(loader: DataLoader, metric: Metric, device: str, feature_extract
         metric_score: torch.Tensor = \
             compute_function(metric.functor, distorted_images, reference_images, device, feature_extractor)
 
-        if np.isnan(metric_score):
-            metric_score = torch.Tensor([0])
         if metric_score.dim() == 0:
             metric_score = metric_score.unsqueeze(0)
 
@@ -297,11 +295,11 @@ def crop_patches(images: torch.Tensor, size=64, stride=32):
     return patches
 
 
-def main(dataset_name: str, path: Path, metrics: List[str], device: str, feature_extractor: str) \
+def main(dataset_name: str, path: Path, metrics: List[str], batch_size: int, device: str, feature_extractor: str) \
         -> None:
     # Init dataset and dataloader
     dataset = DATASETS[dataset_name](root=path)
-    loader = DataLoader(dataset, batch_size=1, num_workers=4)
+    loader = DataLoader(dataset, batch_size=batch_size, num_workers=4)
 
     for metric_name in metrics:
         metric: Metric = METRICS[metric_name]
@@ -318,6 +316,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str, help="Dataset name", choices=list(DATASETS.keys()))
     parser.add_argument("--path", type=Path, help="Path to dataset")
     parser.add_argument('--metrics', nargs='+', default=[], help='Metrics to benchmark', choices=list(METRICS.keys()))
+    parser.add_argument('--batch_size', type=int, default=1, help='Batch size')
     parser.add_argument('--device', default='cuda', choices=['cpu', 'cuda'], help='Computation device')
     parser.add_argument('--feature_extractor', default='inception', choices=['inception', 'vgg16', 'vgg19'],
                         help='Select a feature extractor. For distribution-based metrics only')
@@ -329,6 +328,7 @@ if __name__ == "__main__":
         dataset_name=args.dataset,
         path=args.path,
         metrics=args.metrics,
+        batch_size=args.batch_size,
         device=args.device,
         feature_extractor=args.feature_extractor
     )
