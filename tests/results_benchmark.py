@@ -40,6 +40,8 @@ METRICS = {
     "SSIM": Metric(name="SSIM", functor=functools.partial(piq.ssim, data_range=255., reduction='none'), category='FR'),
     "MS-SSIM": Metric(name="MS-SSIM", functor=functools.partial(piq.multi_scale_ssim, data_range=255.,
                                                                 reduction='none'), category='FR'),
+    "IW-SSIM": Metric(name="IW-SSIM", functor=functools.partial(piq.information_weighted_ssim, data_range=255.,
+                                                                reduction='none'), category='FR'),
     "VIFp": Metric(name="VIFp", functor=functools.partial(piq.vif_p, data_range=255., reduction='none'), category='FR'),
     "GMSD": Metric(name="GMSD", functor=functools.partial(piq.gmsd, data_range=255., reduction='none'), category='FR'),
     "MS-GMSD": Metric(name="MS-GMSD", functor=functools.partial(piq.multi_scale_gmsd, data_range=255.,
