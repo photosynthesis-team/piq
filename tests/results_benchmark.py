@@ -196,7 +196,11 @@ def eval_metric(loader: DataLoader, metric: Metric, device: str, feature_extract
     metric_scores = []
     compute_function = determine_compute_function(metric_category=metric.category)
 
+    i = 0
     for distorted_images, reference_images, scores in tqdm.tqdm(loader, ncols=50):
+        if i == 100:
+            break
+        i += 1
         distorted_images, reference_images = distorted_images.to(device), reference_images.to(device)
         gt_scores.append(scores.cpu())
 
@@ -316,8 +320,6 @@ def main(dataset_name: str, path: Path, metrics: List[str], batch_size: int, dev
     for metric_name in metrics:
         metric: Metric = METRICS[metric_name]
         gt_scores, metric_scores = eval_metric(loader, metric, device=device, feature_extractor=feature_extractor)
-        print('gt_scores', gt_scores)
-        print('metric_scores', metric_scores)
         print(f"{metric_name}: SRCC {abs(spearmanr(gt_scores, metric_scores)[0]):0.3f}",
               f"KRCC {abs(kendalltau(gt_scores, metric_scores)[0]):0.3f}")
 
@@ -327,7 +329,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--dataset", type=str, help="Dataset name", choices=list(DATASETS.keys()))
     parser.add_argument("--path", type=Path, help="Path to dataset")
-    parser.add_argument('--metrics', nargs='+', default=[], help='Metrics to benchmark', choices=list(METRICS.keys()))
+    parser.add_argument('--metrics', nargs='+', default=[], help='Metrics to benchmark',
+                        choices=list(METRICS.keys()) + list(METRIC_CATEGORIES.keys()) + ['all'])
     parser.add_argument('--batch_size', type=int, default=1, help='Batch size')
     parser.add_argument('--device', default='cuda', choices=['cpu', 'cuda'], help='Computation device')
     parser.add_argument('--feature_extractor', default='inception', choices=['inception', 'vgg16', 'vgg19'],
