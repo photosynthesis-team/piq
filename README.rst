@@ -218,7 +218,7 @@ PR           2019    `Improved Precision and Recall <https://arxiv.org/abs/1904.
 Benchmark
 ---------
 
-As part of our library we provide code to benchmark all metrics on a set of common Mean Opinon Scores databases.
+As part of our library we provide `code to benchmark <tests/results_benchmark.py>`_ all metrics on a set of common Mean Opinon Scores databases.
 Currently we support `TID2013`_,  `KADID10k`_ and `PIPAL`_.
 You need to download them separately and provide path to images as an argument to the script.
 
