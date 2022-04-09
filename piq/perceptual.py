@@ -92,6 +92,7 @@ class ContentLoss(_Loss):
             If there is no need to normalize data, use [1., 1., 1.].
         normalize_features: If true, unit-normalize each feature in channel dimension before scaling
             and computing distance. See references for details.
+        enable_grad: Enable gradient computation. Default: ``False``
 
     Examples:
         >>> loss = ContentLoss()
@@ -116,7 +117,7 @@ class ContentLoss(_Loss):
                  weights: List[Union[float, torch.Tensor]] = [1.], replace_pooling: bool = False,
                  distance: str = "mse", reduction: str = "mean", mean: List[float] = IMAGENET_MEAN,
                  std: List[float] = IMAGENET_STD, normalize_features: bool = False,
-                 allow_layers_weights_mismatch: bool = False) -> None:
+                 enable_grad: bool = False) -> None:
 
         # if not allow_layers_weights_mismatch and len(layers) != len(weights):
         #     raise ValueError(f'Lengths of provided layers and weighs mismatch ({len(weights)} weights and '
@@ -156,6 +157,7 @@ class ContentLoss(_Loss):
 
         self.normalize_features = normalize_features
         self.reduction = reduction
+        self.enable_grad = enable_grad
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         r"""Loss computation between :math:`x` and :math:`y` tensors.

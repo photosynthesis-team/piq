@@ -8,7 +8,7 @@ References:
     https://github.com/richzhang/PerceptualSimilarity
 """
 
-from typing import List, Union, Collection
+from typing import List
 
 import torch
 import torchvision
@@ -65,7 +65,6 @@ class LPIPS(_Loss):
 
         lpips_layers = ['relu1_2', 'relu2_2', 'relu3_3', 'relu4_3', 'relu5_3']
         lpips_weights = torch.hub.load_state_dict_from_url(self._weights_url, progress=False)
-        
 
         self.model = torchvision.models.vgg16(pretrained=True, progress=False).features
         self.layers = [VGG16_LAYERS[l] for l in lpips_layers]
@@ -89,7 +88,6 @@ class LPIPS(_Loss):
         self.reduction = reduction
         self.enable_grad = enable_grad
 
-
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         r"""LPIPS computation between :math:`x` and :math:`y` tensors.
 
@@ -103,9 +101,7 @@ class LPIPS(_Loss):
         _validate_input([x, y], dim_range=(4, 4), data_range=(0, -1))
 
         self.model.to(x)
-
-        self.mean = self.mean.to(x)
-        self.std =  self.std.to(x)
+        self.mean, self.std = self.mean.to(x), self.std.to(x)
 
         # Normalize
         x, y = (x - self.mean) / self.std, (y - self.mean) / self.std
@@ -122,14 +118,13 @@ class LPIPS(_Loss):
 
                     x_features.append(x / (x_norm_factor + EPS))
                     y_features.append(y / (y_norm_factor + EPS))
-        
+
         distances = [self.distance(x, y) for x, y in zip(x_features, y_features)]
 
         # Scale distances, then average in spatial dimensions, then stack and sum in channels dimension
         loss = torch.cat([(d * w.to(d)).mean(dim=[2, 3]) for d, w in zip(distances, self.weights)], dim=1).sum(dim=1)
 
         return _reduce(loss, self.reduction)
-
 
     def replace_pooling(self, module: torch.nn.Module) -> torch.nn.Module:
         r"""Turn all MaxPool layers into AveragePool
@@ -144,7 +139,7 @@ class LPIPS(_Loss):
         module_output = module
         if isinstance(module, torch.nn.MaxPool2d):
             module_output = torch.nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
-            
+
         for name, child in module.named_children():
             module_output.add_module(name, self.replace_pooling(child))
         return module_output

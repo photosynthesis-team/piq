@@ -172,8 +172,9 @@ class PieAPP(_Loss):
                           'The input images were converted to RGB by copying the grey channel 3 times.')
 
         self.model.to(device=x.device)
-        x_features, x_weights = self.get_features(x)
-        y_features, y_weights = self.get_features(y)
+        with torch.autograd.set_grad_enabled(self.enable_grad):
+            x_features, x_weights = self.get_features(x)
+            y_features, y_weights = self.get_features(y)
 
         distances, weights = self.model.compute_difference(
             y_features - x_features,
