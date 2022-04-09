@@ -86,6 +86,7 @@ class ContentLoss(_Loss):
         distance: Method to compute distance between features: ``'mse'`` | ``'mae'``.
         reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        data_range: Maximum value range of images (usually 1.0 or 255).
         mean: List of float values used for data standardization. Default: ImageNet mean.
             If there is no need to normalize data, use [0., 0., 0.].
         std: List of float values used for data standardization. Default: ImageNet std.
@@ -115,14 +116,14 @@ class ContentLoss(_Loss):
 
     def __init__(self, feature_extractor: Union[str, torch.nn.Module] = "vgg16", layers: Collection[str] = ("relu3_3",),
                  weights: List[Union[float, torch.Tensor]] = [1.], replace_pooling: bool = False,
-                 distance: str = "mse", reduction: str = "mean", mean: List[float] = IMAGENET_MEAN,
-                 std: List[float] = IMAGENET_STD, normalize_features: bool = False,
-                 enable_grad: bool = False) -> None:
+                 distance: str = "mse", reduction: str = "mean", data_range: Union[int, float] = 1.0,
+                 mean: List[float] = IMAGENET_MEAN, std: List[float] = IMAGENET_STD,
+                 normalize_features: bool = False, enable_grad: bool = False,) -> None:
 
-        # if not allow_layers_weights_mismatch and len(layers) != len(weights):
-        #     raise ValueError(f'Lengths of provided layers and weighs mismatch ({len(weights)} weights and '
-        #                      f'{len(layers)} layers), which will cause incorrect results. '
-        #                      f'Please provide weight for each layer.')
+        assert len(layers) == len(weights), \
+            (f'Lengths of provided layers and weighs mismatch ({len(weights)} weights and '
+             f'{len(layers)} layers), which will cause incorrect results. '
+             f'Please provide weight for each layer.')
 
         super().__init__()
 
@@ -157,6 +158,7 @@ class ContentLoss(_Loss):
 
         self.normalize_features = normalize_features
         self.reduction = reduction
+        self.data_range = data_range
         self.enable_grad = enable_grad
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
@@ -173,8 +175,9 @@ class ContentLoss(_Loss):
 
         self.model.to(x)
 
-        x_features = self.get_features(x)
-        y_features = self.get_features(y)
+        with torch.autograd.set_grad_enabled(self.enable_grad):
+            x_features = self.get_features(x)
+            y_features = self.get_features(y)
 
         distances = self.compute_distance(x_features, y_features)
 

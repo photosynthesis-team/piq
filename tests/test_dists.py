@@ -1,11 +1,10 @@
 import torch
 import pytest
-from typing import Any, Tuple, Callable, Union
+from typing import Any
 from contextlib import contextmanager
 
 from skimage.io import imread
 from piq import DISTS
-from piq.feature_extractors import InceptionV3
 
 
 @contextmanager
@@ -21,9 +20,16 @@ def test_dists_loss_forward(x, y, device: str) -> None:
 
 def test_dists_computes_grad(x, y, device: str) -> None:
     x.requires_grad_()
-    loss_value = DISTS()(x.to(device), y.to(device))
+    loss_value = DISTS(enable_grad=True)(x.to(device), y.to(device))
     loss_value.backward()
-    assert x.grad is not None, NONE_GRAD_ERR_MSG
+    assert x.grad is not None, 'Expected non None gradient of leaf variable'
+
+
+def test_dists_loss_does_not_compute_grad(x, y, device: str) -> None:
+    x.requires_grad_()
+    loss_value = DISTS(enable_grad=False)(x.to(device), y.to(device))
+    with pytest.raises(RuntimeError):
+        loss_value.backward()
 
 
 @pytest.mark.parametrize(

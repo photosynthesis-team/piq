@@ -8,7 +8,7 @@ References:
     https://github.com/richzhang/PerceptualSimilarity
 """
 
-from typing import List
+from typing import List, Union
 
 import torch
 import torchvision
@@ -30,6 +30,7 @@ class LPIPS(_Loss):
         distance: Method to compute distance between features: ``'mse'`` | ``'mae'``.
         reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        data_range: Maximum value range of images (usually 1.0 or 255).
         mean: List of float values used for data standardization. Default: ImageNet mean.
             If there is no need to normalize data, use [0., 0., 0.].
         std: List of float values used for data standardization. Default: ImageNet std.
@@ -59,8 +60,8 @@ class LPIPS(_Loss):
         "photosynthesis.metrics/releases/download/v0.4.0/lpips_weights.pt"
 
     def __init__(self, replace_pooling: bool = False, distance: str = "mse", reduction: str = "mean",
-                 mean: List[float] = IMAGENET_MEAN, std: List[float] = IMAGENET_STD,
-                 enable_grad: bool = False) -> None:
+                 data_range: Union[int, float] = 1.0, mean: List[float] = IMAGENET_MEAN,
+                 std: List[float] = IMAGENET_STD, enable_grad: bool = False) -> None:
         super().__init__()
 
         lpips_layers = ['relu1_2', 'relu2_2', 'relu3_3', 'relu4_3', 'relu5_3']
@@ -83,9 +84,15 @@ class LPIPS(_Loss):
 
         self.weights = [torch.tensor(w) if not isinstance(w, torch.Tensor) else w for w in lpips_weights]
 
+        assert len(self.layers) == len(self.weights), \
+            (f'Lengths of provided layers and weighs mismatch ({len(self.weights)} weights and '
+             f'{len(self.layers)} layers), which will cause incorrect results. '
+             f'Please provide weight for each layer.')
+
         self.mean = torch.tensor(mean).view(1, -1, 1, 1)
         self.std = torch.tensor(std).view(1, -1, 1, 1)
         self.reduction = reduction
+        self.data_range = data_range
         self.enable_grad = enable_grad
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
@@ -99,6 +106,10 @@ class LPIPS(_Loss):
             LPIPS value between inputs.
         """
         _validate_input([x, y], dim_range=(4, 4), data_range=(0, -1))
+
+        # Rescale to [0, 1] range
+        x = x / float(self.data_range)
+        y = y / float(self.data_range)
 
         self.model.to(x)
         self.mean, self.std = self.mean.to(x), self.std.to(x)

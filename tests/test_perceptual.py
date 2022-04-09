@@ -29,9 +29,16 @@ def test_content_loss_forward(input_tensors: Tuple[torch.Tensor, torch.Tensor], 
 def test_content_loss_computes_grad(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
     x, y = input_tensors
     x.requires_grad_()
-    loss_value = ContentLoss()(x.to(device), y.to(device))
+    loss_value = ContentLoss(enable_grad=True)(x.to(device), y.to(device))
     loss_value.backward()
     assert x.grad is not None, NONE_GRAD_ERR_MSG
+
+
+def test_content_loss_does_not_compute_grad(x, y, device: str) -> None:
+    x.requires_grad_()
+    loss_value = ContentLoss(enable_grad=False)(x.to(device), y.to(device))
+    with pytest.raises(RuntimeError):
+        loss_value.backward()
 
 
 def test_content_loss_raises_if_wrong_reduction(x, y) -> None:
@@ -91,7 +98,7 @@ def test_content_loss_forward_for_special_cases(x, y, expectation: Any, value: f
                 f'Expected loss value to be equal to target value. Got {loss_value} and {value}'
 
 
-@pytest.mark.skip("Negative tensors are not supported yet")
+# @pytest.mark.skip("Negative tensors are not supported yet")
 def test_content_loss_forward_for_normalized_input(device: str) -> None:
     x = torch.randn(2, 3, 96, 96).to(device)
     y = torch.randn(2, 3, 96, 96).to(device)
@@ -102,43 +109,21 @@ def test_content_loss_forward_for_normalized_input(device: str) -> None:
 def test_content_loss_raises_if_layers_weights_mismatch(x, y) -> None:
     wrong_combinations = (
         {
-            'layers': ['layer1'],
+            'layers': ['conv1_1'],
             'weights': [0.5, 0.5]
         },
         {
-            'layers': ['layer1', 'layer2'],
+            'layers': ['conv1_1', 'relu1_1'],
             'weights': [0.5]
         },
         {
-            'layers': ['layer1'],
+            'layers': ['conv1_1'],
             'weights': []
         }
     )
     for combination in wrong_combinations:
         with pytest.raises(AssertionError):
             ContentLoss(**combination)
-
-
-def test_content_loss_doesnt_rise_if_layers_weights_mismatch_but_allowed(x, y) -> None:
-    wrong_combinations = (
-        {
-            'layers': ['relu1_2'],
-            'weights': [0.5, 0.5],
-            'allow_layers_weights_mismatch': True
-        },
-        {
-            'layers': ['relu1_2', 'relu2_2'],
-            'weights': [0.5],
-            'allow_layers_weights_mismatch': True
-        },
-        {
-            'layers': ['relu2_2'],
-            'weights': [],
-            'allow_layers_weights_mismatch': True
-        }
-    )
-    for combination in wrong_combinations:
-        ContentLoss(**combination)
 
 
 # ================== Test class: `StyleLoss` ==================
@@ -155,9 +140,16 @@ def test_style_loss_forward(input_tensors: Tuple[torch.Tensor, torch.Tensor], de
 def test_style_loss_computes_grad(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
     x, y = input_tensors
     x.requires_grad_()
-    loss_value = StyleLoss()(x.to(device), y.to(device))
+    loss_value = StyleLoss(enable_grad=True)(x.to(device), y.to(device))
     loss_value.backward()
     assert x.grad is not None, NONE_GRAD_ERR_MSG
+
+
+def test_style_loss_does_not_compute_grad(x, y, device: str) -> None:
+    x.requires_grad_()
+    loss_value = StyleLoss(enable_grad=False)(x.to(device), y.to(device))
+    with pytest.raises(RuntimeError):
+        loss_value.backward()
 
 
 def test_style_loss_raises_if_wrong_reduction(x, y) -> None:

@@ -1,5 +1,5 @@
 
-from typing import List
+from typing import List, Union
 
 import torch
 from torch.nn.modules.loss import _Loss
@@ -19,6 +19,7 @@ class DISTS(_Loss):
     Args:
         reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default:``'mean'``
+        data_range: Maximum value range of images (usually 1.0 or 255).
         mean: List of float values used for data standardization. Default: ImageNet mean.
             If there is no need to normalize data, use [0., 0., 0.].
         std: List of float values used for data standardization. Default: ImageNet std.
@@ -40,8 +41,9 @@ class DISTS(_Loss):
     """
     _weights_url = "https://github.com/photosynthesis-team/piq/releases/download/v0.4.1/dists_weights.pt"
 
-    def __init__(self, reduction: str = "mean", mean: List[float] = IMAGENET_MEAN,
-                 std: List[float] = IMAGENET_STD, enable_grad: bool = False) -> None:
+    def __init__(self, reduction: str = "mean", data_range: Union[int, float] = 1.0,
+                 mean: List[float] = IMAGENET_MEAN, std: List[float] = IMAGENET_STD,
+                 enable_grad: bool = False) -> None:
         super().__init__()
 
         dists_layers = ['relu1_2', 'relu2_2', 'relu3_3', 'relu4_3', 'relu5_3']
@@ -65,13 +67,13 @@ class DISTS(_Loss):
         self.mean = torch.tensor(mean).view(1, -1, 1, 1)
         self.std = torch.tensor(std).view(1, -1, 1, 1)
         self.reduction = reduction
+        self.data_range = data_range
         self.enable_grad = enable_grad
 
         # normalize_features=False, allow_layers_weights_mismatch=True)
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         r"""
-
         Args:
             x: An input tensor. Shape :math:`(N, C, H, W)`.
             y: A target tensor. Shape :math:`(N, C, H, W)`.
@@ -79,8 +81,14 @@ class DISTS(_Loss):
         Returns:
             Deep Image Structure and Texture Similarity loss, i.e. ``1-DISTS`` in range [0, 1].
         """
-        _, _, H, W = x.shape
+        _validate_input([x, y], dim_range=(4, 4), data_range=(0, -1))
 
+        # Rescale to [0, 1] range
+        x = x / float(self.data_range)
+        y = y / float(self.data_range)
+
+        # Downsample if necessary
+        _, _, H, W = x.shape
         if min(H, W) > 256:
             x = torch.nn.functional.interpolate(
                 x, scale_factor=256 / min(H, W), recompute_scale_factor=False, mode='bilinear')
@@ -95,9 +103,9 @@ class DISTS(_Loss):
         # Normalize
         x, y = (x - self.mean) / self.std, (y - self.mean) / self.std
 
-        # Add input tensor as an additional feature
-        x_features, y_features = [x, ], [y, ]
         with torch.autograd.set_grad_enabled(self.enable_grad):
+            # Add input tensor as an additional feature
+            x_features, y_features = [x, ], [y, ]
             for name, module in self.model._modules.items():
                 x = module(x)
                 y = module(y)

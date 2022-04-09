@@ -76,7 +76,7 @@ def test_vif_fails_for_incorrect_data_range(x, y, device: str) -> None:
         vif_p(x_scaled.to(device), y_scaled.to(device), data_range=1.0)
 
 
-def test_vif_simmular_to_matlab_implementation():
+def test_vif_similar_to_matlab_implementation():
     # Greyscale images
     goldhill = torch.tensor(imread('tests/assets/goldhill.gif'))[None, None, ...]
     goldhill_jpeg = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'))[None, None, ...]
