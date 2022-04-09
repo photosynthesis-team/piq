@@ -16,11 +16,8 @@ import torch
 import torch.nn as nn
 from torch.nn.modules.loss import _Loss
 import torchvision
-from torchvision.models import vgg16, vgg19
 
 from piq.utils import _validate_input, _reduce
-from piq.functional import similarity_map, L2Pool2d
-
 
 # Map VGG names to corresponding number in torchvision layer
 VGG16_LAYERS = {
@@ -156,7 +153,7 @@ class ContentLoss(_Loss):
 
         self.mean = torch.tensor(mean).view(1, -1, 1, 1)
         self.std = torch.tensor(std).view(1, -1, 1, 1)
-        
+
         self.normalize_features = normalize_features
         self.reduction = reduction
 

@@ -3,7 +3,6 @@ import pytest
 from typing import Any, Tuple, Callable, Union
 from contextlib import contextmanager
 
-from skimage.io import imread
 from piq import ContentLoss, StyleLoss
 from piq.feature_extractors import InceptionV3
 
@@ -116,7 +115,7 @@ def test_content_loss_raises_if_layers_weights_mismatch(x, y) -> None:
         }
     )
     for combination in wrong_combinations:
-        with pytest.raises(ValueError):
+        with pytest.raises(AssertionError):
             ContentLoss(**combination)
 
 
@@ -168,4 +167,3 @@ def test_style_loss_raises_if_wrong_reduction(x, y) -> None:
     for mode in [None, 'n', 2]:
         with pytest.raises(ValueError):
             StyleLoss(reduction=mode)(x, y)
-

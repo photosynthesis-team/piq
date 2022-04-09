@@ -1,5 +1,6 @@
 r"""Filters for gradient computation, bluring, etc."""
 import torch
+import numpy as np
 
 
 def haar_filter(kernel_size: int) -> torch.Tensor:
@@ -56,3 +57,30 @@ def prewitt_filter() -> torch.Tensor:
     Returns:
         kernel: Tensor with shape (1, 3, 3)"""
     return torch.tensor([[[-1., 0., 1.], [-1., 0., 1.], [-1., 0., 1.]]]) / 3
+
+
+def binomial_filter1d(kernel_size: int) -> torch.Tensor:
+    r"""Creates 1D normalized binomial filter
+
+    Args:
+        kernel_size (int): kernel size
+
+    Returns:
+        Binomial kernel with shape (1, 1, kernel_size)
+    """
+    kernel = np.poly1d([0.5, 0.5]) ** (kernel_size - 1)
+    return torch.tensor(kernel.c).view(1, 1, kernel_size)
+
+
+def average_filter2d(kernel_size: int) -> torch.Tensor:
+    r"""Creates 2D normalized average filter
+
+    Args:
+        kernel_size (int):
+
+    Returns:
+        kernel: Tensor with shape (1, kernel_size, kernel_size)
+    """
+    window = torch.ones(kernel_size) / kernel_size
+    kernel = window[:, None] * window[None, :]
+    return kernel.unsqueeze(0)

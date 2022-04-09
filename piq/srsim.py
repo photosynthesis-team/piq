@@ -141,8 +141,8 @@ def _spectral_residual_visual_saliency(x: torch.Tensor, scale: float = 0.25, ker
     eps = torch.finfo(x.dtype).eps
     for kernel in kernel_size, gaussian_size:
         if x.size(-1) * scale < kernel or x.size(-2) * scale < kernel:
-            raise ValueError(f'Kernel size can\'t be greater than actual input size. Input size: {x.size()} x {scale}. '
-                             f'Kernel size: {kernel}')
+            raise ValueError(f'Kernel size can\'t be greater than actual input size. '
+                             f'Input size: {x.size()} x {scale}. Kernel size: {kernel}')
 
     # Downsize image
     in_img = imresize(x, scale=scale)

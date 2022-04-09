@@ -20,6 +20,7 @@ METRICS = {
     "PSNR": functools.partial(piq.psnr, reduction='none'),
     "SSIM": functools.partial(piq.ssim, reduction='none'),
     "MS-SSIM": functools.partial(piq.multi_scale_ssim, reduction='none'),
+    "IW-SSIM": functools.partial(piq.information_weighted_ssim, reduction='none'),
     "VIFp": functools.partial(piq.vif_p, reduction='none'),
     "GMSD": functools.partial(piq.gmsd, reduction='none'),
     "MS-GMSD": functools.partial(piq.multi_scale_gmsd, reduction='none'),
@@ -168,7 +169,7 @@ def main(dataset_name: str, path: Path, metrics: List, batch_size: int, device: 
 
     # Init dataset and dataloader
     dataset = DATASETS[dataset_name](root=path)
-    loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, num_workers=4)
+    loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, num_workers=0)
 
     for name in metrics:
         gt_scores, metric_scores = eval_metric(loader, METRICS[name], device=device)

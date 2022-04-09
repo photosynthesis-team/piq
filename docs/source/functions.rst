@@ -15,6 +15,10 @@ Multi-Scale Structural Similarity (MS-SSIM)
 '''''''''''''''''''''''''''''''''''''''''''
 .. autofunction:: piq.multi_scale_ssim
 
+Information Content Weighted Structural Similarity (IW-SSIM)
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+.. autofunction:: piq.information_weighted_ssim
+
 Visual Information Fidelity (VIFp)
 ''''''''''''''''''''''''''''''''''
 .. autofunction:: piq.vif_p
