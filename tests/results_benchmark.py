@@ -196,7 +196,11 @@ def eval_metric(loader: DataLoader, metric: Metric, device: str, feature_extract
     metric_scores = []
     compute_function = determine_compute_function(metric_category=metric.category)
 
+    i = 0
     for distorted_images, reference_images, scores in tqdm.tqdm(loader, ncols=50):
+        if i == 500:
+            break
+        i += 1
         distorted_images, reference_images = distorted_images.to(device), reference_images.to(device)
         gt_scores.append(scores.cpu())
 
