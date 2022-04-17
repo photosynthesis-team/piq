@@ -94,9 +94,9 @@ The full documentation is available at https://piq.readthedocs.io.
 Usage Examples
 ---------------
 
-Image-based metrics
+Image-Based metrics
 ^^^^^^^^^^^^^^^^^^^
-The group of metrics (such as PSNR, SSIM, BRISQUE) takes image or images as input.
+The group of metrics (such as PSNR, SSIM, BRISQUE) takes an image or a pair of images as input to compute a distance between them.
 We have a functional interface, which returns a metric value, and a class interface, which allows to use any metric
 as a loss function.
 
@@ -116,10 +116,10 @@ as a loss function.
 
 For a full list of examples, see `image metrics <https://github.com/photosynthesis-team/piq/blob/master/examples/image_metrics.py>`_ examples.
 
-Feature-based metrics
+Distribution-Based metrics
 ^^^^^^^^^^^^^^^^^^^^^
 
-The group of metrics (such as IS, FID, KID) takes a list of image features.
+The group of metrics (such as IS, FID, KID) takes a list of image features to compute the distance between distributions.
 Image features can be extracted by some feature extractor network separately or by using the ``compute_feats`` method of a
 class.
 
@@ -161,7 +161,7 @@ For a full list of examples, see `feature metrics <https://github.com/photosynth
 List of metrics
 ---------------
 
-Full Reference
+Full-Reference (FR)
 ^^^^^^^^^^^^^^
 
 ===========  ======  ==========
@@ -187,7 +187,7 @@ PieAPP       2018    `Perceptual Image-Error Assessment through Pairwise Prefere
 DISTS        2020    `Deep Image Structure and Texture Similarity <https://arxiv.org/abs/2004.07728>`_
 ===========  ======  ==========
 
-No Reference
+No-Reference (NR)
 ^^^^^^^^^^^^
 
 ===========  ======  ==========
@@ -197,7 +197,7 @@ TV           1937    `Total Variation <https://en.wikipedia.org/wiki/Total_varia
 BRISQUE      2012    `Blind/Referenceless Image Spatial Quality Evaluator <https://ieeexplore.ieee.org/document/6272356>`_
 ===========  ======  ==========
 
-Feature based
+Distribution-Based (DB)
 ^^^^^^^^^^^^^
 
 ===========  ======  ==========
@@ -228,18 +228,14 @@ Here is an example how to evaluate SSIM and MS-SSIM metrics on TID2013 dataset:
 
    python3 tests/results_benchmark.py --dataset tid2013 --metrics SSIM MS-SSIM --path ~/datasets/tid2013 --batch_size 16
 
-We report `Spearman's Rank Correlation cCoefficient <https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient>`_ (SRCC)
-and `Kendall rank correlation coefficient <https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient>`_ (KRCC).
+Below we provide a comparison between `Spearman's Rank Correlation cCoefficient <https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient>`_ (SRCC) values obtained with PIQ and reported in surveys.
+Closer SRCC values indicate the higher degree of agreement between results of computations on given datasets.
+We do not report `Kendall rank correlation coefficient <https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient>`_ (KRCC)
+as it is highly correlated with SRCC and provides limited additional information.
 We do not report `Pearson linear correlation coefficient <https://en.wikipedia.org/wiki/Pearson_correlation_coefficient>`_ (PLCC)
 as it's highly dependent on fitting method and is biased towards simple examples.
 
 For metrics that can take greyscale or colour images, ``c`` means chromatic version.
-
-Unlike FR and NR IQMs, designed to compute an image-wise distance, the DB metrics compare distributions of *sets* of images.
-To address these problems, we adopt a different way of computing the DB IQMs proposed in `[1] <https://arxiv.org/abs/2203.07809>`_.
-Instead of extracting features from the whole images, we crop them into overlapping tiles of size ``96 × 96`` with ``stride = 32``.
-This pre-processing allows us to treat each pair of images as a pair of distributions of tiles, enabling further comparison.
-The other stages of computing the DB IQMs are kept intact.
 
 ===========  =================  ================================  =================  ================================  =================  ================================
      \                      TID2013                                              KADID10k                                             PIPAL
@@ -283,6 +279,12 @@ GS           0.37 / 0.26        \- / -                            0.37 / 0.26   
 .. _PIPAL: https://arxiv.org/pdf/2011.15002.pdf
 .. _IW-SSIM: https://ieeexplore.ieee.org/document/7442122
 
+Unlike FR and NR IQMs, designed to compute an image-wise distance, the DB metrics compare distributions of *sets* of images.
+To address these problems, we adopt a different way of computing the DB IQMs proposed in `[1] <https://arxiv.org/abs/2203.07809>`_.
+Instead of extracting features from the whole images, we crop them into overlapping tiles of size ``96 × 96`` with ``stride = 32``.
+This pre-processing allows us to treat each pair of images as a pair of distributions of tiles, enabling further comparison.
+The other stages of computing the DB IQMs are kept intact.
+
 .. benchmark-section-end
 
 .. assertions-section-start
@@ -324,14 +326,6 @@ If you use PIQ in your project, please, cite it as follows.
    }
 
 .. citation-section-end
-
-.. related-publications-section-start
-
-Related Publications
---------
-[1] S. Kastryulin, J. Zakirov, N. Pezzotti, and D. V. Dylov `"Image Quality Assessment for Magnetic Resonance Imaging." <https://arxiv.org/abs/2203.07809>`_ *arXiv preprint arXiv:2203.07809* (2022).
-
-.. related-publications-section-end
 
 .. contacts-section-start
 
