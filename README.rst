@@ -258,7 +258,7 @@ Style        0.54 / -                     0.65 / -                     0.34 / -
 HaarPSI      0.87 / 0.87 `HaarPSI`_       0.89 / 0.89 `KADID10k`_      0.59 / -
 MDSI         0.89 / 0.89 `MDSI`_          0.89 / 0.89 `KADID10k`_      0.59 / -
 MS-GMSD      0.81 / 0.81 `MS-GMSD`_       0.85 / -                     0.59 / -
-MS-GMSDc     0.89 / 0.69 `MS-GMSD`_       0.87 / -                     0.59 / -
+MS-GMSDc     0.89 / 0.89 `MS-GMSD`_       0.87 / -                     0.59 / -
 LPIPS-VGG    0.67 / 0.67 `DISTS`_         0.72 / -                     0.57 / 0.58 `PIPAL`_
 PieAPP       0.84 / 0.88 `DISTS`_         0.87 / -                     0.70 / 0.71 `PIPAL`_
 DISTS        0.81 / 0.83 `DISTS`_         0.88 / -                     0.62 / 0.66 `PIPAL`_
