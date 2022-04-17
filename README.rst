@@ -117,7 +117,7 @@ as a loss function.
 For a full list of examples, see `image metrics <https://github.com/photosynthesis-team/piq/blob/master/examples/image_metrics.py>`_ examples.
 
 Distribution-Based metrics
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The group of metrics (such as IS, FID, KID) takes a list of image features to compute the distance between distributions.
 Image features can be extracted by some feature extractor network separately or by using the ``compute_feats`` method of a

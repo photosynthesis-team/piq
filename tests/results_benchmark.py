@@ -9,7 +9,6 @@ import functools
 import torchvision
 
 import pandas as pd
-import numpy as np
 
 from typing import List, Callable, Tuple
 from pathlib import Path
@@ -81,7 +80,9 @@ METRIC_CATEGORIES = {cat: [k for k, v in METRICS.items() if v.category == cat] f
 
 
 class TID2013(Dataset):
-    """
+    r""" A class to evaluate on the KADID10k dataset.
+    Note that the class is callable. The values are returned as a result of calling the __getitem__ method.
+
     Args:
         root: Root directory path.
     Returns:
@@ -114,7 +115,6 @@ class TID2013(Dataset):
         score = self.scores[index]
 
         # Load image and ref, convert to tensor.
-        # x = torch.tensor(imread(x_path)).permute(2, 0, 1) / 255
         x = torch.tensor(imread(x_path), dtype=torch.float32).permute(2, 0, 1)
         y = torch.tensor(imread(y_path), dtype=torch.float32).permute(2, 0, 1)
 
@@ -125,7 +125,17 @@ class TID2013(Dataset):
 
 
 class KADID10k(TID2013):
-    """ One can get the dataset via the direct link: https://datasets.vqa.mmsp-kn.de/archives/kadid10k.zip """
+    r""" A class to evaluate on the KADID10k dataset.
+    One can get the dataset via the direct link: https://datasets.vqa.mmsp-kn.de/archives/kadid10k.zip.
+    Note that the class is callable. The values are returned as a result of calling the __getitem__ method.
+
+    Args:
+        root: Root directory path.
+    Returns:
+        x: image with some kind of distortion in [0, 1] range
+        y: image without distortion in [0, 1] range
+        score: MOS score for this pair of images
+    """
     _filename = "dmos.csv"
 
     def __init__(self, root: Path = "datasets/kadid10k"):
@@ -144,9 +154,18 @@ class KADID10k(TID2013):
 
 
 class PIPAL(TID2013):
-    """Class to evaluate on train set of PIPAL dataset"""
+    r""" A class to evaluate on the train set of the PIPAL dataset.
+    Note that the class is callable. The values are returned as a result of calling the __getitem__ method.
 
-    def __init__(self, root: Path = Path("data/raw/pipal")):
+    Args:
+        root: Root directory path.
+    Returns:
+        x: image with some kind of distortion in [0, 1] range
+        y: image without distortion in [0, 1] range
+        score: MOS score for this pair of images
+    """
+
+    def __init__(self, root: Path = Path("data/raw/pipal")) -> None:
         assert root.exists(), \
             "You need to download PIPAL dataset. Check https://www.jasongt.com/projectpages/pipal.html"
 
@@ -177,8 +196,8 @@ DATASETS = {
 
 
 def eval_metric(loader: DataLoader, metric: Metric, device: str, feature_extractor: str) \
-        -> Tuple[np.ndarray, np.ndarray]:
-    """Evaluate metric on a given dataset.
+        -> Tuple[torch.Tensor, torch.Tensor]:
+    r"""Evaluate metric on a given dataset.
 
     Args:
         loader: PyTorch dataloader that returns batch of distorted images, reference images and scores.
@@ -186,8 +205,8 @@ def eval_metric(loader: DataLoader, metric: Metric, device: str, feature_extract
         device: Computation device.
         feature_extractor: name of the neural network to be used to extract features from images
     Returns:
-        gt_scores: Ground truth values.
-        metric_scores: Predicted values as torch.Tensors.
+        gt_scores: A tensor of ground truth values.
+        metric_scores: A tensor of predicted values.
     """
     assert isinstance(loader, DataLoader), "Expect loader to be DataLoader class"
     assert isinstance(metric, Metric), f"Expected metric to be an instance of Metric, got {type(metric)} instead!"
@@ -196,11 +215,7 @@ def eval_metric(loader: DataLoader, metric: Metric, device: str, feature_extract
     metric_scores = []
     compute_function = determine_compute_function(metric_category=metric.category)
 
-    i = 0
     for distorted_images, reference_images, scores in tqdm.tqdm(loader, ncols=50):
-        if i == 500:
-            break
-        i += 1
         distorted_images, reference_images = distorted_images.to(device), reference_images.to(device)
         gt_scores.append(scores.cpu())
 
@@ -212,7 +227,7 @@ def eval_metric(loader: DataLoader, metric: Metric, device: str, feature_extract
 
         metric_scores.append(metric_score.cpu())
 
-    return torch.cat(gt_scores).numpy(), torch.cat(metric_scores).numpy()
+    return torch.cat(gt_scores), torch.cat(metric_scores)
 
 
 def determine_compute_function(metric_category: str) -> Callable:
@@ -224,7 +239,7 @@ def determine_compute_function(metric_category: str) -> Callable:
 
 
 def get_feature_extractor(feature_extractor_name: str, device: str) -> nn.Module:
-    """ A factory to initialize feature extractor from its name. """
+    r""" A factory to initialize feature extractor from its name. """
     if feature_extractor_name == "vgg16":
         return torchvision.models.vgg16(pretrained=True, progress=True).features.to(device)
     elif feature_extractor_name == "vgg19":
@@ -266,12 +281,13 @@ def extract_features(distorted_patches: torch.Tensor, feature_extractor: nn.Modu
 
 
 def normalize_tensor(tensor: torch.Tensor) -> torch.Tensor:
-    """ Map tensor values to [0, 1] """
+    r""" Map tensor values to [0, 1] """
     return (tensor - tensor.min()) / (tensor.max() - tensor.min())
 
 
 def compute_distribution_based(metric_functor: Callable, distorted_images: torch.Tensor,
-                               reference_images: torch.Tensor, device: str, feature_extractor_name: str) -> np.ndarray:
+                               reference_images: torch.Tensor, device: str, feature_extractor_name: str) \
+        -> torch.Tensor:
     feature_extractor = get_feature_extractor(feature_extractor_name=feature_extractor_name, device=device)
 
     if feature_extractor_name == 'inception':
@@ -292,12 +308,15 @@ def compute_distribution_based(metric_functor: Callable, distorted_images: torch
     return metric_functor(distorted_features, reference_features).cpu()
 
 
-def crop_patches(images: torch.Tensor, size=64, stride=32):
-    """Crop input images into smaller patches
+def crop_patches(images: torch.Tensor, size: int = 64, stride: int = 32) -> torch.Tensor:
+    r"""Crop input images into smaller patches.
+
     Args:
         images: Tensor of images with shape (batch x 3 x H x W)
         size: size of a square patch
         stride: Step between patches
+    Returns:
+        A tensor on cropped patches of shape (-1, 3, size, size)
     """
     patches = images.data.unfold(1, 3, 3).unfold(2, size, stride).unfold(3, size, stride)
     patches = patches.reshape(-1, 3, size, size)
@@ -320,6 +339,7 @@ def main(dataset_name: str, path: Path, metrics: List[str], batch_size: int, dev
     for metric_name in metrics:
         metric: Metric = METRICS[metric_name]
         gt_scores, metric_scores = eval_metric(loader, metric, device=device, feature_extractor=feature_extractor)
+        gt_scores, metric_scores = gt_scores.numpy(), metric_scores.numpy()
         print(f"{metric_name}: SRCC {abs(spearmanr(gt_scores, metric_scores)[0]):0.3f}",
               f"KRCC {abs(kendalltau(gt_scores, metric_scores)[0]):0.3f}")
 
