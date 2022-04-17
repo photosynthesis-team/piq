@@ -280,7 +280,7 @@ GS           0.37 / 0.26        \- / -                            0.37 / 0.26   
 .. _IW-SSIM: https://ieeexplore.ieee.org/document/7442122
 
 Unlike FR and NR IQMs, designed to compute an image-wise distance, the DB metrics compare distributions of *sets* of images.
-To address these problems, we adopt a different way of computing the DB IQMs proposed in `[1] <https://arxiv.org/abs/2203.07809>`_.
+To address these problems, we adopt a different way of computing the DB IQMs proposed in `<https://arxiv.org/abs/2203.07809>`_.
 Instead of extracting features from the whole images, we crop them into overlapping tiles of size ``96 × 96`` with ``stride = 32``.
 This pre-processing allows us to treat each pair of images as a pair of distributions of tiles, enabling further comparison.
 The other stages of computing the DB IQMs are kept intact.
