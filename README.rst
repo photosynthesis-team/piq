@@ -162,7 +162,7 @@ List of metrics
 ---------------
 
 Full-Reference (FR)
-^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
 
 ===========  ======  ==========
 Acronym      Year    Metric
@@ -188,7 +188,7 @@ DISTS        2020    `Deep Image Structure and Texture Similarity <https://arxiv
 ===========  ======  ==========
 
 No-Reference (NR)
-^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
 
 ===========  ======  ==========
 Acronym      Year    Metric
@@ -198,7 +198,7 @@ BRISQUE      2012    `Blind/Referenceless Image Spatial Quality Evaluator <https
 ===========  ======  ==========
 
 Distribution-Based (DB)
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
 
 ===========  ======  ==========
 Acronym      Year    Metric
