@@ -267,12 +267,12 @@ def extract_features(distorted_patches: torch.Tensor, feature_extractor: nn.Modu
         if feature_extractor_name == "inception":
             reference_features.append(feature_extractor(reference_patches)[0].squeeze())
             distorted_features.append(feature_extractor(distorted_patches)[0].squeeze())
-        elif feature_extractor_name == "vgg16":
+        elif feature_extractor_name in ["vgg16", "vgg19"]:
             reference_features.append(torch.nn.functional.avg_pool2d(feature_extractor(reference_patches), 3).squeeze())
             distorted_features.append(torch.nn.functional.avg_pool2d(feature_extractor(distorted_patches), 3).squeeze())
-        elif feature_extractor_name == "vgg19":
-            reference_features.append(torch.nn.functional.avg_pool2d(feature_extractor(reference_patches), 3).squeeze())
-            distorted_features.append(torch.nn.functional.avg_pool2d(feature_extractor(distorted_patches), 3).squeeze())
+        else:
+            raise ValueError(f'Unknown feature extractor {feature_extractor_name} is selected. '
+                             f'Please choose on of supported feature extractors: [inception, vgg16, vgg19]')
 
     distorted_features = torch.cat(distorted_features, dim=0)
     reference_features = torch.cat(reference_features, dim=0)
