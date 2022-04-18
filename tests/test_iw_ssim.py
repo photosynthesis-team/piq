@@ -186,10 +186,10 @@ def test_iw_ssim_loss_raises_if_tensors_have_different_shapes(x_rand: torch.Tens
             with pytest.raises(AssertionError):
                 loss(wrong_shape_x.to(device), x_rand.to(device))
 
-    loss = InformationWeightedSSIMLoss(data_range=1., scale_weights=scale_weights)
+    loss = InformationWeightedSSIMLoss(data_range=1., scale_weights=scale_weights.to(device))
     loss(x_rand.to(device), y_rand.to(device))
     wrong_scale_weights = torch.rand(2, 2)
-    loss = InformationWeightedSSIMLoss(data_range=1., scale_weights=wrong_scale_weights)
+    loss = InformationWeightedSSIMLoss(data_range=1., scale_weights=wrong_scale_weights.to(device))
     with pytest.raises(ValueError):
         loss(x_rand.to(device), y_rand.to(device))
 

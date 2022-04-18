@@ -367,7 +367,7 @@ def _information_content(x: torch.Tensor, y: torch.Tensor, y_parent: torch.Tenso
         y_parent_up = _image_enlarge(y_parent)[:, :, :y.size(-2), :y.size(-1)]
         N = N + 1
 
-    Y = torch.zeros(y.size(0), y.size(1), nexp, N)
+    Y = torch.zeros(y.size(0), y.size(1), nexp, N, dtype=y.dtype, device=y.device)
 
     n = -1
     for ny in range(-Ly, Ly + 1):
@@ -385,7 +385,7 @@ def _information_content(x: torch.Tensor, y: torch.Tensor, y_parent: torch.Tenso
 
     C_u = torch.matmul(Y.transpose(-2, -1), Y) / nexp
 
-    recommended_torch_version = _parse_version('1.7.0')
+    recommended_torch_version = _parse_version('1.10.0')
     torch_version = _parse_version(torch.__version__)
     if len(torch_version) != 0 and torch_version >= recommended_torch_version:
         eig_values, eig_vectors = torch.linalg.eigh(C_u)
