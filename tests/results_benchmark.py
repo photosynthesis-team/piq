@@ -138,7 +138,7 @@ class KADID10k(TID2013):
     """
     _filename = "dmos.csv"
 
-    def __init__(self, root: Path = "datasets/kadid10k"):
+    def __init__(self, root: Path = "datasets/kadid10k") -> None:
         assert root.exists(), \
             "You need to download KADID10K dataset first. " \
             "Check http://database.mmsp-kn.de/kadid-10k-database.html " \
