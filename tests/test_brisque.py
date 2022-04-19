@@ -1,7 +1,5 @@
 import torch
 import pytest
-from libsvm import svmutil  # noqa: F401
-from brisque import BRISQUE
 from piq import brisque, BRISQUELoss
 from skimage.io import imread
 from typing import Any
@@ -37,20 +35,20 @@ def test_brisque_raises_if_wrong_reduction(x_grey: torch.Tensor, device: str) ->
 
 def test_brisque_values_grey(device: str) -> None:
     img = imread('tests/assets/goldhill.gif')
-    x_grey = torch.tensor(img).unsqueeze(0).unsqueeze(0)
+    x_grey = torch.tensor(img, dtype=torch.double).unsqueeze(0).unsqueeze(0)
     score = brisque(x_grey.to(device), reduction='none', data_range=255)
-    score_baseline = BRISQUE().get_score(img)
-    assert torch.isclose(score, torch.tensor(score_baseline).to(score), rtol=1e-3), \
-        f'Expected values to be equal to baseline, got {score.item()} and {score_baseline}'
+    score_matlab = torch.tensor([8.425548118925917], dtype=torch.double, device=device)
+    assert torch.isclose(score, score_matlab, rtol=1e-4), \
+        f'Expected values to be equal to baseline, got {score.item()} and {score_matlab}'
 
 
 def test_brisque_values_rgb(device: str) -> None:
     img = imread('tests/assets/I01.BMP')
-    x_rgb = (torch.tensor(img, dtype=torch.float32).permute(2, 0, 1).unsqueeze(0))
+    x_rgb = (torch.tensor(img, dtype=torch.double).permute(2, 0, 1).unsqueeze(0))
     score = brisque(x_rgb.to(device), reduction='none', data_range=255.)
-    score_baseline = BRISQUE().get_score(x_rgb[0].permute(1, 2, 0).numpy()[..., ::-1])
-    assert torch.isclose(score, torch.tensor(score_baseline).to(score), rtol=1e-3), \
-        f'Expected values to be equal to baseline, got {score.item()} and {score_baseline}'
+    score_matlab = torch.tensor([10.259409019043119], dtype=torch.double, device=device)
+    assert torch.isclose(score, score_matlab, rtol=1e-4), \
+        f'Expected values to be equal to baseline, got {score.item()} and {score_matlab}'
 
 
 @pytest.mark.parametrize(
