@@ -5,7 +5,6 @@ Reference:
     https://live.ece.utexas.edu/publications/2012/TIP%20BRISQUE.pdf
 Credits:
     https://live.ece.utexas.edu/research/Quality/index_algorithms.htm BRISQUE
-    https://github.com/bukalapak/pybrisque
 """
 from typing import Union, Tuple
 import warnings
@@ -14,13 +13,12 @@ from torch.nn.modules.loss import _Loss
 from torch.utils.model_zoo import load_url
 import torch.nn.functional as F
 from piq.utils import _validate_input, _reduce
-from piq.functional import rgb2yiq, gaussian_filter
+from piq.functional import rgb2yiq, gaussian_filter, imresize
 
 
 def brisque(x: torch.Tensor,
             kernel_size: int = 7, kernel_sigma: float = 7 / 6,
-            data_range: Union[int, float] = 1., reduction: str = 'mean',
-            interpolation: str = 'nearest') -> torch.Tensor:
+            data_range: Union[int, float] = 1., reduction: str = 'mean') -> torch.Tensor:
     r"""Interface of BRISQUE index.
     Supports greyscale and colour images with RGB channel order.
 
@@ -31,7 +29,6 @@ def brisque(x: torch.Tensor,
         data_range: Maximum value range of images (usually 1.0 or 255).
         reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default: ``'mean'``
-        interpolation: Interpolation to be used for scaling.
 
     Returns:
         Value of BRISQUE index.
@@ -56,12 +53,13 @@ def brisque(x: torch.Tensor,
     x = x / float(data_range) * 255
 
     if x.size(1) == 3:
-        x = rgb2yiq(x)[:, :1]
+        # Mimic matlab rgb2gray, which keeps image in uint8 during colour conversion
+        x = torch.round(rgb2yiq(x)[:, :1])
     features = []
     num_of_scales = 2
     for _ in range(num_of_scales):
         features.append(_natural_scene_statistics(x, kernel_size, kernel_sigma))
-        x = F.interpolate(x, size=(x.size(2) // 2, x.size(3) // 2), mode=interpolation)
+        x = imresize(x, sizes=(x.size(2) // 2, x.size(3) // 2))
 
     features = torch.cat(features, dim=-1)
     scaled_features = _scale_features(features)
@@ -83,7 +81,6 @@ class BRISQUELoss(_Loss):
         data_range: Maximum value range of images (usually 1.0 or 255).
         reduction: Specifies the reduction type:
             ``'none'`` | ``'mean'`` | ``'sum'``. Default: ``'mean'``
-        interpolation: Interpolation to be used for scaling.
     Examples:
         >>> loss = BRISQUELoss()
         >>> x = torch.rand(3, 3, 256, 256, requires_grad=True)
@@ -110,7 +107,6 @@ class BRISQUELoss(_Loss):
 
         self.kernel_sigma = kernel_sigma
         self.data_range = data_range
-        self.interpolation = interpolation
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         r"""Computation of BRISQUE score as a loss function.
@@ -122,11 +118,11 @@ class BRISQUELoss(_Loss):
             Value of BRISQUE loss to be minimized.
         """
         return brisque(x, reduction=self.reduction, kernel_size=self.kernel_size,
-                       kernel_sigma=self.kernel_sigma, data_range=self.data_range, interpolation=self.interpolation)
+                       kernel_sigma=self.kernel_sigma, data_range=self.data_range)
 
 
 def _ggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-    gamma = torch.arange(0.2, 10 + 0.001, 0.001).to(x)
+    gamma = torch.arange(0.2, 10 + 0.001, 0.001, dtype=x.dtype, device=x.device)
     r_table = (torch.lgamma(1. / gamma) + torch.lgamma(3. / gamma) - 2 * torch.lgamma(2. / gamma)).exp()
     r_table = r_table.repeat(x.size(0), 1)
 
@@ -145,14 +141,14 @@ def _ggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
 
 
 def _aggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    gamma = torch.arange(start=0.2, end=10.001, step=0.001).to(x)
+    gamma = torch.arange(start=0.2, end=10.001, step=0.001, dtype=x.dtype, device=x.device)
     r_table = torch.exp(2 * torch.lgamma(2. / gamma) - torch.lgamma(1. / gamma) - torch.lgamma(3. / gamma))
     r_table = r_table.repeat(x.size(0), 1)
 
     mask_left = x < 0
     mask_right = x > 0
-    count_left = mask_left.sum(dim=(-1, -2), dtype=torch.float32)
-    count_right = mask_right.sum(dim=(-1, -2), dtype=torch.float32)
+    count_left = mask_left.sum(dim=(-1, -2), dtype=x.dtype)
+    count_right = mask_right.sum(dim=(-1, -2), dtype=x.dtype)
 
     assert (count_left > 0).all(), 'Expected input tensor (pairwise products of neighboring MSCN coefficients)' \
                                    '  with values below zero to compute parameters of AGGD'
@@ -175,12 +171,13 @@ def _aggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch
 
 
 def _natural_scene_statistics(luma: torch.Tensor, kernel_size: int = 7, sigma: float = 7. / 6) -> torch.Tensor:
-    kernel = gaussian_filter(kernel_size=kernel_size, sigma=sigma).view(1, 1, kernel_size, kernel_size).to(luma)
+    kernel = gaussian_filter(kernel_size=kernel_size,
+                             sigma=sigma, dtype=luma.dtype).view(1, 1, kernel_size, kernel_size).to(luma)
     C = 1
     mu = F.conv2d(luma, kernel, padding=kernel_size // 2)
     mu_sq = mu ** 2
     std = F.conv2d(luma ** 2, kernel, padding=kernel_size // 2)
-    std = ((std - mu_sq).abs().sqrt())
+    std = (std - mu_sq).abs().sqrt()
 
     luma_nrmlzd = (luma - mu) / (std + C)
     alpha, sigma = _ggd_parameters(luma_nrmlzd)
