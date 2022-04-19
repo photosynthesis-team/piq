@@ -245,6 +245,7 @@ For metrics that can take greyscale or colour images, ``c`` means chromatic vers
 PSNR         0.69 / 0.69 `TID2013`_       0.68 / -                     0.41 / 0.41 `PIPAL`_
 SSIM         0.72 / 0.64 `TID2013`_       0.72 / 0.72 `KADID10k`_      0.50 / 0.53 `PIPAL`_
 MS-SSIM      0.80 / 0.79 `TID2013`_       0.80 / 0.80 `KADID10k`_      0.55 / 0.46 `PIPAL`_
+IW-SSIM      0.78 / 0.78 `Eval2019`_      0.85 / 0.85 `KADID10k`_      0.60 / -
 VIFp         0.61 / 0.61 `TID2013`_       0.65 / 0.65 `KADID10k`_      0.50 / -
 FSIM         0.80 / 0.80 `TID2013`_       0.83 / 0.83 `KADID10k`_      0.59 / 0.60 `PIPAL`_
 FSIMc        0.85 / 0.85 `TID2013`_       0.85 / 0.85 `KADID10k`_      0.59 / -
@@ -262,6 +263,7 @@ MS-GMSDc     0.89 / 0.89 `MS-GMSD`_       0.87 / -                     0.59 / -
 LPIPS-VGG    0.67 / 0.67 `DISTS`_         0.72 / -                     0.57 / 0.58 `PIPAL`_
 PieAPP       0.84 / 0.88 `DISTS`_         0.87 / -                     0.70 / 0.71 `PIPAL`_
 DISTS        0.81 / 0.83 `DISTS`_         0.88 / -                     0.62 / 0.66 `PIPAL`_
+BRISQUE      0.37 / 0.84 `Eval2019`_      0.33 / 0.53 `KADID10k`_      0.21 / -
 IS           0.26 / -                     0.25 / -                     0.09 / -
 FID          0.67 / -                     0.66 / -                     0.18 / -
 KID          0.42 / -                     0.66 / -                     0.12 / -
