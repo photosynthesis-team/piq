@@ -94,9 +94,9 @@ The full documentation is available at https://piq.readthedocs.io.
 Usage Examples
 ---------------
 
-Image-based metrics
+Image-Based metrics
 ^^^^^^^^^^^^^^^^^^^
-The group of metrics (such as PSNR, SSIM, BRISQUE) takes image or images as input.
+The group of metrics (such as PSNR, SSIM, BRISQUE) takes an image or a pair of images as input to compute a distance between them.
 We have a functional interface, which returns a metric value, and a class interface, which allows to use any metric
 as a loss function.
 
@@ -116,10 +116,10 @@ as a loss function.
 
 For a full list of examples, see `image metrics <https://github.com/photosynthesis-team/piq/blob/master/examples/image_metrics.py>`_ examples.
 
-Feature-based metrics
-^^^^^^^^^^^^^^^^^^^^^
+Distribution-Based metrics
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The group of metrics (such as IS, FID, KID) takes a list of image features.
+The group of metrics (such as IS, FID, KID) takes a list of image features to compute the distance between distributions.
 Image features can be extracted by some feature extractor network separately or by using the ``compute_feats`` method of a
 class.
 
@@ -161,8 +161,8 @@ For a full list of examples, see `feature metrics <https://github.com/photosynth
 List of metrics
 ---------------
 
-Full Reference
-^^^^^^^^^^^^^^
+Full-Reference (FR)
+^^^^^^^^^^^^^^^^^^^
 
 ===========  ======  ==========
 Acronym      Year    Metric
@@ -187,8 +187,8 @@ PieAPP       2018    `Perceptual Image-Error Assessment through Pairwise Prefere
 DISTS        2020    `Deep Image Structure and Texture Similarity <https://arxiv.org/abs/2004.07728>`_
 ===========  ======  ==========
 
-No Reference
-^^^^^^^^^^^^
+No-Reference (NR)
+^^^^^^^^^^^^^^^^^
 
 ===========  ======  ==========
 Acronym      Year    Metric
@@ -197,8 +197,8 @@ TV           1937    `Total Variation <https://en.wikipedia.org/wiki/Total_varia
 BRISQUE      2012    `Blind/Referenceless Image Spatial Quality Evaluator <https://ieeexplore.ieee.org/document/6272356>`_
 ===========  ======  ==========
 
-Feature based
-^^^^^^^^^^^^^
+Distribution-Based (DB)
+^^^^^^^^^^^^^^^^^^^^^^^
 
 ===========  ======  ==========
 Acronym      Year    Metric
@@ -218,7 +218,7 @@ PR           2019    `Improved Precision and Recall <https://arxiv.org/abs/1904.
 Benchmark
 ---------
 
-As part of our library we provide code to benchmark all metrics on a set of common Mean Opinon Scores databases.
+As part of our library we provide `code to benchmark <tests/results_benchmark.py>`_ all metrics on a set of common Mean Opinon Scores databases.
 Currently we support `TID2013`_,  `KADID10k`_ and `PIPAL`_.
 You need to download them separately and provide path to images as an argument to the script.
 
@@ -228,40 +228,48 @@ Here is an example how to evaluate SSIM and MS-SSIM metrics on TID2013 dataset:
 
    python3 tests/results_benchmark.py --dataset tid2013 --metrics SSIM MS-SSIM --path ~/datasets/tid2013 --batch_size 16
 
-We report `Spearman's Rank Correlation cCoefficient <https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient>`_ (SRCC)
-and `Kendall rank correlation coefficient <https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient>`_ (KRCC).
+Below we provide a comparison between `Spearman's Rank Correlation cCoefficient <https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient>`_ (SRCC) values obtained with PIQ and reported in surveys.
+Closer SRCC values indicate the higher degree of agreement between results of computations on given datasets.
+We do not report `Kendall rank correlation coefficient <https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient>`_ (KRCC)
+as it is highly correlated with SRCC and provides limited additional information.
 We do not report `Pearson linear correlation coefficient <https://en.wikipedia.org/wiki/Pearson_correlation_coefficient>`_ (PLCC)
 as it's highly dependent on fitting method and is biased towards simple examples.
 
 For metrics that can take greyscale or colour images, ``c`` means chromatic version.
 
-===========  =================  ================================  =================  ================================  =================  ================================
-     \                      TID2013                                              KADID10k                                             PIPAL
------------  ---------------------------------------------------  ---------------------------------------------------  ---------------------------------------------------
-  Acronym    SRCC / KRCC (PIQ)             SRCC / KRCC            SRCC / KRCC (PIQ)             SRCC / KRCC            SRCC / KRCC (PIQ)             SRCC / KRCC
-===========  =================  ================================  =================  ================================  =================  ================================
-PSNR         0.687 / 0.496      0.687 / 0.496 `TID2013`_          0.676 / 0.488      \- / -                            0.407 / 0.276      0.407 / 0.277 `PIPAL`_
-SSIM         0.720 / 0.527      0.637 / 0.464 `TID2013`_          0.724 / 0.537      0.718 / 0.532 `KADID10k`_         0.498 / 0.345      0.529 / 0.369 `PIPAL`_
-MS-SSIM      0.798 / 0.597      0.787 / 0.608 `TID2013`_          0.802 / 0.609      0.802 / 0.609 `KADID10k`_         0.552 / 0.389      0.462 / -
-IW-SSIM      0.778 / 0.598      0.778 / 0.598 `IW-SSIM`_          0.850 / 0.666      0.850 / 0.666 `KADID10k`_         0.595 / 0.427      \- / -
-VIFp         0.610 / 0.458      0.610 / 0.457 `TID2013`_          0.650 / 0.477      0.650 / 0.477 `KADID10k`_         0.497 / 0.345      \- / -
-FSIM         0.802 / 0.629      0.801 / 0.630 `TID2013`_          0.830 / 0.639      0.829 / 0.639 `KADID10k`_         0.588 / 0.415      0.596 / 0.421 `PIPAL`_
-FSIMc        0.851 / 0.667      0.851 / 0.667 `TID2013`_          0.854 / 0.665      0.854 / 0.665 `KADID10k`_         0.590 / 0.416      \- / -
-SR-SIM       0.807 / 0.641      0.808 / 0.641 `Eval2019`_         0.839 / 0.652      0.839 / 0.652 `KADID10k`_         0.565 / 0.399      \- / -
-SR-SIMc      0.870 / 0.692      \- / -                            0.869 / 0.685      \- / -                            0.569 / 0.401      \- / -
-GMSD         0.804 / 0.633      0.803 / 0.635 `MS-GMSD`_          0.847 / 0.664      0.847 / 0.664 `KADID10k`_         0.584 / 0.414      \- / -
-VSI          0.895 / 0.716      0.897 / 0.718 `Eval2019`_         0.878 / 0.690      0.861 / 0.678 `KADID10k`_         0.539 / 0.375      \- / -
-DSS          0.791 / 0.614      0.792 / - `Eval2019`_             0.860 / 0.674      0.860 / 0.674 `KADID10k`_         0.632 / 0.456      \- / -
-Content      0.705 / 0.517      \- / -                            0.724 / 0.533      \- / -                            0.450 / 0.307      \- / -
-Style        0.538 / 0.372      \- / -                            0.647 / 0.465      \- / -                            0.343 / 0.231      \- / -
-HaarPSI      0.873 / 0.692      0.873 / 0.692 `HaarPSI`_          0.885 / 0.700      0.885 / 0.699 `KADID10k`_         0.589 / 0.417      \- / -
-MDSI         0.890 / 0.712      0.890 / 0.712 `MDSI`_             0.885 / 0.702      0.885 / 0.702 `KADID10k`_         0.585 / 0.408      \- / -
-MS-GMSD      0.812 / 0.646      0.814 / 0.647 `MS-GMSD`_          0.852 / 0.669      \- / -                            0.585 / 0.414      \- / -
-MS-GMSDc     0.888 / 0.711      0.687 / 0.496 `MS-GMSD`_          0.870 / 0.683      \- / -                            0.587 / 0.416      \- / -
-LPIPS-VGG    0.670 / 0.497      0.670 / 0.497 `DISTS`_            0.720 / 0.531      \- / -                            0.573 / 0.404      0.577 / 0.408 `PIPAL`_
-PieAPP       0.836 / 0.650      0.875 / 0.710 `DISTS`_            0.866 / 0.676      \- / -                            0.698 / 0.509      0.711 / 0.521 `PIPAL`_
-DISTS        0.805 / 0.613      0.830 / 0.639 `DISTS`_            0.875 / 0.695      \- / -                            0.617 / 0.438      0.664 / 0.477 `PIPAL`_
-===========  =================  ================================  =================  ================================  =================  ================================
+===========  ===========================  ===========================  ===========================
+     \                  TID2013                    KADID10k                       PIPAL
+-----------  ---------------------------  ---------------------------  ---------------------------
+  Source            PIQ / Reference            PIQ / Reference                PIQ / Reference
+===========  ===========================  ===========================  ===========================
+PSNR         0.69 / 0.69 `TID2013`_       0.68 / -                     0.41 / 0.41 `PIPAL`_
+SSIM         0.72 / 0.64 `TID2013`_       0.72 / 0.72 `KADID10k`_      0.50 / 0.53 `PIPAL`_
+MS-SSIM      0.80 / 0.79 `TID2013`_       0.80 / 0.80 `KADID10k`_      0.55 / 0.46 `PIPAL`_
+IW-SSIM      0.78 / 0.78 `Eval2019`_      0.85 / 0.85 `KADID10k`_      0.60 / -
+VIFp         0.61 / 0.61 `TID2013`_       0.65 / 0.65 `KADID10k`_      0.50 / -
+FSIM         0.80 / 0.80 `TID2013`_       0.83 / 0.83 `KADID10k`_      0.59 / 0.60 `PIPAL`_
+FSIMc        0.85 / 0.85 `TID2013`_       0.85 / 0.85 `KADID10k`_      0.59 / -
+SR-SIM       0.81 / 0.81 `Eval2019`_      0.84 / 0.84 `KADID10k`_      0.57 / -
+SR-SIMc      0.87 / -                     0.87 / -                     0.57 / -
+GMSD         0.80 / 0.80 `MS-GMSD`_       0.85 / 0.85 `KADID10k`_      0.58 / -
+VSI          0.90 / 0.90 `Eval2019`_      0.88 / 0.86 `KADID10k`_      0.54 / -
+DSS          0.79 / 0.79 `Eval2019`_      0.86 / 0.86 `KADID10k`_      0.63 / -
+Content      0.71 / -                     0.72 / -                     0.45 / -
+Style        0.54 / -                     0.65 / -                     0.34 / -
+HaarPSI      0.87 / 0.87 `HaarPSI`_       0.89 / 0.89 `KADID10k`_      0.59 / -
+MDSI         0.89 / 0.89 `MDSI`_          0.89 / 0.89 `KADID10k`_      0.59 / -
+MS-GMSD      0.81 / 0.81 `MS-GMSD`_       0.85 / -                     0.59 / -
+MS-GMSDc     0.89 / 0.89 `MS-GMSD`_       0.87 / -                     0.59 / -
+LPIPS-VGG    0.67 / 0.67 `DISTS`_         0.72 / -                     0.57 / 0.58 `PIPAL`_
+PieAPP       0.84 / 0.88 `DISTS`_         0.87 / -                     0.70 / 0.71 `PIPAL`_
+DISTS        0.81 / 0.83 `DISTS`_         0.88 / -                     0.62 / 0.66 `PIPAL`_
+BRISQUE      0.37 / 0.84 `Eval2019`_      0.33 / 0.53 `KADID10k`_      0.21 / -
+IS           0.26 / -                     0.25 / -                     0.09 / -
+FID          0.67 / -                     0.66 / -                     0.18 / -
+KID          0.42 / -                     0.66 / -                     0.12 / -
+MSID         0.21 / -                     0.32 / -                     0.01 / -
+GS           0.37 / -                     0.37 / -                     0.02 / -
+===========  ===========================  ===========================  ===========================
 
 .. _TID2013: http://www.ponomarenko.info/tid2013.htm
 .. _KADID10k: http://database.mmsp-kn.de/kadid-10k-database.html
@@ -272,6 +280,12 @@ DISTS        0.805 / 0.613      0.830 / 0.639 `DISTS`_            0.875 / 0.695 
 .. _HaarPSI: https://arxiv.org/abs/1607.06140
 .. _PIPAL: https://arxiv.org/pdf/2011.15002.pdf
 .. _IW-SSIM: https://ieeexplore.ieee.org/document/7442122
+
+Unlike FR and NR IQMs, designed to compute an image-wise distance, the DB metrics compare distributions of *sets* of images.
+To address these problems, we adopt a different way of computing the DB IQMs proposed in `<https://arxiv.org/abs/2203.07809>`_.
+Instead of extracting features from the whole images, we crop them into overlapping tiles of size ``96 × 96`` with ``stride = 32``.
+This pre-processing allows us to treat each pair of images as a pair of distributions of tiles, enabling further comparison.
+The other stages of computing the DB IQMs are kept intact.
 
 .. benchmark-section-end
 
@@ -322,7 +336,7 @@ Contacts
 
 **Sergey Kastryulin** - `@snk4tr <https://github.com/snk4tr>`_ - ``snk4tr@gmail.com``
 
-**Djamil Zakirov** - `@zakajd <https://github.com/zakajd>`_ - ``djamilzak@gmail.com``
+**Jamil Zakirov** - `@zakajd <https://github.com/zakajd>`_ - ``djamilzak@gmail.com``
 
 **Denis Prokopenko** - `@denproc <https://github.com/denproc>`_ - ``d.prokopenko@outlook.com``
 
