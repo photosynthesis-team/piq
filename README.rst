@@ -319,12 +319,23 @@ If you use PIQ in your project, please, cite it as follows.
 
 .. code-block:: tex
 
+   @misc{kastryulin2022piq,
+     title = {PyTorch Image Quality: Metrics for Image Quality Assessment},
+     url = {https://arxiv.org/abs/2208.14818},
+     author = {Kastryulin, Sergey and Zakirov, Jamil and Prokopenko, Denis and Dylov, Dmitry V.},
+     doi = {10.48550/ARXIV.2208.14818},
+     publisher = {arXiv},
+     year = {2022}
+   }
+
+.. code-block:: tex
+
    @misc{piq,
      title={{PyTorch Image Quality}: Metrics and Measure for Image Quality Assessment},
      url={https://github.com/photosynthesis-team/piq},
      note={Open-source software available at https://github.com/photosynthesis-team/piq},
      author={Sergey Kastryulin and Dzhamil Zakirov and Denis Prokopenko},
-     year={2019},
+     year={2019}
    }
 
 .. citation-section-end
