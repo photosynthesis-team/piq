@@ -25,15 +25,16 @@ def hann_filter(kernel_size: int) -> torch.Tensor:
     return kernel.view(1, kernel_size, kernel_size) / kernel.sum()
 
 
-def gaussian_filter(kernel_size: int, sigma: float) -> torch.Tensor:
+def gaussian_filter(kernel_size: int, sigma: float, dtype: torch.dtype = torch.float32) -> torch.Tensor:
     r"""Returns 2D Gaussian kernel N(0,`sigma`^2)
     Args:
         size: Size of the kernel
         sigma: Std of the distribution
+        dtype: type of tensor to return
     Returns:
         gaussian_kernel: Tensor with shape (1, kernel_size, kernel_size)
     """
-    coords = torch.arange(kernel_size, dtype=torch.float32)
+    coords = torch.arange(kernel_size, dtype=dtype)
     coords -= (kernel_size - 1) / 2.
 
     g = coords ** 2
