@@ -106,3 +106,8 @@ venv.bak/
 
 # VSCode settings
 .vscode/
+
+.DS_Store
+data/
+*.zip
+*.ipynb
