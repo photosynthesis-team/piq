@@ -97,7 +97,7 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     )
 
     # Gradient maps
-    kernels = torch.stack([scharr_filter(), scharr_filter().transpose(-1, -2)])
+    kernels = torch.stack([scharr_filter(), scharr_filter().transpose(-1, -2)]).to(x_lum)
     grad_map_x = gradient_map(x_lum, kernels)
     grad_map_y = gradient_map(y_lum, kernels)
 
@@ -308,7 +308,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
 
     sum_an2 = torch.sum(filters_ifft ** 2, dim=-3, keepdim=True)
 
-    sum_ai_aj = torch.zeros(N, orientations, 1, H, W).to(x)
+    sum_ai_aj = torch.zeros(N, orientations, 1, H, W, dtype=x.dtype, device=x.device)
     for s in range(scales - 1):
         sum_ai_aj = sum_ai_aj + (filters_ifft[:, :, s: s + 1] * filters_ifft[:, :, s + 1:]).sum(dim=-3, keepdim=True)
 

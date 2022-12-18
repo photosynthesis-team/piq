@@ -53,7 +53,7 @@ def gradient_map(x: torch.Tensor, kernels: torch.Tensor) -> torch.Tensor:
         Gradients of x per-channel with shape (N, C, H, W)
     """
     padding = kernels.size(-1) // 2
-    grads = torch.nn.functional.conv2d(x, kernels.to(x), padding=padding)
+    grads = torch.nn.functional.conv2d(x, kernels, padding=padding)
 
     return torch.sqrt(torch.sum(grads ** 2, dim=-3, keepdim=True))
 

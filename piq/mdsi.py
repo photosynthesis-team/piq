@@ -86,7 +86,7 @@ def mdsi(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1., r
     x_lhm = rgb2lhm(x)
     y_lhm = rgb2lhm(y)
 
-    kernels = torch.stack([prewitt_filter(), prewitt_filter().transpose(1, 2)]).to(x)
+    kernels = torch.stack([prewitt_filter(), prewitt_filter().transpose(1, 2)]).to(x_lhm)
     gm_x = gradient_map(x_lhm[:, :1], kernels)
     gm_y = gradient_map(y_lhm[:, :1], kernels)
     gm_avg = gradient_map((x_lhm[:, :1] + y_lhm[:, :1]) / 2., kernels)

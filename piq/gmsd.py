@@ -81,7 +81,7 @@ def _gmsd(x: torch.Tensor, y: torch.Tensor,
     """
 
     # Compute grad direction
-    kernels = torch.stack([prewitt_filter(), prewitt_filter().transpose(-1, -2)])
+    kernels = torch.stack([prewitt_filter(), prewitt_filter().transpose(-1, -2)]).to(x)
     x_grad = gradient_map(x, kernels)
     y_grad = gradient_map(y, kernels)
 

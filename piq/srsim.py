@@ -92,7 +92,7 @@ def srsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     )
 
     # Gradient maps
-    kernels = torch.stack([scharr_filter(), scharr_filter().transpose(-1, -2)])
+    kernels = torch.stack([scharr_filter(), scharr_filter().transpose(-1, -2)]).to(x_lum)
     grad_map_x = gradient_map(x_lum, kernels)
     grad_map_y = gradient_map(y_lum, kernels)
 
