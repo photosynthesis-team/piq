@@ -84,17 +84,12 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         x_lum = x
         y_lum = y
 
+    # Compute filters
+    filters = _construct_filters(x_lum, scales, orientations, min_length, mult, sigma_f, delta_theta)
+
     # Compute phase congruency maps
-    pc_x = _phase_congruency(
-        x_lum, scales=scales, orientations=orientations,
-        min_length=min_length, mult=mult, sigma_f=sigma_f,
-        delta_theta=delta_theta, k=k
-    )
-    pc_y = _phase_congruency(
-        y_lum, scales=scales, orientations=orientations,
-        min_length=min_length, mult=mult, sigma_f=sigma_f,
-        delta_theta=delta_theta, k=k
-    )
+    pc_x = _phase_congruency(x_lum, filters=filters, scales=scales, orientations=orientations, k=k)
+    pc_y = _phase_congruency(y_lum, filters=filters, scales=scales, orientations=orientations, k=k)
 
     # Gradient maps
     kernels = torch.stack([scharr_filter(), scharr_filter().transpose(-1, -2)]).to(x_lum)
@@ -123,9 +118,8 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     return _reduce(result, reduction)
 
 
-def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
-                       min_length: int = 6, mult: int = 2, sigma_f: float = 0.55,
-                       delta_theta: float = 1.2, k: float = 2.0):
+def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4, min_length: int = 6,
+                       mult: int = 2, sigma_f: float = 0.55, delta_theta: float = 1.2):
     """Creates a stack of filters used for computation of phase congruensy maps
 
     Args:
@@ -140,10 +134,9 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
         delta_theta: Ratio of angular interval between filter orientations
             and the standard deviation of the angular Gaussian function
             used to construct filters in the freq. plane.
-        k: No of standard deviations of the noise energy beyond the mean
-            at which we set the noise threshold point, below which phase
-            congruency values get penalized.
-        """
+    Returns:
+          Tensor with filters. Shape :math:`(1, scales * orientations, H, W)`
+    """
     N, _, H, W = x.shape
 
     # Calculate the standard deviation of the angular Gaussian function
@@ -211,23 +204,15 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     return filters
 
 
-def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
-                      min_length: int = 6, mult: int = 2, sigma_f: float = 0.55,
-                      delta_theta: float = 1.2, k: float = 2.0) -> torch.Tensor:
+def _phase_congruency(x: torch.Tensor, filters: torch.Tensor, scales: int = 4, orientations: int = 4,
+                      k: float = 2.0) -> torch.Tensor:
     r"""Compute Phase Congruence for a batch of greyscale images
 
     Args:
         x: Tensor. Shape :math:`(N, 1, H, W)`.
+        filters: Kernels to extract features.
         scales: Number of wavelet scales
         orientations: Number of filter orientations
-        min_length: Wavelength of smallest scale filter
-        mult: Scaling factor between successive filters
-        sigma_f: Ratio of the standard deviation of the Gaussian
-            describing the log Gabor filter's transfer function
-            in the frequency domain to the filter center frequency.
-        delta_theta: Ratio of angular interval between filter orientations
-            and the standard deviation of the angular Gaussian function
-            used to construct filters in the freq. plane.
         k: No of standard deviations of the noise energy beyond the mean
             at which we set the noise threshold point, below which phase
             congruency values get penalized.
@@ -241,7 +226,6 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     N, _, H, W = x.shape
 
     # Fourier transform
-    filters = _construct_filters(x, scales, orientations, min_length, mult, sigma_f, delta_theta, k)
     recommended_torch_version = _parse_version('1.8.0')
     torch_version = _parse_version(torch.__version__)
     if len(torch_version) != 0 and torch_version >= recommended_torch_version:
