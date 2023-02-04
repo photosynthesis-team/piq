@@ -109,3 +109,8 @@ venv.bak/
 
 # MacOS
 .DS_Store
+
+# Files
+data/
+*.zip
+*.ipynb

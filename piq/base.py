@@ -29,13 +29,13 @@ class BaseFeatureMetric(torch.nn.Module):
             out_features: size of `feature_extractor` output
             device: Device on which to compute inference of the model
         """
-
         if feature_extractor is None:
             print('WARNING: default feature extractor (InceptionNet V2) is used.')
             feature_extractor = InceptionV3()
         else:
             assert isinstance(feature_extractor, torch.nn.Module), \
                 f"Feature extractor must be PyTorch module. Got {type(feature_extractor)}"
+
         feature_extractor.to(device)
         feature_extractor.eval()
 
@@ -50,8 +50,14 @@ class BaseFeatureMetric(torch.nn.Module):
             # TODO(jamil 26.03.20): Add support for more than one feature map
             assert len(features) == 1, \
                 f"feature_encoder must return list with features from one layer. Got {len(features)}"
-            total_feats.append(features[0].view(N, -1))
 
+            features = features[0].view(N, -1)
+            features = features.cpu()
+            total_feats.append(features)
+            torch.cuda.empty_cache()
+
+        feature_extractor.cpu()
+        torch.cuda.empty_cache()
         return torch.cat(total_feats, dim=0)
 
     def compute_metric(self, x_features: torch.Tensor, y_features: torch.Tensor) -> torch.Tensor:

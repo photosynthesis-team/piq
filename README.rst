@@ -40,7 +40,7 @@ We provide:
 
 * Unified interface, which is easy to use and extend.
 * Written on pure PyTorch with bare minima of additional dependencies.
-* Extensive user input validation. You code will not crash in the middle of the training.
+* Extensive user input validation. Your code will not crash in the middle of the training.
 * Fast (GPU computations available) and reliable.
 * Most metrics can be backpropagated for model optimization.
 * Supports python 3.6-3.8.
