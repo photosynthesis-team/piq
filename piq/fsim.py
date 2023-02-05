@@ -92,8 +92,8 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     pc_y = _phase_congruency(y_lum, filters=filters, scales=scales, orientations=orientations, k=k)
 
     # Gradient maps
-    filter = scharr_filter(device=x_lum.device, dtype=x_lum.dtype)
-    kernels = torch.stack([filter, filter.transpose(-1, -2)])
+    sch_filter = scharr_filter(device=x_lum.device, dtype=x_lum.dtype)
+    kernels = torch.stack([sch_filter, sch_filter.transpose(-1, -2)])
     grad_map_x = gradient_map(x_lum, kernels)
     grad_map_y = gradient_map(y_lum, kernels)
 
