@@ -12,7 +12,7 @@ import torch
 
 import torch.nn.functional as F
 
-from typing import Union
+from typing import Union, Optional
 from torch.nn.modules.loss import _Loss
 
 from piq.utils import _validate_input, _reduce
@@ -162,7 +162,7 @@ def _subband_similarity(x: torch.Tensor, y: torch.Tensor, first_term: bool,
     return similarity
 
 
-def _dct_matrix(size: int, dtype: type = None, device: str = None) -> torch.Tensor:
+def _dct_matrix(size: int, device: Optional[str] = None, dtype: Optional[type] = None) -> torch.Tensor:
     r""" Computes the matrix coefficients for DCT transform using the following formula:
     https://fr.mathworks.com/help/images/discrete-cosine-transform.html
 

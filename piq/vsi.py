@@ -7,7 +7,7 @@ References:
 """
 import warnings
 import functools
-from typing import Union, Tuple
+from typing import Union, Tuple, Optional
 
 import torch
 from torch.nn.modules.loss import _Loss
@@ -244,7 +244,7 @@ def sdsp(x: torch.Tensor, data_range: Union[int, float] = 255, omega_0: float = 
 
 
 def _log_gabor(size: Tuple[int, int], omega_0: float, sigma_f: float,
-               device: str = None, dtype: type = None) -> torch.Tensor:
+               device: Optional[str] = None, dtype: Optional[type] = None) -> torch.Tensor:
     r"""Creates log Gabor filter
 
     Args:

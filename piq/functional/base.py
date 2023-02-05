@@ -1,5 +1,5 @@
 r"""General purpose functions"""
-from typing import Tuple, Union
+from typing import Tuple, Union, Optional
 import torch
 
 
@@ -9,7 +9,7 @@ def ifftshift(x: torch.Tensor) -> torch.Tensor:
     return torch.roll(x, shift, tuple(range(len(shift))))
 
 
-def get_meshgrid(size: Tuple[int, int], device: str = 'cpu', dtype: type = torch.float) -> torch.Tensor:
+def get_meshgrid(size: Tuple[int, int], device: Optional[str] = None, dtype: Optional[type] = None) -> torch.Tensor:
     r"""Return coordinate grid matrices centered at zero point.
     Args:
         size: Shape of meshgrid to create
