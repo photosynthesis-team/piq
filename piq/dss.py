@@ -174,7 +174,7 @@ def _dct_matrix(size: int, device: Optional[str] = None, dtype: Optional[type] =
     p = torch.arange(1, size, device=device, dtype=dtype).reshape((size - 1, 1))
     q = torch.arange(1, 2 * size, 2, device=device, dtype=dtype)
     return torch.cat((
-        math.sqrt(1 / size) * torch.ones((1, size)),
+        math.sqrt(1 / size) * torch.ones((1, size), device=device, dtype=dtype),
         math.sqrt(2 / size) * torch.cos(math.pi / (2 * size) * p * q)), 0)
 
 
