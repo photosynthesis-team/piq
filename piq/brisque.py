@@ -209,10 +209,10 @@ def _scale_features(features: torch.Tensor) -> torch.Tensor:
                                    [0.471, 3.264], [0.012809, 0.703171], [0.218, 1.046],
                                    [-0.094876, 0.187459], [1.5e-005, 0.442057], [0.001272, 0.40803],
                                    [0.222, 1.042], [-0.115772, 0.162604], [1.6e-005, 0.444362],
-                                   [0.001374, 0.40243], [0.227, 0.996],
-                                   [-0.117188, 0.09832299999999999], [3e-005, 0.531903],
-                                   [0.001122, 0.369589], [0.228, 0.99], [-0.12243, 0.098658],
-                                   [2.8e-005, 0.530092], [0.001118, 0.370399]]).to(features)
+                                   [0.001374, 0.40243], [0.227, 0.996], [-0.117188, 0.09832299999999999],
+                                   [3e-005, 0.531903], [0.001122, 0.369589], [0.228, 0.99], [-0.12243, 0.098658],
+                                   [2.8e-005, 0.530092],
+                                   [0.001118, 0.370399]], device=features.device, dtype=features.dtype)
 
     scaled_features = lower_bound + (upper_bound - lower_bound) * (features - feature_ranges[..., 0]) / (
             feature_ranges[..., 1] - feature_ranges[..., 0])
@@ -236,5 +236,5 @@ def _score_svr(features: torch.Tensor) -> torch.Tensor:
     rho = -153.591
     sv.t_()
     kernel_features = _rbf_kernel(features=features, sv=sv, gamma=gamma)
-    score = kernel_features @ sv_coef.to(dtype=features.dtype)
+    score = kernel_features @ sv_coef.type(features.dtype)
     return score - rho
