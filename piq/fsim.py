@@ -147,8 +147,6 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4, 
     # Pre-compute some stuff to speed up filter construction
     grid_x, grid_y = get_meshgrid((H, W), device=x.device, dtype=x.dtype)
 
-    # Move grid to GPU early on, so that all math heavy stuff computes faster.
-    # grid_x, grid_y = grid_x.to(x), grid_y.to(x)
     radius = torch.sqrt(grid_x ** 2 + grid_y ** 2)
     theta = torch.atan2(-grid_y, grid_x)
 
