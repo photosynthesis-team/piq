@@ -1,5 +1,5 @@
 r"""General purpose functions"""
-from typing import Tuple, Union
+from typing import Tuple, Union, Optional
 import torch
 
 
@@ -9,24 +9,28 @@ def ifftshift(x: torch.Tensor) -> torch.Tensor:
     return torch.roll(x, shift, tuple(range(len(shift))))
 
 
-def get_meshgrid(size: Tuple[int, int]) -> torch.Tensor:
+def get_meshgrid(size: Tuple[int, int], device: Optional[str] = None, dtype: Optional[type] = None) -> torch.Tensor:
     r"""Return coordinate grid matrices centered at zero point.
     Args:
         size: Shape of meshgrid to create
+        device: device to use for creation
+        dtype: dtype to use for creation
+    Returns:
+        Meshgrid of size on device with dtype values.
     """
     if size[0] % 2:
         # Odd
-        x = torch.arange(-(size[0] - 1) / 2, size[0] / 2) / (size[0] - 1)
+        x = torch.arange(-(size[0] - 1) / 2, size[0] / 2, device=device, dtype=dtype) / (size[0] - 1)
     else:
         # Even
-        x = torch.arange(- size[0] / 2, size[0] / 2) / size[0]
+        x = torch.arange(- size[0] / 2, size[0] / 2, device=device, dtype=dtype) / size[0]
 
     if size[1] % 2:
         # Odd
-        y = torch.arange(-(size[1] - 1) / 2, size[1] / 2) / (size[1] - 1)
+        y = torch.arange(-(size[1] - 1) / 2, size[1] / 2, device=device, dtype=dtype) / (size[1] - 1)
     else:
         # Even
-        y = torch.arange(- size[1] / 2, size[1] / 2) / size[1]
+        y = torch.arange(- size[1] / 2, size[1] / 2, device=device, dtype=dtype) / size[1]
     return torch.meshgrid(x, y)
 
 
@@ -53,7 +57,7 @@ def gradient_map(x: torch.Tensor, kernels: torch.Tensor) -> torch.Tensor:
         Gradients of x per-channel with shape (N, C, H, W)
     """
     padding = kernels.size(-1) // 2
-    grads = torch.nn.functional.conv2d(x, kernels.to(x), padding=padding)
+    grads = torch.nn.functional.conv2d(x, kernels, padding=padding)
 
     return torch.sqrt(torch.sum(grads ** 2, dim=-3, keepdim=True))
 

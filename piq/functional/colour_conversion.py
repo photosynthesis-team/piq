@@ -14,7 +14,7 @@ def rgb2lmn(x: torch.Tensor) -> torch.Tensor:
     """
     weights_rgb_to_lmn = torch.tensor([[0.06, 0.63, 0.27],
                                        [0.30, 0.04, -0.35],
-                                       [0.34, -0.6, 0.17]]).t().to(x)
+                                       [0.34, -0.6, 0.17]], dtype=x.dtype, device=x.device).t()
     x_lmn = torch.matmul(x.permute(0, 2, 3, 1), weights_rgb_to_lmn).permute(0, 3, 1, 2)
     return x_lmn
 
@@ -28,14 +28,14 @@ def rgb2xyz(x: torch.Tensor) -> torch.Tensor:
     Returns:
         Batch of images with shape (N, 3, H, W). XYZ colour space.
     """
-    mask_below = (x <= 0.04045).to(x)
-    mask_above = (x > 0.04045).to(x)
+    mask_below = (x <= 0.04045).type(x.dtype)
+    mask_above = (x > 0.04045).type(x.dtype)
 
     tmp = x / 12.92 * mask_below + torch.pow((x + 0.055) / 1.055, 2.4) * mask_above
 
     weights_rgb_to_xyz = torch.tensor([[0.4124564, 0.3575761, 0.1804375],
                                        [0.2126729, 0.7151522, 0.0721750],
-                                       [0.0193339, 0.1191920, 0.9503041]]).to(x)
+                                       [0.0193339, 0.1191920, 0.9503041]], dtype=x.dtype, device=x.device)
 
     x_xyz = torch.matmul(tmp.permute(0, 2, 3, 1), weights_rgb_to_xyz.t()).permute(0, 3, 1, 2)
     return x_xyz
@@ -68,18 +68,19 @@ def xyz2lab(x: torch.Tensor, illuminant: str = 'D50', observer: str = '2') -> to
          "E": {'2': (1.0, 1.0, 1.0),
                '10': (1.0, 1.0, 1.0)}}
 
-    illuminants_to_use = torch.tensor(illuminants[illuminant][observer]).to(x).view(1, 3, 1, 1)
+    illuminants_to_use = torch.tensor(illuminants[illuminant][observer],
+                                      dtype=x.dtype, device=x.device).view(1, 3, 1, 1)
 
     tmp = x / illuminants_to_use
 
-    mask_below = tmp <= epsilon
-    mask_above = tmp > epsilon
+    mask_below = (tmp <= epsilon).type(x.dtype)
+    mask_above = (tmp > epsilon).type(x.dtype)
     tmp = torch.pow(tmp, 1. / 3.) * mask_above + (kappa * tmp + 16.) / 116. * mask_below
 
     weights_xyz_to_lab = torch.tensor([[0, 116., 0],
                                        [500., -500., 0],
-                                       [0, 200., -200.]]).to(x)
-    bias_xyz_to_lab = torch.tensor([-16., 0., 0.]).to(x).view(1, 3, 1, 1)
+                                       [0, 200., -200.]], dtype=x.dtype, device=x.device)
+    bias_xyz_to_lab = torch.tensor([-16., 0., 0.], dtype=x.dtype, device=x.device).view(1, 3, 1, 1)
 
     x_lab = torch.matmul(tmp.permute(0, 2, 3, 1), weights_xyz_to_lab.t()).permute(0, 3, 1, 2) + bias_xyz_to_lab
     return x_lab
@@ -110,7 +111,7 @@ def rgb2yiq(x: torch.Tensor) -> torch.Tensor:
     yiq_weights = torch.tensor([
         [0.299, 0.587, 0.114],
         [0.5959, -0.2746, -0.3213],
-        [0.2115, -0.5227, 0.3112]]).t().to(x)
+        [0.2115, -0.5227, 0.3112]], dtype=x.dtype, device=x.device).t()
     x_yiq = torch.matmul(x.permute(0, 2, 3, 1), yiq_weights).permute(0, 3, 1, 2)
     return x_yiq
 
@@ -130,6 +131,6 @@ def rgb2lhm(x: torch.Tensor) -> torch.Tensor:
     lhm_weights = torch.tensor([
         [0.2989, 0.587, 0.114],
         [0.3, 0.04, -0.35],
-        [0.34, -0.6, 0.17]]).t().to(x)
+        [0.34, -0.6, 0.17]], dtype=x.dtype, device=x.device).t()
     x_lhm = torch.matmul(x.permute(0, 2, 3, 1), lhm_weights).permute(0, 3, 1, 2)
     return x_lhm

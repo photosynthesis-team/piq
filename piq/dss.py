@@ -12,7 +12,7 @@ import torch
 
 import torch.nn.functional as F
 
-from typing import Union
+from typing import Union, Optional
 from torch.nn.modules.loss import _Loss
 
 from piq.utils import _validate_input, _reduce
@@ -84,7 +84,7 @@ def dss(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     dct_y = _dct_decomp(y_lum, dct_size)
 
     # Create a Gaussian window that will be used to weight subbands scores
-    coords = torch.arange(1, dct_size + 1).to(x)
+    coords = torch.arange(1, dct_size + 1, dtype=x.dtype, device=x.device)
     weight = (coords - 0.5) ** 2
     weight = (- (weight.unsqueeze(0) + weight.unsqueeze(1)) / (2 * sigma_weight ** 2)).exp()
 
@@ -135,8 +135,8 @@ def _subband_similarity(x: torch.Tensor, y: torch.Tensor, first_term: bool,
     c = dc_coeff if first_term else ac_coeff
 
     # Compute local variance
-    kernel = gaussian_filter(kernel_size=kernel_size, sigma=sigma)
-    kernel = kernel.view(1, 1, kernel_size, kernel_size).to(x)
+    kernel = gaussian_filter(kernel_size=kernel_size, sigma=sigma, dtype=x.dtype, device=x.device)
+    kernel = kernel.view(1, 1, kernel_size, kernel_size)
     mu_x = F.conv2d(x, kernel, padding=kernel_size // 2)
     mu_y = F.conv2d(y, kernel, padding=kernel_size // 2)
 
@@ -162,17 +162,19 @@ def _subband_similarity(x: torch.Tensor, y: torch.Tensor, first_term: bool,
     return similarity
 
 
-def _dct_matrix(size: int) -> torch.Tensor:
+def _dct_matrix(size: int, device: Optional[str] = None, dtype: Optional[type] = None) -> torch.Tensor:
     r""" Computes the matrix coefficients for DCT transform using the following formula:
     https://fr.mathworks.com/help/images/discrete-cosine-transform.html
 
     Args:
-       size : size of DCT matrix to create.  (`size`, `size`)
+        size : size of DCT matrix to create.  (`size`, `size`)
+        device: target device for generation
+        dtype: target data type for generation
     """
-    p = torch.arange(1, size).reshape((size - 1, 1))
-    q = torch.arange(1, 2 * size, 2)
+    p = torch.arange(1, size, device=device, dtype=dtype).reshape((size - 1, 1))
+    q = torch.arange(1, 2 * size, 2, device=device, dtype=dtype)
     return torch.cat((
-        math.sqrt(1 / size) * torch.ones((1, size)),
+        math.sqrt(1 / size) * torch.ones((1, size), device=device, dtype=dtype),
         math.sqrt(2 / size) * torch.cos(math.pi / (2 * size) * p * q)), 0)
 
 
@@ -196,7 +198,7 @@ def _dct_decomp(x: torch.Tensor, dct_size: int = 8) -> torch.Tensor:
     blocks = blocks.view(bs, 1, -1, dct_size, dct_size)  # shape (bs, 1, block_num, N, N)
 
     # apply DCT transform
-    coeffs = _dct_matrix(dct_size).to(x)
+    coeffs = _dct_matrix(dct_size, device=x.device, dtype=x.dtype)
 
     blocks = coeffs @ blocks @ coeffs.t()  # @ does operation on last 2 channels only
 

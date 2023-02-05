@@ -60,7 +60,7 @@ def inception_score(features: torch.Tensor, num_splits: int = 10):
         partial_scores.append(torch.tensor(scores).mean().exp())
 
     partial_scores = torch.tensor(partial_scores)
-    return torch.mean(partial_scores).to(features), torch.std(partial_scores).to(features)
+    return torch.mean(partial_scores), torch.std(partial_scores)
 
 
 class IS(BaseFeatureMetric):

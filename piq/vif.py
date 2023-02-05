@@ -69,8 +69,8 @@ def vif_p(x: torch.Tensor, y: torch.Tensor, sigma_n_sq: float = 2.0,
     x_vif, y_vif = 0, 0
     for scale in range(4):
         kernel_size = 2 ** (4 - scale) + 1
-        kernel = gaussian_filter(kernel_size, sigma=kernel_size / 5)
-        kernel = kernel.view(1, 1, kernel_size, kernel_size).to(x)
+        kernel = gaussian_filter(kernel_size, sigma=kernel_size / 5, device=x.device, dtype=x.dtype)
+        kernel = kernel.view(1, 1, kernel_size, kernel_size)
 
         if scale > 0:
             # Convolve and downsample
