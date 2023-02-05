@@ -81,7 +81,8 @@ def _gmsd(x: torch.Tensor, y: torch.Tensor,
     """
 
     # Compute grad direction
-    kernels = torch.stack([prewitt_filter(), prewitt_filter().transpose(-1, -2)]).to(x)
+    p_filter = prewitt_filter(dtype=x.dtype, device=x.device)
+    kernels = torch.stack([p_filter, p_filter.transpose(-1, -2)])
     x_grad = gradient_map(x, kernels)
     y_grad = gradient_map(y, kernels)
 
@@ -181,10 +182,10 @@ def multi_scale_gmsd(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, fl
 
     # Values from the paper
     if scale_weights is None:
-        scale_weights = torch.tensor([0.096, 0.596, 0.289, 0.019], device=x.device)
+        scale_weights = torch.tensor([0.096, 0.596, 0.289, 0.019], device=x.device, dtype=x.dtype)
     else:
         # Normalize scale weights
-        scale_weights = (scale_weights / scale_weights.sum()).to(x)
+        scale_weights = (scale_weights / scale_weights.sum())
 
     # Check that input is big enough
     num_scales = scale_weights.size(0)

@@ -92,7 +92,8 @@ def srsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     )
 
     # Gradient maps
-    kernels = torch.stack([scharr_filter(), scharr_filter().transpose(-1, -2)]).to(x_lum)
+    sch_filter = scharr_filter(device=x_lum.device, dtype=x_lum.dtype)
+    kernels = torch.stack([sch_filter, sch_filter.transpose(-1, -2)])
     grad_map_x = gradient_map(x_lum, kernels)
     grad_map_y = gradient_map(y_lum, kernels)
 
@@ -187,12 +188,12 @@ def _spectral_residual_visual_saliency(x: torch.Tensor, scale: float = 0.25, ker
 
     # After effect for SR-SIM
     # Apply gaussian blur
-    kernel = gaussian_filter(gaussian_size, sigma)
+    kernel = gaussian_filter(gaussian_size, sigma, device=saliency_map.device, dtype=saliency_map.dtype)
     if gaussian_size % 2 == 0:  # matlab pads upper and lower borders with 0s for even kernels
         kernel = torch.cat((torch.zeros(1, 1, gaussian_size), kernel), 1)
         kernel = torch.cat((torch.zeros(1, gaussian_size + 1, 1), kernel), 2)
         gaussian_size += 1
-    kernel = kernel.view(1, 1, gaussian_size, gaussian_size).to(saliency_map)
+    kernel = kernel.view(1, 1, gaussian_size, gaussian_size)
     saliency_map = F.conv2d(saliency_map, kernel, padding=(gaussian_size - 1) // 2)
 
     # normalize between [0, 1]

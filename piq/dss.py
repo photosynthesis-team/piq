@@ -135,8 +135,8 @@ def _subband_similarity(x: torch.Tensor, y: torch.Tensor, first_term: bool,
     c = dc_coeff if first_term else ac_coeff
 
     # Compute local variance
-    kernel = gaussian_filter(kernel_size=kernel_size, sigma=sigma)
-    kernel = kernel.view(1, 1, kernel_size, kernel_size).to(x)
+    kernel = gaussian_filter(kernel_size=kernel_size, sigma=sigma, dtype=x.dtype, device=x.device)
+    kernel = kernel.view(1, 1, kernel_size, kernel_size)
     mu_x = F.conv2d(x, kernel, padding=kernel_size // 2)
     mu_y = F.conv2d(y, kernel, padding=kernel_size // 2)
 

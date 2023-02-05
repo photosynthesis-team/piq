@@ -172,7 +172,7 @@ def _aggd_parameters(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch
 
 def _natural_scene_statistics(luma: torch.Tensor, kernel_size: int = 7, sigma: float = 7. / 6) -> torch.Tensor:
     kernel = gaussian_filter(kernel_size=kernel_size,
-                             sigma=sigma, dtype=luma.dtype).view(1, 1, kernel_size, kernel_size).to(luma)
+                             sigma=sigma, dtype=luma.dtype, device=luma.device).view(1, 1, kernel_size, kernel_size)
     C = 1
     mu = F.conv2d(luma, kernel, padding=kernel_size // 2)
     mu_sq = mu ** 2

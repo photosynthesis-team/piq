@@ -86,11 +86,11 @@ def information_weighted_ssim(x: torch.Tensor, y: torch.Tensor, data_range: Unio
 
     blur_pad = math.ceil((kernel_size - 1) / 2)  # Ceil
     iw_pad = blur_pad - math.floor((blk_size - 1) / 2)  # floor
-    gauss_kernel = gaussian_filter(kernel_size, kernel_sigma).repeat(x.size(1), 1, 1, 1).to(x)
+    gauss_kernel = gaussian_filter(kernel_size, kernel_sigma, device=x.device, dtype=x.dtype).repeat(x.size(1), 1, 1, 1)
 
     # Size of the kernel size to build Laplacian pyramid
     pyramid_kernel_size = 5
-    bin_filter = binomial_filter1d(kernel_size=pyramid_kernel_size).to(x) * 2 ** 0.5
+    bin_filter = binomial_filter1d(kernel_size=pyramid_kernel_size, device=x.device, dtype=x.dtype) * 2 ** 0.5
 
     lo_x, x_diff_old = _pyr_step(x, bin_filter)
     lo_y, y_diff_old = _pyr_step(y, bin_filter)
@@ -319,7 +319,7 @@ def _information_content(x: torch.Tensor, y: torch.Tensor, y_parent: torch.Tenso
 
     EPS = torch.finfo(x.dtype).eps
     n_channels = x.size(1)
-    kernel = average_filter2d(kernel_size=kernel_size).repeat(x.size(1), 1, 1, 1).to(x)
+    kernel = average_filter2d(kernel_size=kernel_size, device=x.device, dtype=x.dtype).repeat(x.size(1), 1, 1, 1)
     padding_up = kernel.size(-1) // 2
     padding_down = kernel.size(-1) - padding_up
 
@@ -432,7 +432,7 @@ def _image_enlarge(x: torch.Tensor) -> torch.Tensor:
         Upscaled tensor.
     """
     t1 = F.interpolate(x, size=(int(4 * x.size(-2) - 3), int(4 * x.size(-1) - 3)), mode='bilinear', align_corners=False)
-    t2 = torch.zeros([x.size(0), 1, 4 * x.size(-2) - 1, 4 * x.size(-1) - 1]).to(x)
+    t2 = torch.zeros([x.size(0), 1, 4 * x.size(-2) - 1, 4 * x.size(-1) - 1], device=x.device, dtype=x.dtype)
     t2[:, :, 1: -1, 1:-1] = t1
     t2[:, :, 0, :] = 2 * t2[:, :, 1, :] - t2[:, :, 2, :]
     t2[:, :, -1, :] = 2 * t2[:, :, -2, :] - t2[:, :, -3, :]
