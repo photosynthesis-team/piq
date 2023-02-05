@@ -190,8 +190,10 @@ def _spectral_residual_visual_saliency(x: torch.Tensor, scale: float = 0.25, ker
     # Apply gaussian blur
     kernel = gaussian_filter(gaussian_size, sigma, device=saliency_map.device, dtype=saliency_map.dtype)
     if gaussian_size % 2 == 0:  # matlab pads upper and lower borders with 0s for even kernels
-        kernel = torch.cat((torch.zeros(1, 1, gaussian_size), kernel), 1)
-        kernel = torch.cat((torch.zeros(1, gaussian_size + 1, 1), kernel), 2)
+        kernel = torch.cat((torch.zeros(1, 1, gaussian_size,
+                            device=saliency_map.device, dtype=saliency_map.dtype), kernel), 1)
+        kernel = torch.cat((torch.zeros(1, gaussian_size + 1, 1,
+                            device=saliency_map.device, dtype=saliency_map.dtype), kernel), 2)
         gaussian_size += 1
     kernel = kernel.view(1, 1, gaussian_size, gaussian_size)
     saliency_map = F.conv2d(saliency_map, kernel, padding=(gaussian_size - 1) // 2)
