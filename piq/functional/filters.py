@@ -45,12 +45,16 @@ def gaussian_filter(kernel_size: int, sigma: float, dtype: torch.dtype = torch.f
 
 
 # Gradient operator kernels
-def scharr_filter() -> torch.Tensor:
+def scharr_filter(device: str = 'cpu', dtype: type = torch.float) -> torch.Tensor:
     r"""Utility function that returns a normalized 3x3 Scharr kernel in X direction
+
+    Args:
+        device: device to use for filter generation
+        dtype: dtype to use for filter generation
     Returns:
         kernel: Tensor with shape (1, 3, 3)
     """
-    return torch.tensor([[[-3., 0., 3.], [-10., 0., 10.], [-3., 0., 3.]]]) / 16
+    return torch.tensor([[[-3., 0., 3.], [-10., 0., 10.], [-3., 0., 3.]]], device=device, dtype=dtype) / 16
 
 
 def prewitt_filter() -> torch.Tensor:

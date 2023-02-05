@@ -6,7 +6,7 @@ References:
 """
 import math
 import functools
-from typing import Union, Tuple
+from typing import Union
 
 import torch
 from torch.nn.modules.loss import _Loss
@@ -92,7 +92,8 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     pc_y = _phase_congruency(y_lum, filters=filters, scales=scales, orientations=orientations, k=k)
 
     # Gradient maps
-    kernels = torch.stack([scharr_filter(), scharr_filter().transpose(-1, -2)]).to(x_lum)
+    filter = scharr_filter(device=x_lum.device, dtype=x_lum.dtype)
+    kernels = torch.stack([filter, filter.transpose(-1, -2)])
     grad_map_x = gradient_map(x_lum, kernels)
     grad_map_y = gradient_map(y_lum, kernels)
 
@@ -144,12 +145,24 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4, 
     theta_sigma = math.pi / (orientations * delta_theta)
 
     # Pre-compute some stuff to speed up filter construction
-    grid_x, grid_y = get_meshgrid((H, W))
+    grid_x, grid_y = get_meshgrid((H, W), device=x.device, dtype=x.dtype)
 
     # Move grid to GPU early on, so that all math heavy stuff computes faster.
-    grid_x, grid_y = grid_x.to(x), grid_y.to(x)
+    # grid_x, grid_y = grid_x.to(x), grid_y.to(x)
     radius = torch.sqrt(grid_x ** 2 + grid_y ** 2)
     theta = torch.atan2(-grid_y, grid_x)
+
+    # First construct a low-pass filter that is as large as possible, yet falls
+    # away to zero at the boundaries.  All log Gabor filters are multiplied by
+    # this to ensure no extra frequencies at the 'corners' of the FFT are
+    # incorporated as this seems to upset the normalisation process when
+    # Computed explicitly without _lowpassfilter
+    # Explicit low pass filter computation
+    n = 15  # default parameter
+    cutoff = .45  # default parameter
+    assert 0 < cutoff <= 0.5, "Cutoff frequency must be between 0 and 0.5"
+    assert n > 1 and int(n) == n, "n must be an integer >= 1"
+    lp = ifftshift(1. / (1.0 + (radius / cutoff) ** (2 * n)))
 
     # Quadrant shift radius and theta so that filters are constructed with 0 frequency at the corners.
     # Get rid of the 0 radius value at the 0 frequency point (now at top-left corner)
@@ -166,12 +179,6 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4, 
     # 2) The angular component, which controls the orientation that the filter responds to.
     # The two components are multiplied together to construct the overall filter.
 
-    # First construct a low-pass filter that is as large as possible, yet falls
-    # away to zero at the boundaries.  All log Gabor filters are multiplied by
-    # this to ensure no extra frequencies at the 'corners' of the FFT are
-    # incorporated as this seems to upset the normalisation process when
-    lp = _lowpassfilter(size=(H, W), cutoff=.45, n=15).to(x)
-
     # Construct the radial filter components...
     log_gabor = []
     for s in range(scales):
@@ -181,6 +188,8 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4, 
         gabor_filter = gabor_filter * lp
         gabor_filter[0, 0] = 0
         log_gabor.append(gabor_filter)
+
+    log_gabor = torch.stack(log_gabor)
 
     # Then construct the angular filter components...
     spread = []
@@ -197,7 +206,6 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4, 
         spread.append(torch.exp((- dtheta ** 2) / (2 * theta_sigma ** 2)))
 
     spread = torch.stack(spread)
-    log_gabor = torch.stack(log_gabor)
 
     # Multiply, add batch dimension and transfer to correct device.
     filters = (spread.repeat_interleave(scales, dim=0) * log_gabor.repeat(orientations, 1, 1)).unsqueeze(0)
@@ -322,39 +330,10 @@ def _phase_congruency(x: torch.Tensor, filters: torch.Tensor, scales: int = 4, o
     # Apply noise threshold
     energy = torch.max(energy - T, torch.zeros_like(T))
 
-    eps = torch.finfo(energy.dtype).eps
-    energy_all = energy.sum(dim=[1, 2]) + eps
-    an_all = an.sum(dim=[1, 2]) + eps
+    energy_all = energy.sum(dim=[1, 2]) + EPS
+    an_all = an.sum(dim=[1, 2]) + EPS
     result_pc = energy_all / an_all
     return result_pc.unsqueeze(1)
-
-
-def _lowpassfilter(size: Tuple[int, int], cutoff: float, n: int) -> torch.Tensor:
-    r"""
-    Constructs a low-pass Butterworth filter.
-
-    Args:
-        size: Tuple with height and width of filter to construct
-        cutoff: Cutoff frequency of the filter in (0, 0.5()
-        n: Filter order. Higher `n` means sharper transition.
-            Note that `n` is doubled so that it is always an even integer.
-
-    Returns:
-        f = 1 / (1 + w/cutoff) ^ 2n
-
-    Note:
-        The frequency origin of the returned filter is at the corners.
-
-    """
-    assert 0 < cutoff <= 0.5, "Cutoff frequency must be between 0 and 0.5"
-    assert n > 1 and int(n) == n, "n must be an integer >= 1"
-
-    grid_x, grid_y = get_meshgrid(size)
-
-    # A matrix with every pixel = radius relative to centre.
-    radius = torch.sqrt(grid_x ** 2 + grid_y ** 2)
-
-    return ifftshift(1. / (1.0 + (radius / cutoff) ** (2 * n)))
 
 
 class FSIMLoss(_Loss):
