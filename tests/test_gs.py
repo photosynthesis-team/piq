@@ -35,12 +35,12 @@ def prepare_test(scipy_version='1.3.3', gudhi_version='3.2') -> None:
     try:
         import scipy  # noqa: F401
     except ImportError:
-        install('scipy' + '==' + scipy_version)
+        install('scipy' + '>=' + scipy_version)
 
     try:
         import gudhi  # noqa: F401
     except ImportError:
-        install('gudhi' + '==' + gudhi_version)
+        install('gudhi' + '>=' + gudhi_version)
 
 
 @pytest.fixture
