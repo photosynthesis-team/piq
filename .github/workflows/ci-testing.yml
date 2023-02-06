@@ -9,15 +9,15 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     env:
-      USING_COVERAGE: '3.6'
+      USING_COVERAGE: '3.7'
 
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.6, 3.7, 3.8]
-        torchvision-version: [0.6.1, 0.9.1]
+        python-version: [3.7, 3.11]
+        torchvision-version: [0.6.1, 0.14.1]
 
     steps:
       - uses: actions/checkout@v2
