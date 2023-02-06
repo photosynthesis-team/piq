@@ -43,7 +43,7 @@ We provide:
 * Extensive user input validation. Your code will not crash in the middle of the training.
 * Fast (GPU computations available) and reliable.
 * Most metrics can be backpropagated for model optimization.
-* Supports python 3.6-3.8.
+* Supports python 3.7-3.10.
 
 PIQ was initially named `PhotoSynthesis.Metrics <https://pypi.org/project/photosynthesis-metrics/0.4.0/>`_.
 
