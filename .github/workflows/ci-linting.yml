@@ -14,7 +14,6 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        fix/testing_ci
         python-version: [3.10]
 
     steps:
