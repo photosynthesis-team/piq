@@ -35,7 +35,7 @@ setuptools.setup(
     long_description_content_type="text/x-rst",
     url="https://github.com/photosynthesis-team/piq",
     install_requires=required,
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(exclude=["tests", "examples"]),
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
