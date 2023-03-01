@@ -70,7 +70,7 @@ METRICS = {
     # No-reference
     "BRISQUE": Metric(name="BRISQUE", functor=functools.partial(piq.brisque, data_range=255., reduction='none'),
                       category='NR'),
-    "CLIPIQA": Metric(name="CLIPIQA", functor=piq.CLIPIQA(), category='NR'),
+    "CLIPIQA": Metric(name="CLIPIQA", functor=piq.CLIPIQA(data_range=255), category='NR'),
 
     # Distribution-based
     "IS": Metric(name="IS", functor=piq.IS(distance='l1'), category='DB'),
