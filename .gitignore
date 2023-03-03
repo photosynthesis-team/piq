@@ -114,3 +114,6 @@ venv.bak/
 data/
 *.zip
 *.ipynb
+
+#datasets
+datasets/*

@@ -1,0 +1,20 @@
+import os
+import shutil
+
+# Specify the directory where the files are located
+directory = "datasets/01"
+
+# Create a new directory to store the copied files
+new_directory = "datasets/polar_1024"
+if not os.path.exists(new_directory):
+    os.makedirs(new_directory)
+
+# Loop through all the files in the directory
+for filename in os.listdir(directory):
+    # Check if the file name ends with "1024"
+    if filename.endswith("1024.png"):
+        # If it does, copy the file to the new directory
+        source_path = os.path.join(directory, filename)
+        destination_path = os.path.join(new_directory, filename)
+        shutil.copy(source_path, destination_path)
+        print(f"Copied {filename} to {new_directory}")
