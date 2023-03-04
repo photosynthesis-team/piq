@@ -228,7 +228,7 @@ Here is an example how to evaluate SSIM and MS-SSIM metrics on TID2013 dataset:
 
    python3 tests/results_benchmark.py --dataset tid2013 --metrics SSIM MS-SSIM --path ~/datasets/tid2013 --batch_size 16
 
-Below we provide a comparison between `Spearman's Rank Correlation cCoefficient <https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient>`_ (SRCC) values obtained with PIQ and reported in surveys.
+Below we provide a comparison between `Spearman's Rank Correlation Coefficient <https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient>`_ (SRCC) values obtained with PIQ and reported in surveys.
 Closer SRCC values indicate the higher degree of agreement between results of computations on given datasets.
 We do not report `Kendall rank correlation coefficient <https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient>`_ (KRCC)
 as it is highly correlated with SRCC and provides limited additional information.
