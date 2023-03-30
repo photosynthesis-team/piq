@@ -7,7 +7,7 @@ References:
 """
 import warnings
 import functools
-from typing import Union, Tuple, Optional
+from typing import Union
 
 import torch
 from torch.nn.modules.loss import _Loss
@@ -212,7 +212,9 @@ def sdsp(x: torch.Tensor, data_range: Union[int, float] = 255, omega_0: float = 
 
     x_lab = rgb2lab(x, data_range=255)
 
-    lg = _log_gabor(size_to_use, omega_0, sigma_f, device=x.device, dtype=x.dtype).view(1, 1, *size_to_use)
+    xx, yy = get_meshgrid(size_to_use, device=x_lab.device, dtype=x_lab.dtype)
+    lg = _log_gabor(xx, yy, omega_0, sigma_f).view(1, 1, *size_to_use)
+
     recommended_torch_version = _parse_version('1.8.0')
     torch_version = _parse_version(torch.__version__)
     if len(torch_version) != 0 and torch_version >= recommended_torch_version:
@@ -224,7 +226,7 @@ def sdsp(x: torch.Tensor, data_range: Union[int, float] = 255, omega_0: float = 
 
     s_f = x_ifft_real.pow(2).sum(dim=1, keepdim=True).sqrt()
 
-    coordinates = torch.stack(get_meshgrid(size_to_use, device=x.device, dtype=x.dtype), dim=0)
+    coordinates = torch.stack([xx, yy], dim=0)
     coordinates = coordinates * size_to_use[0] + 1
     s_d = torch.exp(-torch.sum(coordinates ** 2, dim=0) / sigma_d ** 2).view(1, 1, *size_to_use)
 
@@ -243,12 +245,12 @@ def sdsp(x: torch.Tensor, data_range: Union[int, float] = 255, omega_0: float = 
     return (vs_m - min_vs_m) / (max_vs_m - min_vs_m + eps)
 
 
-def _log_gabor(size: Tuple[int, int], omega_0: float, sigma_f: float,
-               device: Optional[str] = None, dtype: Optional[type] = None) -> torch.Tensor:
+def _log_gabor(xx: torch.Tensor, yy: torch.Tensor, omega_0: float, sigma_f: float, ) -> torch.Tensor:
     r"""Creates log Gabor filter
 
     Args:
-        size: size of the requires log Gabor filter
+        xx: x component of meshgrid
+        yy: y component of meshgrid
         omega_0: center frequency of the filter
         sigma_f: bandwidth of the filter
         device: target device for kernel generation
@@ -256,8 +258,6 @@ def _log_gabor(size: Tuple[int, int], omega_0: float, sigma_f: float,
     Returns:
         log Gabor filter
     """
-    xx, yy = get_meshgrid(size, device=device, dtype=dtype)
-
     radius = (xx ** 2 + yy ** 2).sqrt()
     mask = radius <= 0.5
 
