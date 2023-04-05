@@ -9,8 +9,9 @@ import functools
 import torchvision
 
 import pandas as pd
+import numpy as np
 
-from typing import List, Callable, Tuple
+from typing import List, Callable, Tuple, Optional
 from pathlib import Path
 from skimage.io import imread
 from scipy.stats import spearmanr, kendalltau
@@ -18,6 +19,11 @@ from torch.utils.data import DataLoader, Dataset
 from dataclasses import dataclass
 from torch import nn
 from itertools import chain
+from PIL import Image
+
+
+OPENAI_CLIP_MEAN = (0.48145466, 0.4578275, 0.40821073)
+OPENAI_CLIP_STD = (0.26862954, 0.26130258, 0.27577711)
 
 
 @dataclass
@@ -70,7 +76,8 @@ METRICS = {
     # No-reference
     "BRISQUE": Metric(name="BRISQUE", functor=functools.partial(piq.brisque, data_range=255., reduction='none'),
                       category='NR'),
-    "CLIPIQA": Metric(name="CLIPIQA", functor=piq.CLIPIQA(data_range=255), category='NR'),
+    "CLIPIQA": Metric(name="CLIPIQA", functor=piq.CLIPIQA(model_type='clipiqa', data_range=255), category='NR'),
+    "CLIPIQA+": Metric(name="CLIPIQA+", functor=piq.CLIPIQA(model_type='clipiqa+', data_range=255), category='NR'),
 
     # Distribution-based
     "IS": Metric(name="IS", functor=piq.IS(distance='l1'), category='DB'),
@@ -193,10 +200,57 @@ class PIPAL(TID2013):
         self.root = root
 
 
+class KonIQ10k(Dataset):
+    _filename = "koniq10k_scores.csv"
+    _filename2 = "koniq10k_distributions_sets.csv"
+
+    def __init__(self, root: Path, transform: Optional[Callable] = None, subset: str = 'test') -> None:
+        assert subset in ["train", "test", "all"], \
+                    f"Unknown subset [{subset}], choose one of ['train', 'test', 'all']."
+        assert root.exists(), "You need to download KonIQ-10k dataset first." 
+        
+        self.root = root
+        self.initial_image_size = "1024x768"
+        df1 = pd.read_csv(root / self._filename)
+        df2 = pd.read_csv(root / self._filename2)
+        self.df = df1.merge(df2, on=['image_name'])
+        if not subset == 'all':
+            self.df = self.df[self.df.set==subset].reset_index()
+
+        self.df["image_name"] = self.df["image_name"].apply(lambda x: f"{self.initial_image_size}/{x}")
+        self.scores = self.df['MOS_zscore'].to_numpy()
+
+        self.transform = transform
+
+        self.default_mean = torch.Tensor(OPENAI_CLIP_MEAN).view(1, 3, 1, 1)
+        self.default_std = torch.Tensor(OPENAI_CLIP_STD).view(1, 3, 1, 1)
+
+
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, None, float]:
+        x_path = self.root / self.df.iloc[index]['image_name']
+        score = self.scores[index]
+
+        x = Image.open(x_path)
+        y = torch.rand(1)
+
+        if self.transform is not None:
+            x = self.transform(x)
+            return x, y, score
+
+        x = torch.from_numpy(np.array(x)).float()
+        # x = torch.from_numpy(x).permute(2, 0, 1).float() / 255.
+        # x = (x - self.default_mean.to(x)) / self.default_std.to(x)
+        return x, y, score
+    
+    def __len__(self) -> int:
+        return len(self.df)
+
+
 DATASETS = {
     "tid2013": TID2013,
     "kadid10k": KADID10k,
     "pipal": PIPAL,
+    "koniq10k": KonIQ10k
 }
 
 
