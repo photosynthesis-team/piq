@@ -50,12 +50,8 @@ def _download(url: str, root: str) -> str:
     return download_target
 
 
-def load(device: str) -> nn.Module:
+def load() -> nn.Module:
     """Load a CLIP model
-    Parameters
-    ----------
-    device : Union[str, torch.device]
-        The device to put the loaded model
     Returns
     -------
     model : torch.nn.Module
@@ -66,10 +62,8 @@ def load(device: str) -> nn.Module:
     with open(model_path, 'rb') as f:
         model = torch.jit.load(f, map_location="cpu").eval()
     
-    model = build_model(model.state_dict()).to(device)
-    if str(device) == "cpu":
-        model.float()
-
+    model = build_model(model.state_dict())
+    model.float()
     return model
 
 
