@@ -7,6 +7,9 @@ AAAI 2023.
 
 This implementation is inspired by the offisial implementation but avoids using MMCV and MMEDIT libraries.
 Ref url: https://github.com/IceClear/CLIP-IQA
+
+WARNING: Please note that this implementation assumes batch size = 1. 
+Chosing different batch size may hurt the performance.
 """
 import torch
 import torch.nn as nn
@@ -59,7 +62,6 @@ class CLIPIQA(nn.Module):
         x = (x - self.default_mean.to(x)) / self.default_std.to(x)
 
         with torch.no_grad():
-            print('self.feature_extractor.encode_image', self.feature_extractor.encode_image)
             image_features = self.feature_extractor.encode_image(x, pos_embedding=False).float()
 
         # normalized features
