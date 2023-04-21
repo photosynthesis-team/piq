@@ -31,7 +31,7 @@ def get_meshgrid(size: Tuple[int, int], device: Optional[str] = None, dtype: Opt
     else:
         # Even
         y = torch.arange(- size[1] / 2, size[1] / 2, device=device, dtype=dtype) / size[1]
-    return torch.meshgrid(x, y)
+    return torch.meshgrid(x, y, indexing='ij')
 
 
 def similarity_map(map_x: torch.Tensor, map_y: torch.Tensor, constant: float, alpha: float = 0.0) -> torch.Tensor:
