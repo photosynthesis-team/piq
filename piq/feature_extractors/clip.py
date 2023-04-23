@@ -18,6 +18,16 @@ CLIP_MODEL_PATH = ("https://openaipublic.azureedge.net/clip/models/"
 
 
 def _download(url: str, root: str) -> str:
+    r"""Downloads model's weights and caches them. If already downloaded - loads from cache. 
+    Performs required SHA checksum verifications.
+
+    Args:
+        url: Web or file system path.
+        root: Absolute or relative path of the cache folder.
+
+    Returns:
+        Absolute or relative path of the model's weights.
+    """
     os.makedirs(root, exist_ok=True)
     filename = os.path.basename(url)
 
@@ -51,11 +61,10 @@ def _download(url: str, root: str) -> str:
 
 
 def load() -> nn.Module:
-    """Load a CLIP model
-    Returns
-    -------
-    model : torch.nn.Module
-        The CLIP model
+    r"""Load a CLIP model.
+
+    Returns:
+        Initialized CLIP model.
     """
     model_path = _download(CLIP_MODEL_PATH, os.path.expanduser("~/.cache/clip"))
     
@@ -73,7 +82,7 @@ class Bottleneck(nn.Module):
     def __init__(self, inplanes, planes, stride=1):
         super().__init__()
 
-        # all conv layers have stride 1. an avgpool is performed after the second convolution when stride > 1
+        # All conv layers have stride 1. an avgpool is performed after the second convolution when stride > 1.
         self.conv1 = nn.Conv2d(inplanes, planes, 1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
 
@@ -90,7 +99,7 @@ class Bottleneck(nn.Module):
         self.stride = stride
 
         if stride > 1 or inplanes != planes * Bottleneck.expansion:
-            # downsampling layer is prepended with an avgpool, and the subsequent convolution has stride 1
+            # Downsampling layer is prepended with an avgpool, and the subsequent convolution has stride 1.
             self.downsample = nn.Sequential(OrderedDict([
                 ("-1", nn.AvgPool2d(stride)),
                 ("0", nn.Conv2d(inplanes, planes * self.expansion, 1, stride=1, bias=False)),
@@ -161,19 +170,17 @@ class AttentionPool2d(nn.Module):
 
 
 class ModifiedResNet(nn.Module):
-    """
-    A ResNet class that is similar to torchvision's but contains the following changes:
+    r"""A ResNet class that is similar to torchvision's but contains the following changes:
     - There are now 3 "stem" convolutions as opposed to 1, with an average pool instead of a max pool.
-    - Performs anti-aliasing strided convolutions, where an avgpool is prepended to convolutions with stride > 1
-    - The final pooling layer is a QKV attention instead of an average pool
+    - Performs anti-aliasing strided convolutions, where an avgpool is prepended to convolutions with stride > 1.
+    - The final pooling layer is a QKV attention instead of an average pool.
     """
-
     def __init__(self, layers, output_dim, heads, input_resolution=224, width=64):
         super().__init__()
         self.output_dim = output_dim
         self.input_resolution = input_resolution
 
-        # the 3-layer stem
+        # The 3-layer stem.
         self.conv1 = nn.Conv2d(3, width // 2, kernel_size=3, stride=2, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(width // 2)
         self.conv2 = nn.Conv2d(width // 2, width // 2, kernel_size=3, padding=1, bias=False)
@@ -183,14 +190,14 @@ class ModifiedResNet(nn.Module):
         self.avgpool = nn.AvgPool2d(2)
         self.relu = nn.ReLU(inplace=True)
 
-        # residual layers
+        # Residual layers.
         self._inplanes = width  # this is a *mutable* variable used during construction
         self.layer1 = self._make_layer(width, layers[0])
         self.layer2 = self._make_layer(width * 2, layers[1], stride=2)
         self.layer3 = self._make_layer(width * 4, layers[2], stride=2)
         self.layer4 = self._make_layer(width * 8, layers[3], stride=2)
 
-        embed_dim = width * 32  # the ResNet feature dimension
+        embed_dim = width * 32  # The ResNet feature dimension.
         self.attnpool = AttentionPool2d(input_resolution // 32, embed_dim, heads, output_dim)
 
     def _make_layer(self, planes, blocks, stride=1):
@@ -225,7 +232,7 @@ class ModifiedResNet(nn.Module):
 
 
 class LayerNorm(nn.LayerNorm):
-    """Subclass torch's LayerNorm to handle fp16."""
+    r"""Subclass torch's LayerNorm to handle fp16."""
 
     def forward(self, x: torch.Tensor):
         orig_type = x.dtype
@@ -234,6 +241,7 @@ class LayerNorm(nn.LayerNorm):
 
 
 class QuickGELU(nn.Module):
+    r"""Modified version of GeLU activation function."""
     def forward(self, x: torch.Tensor):
         return x * torch.sigmoid(1.702 * x)
 
@@ -292,11 +300,12 @@ class VisionTransformer(nn.Module):
         self.proj = nn.Parameter(scale * torch.randn(width, output_dim))
 
     def forward(self, x: torch.Tensor, return_token=False, pos_embedding=False):
-        x = self.conv1(x)  # shape = [*, width, grid, grid]
-        x = x.reshape(x.shape[0], x.shape[1], -1)  # shape = [*, width, grid ** 2]
-        x = x.permute(0, 2, 1)  # shape = [*, grid ** 2, width]
-        x = torch.cat([self.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1],
-                                                                      dtype=x.dtype, device=x.device), x], dim=1)  # shape = [*, grid ** 2 + 1, width]
+        x = self.conv1(x)  # Shape = [*, width, grid, grid].
+        x = x.reshape(x.shape[0], x.shape[1], -1)  # Shape = [*, width, grid ** 2].
+        x = x.permute(0, 2, 1)  # Shape = [*, grid ** 2, width].
+        x = torch.cat([self.class_embedding.to(x.dtype) +
+                       torch.zeros(x.shape[0], 1, x.shape[-1],
+                                   dtype=x.dtype, device=x.device), x], dim=1)  # shape = [*, grid ** 2 + 1, width]
 
         if pos_embedding:
             positional_embedding_resize = F.interpolate(self.positional_embedding.unsqueeze(
@@ -323,6 +332,8 @@ class VisionTransformer(nn.Module):
 
 
 class CLIP(nn.Module):
+    f"""General class of CLIP model. Supports various backbones.
+    Taken from the original implementation by Open AI: https://github.com/openai/CLIP."""
     def __init__(self,
                  embed_dim: int,
                  # vision
@@ -408,8 +419,8 @@ class CLIP(nn.Module):
             nn.init.normal_(self.text_projection, std=self.transformer.width ** -0.5)
 
     def build_attention_mask(self):
-        # lazily create causal attention mask, with full attention between the vision tokens
-        # pytorch uses additive attention mask; fill with -inf
+        # Lazily create causal attention mask, with full attention between the vision tokens.
+        # PyTorch uses additive attention mask; fill with -inf.
         mask = torch.empty(self.context_length, self.context_length)
         mask.fill_(float("-inf"))
         mask.triu_(1)  # zero out the lower diagonal
@@ -431,8 +442,7 @@ class CLIP(nn.Module):
         x = x.permute(1, 0, 2)  # LND -> NLD
         x = self.ln_final(x).type(self.dtype)
 
-        # x.shape = [batch_size, n_ctx, transformer.width]
-        # take features from the eot embedding (eot_token is the highest number in each sequence)
+        # Take features from the eot embedding (eot_token is the highest number in each sequence).
         x = x[torch.arange(x.shape[0]), text.argmax(dim=-1)] @ self.text_projection
 
         return x
@@ -442,22 +452,21 @@ class CLIP(nn.Module):
         if text_features is None:
             text_features = self.encode_text(text)
 
-        # normalized features
+        # Normalized features.
         image_features = image_features / image_features.norm(dim=-1, keepdim=True)
         text_features = text_features / text_features.norm(dim=-1, keepdim=True)
 
-        # cosine similarity as logits
+        # Cosine similarity as logits.
         logit_scale = self.logit_scale.exp()
         logits_per_image = logit_scale * image_features @ text_features.t()
         logits_per_text = logits_per_image.t()
 
-        # shape = [global_batch_size, global_batch_size]
+        # Shape = [global_batch_size, global_batch_size].
         return logits_per_image, logits_per_text
 
 
 def convert_weights(model: nn.Module):
-    """Convert applicable model parameters to fp16"""
-
+    r"""Convert applicable model parameters to fp16"""
     def _convert_weights_to_fp16(l):
         if isinstance(l, (nn.Conv1d, nn.Conv2d, nn.Linear)):
             l.weight.data = l.weight.data.half()
@@ -480,6 +489,12 @@ def convert_weights(model: nn.Module):
 
 
 def build_model(state_dict: dict):
+    r"""Builds CLIP model based on a pre-loaded checkpoint.
+    Supports ViT and CNN backbones.
+
+    Args: 
+        state_dict: A pre-loaded checkpoint of torch.nn.Module.
+    """
     vit = "visual.proj" in state_dict
 
     if vit:

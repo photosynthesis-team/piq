@@ -8,9 +8,6 @@ https://arxiv.org/abs/2207.12396
 
 This implementation is inspired by the offisial implementation but avoids using MMCV and MMEDIT libraries.
 Ref url: https://github.com/IceClear/CLIP-IQA
-
-WARNING: Please note that this implementation assumes batch size = 1. 
-Chosing different batch size may hurt the performance.
 """
 import torch
 import torch.nn as nn
@@ -94,12 +91,15 @@ class CLIPIQA(nn.Module):
         self.logit_scale = logit_scale.exp()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
+        r"""Computation of CLIP-IQA metric for a given image :math:`x`.
+
+        Args: 
+            x: An input tensor. Shape :math:`(N, C, H, W)`.
+
         Returns:
-            The value of the CLI-IQA score in [0, 1] range.
+            The value of CLI-IQA score in [0, 1] range.
         """
-        x = x[0]
-        x = x.permute(2, 0, 1).float() / self.data_range
+        x = x.permute(0, 3, 1, 2).float() / self.data_range
         x = (x - self.default_mean.to(x)) / self.default_std.to(x)
 
         self.anchors = self.anchors.to(x)
