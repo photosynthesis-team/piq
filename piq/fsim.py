@@ -6,7 +6,7 @@ References:
 """
 import math
 import functools
-from typing import Union, Tuple
+from typing import Union
 
 import torch
 from torch.nn.modules.loss import _Loss
@@ -84,20 +84,16 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
         x_lum = x
         y_lum = y
 
+    # Compute filters
+    filters = _construct_filters(x_lum, scales, orientations, min_length, mult, sigma_f, delta_theta)
+
     # Compute phase congruency maps
-    pc_x = _phase_congruency(
-        x_lum, scales=scales, orientations=orientations,
-        min_length=min_length, mult=mult, sigma_f=sigma_f,
-        delta_theta=delta_theta, k=k
-    )
-    pc_y = _phase_congruency(
-        y_lum, scales=scales, orientations=orientations,
-        min_length=min_length, mult=mult, sigma_f=sigma_f,
-        delta_theta=delta_theta, k=k
-    )
+    pc_x = _phase_congruency(x_lum, filters=filters, scales=scales, orientations=orientations, k=k)
+    pc_y = _phase_congruency(y_lum, filters=filters, scales=scales, orientations=orientations, k=k)
 
     # Gradient maps
-    kernels = torch.stack([scharr_filter(), scharr_filter().transpose(-1, -2)])
+    sch_filter = scharr_filter(device=x_lum.device, dtype=x_lum.dtype)
+    kernels = torch.stack([sch_filter, sch_filter.transpose(-1, -2)])
     grad_map_x = gradient_map(x_lum, kernels)
     grad_map_y = gradient_map(y_lum, kernels)
 
@@ -123,9 +119,8 @@ def fsim(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean',
     return _reduce(result, reduction)
 
 
-def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
-                       min_length: int = 6, mult: int = 2, sigma_f: float = 0.55,
-                       delta_theta: float = 1.2, k: float = 2.0):
+def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4, min_length: int = 6,
+                       mult: int = 2, sigma_f: float = 0.55, delta_theta: float = 1.2):
     """Creates a stack of filters used for computation of phase congruensy maps
 
     Args:
@@ -140,10 +135,9 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
         delta_theta: Ratio of angular interval between filter orientations
             and the standard deviation of the angular Gaussian function
             used to construct filters in the freq. plane.
-        k: No of standard deviations of the noise energy beyond the mean
-            at which we set the noise threshold point, below which phase
-            congruency values get penalized.
-        """
+    Returns:
+          Tensor with filters. Shape :math:`(1, scales * orientations, H, W)`
+    """
     N, _, H, W = x.shape
 
     # Calculate the standard deviation of the angular Gaussian function
@@ -151,12 +145,22 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     theta_sigma = math.pi / (orientations * delta_theta)
 
     # Pre-compute some stuff to speed up filter construction
-    grid_x, grid_y = get_meshgrid((H, W))
+    grid_x, grid_y = get_meshgrid((H, W), device=x.device, dtype=x.dtype)
 
-    # Move grid to GPU early on, so that all math heavy stuff computes faster.
-    grid_x, grid_y = grid_x.to(x), grid_y.to(x)
     radius = torch.sqrt(grid_x ** 2 + grid_y ** 2)
     theta = torch.atan2(-grid_y, grid_x)
+
+    # First construct a low-pass filter that is as large as possible, yet falls
+    # away to zero at the boundaries.  All log Gabor filters are multiplied by
+    # this to ensure no extra frequencies at the 'corners' of the FFT are
+    # incorporated as this seems to upset the normalisation process when
+    # Computed explicitly without _lowpassfilter
+    # Explicit low pass filter computation
+    n = 15  # default parameter
+    cutoff = .45  # default parameter
+    assert 0 < cutoff <= 0.5, "Cutoff frequency must be between 0 and 0.5"
+    assert n > 1 and int(n) == n, "n must be an integer >= 1"
+    lp = ifftshift(1. / (1.0 + (radius / cutoff) ** (2 * n)))
 
     # Quadrant shift radius and theta so that filters are constructed with 0 frequency at the corners.
     # Get rid of the 0 radius value at the 0 frequency point (now at top-left corner)
@@ -173,12 +177,6 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     # 2) The angular component, which controls the orientation that the filter responds to.
     # The two components are multiplied together to construct the overall filter.
 
-    # First construct a low-pass filter that is as large as possible, yet falls
-    # away to zero at the boundaries.  All log Gabor filters are multiplied by
-    # this to ensure no extra frequencies at the 'corners' of the FFT are
-    # incorporated as this seems to upset the normalisation process when
-    lp = _lowpassfilter(size=(H, W), cutoff=.45, n=15).to(x)
-
     # Construct the radial filter components...
     log_gabor = []
     for s in range(scales):
@@ -188,6 +186,8 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
         gabor_filter = gabor_filter * lp
         gabor_filter[0, 0] = 0
         log_gabor.append(gabor_filter)
+
+    log_gabor = torch.stack(log_gabor)
 
     # Then construct the angular filter components...
     spread = []
@@ -204,30 +204,21 @@ def _construct_filters(x: torch.Tensor, scales: int = 4, orientations: int = 4,
         spread.append(torch.exp((- dtheta ** 2) / (2 * theta_sigma ** 2)))
 
     spread = torch.stack(spread)
-    log_gabor = torch.stack(log_gabor)
 
     # Multiply, add batch dimension and transfer to correct device.
     filters = (spread.repeat_interleave(scales, dim=0) * log_gabor.repeat(orientations, 1, 1)).unsqueeze(0)
     return filters
 
 
-def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
-                      min_length: int = 6, mult: int = 2, sigma_f: float = 0.55,
-                      delta_theta: float = 1.2, k: float = 2.0) -> torch.Tensor:
+def _phase_congruency(x: torch.Tensor, filters: torch.Tensor, scales: int = 4, orientations: int = 4,
+                      k: float = 2.0) -> torch.Tensor:
     r"""Compute Phase Congruence for a batch of greyscale images
 
     Args:
         x: Tensor. Shape :math:`(N, 1, H, W)`.
+        filters: Kernels to extract features.
         scales: Number of wavelet scales
         orientations: Number of filter orientations
-        min_length: Wavelength of smallest scale filter
-        mult: Scaling factor between successive filters
-        sigma_f: Ratio of the standard deviation of the Gaussian
-            describing the log Gabor filter's transfer function
-            in the frequency domain to the filter center frequency.
-        delta_theta: Ratio of angular interval between filter orientations
-            and the standard deviation of the angular Gaussian function
-            used to construct filters in the freq. plane.
         k: No of standard deviations of the noise energy beyond the mean
             at which we set the noise threshold point, below which phase
             congruency values get penalized.
@@ -241,7 +232,6 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     N, _, H, W = x.shape
 
     # Fourier transform
-    filters = _construct_filters(x, scales, orientations, min_length, mult, sigma_f, delta_theta, k)
     recommended_torch_version = _parse_version('1.8.0')
     torch_version = _parse_version(torch.__version__)
     if len(torch_version) != 0 and torch_version >= recommended_torch_version:
@@ -308,7 +298,7 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
 
     sum_an2 = torch.sum(filters_ifft ** 2, dim=-3, keepdim=True)
 
-    sum_ai_aj = torch.zeros(N, orientations, 1, H, W).to(x)
+    sum_ai_aj = torch.zeros(N, orientations, 1, H, W, dtype=x.dtype, device=x.device)
     for s in range(scales - 1):
         sum_ai_aj = sum_ai_aj + (filters_ifft[:, :, s: s + 1] * filters_ifft[:, :, s + 1:]).sum(dim=-3, keepdim=True)
 
@@ -338,39 +328,10 @@ def _phase_congruency(x: torch.Tensor, scales: int = 4, orientations: int = 4,
     # Apply noise threshold
     energy = torch.max(energy - T, torch.zeros_like(T))
 
-    eps = torch.finfo(energy.dtype).eps
-    energy_all = energy.sum(dim=[1, 2]) + eps
-    an_all = an.sum(dim=[1, 2]) + eps
+    energy_all = energy.sum(dim=[1, 2]) + EPS
+    an_all = an.sum(dim=[1, 2]) + EPS
     result_pc = energy_all / an_all
     return result_pc.unsqueeze(1)
-
-
-def _lowpassfilter(size: Tuple[int, int], cutoff: float, n: int) -> torch.Tensor:
-    r"""
-    Constructs a low-pass Butterworth filter.
-
-    Args:
-        size: Tuple with height and width of filter to construct
-        cutoff: Cutoff frequency of the filter in (0, 0.5()
-        n: Filter order. Higher `n` means sharper transition.
-            Note that `n` is doubled so that it is always an even integer.
-
-    Returns:
-        f = 1 / (1 + w/cutoff) ^ 2n
-
-    Note:
-        The frequency origin of the returned filter is at the corners.
-
-    """
-    assert 0 < cutoff <= 0.5, "Cutoff frequency must be between 0 and 0.5"
-    assert n > 1 and int(n) == n, "n must be an integer >= 1"
-
-    grid_x, grid_y = get_meshgrid(size)
-
-    # A matrix with every pixel = radius relative to centre.
-    radius = torch.sqrt(grid_x ** 2 + grid_y ** 2)
-
-    return ifftshift(1. / (1.0 + (radius / cutoff) ** (2 * n)))
 
 
 class FSIMLoss(_Loss):

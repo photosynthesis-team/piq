@@ -410,7 +410,8 @@ if __name__ == "__main__":
     parser.add_argument('--metrics', nargs='+', default=[], help='Metrics to benchmark',
                         choices=list(METRICS.keys()) + list(METRIC_CATEGORIES.keys()) + ['all'])
     parser.add_argument('--batch_size', type=int, default=1, help='Batch size')
-    parser.add_argument('--device', default='cuda', choices=['cpu', 'cuda'], help='Computation device')
+    device_choice = ['cpu', 'cuda'] + [f'cuda:{i}' for i in range(torch.cuda.device_count())]
+    parser.add_argument('--device', default='cuda', choices=device_choice, help='Computation device')
     parser.add_argument('--feature_extractor', default='inception', choices=['inception', 'vgg16', 'vgg19'],
                         help='Select a feature extractor. For distribution-based metrics only')
 

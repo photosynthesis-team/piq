@@ -107,7 +107,10 @@ venv.bak/
 # VSCode settings
 .vscode/
 
+# MacOS
 .DS_Store
+
+# Files
 data/
 *.zip
 *.ipynb

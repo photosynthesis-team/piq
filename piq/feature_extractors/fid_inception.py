@@ -145,7 +145,7 @@ class InceptionV3(nn.Module):
         outp = []
         input_range = (0, 1) if self.normalize_input else (-1, 1)
         assert (x.min() >= input_range[0]) and (x.max() <= input_range[1]), \
-            f"Input tensor should be normalized in ({input_range[0]}, {input_range[0]}) range."
+            f"Input tensor should be normalized in ({input_range[0]}, {input_range[1]}) range."
 
         if self.resize_input:
             x = F.interpolate(x,

@@ -12,7 +12,7 @@ def test_srsim_to_be_one_for_identical_inputs(input_tensors: Tuple[torch.Tensor,
     index = srsim(prediction.to(device), prediction.to(device), data_range=1., reduction='none')
 
     prediction_255 = (prediction * 255).type(torch.uint8)
-    index_255 = srsim(prediction_255, prediction_255, data_range=255, reduction='none')
+    index_255 = srsim(prediction_255.to(device), prediction_255.to(device), data_range=255, reduction='none')
     assert torch.allclose(index, torch.ones_like(index, device=device)), \
         f'Expected index to be equal 1, got {index}'
     assert torch.allclose(index_255, torch.ones_like(index_255, device=device)), \

@@ -36,7 +36,7 @@ def psnr(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, float] = 1.0,
 
     if (x.size(1) == 3) and convert_to_greyscale:
         # Convert RGB image to YIQ and take luminance: Y = 0.299 R + 0.587 G + 0.114 B
-        rgb_to_grey = torch.tensor([0.299, 0.587, 0.114]).view(1, -1, 1, 1).to(x)
+        rgb_to_grey = torch.tensor([0.299, 0.587, 0.114], device=x.device, dtype=x.dtype).view(1, -1, 1, 1)
         x = torch.sum(x * rgb_to_grey, dim=1, keepdim=True)
         y = torch.sum(y * rgb_to_grey, dim=1, keepdim=True)
 

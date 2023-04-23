@@ -7,7 +7,7 @@ References:
 """
 import warnings
 import functools
-from typing import Union, Tuple
+from typing import Union
 
 import torch
 from torch.nn.modules.loss import _Loss
@@ -96,7 +96,8 @@ def vsi(x: torch.Tensor, y: torch.Tensor, reduction: str = 'mean', data_range: U
     y_lmn = avg_pool2d(y_lmn, kernel_size=kernel_size)
 
     # Calculate gradient map
-    kernels = torch.stack([scharr_filter(), scharr_filter().transpose(1, 2)]).to(x_lmn)
+    sch_filter = scharr_filter(device=x_lmn.device, dtype=x_lmn.dtype)
+    kernels = torch.stack([sch_filter, sch_filter.transpose(1, 2)])
     gm_x = gradient_map(x_lmn[:, :1], kernels)
     gm_y = gradient_map(y_lmn[:, :1], kernels)
 
@@ -211,7 +212,9 @@ def sdsp(x: torch.Tensor, data_range: Union[int, float] = 255, omega_0: float = 
 
     x_lab = rgb2lab(x, data_range=255)
 
-    lg = _log_gabor(size_to_use, omega_0, sigma_f).to(x).view(1, 1, *size_to_use)
+    xx, yy = get_meshgrid(size_to_use, device=x_lab.device, dtype=x_lab.dtype)
+    lg = _log_gabor(xx, yy, omega_0, sigma_f).view(1, 1, *size_to_use)
+
     recommended_torch_version = _parse_version('1.8.0')
     torch_version = _parse_version(torch.__version__)
     if len(torch_version) != 0 and torch_version >= recommended_torch_version:
@@ -223,7 +226,7 @@ def sdsp(x: torch.Tensor, data_range: Union[int, float] = 255, omega_0: float = 
 
     s_f = x_ifft_real.pow(2).sum(dim=1, keepdim=True).sqrt()
 
-    coordinates = torch.stack(get_meshgrid(size_to_use), dim=0).to(x)
+    coordinates = torch.stack([xx, yy], dim=0)
     coordinates = coordinates * size_to_use[0] + 1
     s_d = torch.exp(-torch.sum(coordinates ** 2, dim=0) / sigma_d ** 2).view(1, 1, *size_to_use)
 
@@ -242,19 +245,19 @@ def sdsp(x: torch.Tensor, data_range: Union[int, float] = 255, omega_0: float = 
     return (vs_m - min_vs_m) / (max_vs_m - min_vs_m + eps)
 
 
-def _log_gabor(size: Tuple[int, int], omega_0: float, sigma_f: float) -> torch.Tensor:
+def _log_gabor(xx: torch.Tensor, yy: torch.Tensor, omega_0: float, sigma_f: float, ) -> torch.Tensor:
     r"""Creates log Gabor filter
 
     Args:
-        size: size of the requires log Gabor filter
+        xx: x component of meshgrid
+        yy: y component of meshgrid
         omega_0: center frequency of the filter
         sigma_f: bandwidth of the filter
-
+        device: target device for kernel generation
+        dtype: target data type for kernel generation
     Returns:
         log Gabor filter
     """
-    xx, yy = get_meshgrid(size)
-
     radius = (xx ** 2 + yy ** 2).sqrt()
     mask = radius <= 0.5
 
