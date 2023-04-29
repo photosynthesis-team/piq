@@ -1,7 +1,7 @@
 r"""General purpose functions"""
 from typing import Tuple, Union, Optional
 import torch
-
+from piq.utils import _parse_version
 
 def ifftshift(x: torch.Tensor) -> torch.Tensor:
     r""" Similar to np.fft.ifftshift but applies to PyTorch Tensors"""
