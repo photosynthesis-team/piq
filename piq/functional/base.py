@@ -3,6 +3,7 @@ from typing import Tuple, Union, Optional
 import torch
 from piq.utils import _parse_version
 
+
 def ifftshift(x: torch.Tensor) -> torch.Tensor:
     r""" Similar to np.fft.ifftshift but applies to PyTorch Tensors"""
     shift = [-(ax // 2) for ax in x.size()]
