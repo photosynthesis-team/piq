@@ -99,7 +99,11 @@ class CLIPIQA(nn.Module):
         Returns:
             The value of CLI-IQA score in [0, 1] range.
         """
-        x = x.permute(0, 3, 1, 2).float() / self.data_range
+        channels_last = x.shape[-1] in [1, 3]
+        if channels_last:
+            x = x.permute(0, 3, 1, 2)
+
+        x = x.float() / self.data_range
         x = (x - self.default_mean.to(x)) / self.default_std.to(x)
 
         self.anchors = self.anchors.to(x)

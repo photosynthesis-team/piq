@@ -135,7 +135,6 @@ class AttentionPool2d(nn.Module):
         self.embed_dim = embed_dim
 
     def forward(self, x, return_token=False, pos_embedding=False):
-        n, c, h, w = x.shape
         x = x.reshape(x.shape[0], x.shape[1], x.shape[2] * x.shape[3]).permute(2, 0, 1)  # NCHW -> (HW)NC
         x = torch.cat([x.mean(dim=0, keepdim=True), x], dim=0)  # (HW+1)NC
         if pos_embedding:
