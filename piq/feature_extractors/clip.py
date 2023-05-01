@@ -568,9 +568,10 @@ def build_model(state_dict: dict):
     """
     vit = "visual.proj" in state_dict
 
+    vision_layers: Union[Tuple[int, ...], int]
     if vit:
         vision_width = state_dict["visual.conv1.weight"].shape[0]
-        vision_layers: Union[Tuple[int, ...], int] = len(
+        vision_layers = len(
             [
                 k
                 for k in state_dict.keys()
@@ -581,7 +582,7 @@ def build_model(state_dict: dict):
         grid_size = round((state_dict["visual.positional_embedding"].shape[0] - 1) ** 0.5)
         image_resolution = vision_patch_size * grid_size
     else:
-        vision_layers: Union[Tuple[int, ...], int] = tuple(
+        vision_layers = tuple(
             len(
                 set(
                     k.split(".")[2]
