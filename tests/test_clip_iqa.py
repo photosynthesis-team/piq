@@ -46,7 +46,7 @@ def test_clip_iqa_values_rgb(clipiqa: nn.Module, device: str) -> None:
     """Reference values are obtained by running the following script on the selected images:
     https://github.com/IceClear/CLIP-IQA/blob/v2-3.8/demo/clipiqa_single_image_demo.py
     """
-    paths_scores = {'tests/assets/i01_01_5.bmp': 0.45898438, 
+    paths_scores = {'tests/assets/i01_01_5.bmp': 0.45898438,
                     'tests/assets/I01.BMP': 0.89160156}
     for path, of_score in paths_scores.items():
         img = Image.open(path)
