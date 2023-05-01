@@ -1,6 +1,7 @@
 r"""General purpose functions"""
 from typing import Tuple, Union, Optional
 import torch
+from piq.utils import _parse_version
 
 
 def ifftshift(x: torch.Tensor) -> torch.Tensor:
@@ -31,6 +32,11 @@ def get_meshgrid(size: Tuple[int, int], device: Optional[str] = None, dtype: Opt
     else:
         # Even
         y = torch.arange(- size[1] / 2, size[1] / 2, device=device, dtype=dtype) / size[1]
+    # Use indexing param depending on torch version
+    recommended_torch_version = _parse_version("1.10.0")
+    torch_version = _parse_version(torch.__version__)
+    if len(torch_version) > 0 and torch_version >= recommended_torch_version:
+        return torch.meshgrid(x, y, indexing='ij')
     return torch.meshgrid(x, y)
 
 
