@@ -228,7 +228,7 @@ class KonIQ10k(Dataset):
     def __init__(self, root: Path, transform: Optional[Callable] = None, subset: str = 'test') -> None:
         assert subset in ["train", "test", "all"], \
                     f"Unknown subset [{subset}], choose one of ['train', 'test', 'all']."
-        assert root.exists(), "You need to download KonIQ-10k dataset first." 
+        assert root.exists(), "You need to download KonIQ-10k dataset first."
         
         self.root = root
         self.initial_image_size = "1024x768"
@@ -296,7 +296,7 @@ class LIVEitW(KonIQ10k):
 
         images_folder = "Images"
         n_train_images = 7  # There are only 7 images in the train set that are placed in different folder.
-        train_paths = [root / images_folder / "trainingImages" / n[0][0] 
+        train_paths = [root / images_folder / "trainingImages" / n[0][0]
                        for n in names["AllImages_release"]][:n_train_images]
         test_paths = [root / images_folder / n[0][0] for n in names["AllImages_release"]][n_train_images:]
         scores = mos["AllMOS_release"][0]
