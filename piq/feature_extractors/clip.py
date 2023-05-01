@@ -9,7 +9,7 @@ import torch.nn.functional as F
 
 from torch import nn
 from tqdm import tqdm
-from typing import Tuple, Union
+from typing import Tuple, Union, Optional
 from collections import OrderedDict
 
 
@@ -143,7 +143,7 @@ class Bottleneck(nn.Module):
 
 
 class AttentionPool2d(nn.Module):
-    def __init__(self, spacial_dim: int, embed_dim: int, num_heads: int, output_dim: int = None):
+    def __init__(self, spacial_dim: int, embed_dim: int, num_heads: int, output_dim: Optional[int] = None):
         super().__init__()
         self.positional_embedding = nn.Parameter(torch.randn(spacial_dim ** 2 + 1, embed_dim) / embed_dim ** 0.5)
         self.k_proj = nn.Linear(embed_dim, embed_dim)
@@ -581,7 +581,7 @@ def build_model(state_dict: dict):
         grid_size = round((state_dict["visual.positional_embedding"].shape[0] - 1) ** 0.5)
         image_resolution = vision_patch_size * grid_size
     else:
-        counts: list = [
+        vision_layers = tuple(
             len(
                 set(
                     k.split(".")[2]
@@ -590,8 +590,7 @@ def build_model(state_dict: dict):
                 )
             )
             for b in [1, 2, 3, 4]
-        ]
-        vision_layers = tuple(counts)
+        )
         vision_width = state_dict["visual.layer1.0.conv1.weight"].shape[0]
         output_width = round((state_dict["visual.attnpool.positional_embedding"].shape[0] - 1) ** 0.5)
         vision_patch_size = None

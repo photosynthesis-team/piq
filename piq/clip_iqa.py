@@ -64,7 +64,7 @@ class CLIPIQA(nn.Module):
         Chosing different batch size may hurt the performance.
     """
     def __init__(self,
-                 prompt_pairs: Optional[List[Tuple[str, str]]] = None,
+                 prompt_pairs: Optional[Union[str, List[str]]] = None,
                  data_range: Union[float, int] = 1.
                  ) -> None:
         super().__init__()
