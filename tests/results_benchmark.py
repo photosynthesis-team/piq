@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from torch import nn
 from itertools import chain
 from PIL import Image
+from scipy.io import loadmat
 
 
 OPENAI_CLIP_MEAN = (0.48145466, 0.4578275, 0.40821073)
@@ -175,7 +176,6 @@ class PIPAL(TID2013):
         y: image without distortion in [0, 1] range
         score: MOS score for this pair of images
     """
-
     def __init__(self, root: Path = Path("data/raw/pipal")) -> None:
         assert root.exists(), \
             "You need to download PIPAL dataset. Check https://www.jasongt.com/projectpages/pipal.html"
@@ -200,6 +200,21 @@ class PIPAL(TID2013):
 
 
 class KonIQ10k(Dataset):
+    r""" A class to evaluate on the train/test/train+test the KonIQ dataset.
+    http://database.mmsp-kn.de/koniq-10k-database.html
+
+    Note that the class is callable. The values are returned as a result of calling the __getitem__ method.
+
+    Args:
+        root: Root directory path.
+        transform: Something that pre-processes dataset images.
+        subset: Which part of the dataset to use.
+            Options: "train", "test", "all". "all" means train + test.
+    Returns:
+        x: image with some kind of distortion in [0, 1] range.
+        y: dummy variable, used for compatibility with FR datasets.
+        score: MOS score of the image quality.
+    """
     _filename = "koniq10k_scores.csv"
     _filename2 = "koniq10k_distributions_sets.csv"
 
@@ -221,9 +236,6 @@ class KonIQ10k(Dataset):
 
         self.transform = transform
 
-        self.default_mean = torch.Tensor(OPENAI_CLIP_MEAN).view(1, 3, 1, 1)
-        self.default_std = torch.Tensor(OPENAI_CLIP_STD).view(1, 3, 1, 1)
-
 
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, None, float]:
         x_path = self.root / self.df.iloc[index]['image_name']
@@ -237,19 +249,70 @@ class KonIQ10k(Dataset):
             return x, y, score
 
         x = torch.from_numpy(np.array(x)).float()
-        # x = torch.from_numpy(x).permute(2, 0, 1).float() / 255.
-        # x = (x - self.default_mean.to(x)) / self.default_std.to(x)
         return x, y, score
     
     def __len__(self) -> int:
         return len(self.df)
+    
+
+class LIVEitW(KonIQ10k):
+    r""" A class to evaluate on the train/test/train+test the LIVE-in-the-Wild dataset.
+    https://live.ece.utexas.edu/research/ChallengeDB/index.html
+
+    Note that the class is callable. The values are returned as a result of calling the __getitem__ method.
+
+    WARNING: This dataset contains images with different spatial resolutions. 
+    Hence, inference with bs > 1 may cause runtime errors.
+
+    Args:
+        root: Root directory path.
+        transform: Something that pre-processes dataset images.
+        subset: Which part of the dataset to use.
+            Options: "train", "test", "all". "all" means train + test.
+    Returns:
+        x: image with some kind of distortion in [0, 1] range.
+        y: dummy variable, used for compatibility with FR datasets.
+        score: MOS score of the image quality.
+    """
+    _names = 'AllImages_release.mat'
+    _mos = 'AllMOS_release.mat'
+
+    def __init__(self, root: Path, transform: Optional[Callable] = None, subset: str = 'test') -> None:
+        supported_subsets = ['train', 'test', 'all']
+        assert subset in supported_subsets, f"Unknown subset [{subset}], choose one of {supported_subsets}."
+        assert root.exists(), "You need to download LIVEitW dataset first."
+
+        labels_folder = 'Data'
+        names = loadmat(root / labels_folder / self._names)
+        mos = loadmat(root / labels_folder / self._mos)
+
+        images_folder = 'Images'
+        n_train_images = 7  # There are only 7 images in the train set that are placed in different folder.
+        train_paths = [root / images_folder / 'trainingImages' / n[0][0] 
+                       for n in names['AllImages_release']][:n_train_images]
+        test_paths = [root / images_folder / n[0][0] for n in names['AllImages_release']][n_train_images:]
+        scores = mos['AllMOS_release'][0]
+
+        if subset == 'train':
+            self.df: list = pd.DataFrame().from_dict({'image_name': train_paths})
+            self.scores = scores[:n_train_images]
+        elif subset == 'test':
+            self.df: list = pd.DataFrame().from_dict({'image_name': test_paths})
+            self.scores = scores[n_train_images:]
+        else:
+            self.df = pd.DataFrame().from_dict({'image_name': train_paths + test_paths})
+            self.scores = scores
+
+        self.root = root
+        self.transform = transform
 
 
 DATASETS = {
     "tid2013": TID2013,
     "kadid10k": KADID10k,
     "pipal": PIPAL,
-    "koniq10k": KonIQ10k
+    "koniq10k": KonIQ10k,
+    "liveitw": LIVEitW,
 }
 
 
@@ -410,8 +473,7 @@ if __name__ == "__main__":
     parser.add_argument('--metrics', nargs='+', default=[], help='Metrics to benchmark',
                         choices=list(METRICS.keys()) + list(METRIC_CATEGORIES.keys()) + ['all'])
     parser.add_argument('--batch_size', type=int, default=1, help='Batch size')
-    device_choice = ['cpu', 'cuda'] + [f'cuda:{i}' for i in range(torch.cuda.device_count())]
-    parser.add_argument('--device', default='cuda', choices=device_choice, help='Computation device')
+    parser.add_argument('--device', default='cuda', choices=['cpu', 'cuda'], help='Computation device')
     parser.add_argument('--feature_extractor', default='inception', choices=['inception', 'vgg16', 'vgg19'],
                         help='Select a feature extractor. For distribution-based metrics only')
 
