@@ -86,6 +86,7 @@ class CLIPIQA(nn.Module):
         self.data_range = data_range
         self.default_mean = torch.Tensor(OPENAI_CLIP_MEAN).view(1, 3, 1, 1)
         self.default_std = torch.Tensor(OPENAI_CLIP_STD).view(1, 3, 1, 1)
+        self.logit_scale = self.feature_extractor.logit_scale.exp()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         r"""Computation of CLIP-IQA metric for a given image :math:`x`.
@@ -113,8 +114,8 @@ class CLIPIQA(nn.Module):
         image_features = image_features / image_features.norm(dim=-1, keepdim=True)
 
         # Cosine similarity as logits.
-        logits_per_image = self.feature_extractor.logit_scale * image_features @ self.anchors.t()
+        logits_per_image = self.logit_scale * image_features @ self.anchors.t()
 
         probs = logits_per_image.reshape(logits_per_image.shape[0], -1, 2).softmax(dim=-1)
-        result = probs[..., 0].mean(dim=1, keepdim=True)
+        result = probs[..., 0]
         return result.detach()
