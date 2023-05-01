@@ -18,7 +18,7 @@ CLIP_MODEL_PATH = ("https://openaipublic.azureedge.net/clip/models/"
 
 
 def _download(url: str, root: str) -> str:
-    r"""Downloads model's weights and caches them. If already downloaded - loads from cache. 
+    r"""Downloads model's weights and caches them. If already downloaded - loads from cache.
     Performs required SHA checksum verifications.
 
     Args:
@@ -44,7 +44,7 @@ def _download(url: str, root: str) -> str:
             warnings.warn(f"{download_target} exists, but the SHA256 checksum does not match; re-downloading the file")
 
     with urllib.request.urlopen(url) as source, open(download_target, "wb") as output:
-        with tqdm(total=int(source.info().get("Content-Length")), ncols=80, unit='iB', 
+        with tqdm(total=int(source.info().get("Content-Length")), ncols=80, unit='iB',
                   unit_scale=True, unit_divisor=1024) as loop:
             while True:
                 buffer = source.read(8192)
@@ -331,8 +331,9 @@ class VisionTransformer(nn.Module):
 
 
 class CLIP(nn.Module):
-    f"""General class of CLIP model. Supports various backbones.
+    r"""General class of CLIP model. Supports various backbones.
     Taken from the original implementation by Open AI: https://github.com/openai/CLIP."""
+
     def __init__(self,
                  embed_dim: int,
                  # vision
@@ -491,7 +492,7 @@ def build_model(state_dict: dict):
     r"""Builds CLIP model based on a pre-loaded checkpoint.
     Supports ViT and CNN backbones.
 
-    Args: 
+    Args:
         state_dict: A pre-loaded checkpoint of torch.nn.Module.
     """
     vit = "visual.proj" in state_dict
@@ -518,7 +519,7 @@ def build_model(state_dict: dict):
     vocab_size = state_dict["token_embedding.weight"].shape[0]
     transformer_width = state_dict["ln_final.weight"].shape[0]
     transformer_heads = transformer_width // 64
-    transformer_layers = len(set(k.split(".")[2] for k in state_dict if k.startswith(f"transformer.resblocks")))
+    transformer_layers = len(set(k.split(".")[2] for k in state_dict if k.startswith("transformer.resblocks")))
 
     model = CLIP(
         embed_dim,

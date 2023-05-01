@@ -11,7 +11,6 @@ Ref url: https://github.com/IceClear/CLIP-IQA
 """
 import torch
 import torch.nn as nn
-import numpy as np
 
 from typing import Tuple, List, Optional, Union
 
@@ -25,7 +24,7 @@ OPENAI_CLIP_STD = (0.26862954, 0.26130258, 0.27577711)
 
 class CLIPIQA(nn.Module):
     r"""Creates a criterion that measures image quality based on a general notion of text-to-image similarity
-    learned by the CLIP[1] model during its large-scale pre-training on a large dataset with paired texts and images. 
+    learned by the CLIP[1] model during its large-scale pre-training on a large dataset with paired texts and images.
 
     The method is based on the idea that two antonyms ("Good photo" and "Bad photo") can be used as anchors in the
     text embedding space representing good and bad images in terms of their image quality.
@@ -36,10 +35,10 @@ class CLIPIQA(nn.Module):
     3. Compute the angle (cosine similarity) between the image embedding (1) and both text embeddings (2);
     4. Compute the Softmax of cosine similarities (3) -> CLIP-IQA[2] score.
 
-    This method is proposed to eliminate the linguistic ambiguity of the naive approach 
+    This method is proposed to eliminate the linguistic ambiguity of the naive approach
     (using a single prompt, e.g., "Good photo").
 
-    This method has an extension called CLIP-IQA+[2] proposed in the same research paper. 
+    This method has an extension called CLIP-IQA+[2] proposed in the same research paper.
     It uses the same approach but also fine-tunes the CLIP weights using the CoOp[3] fine-tuning algorithm.
 
     Args:
@@ -53,15 +52,15 @@ class CLIPIQA(nn.Module):
         >>> score = clipiqa(x)
 
     References:
-        [1] Radford, Alec, et al. "Learning transferable visual models from natural language supervision." 
+        [1] Radford, Alec, et al. "Learning transferable visual models from natural language supervision."
         International conference on machine learning. PMLR, 2021.
         [2] Wang, Jianyi, Kelvin CK Chan, and Chen Change Loy. "Exploring CLIP for Assessing the Look
         and Feel of Images." arXiv preprint arXiv:2207.12396 (2022).
-        [3] Zhou, Kaiyang, et al. "Learning to prompt for vision-language models." International 
+        [3] Zhou, Kaiyang, et al. "Learning to prompt for vision-language models." International
         Journal of Computer Vision 130.9 (2022): 2337-2348.
 
-    Warning: 
-        Please note that this implementation assumes batch size = 1. 
+    Warning:
+        Please note that this implementation assumes batch size = 1.
         Chosing different batch size may hurt the performance.
     """
     def __init__(self,
@@ -91,7 +90,7 @@ class CLIPIQA(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         r"""Computation of CLIP-IQA metric for a given image :math:`x`.
 
-        Args: 
+        Args:
             x: An input tensor. Shape :math:`(N, C, H, W)`.
 
         Returns:
