@@ -1,6 +1,5 @@
 import hashlib
 import os
-import urllib
 import warnings
 
 import numpy as np
@@ -11,6 +10,7 @@ from torch import nn
 from tqdm import tqdm
 from typing import Tuple, Union, Optional
 from collections import OrderedDict
+from urllib.request import urlopen
 
 
 CLIP_MODEL_PATH = (
@@ -45,7 +45,7 @@ def _download(url: str, root: str) -> str:
         else:
             warnings.warn(f"{download_target} exists, but the SHA256 checksum does not match; re-downloading the file")
 
-    with urllib.request.urlopen(url) as source, open(download_target, "wb") as output:
+    with urlopen(url) as source, open(download_target, "wb") as output:
         with tqdm(
             total=int(source.info().get("Content-Length")),
             ncols=80,
@@ -398,7 +398,7 @@ class CLIP(nn.Module):
         embed_dim: int,
         # vision
         image_resolution: int,
-        vision_layers: Union[Tuple[int, int, int, int], int],
+        vision_layers: Union[Tuple[int, ...], int],
         vision_width: int,
         vision_patch_size: int,
         # text
@@ -570,7 +570,7 @@ def build_model(state_dict: dict):
 
     if vit:
         vision_width = state_dict["visual.conv1.weight"].shape[0]
-        vision_layers = len(
+        vision_layers: Union[Tuple[int, ...], int] = len(
             [
                 k
                 for k in state_dict.keys()
@@ -581,7 +581,7 @@ def build_model(state_dict: dict):
         grid_size = round((state_dict["visual.positional_embedding"].shape[0] - 1) ** 0.5)
         image_resolution = vision_patch_size * grid_size
     else:
-        vision_layers = tuple(
+        vision_layers: Union[Tuple[int, ...], int] = tuple(
             len(
                 set(
                     k.split(".")[2]

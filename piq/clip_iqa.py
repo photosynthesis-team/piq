@@ -12,7 +12,7 @@ Ref url: https://github.com/IceClear/CLIP-IQA
 import torch
 import torch.nn as nn
 
-from typing import Tuple, List, Optional, Union
+from typing import List, Optional, Union
 
 from piq.feature_extractors.clip import load
 from piq.tokenizers.clip import SimpleTokenizer, tokenize

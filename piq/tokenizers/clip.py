@@ -8,23 +8,27 @@ import regex as re
 
 from typing import Union, List
 from functools import lru_cache
-from pkg_resources import packaging
+
+from piq.utils import _parse_version
 
 
 @lru_cache()
 def default_bpe():
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "bpe_simple_vocab_16e6.txt.gz")
+    return os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "bpe_simple_vocab_16e6.txt.gz"
+    )
 
 
 class SimpleTokenizer:
     r"""A simple tokenizer class that performs tokenization of the raw text.
     Check OpenAI CLIP for more details: https://github.com/openai/CLIP.
     """
+
     def __init__(self, bpe_path: str = default_bpe()):
         self.byte_encoder = bytes_to_unicode()
         self.byte_decoder = {v: k for k, v in self.byte_encoder.items()}
         merges = gzip.open(bpe_path).read().decode("utf-8").split("\n")
-        merges = merges[1:49152 - 256 - 2 + 1]
+        merges = merges[1 : 49152 - 256 - 2 + 1]
         merges = [tuple(merge.split()) for merge in merges]
         vocab = list(bytes_to_unicode().values())
         vocab = vocab + [v + "</w>" for v in vocab]
@@ -89,8 +93,10 @@ class SimpleTokenizer:
         text = whitespace_clean(basic_clean(text)).lower()
         for token in re.findall(self.pat, text):
             token = "".join(self.byte_encoder[b] for b in token.encode("utf-8"))
-            bpe_tokens.extend(self.encoder[bpe_token] for bpe_token in self.bpe(token).split(" "))
-            
+            bpe_tokens.extend(
+                self.encoder[bpe_token] for bpe_token in self.bpe(token).split(" ")
+            )
+
         return bpe_tokens
 
     def decode(self, tokens):
@@ -126,7 +132,7 @@ def tokenize(
     sot_token = tokenizer.encoder["<|startoftext|>"]
     eot_token = tokenizer.encoder["<|endoftext|>"]
     all_tokens = [[sot_token] + tokenizer.encode(text) + [eot_token] for text in texts]
-    if packaging.version.parse(torch.__version__) < packaging.version.parse("1.8.0"):
+    if _parse_version(torch.__version__) < _parse_version("1.8.0"):
         result = torch.zeros(len(all_tokens), context_length, dtype=torch.long)
     else:
         result = torch.zeros(len(all_tokens), context_length, dtype=torch.int)
@@ -137,8 +143,10 @@ def tokenize(
                 tokens = tokens[:context_length]
                 tokens[-1] = eot_token
             else:
-                raise RuntimeError(f"Input {texts[i]} is too long for context length {context_length}")
-        result[i, :len(tokens)] = torch.tensor(tokens)
+                raise RuntimeError(
+                    f"Input {texts[i]} is too long for context length {context_length}"
+                )
+        result[i, : len(tokens)] = torch.tensor(tokens)
 
     return result
 
