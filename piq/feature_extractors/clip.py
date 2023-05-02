@@ -7,7 +7,6 @@ import torch
 import torch.nn.functional as F
 
 from torch import nn
-from tqdm import tqdm
 from typing import Tuple, Union, Optional
 from collections import OrderedDict
 from urllib.request import urlopen
@@ -46,20 +45,12 @@ def _download(url: str, root: str) -> str:
             warnings.warn(f"{download_target} exists, but the SHA256 checksum does not match; re-downloading the file")
 
     with urlopen(url) as source, open(download_target, "wb") as output:
-        with tqdm(
-            total=int(source.info().get("Content-Length")),
-            ncols=80,
-            unit="iB",
-            unit_scale=True,
-            unit_divisor=1024,
-        ) as loop:
-            while True:
-                buffer = source.read(8192)
-                if not buffer:
-                    break
+        while True:
+            buffer = source.read(8192)
+            if not buffer:
+                break
 
-                output.write(buffer)
-                loop.update(len(buffer))
+            output.write(buffer)
 
     if hashlib.sha256(open(download_target, "rb").read()).hexdigest() != expected_sha256:
         raise RuntimeError("Model has been downloaded but the SHA256 checksum does not not match")

@@ -9,17 +9,19 @@ https://arxiv.org/abs/2207.12396
 This implementation is inspired by the offisial implementation but avoids using MMCV and MMEDIT libraries.
 Ref url: https://github.com/IceClear/CLIP-IQA
 """
+import os
 import torch
 import torch.nn as nn
 
-from typing import List, Optional, Union
+from typing import Union
 
 from piq.feature_extractors.clip import load
-from piq.tokenizers.clip import SimpleTokenizer, tokenize
+from piq.utils.common import load_tensor
 
 
 OPENAI_CLIP_MEAN = (0.48145466, 0.4578275, 0.40821073)
 OPENAI_CLIP_STD = (0.26862954, 0.26130258, 0.27577711)
+TOKENS_URL = "https://github.com/photosynthesis-team/piq/releases/download/v0.7.1/clipiqa_tokens.pt"
 
 
 class CLIPIQA(nn.Module):
@@ -42,7 +44,6 @@ class CLIPIQA(nn.Module):
     It uses the same approach but also fine-tunes the CLIP weights using the CoOp[3] fine-tuning algorithm.
 
     Args:
-        prompt_pairs: Alternative antonyms to be used as textual anchors.
         data_range: Maximum value range of images (usually 1.0 or 255).
 
     Examples:
@@ -63,21 +64,15 @@ class CLIPIQA(nn.Module):
         Please note that this implementation assumes batch size = 1.
         Chosing different batch size may hurt the performance.
     """
-    def __init__(self,
-                 prompt_pairs: Optional[Union[str, List[str]]] = None,
-                 data_range: Union[float, int] = 1.
-                 ) -> None:
+    def __init__(self, data_range: Union[float, int] = 1.) -> None:
         super().__init__()
 
         self.feature_extractor = load().eval()
         for param in self.feature_extractor.parameters():
             param.requires_grad = False
-
-        tokenizer = SimpleTokenizer()
-        if prompt_pairs is None:
-            tokens = tokenize(["Good photo.", "Bad photo."], tokenizer=tokenizer)
-        else:
-            tokens = tokenize(prompt_pairs, tokenizer=tokenizer)
+        
+        # Pre-computed tokens for prompt pairs: "Good photo.", "Bad photo.".
+        tokens = load_tensor(TOKENS_URL, os.path.expanduser("~/.cache/clip"))
 
         anchors = self.feature_extractor.encode_text(tokens).float()
         self.anchors = anchors / anchors.norm(dim=-1, keepdim=True)

@@ -1,8 +1,10 @@
 import torch
 import re
+import os
 import warnings
 
 from typing import Tuple, List, Optional, Union, Dict, Any
+from urllib.request import urlopen
 
 SEMVER_VERSION_PATTERN = re.compile(
     r"""
@@ -156,3 +158,30 @@ def _parse_version(version: Union[str, bytes]) -> Tuple[int, ...]:
 
     release = tuple(int(i) for i in match.group("release").split("."))
     return release
+
+
+def load_tensor(url: str, root: str, map_location: str = 'cpu') -> torch.Tensor:
+    r"""Downloads torch tensor and caches it. If already downloaded - loads from cache.
+
+    Args:
+        url: Web or file system path.
+        root: Absolute or relative path of the cache folder.
+
+    Returns:
+        Loaded torch tesnor.
+    """
+    os.makedirs(root, exist_ok=True)
+    filename = os.path.basename(url)
+    download_target = os.path.join(root, filename)
+    if os.path.isfile(download_target):
+        return torch.load(download_target, map_location=map_location)
+    
+    with urlopen(url) as source, open(download_target, "wb") as output:
+        while True:
+            buffer = source.read(8192)
+            if not buffer:
+                break
+
+            output.write(buffer)
+
+    return torch.load(download_target, map_location=map_location)
