@@ -80,9 +80,8 @@ METRICS = {
         functor=functools.partial(piq.brisque, data_range=255.0, reduction="none"),
         category="NR",
     ),
-    "CLIPIQA": Metric(
-        name="CLIPIQA", functor=piq.CLIPIQA(data_range=255), category="NR"
-    ),
+    "CLIPIQA": Metric(name="CLIPIQA", functor=piq.CLIPIQA(data_range=255), category="NR"),
+
     # Distribution-based
     "IS": Metric(name="IS", functor=piq.IS(distance="l1"), category="DB"),
     "FID": Metric(name="FID", functor=piq.FID(), category="DB"),
@@ -257,6 +256,7 @@ class KonIQ10k(Dataset):
             return x, y, score
 
         x = torch.from_numpy(np.array(x)).float()
+        x = x.permute(2, 0, 1)
         return x, y, score
 
     def __len__(self) -> int:
