@@ -9,12 +9,12 @@ from piq import GS
 
 @pytest.fixture(scope='module')
 def features_y_normal() -> torch.Tensor:
-    return torch.rand(1000, 20)
+    return torch.randn(1000, 20)
 
 
 @pytest.fixture(scope='module')
 def features_x_normal() -> torch.Tensor:
-    return torch.rand(1000, 20)
+    return torch.randn(1000, 20)
 
 
 @pytest.fixture(scope='module')
