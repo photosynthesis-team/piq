@@ -72,7 +72,6 @@ def test_fails_if_libs_not_installed(features_y_normal, features_x_normal) -> No
         metric(features_y_normal, features_x_normal)
 
 
-@pytest.mark.skip(reason="Randomnly fails, fix in separate PR")
 def test_similar_for_same_distribution(features_y_normal, features_x_normal) -> None:
     prepare_test()
     metric = GS(sample_size=1000, num_iters=100, i_max=1000, num_workers=4)
@@ -81,7 +80,6 @@ def test_similar_for_same_distribution(features_y_normal, features_x_normal) -> 
         f'For same distributions GS should be small, got {diff}'
 
 
-@pytest.mark.skip(reason="Randomnly fails, fix in separate PR")
 def test_differs_for_not_simular_distributions(features_x_beta, features_y_normal) -> None:
     prepare_test()
     metric = GS(sample_size=1000, num_iters=100, i_max=1000, num_workers=4)
