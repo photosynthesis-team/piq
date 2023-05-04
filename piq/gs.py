@@ -76,6 +76,17 @@ def lmrk_table(witnesses: np.ndarray, landmarks: np.ndarray) -> Tuple[np.ndarray
             in L, e.g., D[i, :, :] = [[0, 0.1], [1, 0.2], [3, 0.3], [2, 0.4]]
         max_dist: Maximal distance between W and L
     """
+    try:
+        import scipy
+    except ImportError:
+        raise ImportError("Scipy is required for computation of the Geometry Score but not installed. "
+                          "Please install scipy using the following command: pip install --user scipy")
+
+    recommended_scipy_version = _parse_version("1.3.3")
+    scipy_version = _parse_version(scipy.__version__)
+    if len(scipy_version) != 0 and scipy_version < recommended_scipy_version:
+        warn(f'Scipy of version {scipy.__version__} is used while version >= {recommended_scipy_version} is '
+             f'recommended. Consider updating scipy to avoid potential long compute time with older versions.')
 
     from scipy.spatial.distance import cdist
 
@@ -99,6 +110,17 @@ def witness(features: np.ndarray, sample_size: int = 64, gamma: Optional[float] 
     Returns
         A list of persistence intervals and the maximal persistence value.
     """
+    try:
+        import gudhi
+    except ImportError:
+        raise ImportError("GUDHI is required for computation of the Geometry Score but not installed. "
+                          "Please install scipy using the following command: pip install --user gudhi")
+
+    recommended_gudhi_version = _parse_version("3.2.0")
+    gudhi_version = _parse_version(gudhi.__version__)
+    if len(gudhi_version) != 0 and gudhi_version < recommended_gudhi_version:
+        warn(f'GUDHI of version {gudhi.__version__} is used while version >= {recommended_gudhi_version} is '
+             f'recommended. Consider updating GUDHI to avoid potential problems.')
 
     N = features.shape[0]
     if gamma is None:
@@ -162,31 +184,6 @@ class GS(BaseFeatureMetric):
         self.gamma = gamma
         self.i_max = i_max
         self.num_workers = num_workers
-
-        try:
-            import gudhi
-        except ImportError:
-            raise ImportError("GUDHI is required for computation of the Geometry Score but not installed. "
-                            "Please install scipy using the following command: pip install --user gudhi")
-
-        recommended_gudhi_version = _parse_version("3.2.0")
-        gudhi_version = _parse_version(gudhi.__version__)
-        if len(gudhi_version) != 0 and gudhi_version < recommended_gudhi_version:
-            warn(f'GUDHI of version {gudhi.__version__} is used while version >= {recommended_gudhi_version} is '
-                f'recommended. Consider updating GUDHI to avoid potential problems.')
-
-        try:
-            import scipy
-        except ImportError:
-            raise ImportError("Scipy is required for computation of the Geometry Score but not installed. "
-                            "Please install scipy using the following command: pip install --user scipy")
-
-        recommended_scipy_version = _parse_version("1.3.3")
-        scipy_version = _parse_version(scipy.__version__)
-        if len(scipy_version) != 0 and scipy_version < recommended_scipy_version:
-            warn(f'Scipy of version {scipy.__version__} is used while version >= {recommended_scipy_version} is '
-                f'recommended. Consider updating scipy to avoid potential long compute time with older versions.')
-        
 
     def compute_metric(self, x_features: torch.Tensor, y_features: torch.Tensor) -> torch.Tensor:
         r"""Implements Algorithm 2 from the paper.
