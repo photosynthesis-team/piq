@@ -204,6 +204,8 @@ class GS(BaseFeatureMetric):
             self.features = y_features.detach().cpu().numpy()
             pool_results = p.map(self._relative_living_times, range(self.num_iters))
             mean_rlt_y = np.vstack(pool_results).mean(axis=0)
+            p.close()
+            p.join()
 
         score = np.sum((mean_rlt_x - mean_rlt_y) ** 2)
 
