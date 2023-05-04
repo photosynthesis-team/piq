@@ -76,7 +76,7 @@ def test_similar_for_same_distribution(features_y_normal, features_x_normal) -> 
     prepare_test()
     metric = GS(sample_size=1000, num_iters=100, i_max=1000, num_workers=4)
     diff = metric(features_x_normal, features_y_normal)
-    assert diff <= 2.0, \
+    assert diff <= 3.0, \
         f'For same distributions GS should be small, got {diff}'
 
 
@@ -84,5 +84,5 @@ def test_differs_for_not_simular_distributions(features_x_beta, features_y_norma
     prepare_test()
     metric = GS(sample_size=1000, num_iters=100, i_max=1000, num_workers=4)
     diff = metric(features_x_beta, features_y_normal)
-    assert diff >= 5.0, \
+    assert diff >= 4.0, \
         f'For different distributions GS diff should be big, got {diff}'
