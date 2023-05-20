@@ -64,8 +64,8 @@ def _validate_input(
         tensors: List[torch.Tensor],
         dim_range: Tuple[int, int] = (0, -1),
         data_range: Tuple[float, float] = (0., -1.),
-        # size_dim_range: Tuple[float, float] = (0., -1.),
         size_range: Optional[Tuple[int, int]] = None,
+        check_for_channels_first: bool = False
 ) -> None:
     r"""Check that input(-s)  satisfies the requirements
     Args:
@@ -101,6 +101,11 @@ def _validate_input(
                 f'Expected values to be greater or equal to {data_range[0]}, got {t.min()}'
             assert t.max() <= data_range[1], \
                 f'Expected values to be lower or equal to {data_range[1]}, got {t.max()}'
+            
+        if check_for_channels_first:
+            channels_last = t.shape[-1] in {1, 2, 3}
+            assert not channels_last, f"Expected tensor to have channels first format, but got channels last. \
+                Please permute channels (e.g. t.permute(0, 3, 1, 2) for 4D tensors) and rerun."
 
 
 def _reduce(x: torch.Tensor, reduction: str = 'mean') -> torch.Tensor:

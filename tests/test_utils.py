@@ -78,7 +78,23 @@ def test_works_on_two_not_5d_tensors(tensor_1d: torch.Tensor) -> None:
 
 def test_breaks_if_tensors_have_different_n_dims(tensor_2d: torch.Tensor, tensor_5d: torch.Tensor) -> None:
     with pytest.raises(AssertionError):
-        _validate_input([tensor_2d, tensor_5d], dim_range=(2, 5))
+        _validate_input([tensor_2d, tensor_5d], dim_range=(2, 5), check_for_channels_first=True)
+
+
+def test_breaks_if_wrong_channel_order() -> None:
+    with pytest.raises(AssertionError):
+        _validate_input([torch.rand(1, 5, 5, 1)], check_for_channels_first=True)
+        _validate_input([torch.rand(1, 5, 5, 2)], check_for_channels_first=True)
+        _validate_input([torch.rand(1, 5, 5, 3)], check_for_channels_first=True)
+
+
+def test_works_if_correct_channel_order() -> None:
+    try:
+        _validate_input([torch.rand(1, 1, 5, 5)], check_for_channels_first=True)
+        _validate_input([torch.rand(1, 2, 5, 5)], check_for_channels_first=True)
+        _validate_input([torch.rand(1, 3, 5, 5)], check_for_channels_first=True)
+    except Exception as e:
+        pytest.fail(f"Unexpected error occurred: {e}")
 
 
 # ================== Test function: `_reduce` ==================

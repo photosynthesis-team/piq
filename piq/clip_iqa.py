@@ -16,7 +16,7 @@ from torch.nn.modules.loss import _Loss
 from typing import Union
 
 from piq.feature_extractors.clip import load
-from piq.utils.common import download_tensor
+from piq.utils.common import download_tensor, _validate_input
 
 
 OPENAI_CLIP_MEAN = (0.48145466, 0.4578275, 0.40821073)
@@ -49,7 +49,7 @@ class CLIPIQA(_Loss):
     Examples:
         >>> from piq import CLIPIQA
         >>> clipiqa = CLIPIQA()
-        >>> x = torch.rand(1, 224, 224, 3)
+        >>> x = torch.rand(1, 3, 224, 224)
         >>> score = clipiqa(x)
 
     References:
@@ -77,7 +77,7 @@ class CLIPIQA(_Loss):
         anchors = self.feature_extractor.encode_text(tokens).float()
         self.anchors = anchors / anchors.norm(dim=-1, keepdim=True)
 
-        self.data_range = data_range
+        self.data_range = float(data_range)
         self.default_mean = torch.Tensor(OPENAI_CLIP_MEAN).view(1, 3, 1, 1)
         self.default_std = torch.Tensor(OPENAI_CLIP_STD).view(1, 3, 1, 1)
         self.logit_scale = self.feature_extractor.logit_scale.exp()
@@ -91,9 +91,7 @@ class CLIPIQA(_Loss):
         Returns:
             The value of CLI-IQA score in [0, 1] range.
         """
-        channels_last = x.shape[-1] in [1, 3]
-        if channels_last:
-            x = x.permute(0, 3, 1, 2)
+        _validate_input(x, dim_range=(3, 4), check_for_channels_first=True)
 
         x = x.float() / self.data_range
         x = (x - self.default_mean.to(x)) / self.default_std.to(x)
