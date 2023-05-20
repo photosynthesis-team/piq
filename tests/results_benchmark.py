@@ -223,8 +223,8 @@ class KonIQ10k(Dataset):
     _filename_dists = "koniq10k_distributions_sets.csv"
 
     def __init__(self, root: Path, transform: Optional[Callable] = None, subset: str = 'test') -> None:
-        assert subset in ["train", "test", "all"], \
-                    f"Unknown subset [{subset}], choose one of ['train', 'test', 'all']."
+        supported_subsets = ["train", "test", "all"]
+        assert subset in supported_subsets, f"Unknown subset [{subset}], choose one of {supported_subsets}."
         assert root.exists(), "You need to download KonIQ-10k dataset first."
         
         self.root = root
@@ -243,7 +243,7 @@ class KonIQ10k(Dataset):
         self.transform = transform
 
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, None, float]:
-        x_path = self.root / self.df.iloc[index]["image_name"]
+        x_path = self.root / self.df.at[index, "image_name"]
         score = self.scores[index]
 
         x = imread(x_path)
@@ -280,8 +280,8 @@ class LIVEitW(KonIQ10k):
         y: dummy variable, used for compatibility with FR datasets.
         score: MOS score of the image quality.
     """
-    _names = "AllImages_release.mat"
-    _mos = "AllMOS_release.mat"
+    _filename_names = "AllImages_release.mat"
+    _filename_mos = "AllMOS_release.mat"
 
     def __init__(self, root: Path, transform: Optional[Callable] = None, subset: str = 'test') -> None:
         supported_subsets = ["train", "test", "all"]
@@ -289,8 +289,8 @@ class LIVEitW(KonIQ10k):
         assert root.exists(), "You need to download LIVEitW dataset first."
 
         labels_folder = "Data"
-        names = loadmat(root / labels_folder / self._names)
-        mos = loadmat(root / labels_folder / self._mos)
+        names = loadmat(root / labels_folder / self._filename_names)
+        mos = loadmat(root / labels_folder / self._filename_mos)
 
         images_folder = "Images"
         n_train_images = 7  # There are only 7 images in the train set that are placed in different folder.
@@ -300,10 +300,10 @@ class LIVEitW(KonIQ10k):
         scores = mos["AllMOS_release"][0]
 
         if subset == "train":
-            self.df: list = pd.DataFrame().from_dict({"image_name": train_paths})
+            self.df = pd.DataFrame().from_dict({"image_name": train_paths})
             self.scores = scores[:n_train_images]
         elif subset == "test":
-            self.df: list = pd.DataFrame().from_dict({"image_name": test_paths})
+            self.df = pd.DataFrame().from_dict({"image_name": test_paths})
             self.scores = scores[n_train_images:]
         else:
             self.df = pd.DataFrame().from_dict({"image_name": train_paths + test_paths})

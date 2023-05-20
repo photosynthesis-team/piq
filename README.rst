@@ -237,7 +237,7 @@ as it's highly dependent on fitting method and is biased towards simple examples
 
 For metrics that can take greyscale or colour images, ``c`` means chromatic version.
 
-Full-Reference (FR)
+Full-Reference (FR) Datasets
 ^^^^^^^^^^^^^^^^^^^
 ===========  ===========================  ===========================  ===========================
      \                  TID2013                    KADID10k                       PIPAL
@@ -274,7 +274,7 @@ MSID         0.21 / -                     0.32 / -                     0.01 / -
 GS           0.37 / -                     0.37 / -                     0.02 / -
 ===========  ===========================  ===========================  ===========================
 
-No-Reference (NR)
+No-Reference (NR) Datasets
 ^^^^^^^^^^^^^^^^^
 ===========  ===========================  ===========================
      \                  KonIQ10k                    LIVE-itW         

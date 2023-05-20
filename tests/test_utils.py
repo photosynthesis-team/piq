@@ -1,9 +1,10 @@
 import torch
 import pytest
+import os
 
 import numpy as np
 
-from piq.utils import _validate_input, _reduce, _parse_version
+from piq.utils.common import _validate_input, _reduce, _parse_version, download_tensor
 
 
 @pytest.fixture(scope='module')
@@ -136,3 +137,19 @@ def test_version_tuple_parses_correctly(version, expected) -> None:
 def test_version_tuple_warns_on_invalid_input(version) -> None:
     with pytest.warns(UserWarning):
         _parse_version(version)
+
+def test_download_tensor():
+    url = "https://github.com/photosynthesis-team/piq/releases/download/v0.7.1/clipiqa_tokens.pt"
+    file_name = os.path.basename(url)
+    root = os.path.expanduser("~/.cache/clip")
+
+    # Check if tensor gets downloaded if not cached locally.
+    full_file_path = os.path.join(root, file_name)
+    print('full_file_path', full_file_path)
+    if os.path.exists(full_file_path):
+        os.remove(full_file_path)
+
+    assert isinstance(download_tensor(url, root), torch.Tensor)
+
+    # Check if tensor loads if cached.
+    assert isinstance(download_tensor(url, root), torch.Tensor)
