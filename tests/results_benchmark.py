@@ -9,7 +9,6 @@ import functools
 import torchvision
 
 import pandas as pd
-import numpy as np
 
 from typing import List, Callable, Tuple, Optional
 from pathlib import Path
@@ -19,7 +18,6 @@ from torch.utils.data import DataLoader, Dataset
 from dataclasses import dataclass
 from torch import nn
 from itertools import chain
-from PIL import Image
 from scipy.io import loadmat
 
 
@@ -221,8 +219,8 @@ class KonIQ10k(Dataset):
         y: dummy variable, used for compatibility with FR datasets.
         score: MOS score of the image quality.
     """
-    _filename = "koniq10k_scores.csv"
-    _filename2 = "koniq10k_distributions_sets.csv"
+    _filename_scores = "koniq10k_scores.csv"
+    _filename_dists = "koniq10k_distributions_sets.csv"
 
     def __init__(self, root: Path, transform: Optional[Callable] = None, subset: str = 'test') -> None:
         assert subset in ["train", "test", "all"], \
@@ -231,8 +229,8 @@ class KonIQ10k(Dataset):
         
         self.root = root
         self.initial_image_size = "1024x768"
-        df1 = pd.read_csv(root / self._filename)
-        df2 = pd.read_csv(root / self._filename2)
+        df1 = pd.read_csv(root / self._filename_scores)
+        df2 = pd.read_csv(root / self._filename_dists)
         self.df = df1.merge(df2, on=["image_name"])
         if not subset == "all":
             self.df = self.df[self.df.set == subset].reset_index()
@@ -248,14 +246,14 @@ class KonIQ10k(Dataset):
         x_path = self.root / self.df.iloc[index]["image_name"]
         score = self.scores[index]
 
-        x = Image.open(x_path)
+        x = imread(x_path)
         y = torch.rand(1)
 
         if self.transform is not None:
             x = self.transform(x)
             return x, y, score
 
-        x = torch.from_numpy(np.array(x)).float()
+        x = torch.from_numpy(x).float()
         x = x.permute(2, 0, 1)
         return x, y, score
 
@@ -503,7 +501,8 @@ if __name__ == "__main__":
     parser.add_argument('--metrics', nargs='+', default=[], help='Metrics to benchmark',
                         choices=list(METRICS.keys()) + list(METRIC_CATEGORIES.keys()) + ['all'])
     parser.add_argument('--batch_size', type=int, default=1, help='Batch size')
-    parser.add_argument('--device', default='cuda', choices=['cpu', 'cuda'], help='Computation device')
+    device_choice = ['cpu', 'cuda'] + [f'cuda:{i}' for i in range(torch.cuda.device_count())]
+    parser.add_argument('--device', default='cuda', choices=device_choice, help='Computation device')
     parser.add_argument('--feature_extractor', default='inception', choices=['inception', 'vgg16', 'vgg19'],
                         help='Select a feature extractor. For distribution-based metrics only')
 

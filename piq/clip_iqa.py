@@ -11,12 +11,12 @@ Ref url: https://github.com/IceClear/CLIP-IQA
 """
 import os
 import torch
-import torch.nn as nn
 
+from torch.nn.modules.loss import _Loss
 from typing import Union
 
 from piq.feature_extractors.clip import load
-from piq.utils.common import load_tensor
+from piq.utils.common import download_tensor
 
 
 OPENAI_CLIP_MEAN = (0.48145466, 0.4578275, 0.40821073)
@@ -24,7 +24,7 @@ OPENAI_CLIP_STD = (0.26862954, 0.26130258, 0.27577711)
 TOKENS_URL = "https://github.com/photosynthesis-team/piq/releases/download/v0.7.1/clipiqa_tokens.pt"
 
 
-class CLIPIQA(nn.Module):
+class CLIPIQA(_Loss):
     r"""Creates a criterion that measures image quality based on a general notion of text-to-image similarity
     learned by the CLIP[1] model during its large-scale pre-training on a large dataset with paired texts and images.
 
@@ -72,7 +72,7 @@ class CLIPIQA(nn.Module):
             param.requires_grad = False
         
         # Pre-computed tokens for prompt pairs: "Good photo.", "Bad photo.".
-        tokens = load_tensor(TOKENS_URL, os.path.expanduser("~/.cache/clip"))
+        tokens = download_tensor(TOKENS_URL, os.path.expanduser("~/.cache/clip"))
 
         anchors = self.feature_extractor.encode_text(tokens).float()
         self.anchors = anchors / anchors.norm(dim=-1, keepdim=True)

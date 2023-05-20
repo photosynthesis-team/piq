@@ -2,7 +2,6 @@ import hashlib
 import os
 import warnings
 
-import numpy as np
 import torch
 import torch.nn.functional as F
 
@@ -436,7 +435,7 @@ class CLIP(nn.Module):
         self.ln_final = LayerNorm(transformer_width)
 
         self.text_projection = nn.Parameter(torch.empty(transformer_width, embed_dim))
-        self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
+        self.logit_scale = nn.Parameter(torch.tensor(1 / 0.07).log())
 
         self.initialize_parameters()
 

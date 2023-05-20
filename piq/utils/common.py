@@ -160,7 +160,7 @@ def _parse_version(version: Union[str, bytes]) -> Tuple[int, ...]:
     return release
 
 
-def load_tensor(url: str, root: str, map_location: str = 'cpu') -> torch.Tensor:
+def download_tensor(url: str, root: str, map_location: str = 'cpu') -> torch.Tensor:
     r"""Downloads torch tensor and caches it. If already downloaded - loads from cache.
 
     Args:
