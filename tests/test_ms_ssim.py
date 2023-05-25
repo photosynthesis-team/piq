@@ -164,10 +164,10 @@ def test_multi_scale_ssim_preserves_dtype(x, y, dtype, device: str) -> None:
 
 # ================== Test class: `MultiScaleSSIMLoss` ==================
 def test_multi_scale_ssim_loss_grad(x_y_4d_5d, device: str) -> None:
-    x = x_y_4d_5d[0].to(device)
-    y = x_y_4d_5d[1].to(device)
+    x = x_y_4d_5d[0]
+    y = x_y_4d_5d[1]
     x.requires_grad_()
-    loss = MultiScaleSSIMLoss(data_range=1.).to(device)(x, y).mean()
+    loss = MultiScaleSSIMLoss(data_range=1.).to(device)(x.to(device), y.to(device)).mean()
     loss.backward()
     assert torch.isfinite(x.grad).all(), f'Expected finite gradient values, got {x.grad}'
 
