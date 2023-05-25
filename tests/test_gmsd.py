@@ -76,8 +76,8 @@ def test_gmsd_supports_different_data_ranges(x, y, data_range, device: str) -> N
 
 def test_gmsd_fails_for_incorrect_data_range(x, y, device: str) -> None:
     # Scale to [0, 255]
-    x_scaled = (x * 255).to(torch.uint8, device=device)
-    y_scaled = (y * 255).to(torch.uint8, device=device)
+    x_scaled = (x * 255).to(dtype=torch.uint8, device=device)
+    y_scaled = (y * 255).to(dtype=torch.uint8, device=device)
     with pytest.raises(AssertionError):
         gmsd(x_scaled, y_scaled, data_range=1.0)
 
