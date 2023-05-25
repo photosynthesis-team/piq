@@ -76,7 +76,7 @@ def main():
     # To compute MS-SSIM index as a measure, use lower case function from the library:
     ms_ssim_index: torch.Tensor = piq.multi_scale_ssim(x, y, data_range=1.)
     # In order to use MS-SSIM as a loss function, use corresponding PyTorch module:
-    ms_ssim_loss = piq.MultiScaleSSIMLoss(data_range=1., reduction='none')(x, y)
+    ms_ssim_loss = piq.MultiScaleSSIMLoss(data_range=1., reduction='none').to(x.device)(x, y)
     print(f"MS-SSIM index: {ms_ssim_index.item():0.4f}, loss: {ms_ssim_loss.item():0.4f}")
 
     # To compute Multi-Scale GMSD as a measure, use lower case function from the library
@@ -88,7 +88,7 @@ def main():
         x, y, data_range=1., chromatic=True, reduction='none')
     # In order to use Multi-Scale GMSD as a loss function, use corresponding PyTorch module
     ms_gmsd_loss: torch.Tensor = piq.MultiScaleGMSDLoss(
-        chromatic=True, data_range=1., reduction='none')(x, y)
+        chromatic=True, data_range=1., reduction='none').to(x.device)(x, y)
     print(f"MS-GMSDc index: {ms_gmsd_index.item():0.4f}, loss: {ms_gmsd_loss.item():0.4f}")
 
     # To compute PSNR as a measure, use lower case function from the library.
