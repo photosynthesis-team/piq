@@ -154,6 +154,7 @@ def test_version_tuple_warns_on_invalid_input(version) -> None:
     with pytest.warns(UserWarning):
         _parse_version(version)
 
+
 def test_download_tensor():
     url = "https://github.com/photosynthesis-team/piq/releases/download/v0.7.1/clipiqa_tokens.pt"
     file_name = os.path.basename(url)

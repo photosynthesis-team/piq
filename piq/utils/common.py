@@ -104,7 +104,7 @@ def _validate_input(
             
         if check_for_channels_first:
             channels_last = t.shape[-1] in {1, 2, 3}
-            assert not channels_last, f"Expected tensor to have channels first format, but got channels last. \
+            assert not channels_last, "Expected tensor to have channels first format, but got channels last. \
                 Please permute channels (e.g. t.permute(0, 3, 1, 2) for 4D tensors) and rerun."
 
 

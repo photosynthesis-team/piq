@@ -69,4 +69,3 @@ def test_clipiq_works_for_different_precision(clipiqa: _Loss, x_rgb: torch.Tenso
         op_type_result = clipiqa(x_rgb.type(op_type).to(device))
         assert torch.isclose(default_type_result, op_type_result, rtol=1e-2), \
             f'Expected values to be equal to baseline, got {default_type_result.item()} and {op_type_result.item()}'
-
