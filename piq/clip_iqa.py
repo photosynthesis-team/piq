@@ -78,20 +78,24 @@ class CLIPIQA(_Loss):
         self.anchors = anchors / anchors.norm(dim=-1, keepdim=True)
 
         self.data_range = float(data_range)
-        self.default_mean = torch.Tensor(OPENAI_CLIP_MEAN).view(1, 3, 1, 1)
-        self.default_std = torch.Tensor(OPENAI_CLIP_STD).view(1, 3, 1, 1)
+        self.default_mean = torch.tensor(OPENAI_CLIP_MEAN).view(1, 3, 1, 1)
+        self.default_std = torch.tensor(OPENAI_CLIP_STD).view(1, 3, 1, 1)
         self.logit_scale = self.feature_extractor.logit_scale.exp()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         r"""Computation of CLIP-IQA metric for a given image :math:`x`.
 
         Args:
-            x: An input tensor. Shape :math:`(N, C, H, W)`.
+            x: An input tensor. Shape :math:`(N, C, H, W)` or :math:`(C, H, W)`.
+                The metric is designed in such a way that it expects:
+                - 3D or 4D PyTorch tensors;
+                - These tensors are have any ranges of values between 0 and 255;
+                - These tensros have channels first format.
 
         Returns:
             The value of CLI-IQA score in [0, 1] range.
         """
-        _validate_input(x, dim_range=(3, 4), check_for_channels_first=True)
+        _validate_input(x, dim_range=(3, 4), data_range=(0., 255.), check_for_channels_first=True)
 
         x = x.float() / self.data_range
         x = (x - self.default_mean.to(x)) / self.default_std.to(x)
@@ -100,7 +104,7 @@ class CLIPIQA(_Loss):
         self.feature_extractor = self.feature_extractor.to(x)
 
         with torch.no_grad():
-            image_features = self.feature_extractor.encode_image(x, pos_embedding=False).float()
+            image_features = self.feature_extractor.encode_image(x, pos_embedding=False)
 
         # Normalized features.
         image_features = image_features / image_features.norm(dim=-1, keepdim=True)
