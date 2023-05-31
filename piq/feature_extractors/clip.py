@@ -9,9 +9,14 @@ from torch import nn
 from typing import Tuple, Union, Optional
 from collections import OrderedDict
 from urllib.request import urlopen
+from urllib.error import URLError, HTTPError, ContentTooShortError
 
 
-CLIP_MODEL_PATH = (
+# We use the same model as OpenAI but store our own snapshot of it for reproducibility perposes.
+PIQ_CLIP_MODEL_PATH = (
+    "https://github.com/photosynthesis-team/piq/releases/download/v0.7.1/RN50.pt"
+)
+OPENIQA_CLIP_MODEL_PATH = (
     "https://openaipublic.azureedge.net/clip/models/"
     "afeb0e10f9e5a86da6080e35cf09123aca3b358a0c3e3b6c78a7b63bc04b6762/RN50.pt"
 )
@@ -63,7 +68,11 @@ def load() -> nn.Module:
     Returns:
         Initialized CLIP model.
     """
-    model_path = _download(CLIP_MODEL_PATH, os.path.expanduser("~/.cache/clip"))
+    # We use our snapshot by default and use OpenAI link as a backup in case of some trouble.
+    try:
+        model_path = _download(PIQ_CLIP_MODEL_PATH, os.path.expanduser("~/.cache/clip"))
+    except (URLError, HTTPError, ContentTooShortError):
+        model_path = _download(OPENIQA_CLIP_MODEL_PATH, os.path.expanduser("~/.cache/clip"))
 
     with open(model_path, "rb") as f:
         model = torch.jit.load(f, map_location="cpu").eval()

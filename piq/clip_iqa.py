@@ -15,7 +15,7 @@ import torch
 from torch.nn.modules.loss import _Loss
 from typing import Union
 
-from piq.feature_extractors.clip import load
+from piq.feature_extractors import clip
 from piq.utils.common import download_tensor, _validate_input
 
 
@@ -67,7 +67,7 @@ class CLIPIQA(_Loss):
     def __init__(self, data_range: Union[float, int] = 1.) -> None:
         super().__init__()
 
-        self.feature_extractor = load().eval()
+        self.feature_extractor = clip.load().eval()
         for param in self.feature_extractor.parameters():
             param.requires_grad = False
         
