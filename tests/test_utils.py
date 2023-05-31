@@ -1,10 +1,12 @@
 import torch
 import pytest
 import os
+import hashlib
+import re
 
 import numpy as np
 
-from piq.utils.common import _validate_input, _reduce, _parse_version, download_tensor
+from piq.utils.common import _validate_input, _reduce, _parse_version, download_tensor, is_sha256_hash
 
 
 @pytest.fixture(scope='module')
@@ -170,3 +172,20 @@ def test_download_tensor():
 
     # Check if tensor loads if cached.
     assert isinstance(download_tensor(url, root), torch.Tensor)
+
+
+# =============== Test function: `is_sha256_hash` ==============
+def test_works_for_hashes():
+    example_stings = [b'the', b'the', b'meaning', b'of', b'life', b'the' b'universe', b'and' b'everything']
+    for ex in example_stings:
+        h = hashlib.new('sha256')
+        h.update(ex)
+        h = h.hexdigest()
+        assert isinstance(is_sha256_hash(h), re.Match), f'Exepected re.Match, got {type(h)}'
+
+
+def test_does_not_work_for_plane_strings():
+    example_stings = ['the', 'the', 'meaning', 'of', 'life', 'the' 'universe', 'and' 'everything']
+    for ex in example_stings:
+        with pytest.raises(AssertionError):
+            assert isinstance(ex, re.Match), f'Exepected re.Match, got {type(hash)}'

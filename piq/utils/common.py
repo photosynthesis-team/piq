@@ -190,3 +190,9 @@ def download_tensor(url: str, root: str, map_location: str = 'cpu') -> torch.Ten
             output.write(buffer)
 
     return torch.load(download_target, map_location=map_location)
+
+
+def is_sha256_hash(string: str) -> Optional[re.Match]:
+    """ Checks whether the provided sting is a valid SHA256 hash. """
+    pattern = re.compile("^[a-fA-F0-9]{64}$")
+    return pattern.match(string)

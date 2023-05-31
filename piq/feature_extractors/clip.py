@@ -11,6 +11,8 @@ from collections import OrderedDict
 from urllib.request import urlopen
 from urllib.error import URLError, HTTPError, ContentTooShortError
 
+from piq.utils.common import is_sha256_hash
+
 
 # We use the same model as OpenAI but store our own snapshot of it for reproducibility perposes.
 PIQ_CLIP_MODEL_PATH = (
@@ -56,8 +58,10 @@ def _download(url: str, root: str) -> str:
 
             output.write(buffer)
 
-    if hashlib.sha256(open(download_target, "rb").read()).hexdigest() != expected_sha256:
-        raise RuntimeError("Model has been downloaded but the SHA256 checksum does not not match")
+    # Perform hash check iff hash is actually present.
+    if is_sha256_hash(expected_sha256):
+        if hashlib.sha256(open(download_target, "rb").read()).hexdigest() != expected_sha256:
+            raise RuntimeError("Model has been downloaded but the SHA256 checksum does not match")
 
     return download_target
 
