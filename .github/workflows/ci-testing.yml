@@ -20,9 +20,9 @@ jobs:
           - python-version: "3.7"
             torchvision-version: "0.10.0"
           - python-version: "3.7"
-            torchvision-version: "0.14.2"
+            torchvision-version: "0.14.1"
           - python-version: "3.10"
-            torchvision-version: "0.14.2"
+            torchvision-version: "0.14.1"
 
     steps:
       - uses: actions/checkout@v2
