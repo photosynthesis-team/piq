@@ -51,7 +51,7 @@ def _download(url: str, root: str) -> str:
             else:
                 warnings.warn(
                     f"{download_target} exists, but the SHA256 checksum does not match; re-downloading the file"
-                    )
+                )
         else:
             return download_target
 
