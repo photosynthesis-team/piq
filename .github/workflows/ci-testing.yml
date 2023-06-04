@@ -52,7 +52,7 @@ jobs:
                       tensorflow \
                       libsvm \
                       pybrisque \
-                      scikit-image==0.20.0 \
+                      scikit-image<=0.20.0 \
                       pandas \
                       tqdm
           pip install --upgrade scipy
