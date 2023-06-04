@@ -183,11 +183,11 @@ def download_tensor(url: str, root: str, map_location: str = 'cpu') -> torch.Ten
     
     with urlopen(url) as source, open(download_target, "wb") as output:
         while True:
-            buffer = source.read(8192)
-            if not buffer:
+            buff = source.read(8192)
+            if not buff:
                 break
 
-            output.write(buffer)
+            output.write(buff)
 
     return torch.load(download_target, map_location=map_location)
 

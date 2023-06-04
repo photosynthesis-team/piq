@@ -176,7 +176,7 @@ def test_download_tensor():
 
 # =============== Test function: `is_sha256_hash` ==============
 def test_works_for_hashes():
-    example_stings = [b'the', b'the', b'meaning', b'of', b'life', b'the' b'universe', b'and' b'everything']
+    example_stings = [b'the', b'the', b'meaning', b'of', b'life', b'the', b'universe', b'and', b'everything']
     for ex in example_stings:
         h = hashlib.new('sha256')
         h.update(ex)

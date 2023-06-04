@@ -46,7 +46,7 @@ class CLIPIQA(_Loss):
     Note:
         The initial computation of the metric is performed in `float32` and other dtypes (i.e. `float16`, `float64`)
         are not supported. We preserve this behaviour for reproducibility perposes. Also, at the time of writing
-        conv2d is not supported for `float16` tensors on CPU. 
+        conv2d is not supported for `float16` tensors on CPU.
 
     Warning:
         In order to avoid implicit dtype conversion and normalization of input tensors, they are copied.

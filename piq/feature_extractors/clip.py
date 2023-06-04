@@ -49,17 +49,19 @@ def _download(url: str, root: str) -> str:
             if hashlib.sha256(open(download_target, "rb").read()).hexdigest() == expected_sha256:
                 return download_target
             else:
-                warnings.warn(f"{download_target} exists, but the SHA256 checksum does not match; re-downloading the file")
+                warnings.warn(
+                    f"{download_target} exists, but the SHA256 checksum does not match; re-downloading the file"
+                    )
         else:
             return download_target
 
     with urlopen(url) as source, open(download_target, "wb") as output:
         while True:
-            buffer = source.read(8192)
-            if not buffer:
+            buff = source.read(8192)
+            if not buff:
                 break
 
-            output.write(buffer)
+            output.write(buff)
 
     # Perform hash check iff hash is actually present.
     if is_sha256_hash(expected_sha256):
@@ -78,7 +80,7 @@ def load() -> nn.Module:
     # We use our snapshot by default and use OpenAI link as a backup in case of some trouble.
     try:
         model_path = _download(PIQ_CLIP_MODEL_PATH, os.path.expanduser("~/.cache/clip"))
-    except (URLError, HTTPError, ContentTooShortError):
+    except URLError:
         model_path = _download(OPENIQA_CLIP_MODEL_PATH, os.path.expanduser("~/.cache/clip"))
 
     with open(model_path, "rb") as f:
