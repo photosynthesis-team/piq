@@ -45,10 +45,13 @@ def _download(url: str, root: str) -> str:
         raise RuntimeError(f"{download_target} exists and is not a regular file")
 
     if os.path.isfile(download_target):
-        if hashlib.sha256(open(download_target, "rb").read()).hexdigest() == expected_sha256:
-            return download_target
+        if is_sha256_hash(expected_sha256):
+            if hashlib.sha256(open(download_target, "rb").read()).hexdigest() == expected_sha256:
+                return download_target
+            else:
+                warnings.warn(f"{download_target} exists, but the SHA256 checksum does not match; re-downloading the file")
         else:
-            warnings.warn(f"{download_target} exists, but the SHA256 checksum does not match; re-downloading the file")
+            return download_target
 
     with urlopen(url) as source, open(download_target, "wb") as output:
         while True:
@@ -345,7 +348,7 @@ class VisionTransformer(nn.Module):
         self.ln_post = LayerNorm(width)
         self.proj = nn.Parameter(scale * torch.randn(width, output_dim))
 
-    def forward(self, x: torch.Tensor, return_token=False, pos_embedding=False):
+    def forward(self, x: torch.Tensor, return_token=False, pos_embedding=True):
         x = self.conv1(x)  # Shape = [*, width, grid, grid].
         x = x.reshape(x.shape[0], x.shape[1], -1)  # Shape = [*, width, grid ** 2].
         x = x.permute(0, 2, 1)  # Shape = [*, grid ** 2, width].

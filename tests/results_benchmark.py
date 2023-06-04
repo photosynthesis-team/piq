@@ -4,6 +4,7 @@
 import piq
 import tqdm
 import torch
+import types
 import argparse
 import functools
 import torchvision
@@ -388,7 +389,15 @@ def compute_full_reference(
     return metric_functor(distorted_images, reference_images).cpu()
 
 
-def compute_no_reference(metric_functor: Callable, distorted_images: torch.Tensor, _, __, ___) -> torch.Tensor:
+def compute_no_reference(
+        metric_functor: Callable,
+        distorted_images: torch.Tensor,
+        _,
+        device: str,
+        ___) -> torch.Tensor:
+    if not isinstance(metric_functor, types.FunctionType):
+        metric_functor = metric_functor.to(device)
+
     return metric_functor(distorted_images).cpu()
 
 

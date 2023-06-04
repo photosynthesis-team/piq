@@ -24,20 +24,24 @@ def clipiqa() -> _Loss:
 
 # ================== Test class: `CLIPIQA` ==================
 def test_clip_iqa_works_with_grey_channels_last(clipiqa: _Loss, x_grey: torch.Tensor, device: str) -> None:
+    clipiqa = clipiqa.to(device)
     clipiqa(x_grey.to(device))
 
 
 def test_clip_iqa_fails_with_gray_channels_first(clipiqa: _Loss, x_grey: torch.Tensor, device: str) -> None:
+    clipiqa = clipiqa.to(device)
     x_grey = x_grey.permute(0, 2, 3, 1)
     with pytest.raises(AssertionError):
         clipiqa(x_grey.to(device))
 
 
 def test_clip_iqa_works_with_rgb_channels_last(clipiqa: _Loss, x_rgb: torch.Tensor, device: str) -> None:
+    clipiqa = clipiqa.to(device)
     clipiqa(x_rgb.to(device))
 
 
 def test_clip_iqa_fails_with_rgb_channels_first(clipiqa: _Loss, x_rgb: torch.Tensor, device: str) -> None:
+    clipiqa = clipiqa.to(device)
     x_rgb = x_rgb.permute(0, 2, 3, 1)
     with pytest.raises(AssertionError):
         clipiqa(x_rgb.to(device))
@@ -47,6 +51,7 @@ def test_clip_iqa_values_rgb(clipiqa: _Loss, device: str) -> None:
     """Reference values are obtained by running the following script on the selected images:
     https://github.com/IceClear/CLIP-IQA/blob/v2-3.8/demo/clipiqa_single_image_demo.py
     """
+    clipiqa = clipiqa.to(device)
     paths_scores = {'tests/assets/i01_01_5.bmp': 0.45898438,
                     'tests/assets/I01.BMP': 0.89160156}
     for path, of_score in paths_scores.items():
@@ -57,15 +62,15 @@ def test_clip_iqa_values_rgb(clipiqa: _Loss, device: str) -> None:
         score_official = torch.tensor([of_score], dtype=torch.float, device=device)
         assert torch.isclose(score, score_official, rtol=1e-2), \
             f'Expected values to be equal to baseline, got {score.item()} and {score_official}'
-        
 
-def test_clipiq_works_for_different_precision(clipiqa: _Loss, x_rgb: torch.Tensor, device: str) -> None:
+
+def test_clip_iqa_input_dtype_does_not_change(clipiqa: _Loss, x_rgb: torch.Tensor, device: str) -> None:
+    clipiqa = clipiqa.to(device)
     x_rgb = x_rgb[0][None]
-    default_data_type = torch.float32
     optional_data_types = torch.float16, torch.float64
 
-    default_type_result = clipiqa(x_rgb.type(default_data_type).to(device))
     for op_type in optional_data_types:
-        op_type_result = clipiqa(x_rgb.type(op_type).to(device))
-        assert torch.isclose(default_type_result, op_type_result, rtol=1e-2), \
-            f'Expected values to be equal to baseline, got {default_type_result.item()} and {op_type_result.item()}'
+        x_rgb = x_rgb.type(op_type).to(device)
+        clipiqa(x_rgb)
+        assert x_rgb.dtype == op_type, \
+            f'Expect {op_type} dtype to be preserved, got {x_rgb.dtype}'
