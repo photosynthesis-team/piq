@@ -9,7 +9,7 @@ from torch import nn
 from typing import Tuple, Union, Optional
 from collections import OrderedDict
 from urllib.request import urlopen
-from urllib.error import URLError, HTTPError, ContentTooShortError
+from urllib.error import URLError
 
 from piq.utils.common import is_sha256_hash
 
