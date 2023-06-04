@@ -40,6 +40,9 @@ jobs:
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
       - name: Install dependencies
+      # It is important to freeze scikit-image to version < 0.21.0 because there they change the default number of
+      # dimensions in loaded images, which breaks image loading-related tests
+      # Might update the version in the future but tests need to be adjusted accordingly.
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install torchvision==${{ matrix.torchvision-version }}
@@ -49,7 +52,7 @@ jobs:
                       tensorflow \
                       libsvm \
                       pybrisque \
-                      scikit-image \
+                      scikit-image==0.20.0 \
                       pandas \
                       tqdm
           pip install --upgrade scipy
