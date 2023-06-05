@@ -1,8 +1,10 @@
 import torch
 import re
+import os
 import warnings
 
 from typing import Tuple, List, Optional, Union, Dict, Any
+from urllib.request import urlopen
 
 SEMVER_VERSION_PATTERN = re.compile(
     r"""
@@ -62,8 +64,8 @@ def _validate_input(
         tensors: List[torch.Tensor],
         dim_range: Tuple[int, int] = (0, -1),
         data_range: Tuple[float, float] = (0., -1.),
-        # size_dim_range: Tuple[float, float] = (0., -1.),
         size_range: Optional[Tuple[int, int]] = None,
+        check_for_channels_first: bool = False
 ) -> None:
     r"""Check that input(-s)  satisfies the requirements
     Args:
@@ -99,6 +101,11 @@ def _validate_input(
                 f'Expected values to be greater or equal to {data_range[0]}, got {t.min()}'
             assert t.max() <= data_range[1], \
                 f'Expected values to be lower or equal to {data_range[1]}, got {t.max()}'
+            
+        if check_for_channels_first:
+            channels_last = t.shape[-1] in {1, 2, 3}
+            assert not channels_last, "Expected tensor to have channels first format, but got channels last. \
+                Please permute channels (e.g. t.permute(0, 3, 1, 2) for 4D tensors) and rerun."
 
 
 def _reduce(x: torch.Tensor, reduction: str = 'mean') -> torch.Tensor:
@@ -156,3 +163,36 @@ def _parse_version(version: Union[str, bytes]) -> Tuple[int, ...]:
 
     release = tuple(int(i) for i in match.group("release").split("."))
     return release
+
+
+def download_tensor(url: str, root: str, map_location: str = 'cpu') -> torch.Tensor:
+    r"""Downloads torch tensor and caches it. If already downloaded - loads from cache.
+
+    Args:
+        url: Web or file system path.
+        root: Absolute or relative path of the cache folder.
+
+    Returns:
+        Loaded torch tesnor.
+    """
+    os.makedirs(root, exist_ok=True)
+    filename = os.path.basename(url)
+    download_target = os.path.join(root, filename)
+    if os.path.isfile(download_target):
+        return torch.load(download_target, map_location=map_location)
+    
+    with urlopen(url) as source, open(download_target, "wb") as output:
+        while True:
+            buff = source.read(8192)
+            if not buff:
+                break
+
+            output.write(buff)
+
+    return torch.load(download_target, map_location=map_location)
+
+
+def is_sha256_hash(string: str) -> Optional[re.Match]:
+    """ Checks whether the provided sting is a valid SHA256 hash. """
+    pattern = re.compile("^[a-fA-F0-9]{64}$")
+    return pattern.match(string)

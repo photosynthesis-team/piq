@@ -1,9 +1,12 @@
 import torch
 import pytest
+import os
+import hashlib
+import re
 
 import numpy as np
 
-from piq.utils import _validate_input, _reduce, _parse_version
+from piq.utils.common import _validate_input, _reduce, _parse_version, download_tensor, is_sha256_hash
 
 
 @pytest.fixture(scope='module')
@@ -77,7 +80,23 @@ def test_works_on_two_not_5d_tensors(tensor_1d: torch.Tensor) -> None:
 
 def test_breaks_if_tensors_have_different_n_dims(tensor_2d: torch.Tensor, tensor_5d: torch.Tensor) -> None:
     with pytest.raises(AssertionError):
-        _validate_input([tensor_2d, tensor_5d], dim_range=(2, 5))
+        _validate_input([tensor_2d, tensor_5d], dim_range=(2, 5), check_for_channels_first=True)
+
+
+def test_breaks_if_wrong_channel_order() -> None:
+    with pytest.raises(AssertionError):
+        _validate_input([torch.rand(1, 5, 5, 1)], check_for_channels_first=True)
+        _validate_input([torch.rand(1, 5, 5, 2)], check_for_channels_first=True)
+        _validate_input([torch.rand(1, 5, 5, 3)], check_for_channels_first=True)
+
+
+def test_works_if_correct_channel_order() -> None:
+    try:
+        _validate_input([torch.rand(1, 1, 5, 5)], check_for_channels_first=True)
+        _validate_input([torch.rand(1, 2, 5, 5)], check_for_channels_first=True)
+        _validate_input([torch.rand(1, 3, 5, 5)], check_for_channels_first=True)
+    except Exception as e:
+        pytest.fail(f"Unexpected error occurred: {e}")
 
 
 # ================== Test function: `_reduce` ==================
@@ -136,3 +155,37 @@ def test_version_tuple_parses_correctly(version, expected) -> None:
 def test_version_tuple_warns_on_invalid_input(version) -> None:
     with pytest.warns(UserWarning):
         _parse_version(version)
+
+
+def test_download_tensor():
+    url = "https://github.com/photosynthesis-team/piq/releases/download/v0.7.1/clipiqa_tokens.pt"
+    file_name = os.path.basename(url)
+    root = os.path.expanduser("~/.cache/clip")
+
+    # Check if tensor gets downloaded if not cached locally.
+    full_file_path = os.path.join(root, file_name)
+    print('full_file_path', full_file_path)
+    if os.path.exists(full_file_path):
+        os.remove(full_file_path)
+
+    assert isinstance(download_tensor(url, root), torch.Tensor)
+
+    # Check if tensor loads if cached.
+    assert isinstance(download_tensor(url, root), torch.Tensor)
+
+
+# =============== Test function: `is_sha256_hash` ==============
+def test_works_for_hashes():
+    example_stings = [b'the', b'the', b'meaning', b'of', b'life', b'the', b'universe', b'and', b'everything']
+    for ex in example_stings:
+        h = hashlib.new('sha256')
+        h.update(ex)
+        h = h.hexdigest()
+        assert isinstance(is_sha256_hash(h), re.Match), f'Exepected re.Match, got {type(h)}'
+
+
+def test_does_not_work_for_plane_strings():
+    example_stings = ['the', 'the', 'meaning', 'of', 'life', 'the' 'universe', 'and' 'everything']
+    for ex in example_stings:
+        with pytest.raises(AssertionError):
+            assert isinstance(ex, re.Match), f'Exepected re.Match, got {type(hash)}'

@@ -4,13 +4,14 @@
 import piq
 import tqdm
 import torch
+import types
 import argparse
 import functools
 import torchvision
 
 import pandas as pd
 
-from typing import List, Callable, Tuple
+from typing import List, Callable, Tuple, Optional
 from pathlib import Path
 from skimage.io import imread
 from scipy.stats import spearmanr, kendalltau
@@ -18,6 +19,11 @@ from torch.utils.data import DataLoader, Dataset
 from dataclasses import dataclass
 from torch import nn
 from itertools import chain
+from scipy.io import loadmat
+
+
+OPENAI_CLIP_MEAN = (0.48145466, 0.4578275, 0.40821073)
+OPENAI_CLIP_STD = (0.26862954, 0.26130258, 0.27577711)
 
 
 @dataclass
@@ -32,7 +38,7 @@ class Metric:
                                                   f'Provide one of: {valid_categories}'
 
 
-torch.multiprocessing.set_sharing_strategy('file_system')
+torch.multiprocessing.set_sharing_strategy("file_system")
 
 METRICS = {
     # Full-reference
@@ -68,23 +74,30 @@ METRICS = {
     "DSS": Metric(name="DSS", functor=functools.partial(piq.dss, data_range=255., reduction='none'), category='FR'),
 
     # No-reference
-    "BRISQUE": Metric(name="BRISQUE", functor=functools.partial(piq.brisque, data_range=255., reduction='none'),
-                      category='NR'),
+    "BRISQUE": Metric(
+        name="BRISQUE",
+        functor=functools.partial(piq.brisque, data_range=255.0, reduction="none"),
+        category="NR",
+    ),
+    "CLIPIQA": Metric(name="CLIPIQA", functor=piq.CLIPIQA(data_range=255), category="NR"),
 
     # Distribution-based
-    "IS": Metric(name="IS", functor=piq.IS(distance='l1'), category='DB'),
-    "FID": Metric(name="FID", functor=piq.FID(), category='DB'),
-    "GS": Metric(name="GS", functor=piq.GS(), category='DB'),
-    "KID": Metric(name="KID", functor=piq.KID(), category='DB'),
-    "MSID": Metric(name="MSID", functor=piq.MSID(), category='DB'),
-    "PR": Metric(name="PR", functor=piq.PR(), category='DB')
+    "IS": Metric(name="IS", functor=piq.IS(distance="l1"), category="DB"),
+    "FID": Metric(name="FID", functor=piq.FID(), category="DB"),
+    "GS": Metric(name="GS", functor=piq.GS(), category="DB"),
+    "KID": Metric(name="KID", functor=piq.KID(), category="DB"),
+    "MSID": Metric(name="MSID", functor=piq.MSID(), category="DB"),
+    "PR": Metric(name="PR", functor=piq.PR(), category="DB"),
 }
 
-METRIC_CATEGORIES = {cat: [k for k, v in METRICS.items() if v.category == cat] for cat in ['FR', 'NR', 'DB']}
+METRIC_CATEGORIES = {
+    cat: [k for k, v in METRICS.items() if v.category == cat]
+    for cat in ["FR", "NR", "DB"]
+}
 
 
 class TID2013(Dataset):
-    r""" A class to evaluate on the KADID10k dataset.
+    r"""A class to evaluate on the KADID10k dataset.
     Note that the class is callable. The values are returned as a result of calling the __getitem__ method.
 
     Args:
@@ -97,20 +110,20 @@ class TID2013(Dataset):
     _filename = "mos_with_names.txt"
 
     def __init__(self, root: Path = "datasets/tid2013") -> None:
-        assert root.exists(), \
-            "You need to download TID2013 dataset first. Check http://www.ponomarenko.info/tid2013"
+        assert (
+            root.exists()
+        ), "You need to download TID2013 dataset first. Check http://www.ponomarenko.info/tid2013"
 
         df = pd.read_csv(
-            root / self._filename,
-            sep=' ',
-            names=['score', 'dist_img'],
-            header=None
+            root / self._filename, sep=" ", names=["score", "dist_img"], header=None
         )
-        df["ref_img"] = df["dist_img"].apply(lambda x: f"reference_images/{(x[:3] + x[-4:]).upper()}")
+        df["ref_img"] = df["dist_img"].apply(
+            lambda x: f"reference_images/{(x[:3] + x[-4:]).upper()}"
+        )
         df["dist_img"] = df["dist_img"].apply(lambda x: f"distorted_images/{x}")
 
-        self.scores = df['score'].to_numpy()
-        self.df = df[["dist_img", 'ref_img', 'score']]
+        self.scores = df["score"].to_numpy()
+        self.df = df[["dist_img", "ref_img", "score"]]
         self.root = root
 
     def __getitem__(self, index) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -129,7 +142,7 @@ class TID2013(Dataset):
 
 
 class KADID10k(TID2013):
-    r""" A class to evaluate on the KADID10k dataset.
+    r"""A class to evaluate on the KADID10k dataset.
     One can get the dataset via the direct link: https://datasets.vqa.mmsp-kn.de/archives/kadid10k.zip.
     Note that the class is callable. The values are returned as a result of calling the __getitem__ method.
 
@@ -152,13 +165,13 @@ class KADID10k(TID2013):
         self.df = pd.read_csv(root / self._filename)
         self.df.rename(columns={"dmos": "score"}, inplace=True)
         self.scores = self.df["score"].to_numpy()
-        self.df = self.df[["dist_img", 'ref_img', 'score']]
+        self.df = self.df[["dist_img", "ref_img", "score"]]
 
         self.root = root / "images"
 
 
 class PIPAL(TID2013):
-    r""" A class to evaluate on the train set of the PIPAL dataset.
+    r"""A class to evaluate on the train set of the PIPAL dataset.
     Note that the class is callable. The values are returned as a result of calling the __getitem__ method.
 
     Args:
@@ -168,7 +181,6 @@ class PIPAL(TID2013):
         y: image without distortion in [0, 1] range
         score: MOS score for this pair of images
     """
-
     def __init__(self, root: Path = Path("data/raw/pipal")) -> None:
         assert root.exists(), \
             "You need to download PIPAL dataset. Check https://www.jasongt.com/projectpages/pipal.html"
@@ -188,14 +200,126 @@ class PIPAL(TID2013):
         df["dist_img"] = df["dist_img"].apply(lambda x: f"Train_Dist/{x}")
 
         self.scores = df["score"].to_numpy()
-        self.df = df[["dist_img", 'ref_img', 'score']]
+        self.df = df[["dist_img", "ref_img", "score"]]
         self.root = root
+
+
+class KonIQ10k(Dataset):
+    r"""A class to evaluate on the train/test/train+test the KonIQ dataset.
+    http://database.mmsp-kn.de/koniq-10k-database.html
+
+    Note that the class is callable. The values are returned as a result of calling the __getitem__ method.
+
+    Args:
+        root: Root directory path.
+        transform: Something that pre-processes dataset images.
+        subset: Which part of the dataset to use.
+            Options: "train", "test", "all". "all" means train + test.
+    Returns:
+        x: image with some kind of distortion in [0, 1] range.
+        y: dummy variable, used for compatibility with FR datasets.
+        score: MOS score of the image quality.
+    """
+    _filename_scores = "koniq10k_scores.csv"
+    _filename_dists = "koniq10k_distributions_sets.csv"
+
+    def __init__(self, root: Path, transform: Optional[Callable] = None, subset: str = 'test') -> None:
+        supported_subsets = ["train", "test", "all"]
+        assert subset in supported_subsets, f"Unknown subset [{subset}], choose one of {supported_subsets}."
+        assert root.exists(), "You need to download KonIQ-10k dataset first."
+        
+        self.root = root
+        self.initial_image_size = "1024x768"
+        df1 = pd.read_csv(root / self._filename_scores)
+        df2 = pd.read_csv(root / self._filename_dists)
+        self.df = df1.merge(df2, on=["image_name"])
+        if not subset == "all":
+            self.df = self.df[self.df.set == subset].reset_index()
+
+        self.df["image_name"] = self.df["image_name"].apply(
+            lambda x: f"{self.initial_image_size}/{x}"
+        )
+        self.scores = self.df["MOS_zscore"].to_numpy()
+
+        self.transform = transform
+
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, None, float]:
+        x_path = self.root / self.df.at[index, "image_name"]
+        score = self.scores[index]
+
+        x = imread(x_path)
+        y = torch.rand(1)
+
+        if self.transform is not None:
+            x = self.transform(x)
+            return x, y, score
+
+        x = torch.from_numpy(x).float()
+        x = x.permute(2, 0, 1)
+        return x, y, score
+
+    def __len__(self) -> int:
+        return len(self.df)
+
+
+class LIVEitW(KonIQ10k):
+    r"""A class to evaluate on the train/test/train+test the LIVE-in-the-Wild dataset.
+    https://live.ece.utexas.edu/research/ChallengeDB/index.html
+
+    Note that the class is callable. The values are returned as a result of calling the __getitem__ method.
+
+    WARNING: This dataset contains images with different spatial resolutions.
+    Hence, inference with bs > 1 may cause runtime errors.
+
+    Args:
+        root: Root directory path.
+        transform: Something that pre-processes dataset images.
+        subset: Which part of the dataset to use.
+            Options: "train", "test", "all". "all" means train + test.
+    Returns:
+        x: image with some kind of distortion in [0, 1] range.
+        y: dummy variable, used for compatibility with FR datasets.
+        score: MOS score of the image quality.
+    """
+    _filename_names = "AllImages_release.mat"
+    _filename_mos = "AllMOS_release.mat"
+
+    def __init__(self, root: Path, transform: Optional[Callable] = None, subset: str = 'test') -> None:
+        supported_subsets = ["train", "test", "all"]
+        assert subset in supported_subsets, f"Unknown subset [{subset}], choose one of {supported_subsets}."
+        assert root.exists(), "You need to download LIVEitW dataset first."
+
+        labels_folder = "Data"
+        names = loadmat(root / labels_folder / self._filename_names)
+        mos = loadmat(root / labels_folder / self._filename_mos)
+
+        images_folder = "Images"
+        n_train_images = 7  # There are only 7 images in the train set that are placed in different folder.
+        train_paths = [root / images_folder / "trainingImages" / n[0][0]
+                       for n in names["AllImages_release"]][:n_train_images]
+        test_paths = [root / images_folder / n[0][0] for n in names["AllImages_release"]][n_train_images:]
+        scores = mos["AllMOS_release"][0]
+
+        if subset == "train":
+            self.df = pd.DataFrame().from_dict({"image_name": train_paths})
+            self.scores = scores[:n_train_images]
+        elif subset == "test":
+            self.df = pd.DataFrame().from_dict({"image_name": test_paths})
+            self.scores = scores[n_train_images:]
+        else:
+            self.df = pd.DataFrame().from_dict({"image_name": train_paths + test_paths})
+            self.scores = scores
+
+        self.root = root
+        self.transform = transform
 
 
 DATASETS = {
     "tid2013": TID2013,
     "kadid10k": KADID10k,
     "pipal": PIPAL,
+    "koniq10k": KonIQ10k,
+    "liveitw": LIVEitW,
 }
 
 
@@ -236,14 +360,14 @@ def eval_metric(loader: DataLoader, metric: Metric, device: str, feature_extract
 
 def determine_compute_function(metric_category: str) -> Callable:
     return {
-        'FR': compute_full_reference,
-        'NR': compute_no_reference,
-        'DB': compute_distribution_based
+        "FR": compute_full_reference,
+        "NR": compute_no_reference,
+        "DB": compute_distribution_based,
     }[metric_category]
 
 
 def get_feature_extractor(feature_extractor_name: str, device: str) -> nn.Module:
-    r""" A factory to initialize feature extractor from its name. """
+    r"""A factory to initialize feature extractor from its name."""
     if feature_extractor_name == "vgg16":
         return torchvision.models.vgg16(pretrained=True, progress=True).features.to(device)
     elif feature_extractor_name == "vgg19":
@@ -255,17 +379,34 @@ def get_feature_extractor(feature_extractor_name: str, device: str) -> nn.Module
         raise ValueError(f"Wrong feature extractor name {feature_extractor_name}")
 
 
-def compute_full_reference(metric_functor: Callable, distorted_images: torch.Tensor,
-                           reference_images: torch.Tensor, _, __) -> torch.Tensor:
+def compute_full_reference(
+    metric_functor: Callable,
+    distorted_images: torch.Tensor,
+    reference_images: torch.Tensor,
+    _,
+    __,
+) -> torch.Tensor:
     return metric_functor(distorted_images, reference_images).cpu()
 
 
-def compute_no_reference(metric_functor: Callable, distorted_images: torch.Tensor, _, __, ___) -> torch.Tensor:
+def compute_no_reference(
+        metric_functor: Callable,
+        distorted_images: torch.Tensor,
+        _,
+        device: str,
+        ___) -> torch.Tensor:
+    if not isinstance(metric_functor, types.FunctionType):
+        metric_functor = metric_functor.to(device)
+
     return metric_functor(distorted_images).cpu()
 
 
-def extract_features(distorted_patches: torch.Tensor, feature_extractor: nn.Module, feature_extractor_name: str,
-                     reference_patches: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+def extract_features(
+    distorted_patches: torch.Tensor,
+    feature_extractor: nn.Module,
+    feature_extractor_name: str,
+    reference_patches: torch.Tensor,
+) -> Tuple[torch.Tensor, torch.Tensor]:
     distorted_features, reference_features = [], []
     with torch.no_grad():
         if feature_extractor_name == "inception":
@@ -285,16 +426,22 @@ def extract_features(distorted_patches: torch.Tensor, feature_extractor: nn.Modu
 
 
 def normalize_tensor(tensor: torch.Tensor) -> torch.Tensor:
-    r""" Map tensor values to [0, 1] """
+    r"""Map tensor values to [0, 1]"""
     return (tensor - tensor.min()) / (tensor.max() - tensor.min())
 
 
-def compute_distribution_based(metric_functor: Callable, distorted_images: torch.Tensor,
-                               reference_images: torch.Tensor, device: str, feature_extractor_name: str) \
-        -> torch.Tensor:
-    feature_extractor = get_feature_extractor(feature_extractor_name=feature_extractor_name, device=device)
+def compute_distribution_based(
+    metric_functor: Callable,
+    distorted_images: torch.Tensor,
+    reference_images: torch.Tensor,
+    device: str,
+    feature_extractor_name: str,
+) -> torch.Tensor:
+    feature_extractor = get_feature_extractor(
+        feature_extractor_name=feature_extractor_name, device=device
+    )
 
-    if feature_extractor_name == 'inception':
+    if feature_extractor_name == "inception":
         distorted_images = normalize_tensor(distorted_images)
         reference_images = normalize_tensor(reference_images)
 
@@ -306,8 +453,9 @@ def compute_distribution_based(metric_functor: Callable, distorted_images: torch
     distorted_patches = distorted_patches.view(-1, *distorted_patches.shape[-3:])
     reference_patches = reference_patches.view(-1, *reference_patches.shape[-3:])
 
-    distorted_features, reference_features = extract_features(distorted_patches, feature_extractor,
-                                                              feature_extractor_name, reference_patches)
+    distorted_features, reference_features = extract_features(
+        distorted_patches, feature_extractor, feature_extractor_name, reference_patches
+    )
 
     return metric_functor(distorted_features, reference_features).cpu()
 
@@ -327,8 +475,14 @@ def crop_patches(images: torch.Tensor, size: int = 64, stride: int = 32) -> torc
     return patches
 
 
-def main(dataset_name: str, path: Path, metrics: List[str], batch_size: int, device: str, feature_extractor: str) \
-        -> None:
+def main(
+    dataset_name: str,
+    path: Path,
+    metrics: List[str],
+    batch_size: int,
+    device: str,
+    feature_extractor: str,
+) -> None:
     # Init dataset and dataloader
     dataset = DATASETS[dataset_name](root=path)
     loader = DataLoader(dataset, batch_size=batch_size, num_workers=4)
@@ -337,7 +491,7 @@ def main(dataset_name: str, path: Path, metrics: List[str], batch_size: int, dev
     if metrics[0] in METRIC_CATEGORIES:
         metrics = METRIC_CATEGORIES[metrics[0]]
 
-    if metrics[0] == 'all':
+    if metrics[0] == "all":
         metrics = list(chain(*METRIC_CATEGORIES.values()))
 
     for metric_name in metrics:
