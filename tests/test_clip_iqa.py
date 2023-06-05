@@ -94,7 +94,7 @@ def test_clip_iqa_results_equal_for_3_and_4_dims(clipiqa: _Loss, device: str) ->
     x_result = clipiqa(x.to(device))
     x_copy_result = clipiqa(x_copy.to(device))
     assert torch.isclose(x_result, x_copy_result, rtol=1e-2), \
-            f'Expected values to be equal, got {x_result} and {x_copy_result}'
+        f'Expected values to be equal, got {x_result} and {x_copy_result}'
  
 
 def test_clip_iqa_dims_does_not_work(clipiqa: _Loss, device: str) -> None:
