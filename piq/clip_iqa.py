@@ -105,7 +105,7 @@ class CLIPIQA(_Loss):
         Returns:
             The value of CLI-IQA score in [0, 1] range.
         """
-        _validate_input(x_input, dim_range=(3, 4), data_range=(0., 255.), check_for_channels_first=True)
+        _validate_input([x_input], dim_range=(3, 4), data_range=(0., 255.), check_for_channels_first=True)
 
         x = x_input.clone()
         x = x.float() / self.data_range

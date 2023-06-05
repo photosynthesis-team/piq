@@ -162,7 +162,7 @@ class AttentionPool2d(nn.Module):
         self.spacial_dim = spacial_dim
         self.embed_dim = embed_dim
 
-    def forward(self, x, return_token=False, pos_embedding=False):
+    def forward(self, x, return_token=False, pos_embedding=True):
         x = x.reshape(x.shape[0], x.shape[1], x.shape[2] * x.shape[3]).permute(2, 0, 1)  # NCHW -> (HW)NC
         x = torch.cat([x.mean(dim=0, keepdim=True), x], dim=0)  # (HW+1)NC
         if pos_embedding:
@@ -246,7 +246,7 @@ class ModifiedResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, x, return_token=False, pos_embedding=False):
+    def forward(self, x, return_token=False, pos_embedding=True):
         def stem(x):
             for conv, bn in [(self.conv1, self.bn1), (self.conv2, self.bn2), (self.conv3, self.bn3)]:
                 x = self.relu(bn(conv(x)))
@@ -520,7 +520,7 @@ class CLIP(nn.Module):
 
         return x
 
-    def forward(self, image, text, pos_embedding=False, text_features=None):
+    def forward(self, image, text, pos_embedding=True, text_features=None):
         image_features = self.encode_image(image, pos_embedding)
         if text_features is None:
             text_features = self.encode_text(text)
