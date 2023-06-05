@@ -219,7 +219,7 @@ Benchmark
 ---------
 
 As part of our library we provide `code to benchmark <tests/results_benchmark.py>`_ all metrics on a set of common Mean Opinon Scores databases.
-Currently we support `TID2013`_,  `KADID10k`_ and `PIPAL`_.
+Currently we support several Full-Reference (`TID2013`_,  `KADID10k`_ and `PIPAL`_) and No-Reference (`KonIQ10k`_ and `LIVE-itW`_) datasets.
 You need to download them separately and provide path to images as an argument to the script.
 
 Here is an example how to evaluate SSIM and MS-SSIM metrics on TID2013 dataset:
@@ -228,7 +228,7 @@ Here is an example how to evaluate SSIM and MS-SSIM metrics on TID2013 dataset:
 
    python3 tests/results_benchmark.py --dataset tid2013 --metrics SSIM MS-SSIM --path ~/datasets/tid2013 --batch_size 16
 
-Below we provide a comparison between `Spearman's Rank Correlation cCoefficient <https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient>`_ (SRCC) values obtained with PIQ and reported in surveys.
+Below we provide a comparison between `Spearman's Rank Correlation Coefficient <https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient>`_ (SRCC) values obtained with PIQ and reported in surveys.
 Closer SRCC values indicate the higher degree of agreement between results of computations on given datasets.
 We do not report `Kendall rank correlation coefficient <https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient>`_ (KRCC)
 as it is highly correlated with SRCC and provides limited additional information.
@@ -237,6 +237,8 @@ as it's highly dependent on fitting method and is biased towards simple examples
 
 For metrics that can take greyscale or colour images, ``c`` means chromatic version.
 
+Full-Reference (FR) Datasets
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ===========  ===========================  ===========================  ===========================
      \                  TID2013                    KADID10k                       PIPAL
 -----------  ---------------------------  ---------------------------  ---------------------------
@@ -264,12 +266,24 @@ LPIPS-VGG    0.67 / 0.67 `DISTS`_         0.72 / -                     0.57 / 0.
 PieAPP       0.84 / 0.88 `DISTS`_         0.87 / -                     0.70 / 0.71 `PIPAL`_
 DISTS        0.81 / 0.83 `DISTS`_         0.88 / -                     0.62 / 0.66 `PIPAL`_
 BRISQUE      0.37 / 0.84 `Eval2019`_      0.33 / 0.53 `KADID10k`_      0.21 / -
+CLIP-IQA     0.50 / -                     0.48 / -                     0.26 / -
 IS           0.26 / -                     0.25 / -                     0.09 / -
 FID          0.67 / -                     0.66 / -                     0.18 / -
 KID          0.42 / -                     0.66 / -                     0.12 / -
 MSID         0.21 / -                     0.32 / -                     0.01 / -
 GS           0.37 / -                     0.37 / -                     0.02 / -
 ===========  ===========================  ===========================  ===========================
+
+No-Reference (NR) Datasets
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+===========  ===========================  ===========================
+     \                  KonIQ10k                    LIVE-itW         
+-----------  ---------------------------  ---------------------------
+  Source            PIQ / Reference            PIQ / Reference       
+===========  ===========================  ===========================
+BRISQUE      0.22 / -                     0.31 / -                   
+CLIP-IQA     0.68 / 0.68 `CLIP-IQA off`_  0.64 / 0.64 `CLIP-IQA off`_
+===========  ===========================  ===========================
 
 .. _TID2013: http://www.ponomarenko.info/tid2013.htm
 .. _KADID10k: http://database.mmsp-kn.de/kadid-10k-database.html
@@ -280,6 +294,9 @@ GS           0.37 / -                     0.37 / -                     0.02 / -
 .. _HaarPSI: https://arxiv.org/abs/1607.06140
 .. _PIPAL: https://arxiv.org/pdf/2011.15002.pdf
 .. _IW-SSIM: https://ieeexplore.ieee.org/document/7442122
+.. _KonIQ10k: http://database.mmsp-kn.de/koniq-10k-database.html
+.. _LIVE-itW: https://live.ece.utexas.edu/research/ChallengeDB/index.html
+.. _CLIP-IQA off: https://github.com/IceClear/CLIP-IQA
 
 Unlike FR and NR IQMs, designed to compute an image-wise distance, the DB metrics compare distributions of *sets* of images.
 To address these problems, we adopt a different way of computing the DB IQMs proposed in `<https://arxiv.org/abs/2203.07809>`_.
