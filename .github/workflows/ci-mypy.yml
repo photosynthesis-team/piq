@@ -24,6 +24,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Check types with mypy
         run: |
-          python3 -m pip install mypy
+          python3 -m pip install mypy types-setuptools
           # stop the build if there are Python syntax errors or undefined names
           python3 -m mypy piq/ --allow-redefinition

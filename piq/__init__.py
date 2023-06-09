@@ -22,3 +22,4 @@ from .srsim import srsim, SRSIMLoss
 from .pieapp import PieAPP
 from .dss import dss, DSSLoss
 from .iw_ssim import information_weighted_ssim, InformationWeightedSSIMLoss
+from .clip_iqa import CLIPIQA
