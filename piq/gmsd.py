@@ -283,7 +283,6 @@ class MultiScaleGMSDLoss(_Loss):
         if scale_weights is None:
             self.register_buffer("scale_weights", torch.tensor([0.096, 0.596, 0.289, 0.019]))
         else:
-            # Normalize scale weights
             self.register_buffer("scale_weights", scale_weights)
 
         self.chromatic = chromatic
