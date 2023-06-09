@@ -53,10 +53,11 @@ def test_ssim_raises_if_bigger_kernel(device: str) -> None:
 
 def test_srsim_supports_different_data_ranges(input_tensors: Tuple[torch.Tensor, torch.Tensor], device: str) -> None:
     prediction, target = input_tensors
-    prediction_255 = (prediction * 255).type(torch.uint8)
-    target_255 = (target * 255).type(torch.uint8)
-    measure_255 = srsim(prediction_255.to(device), target_255.to(device), data_range=255)
-    measure = srsim((prediction_255 / 255.).to(device), (target_255 / 255.).to(device))
+    prediction_255 = (prediction * 255).to(dtype=torch.uint8, device=device)
+    target_255 = (target * 255).to(dtype=torch.uint8, device=device)
+    measure_255 = srsim(prediction_255, target_255, data_range=255)
+
+    measure = srsim((prediction_255 / 255.), (target_255 / 255.), data_range=1.0)
 
     diff = torch.abs(measure_255 - measure)
     assert diff <= 1e-6, f'Result for same tensor with different data_range should be the same, got {diff}'

@@ -68,7 +68,7 @@ def multi_scale_ssim(x: torch.Tensor, y: torch.Tensor, kernel_size: int = 11, ke
         scale_weights = torch.tensor([0.0448, 0.2856, 0.3001, 0.2363, 0.1333], dtype=x.dtype, device=x.device)
     else:
         # Normalize scale weights
-        scale_weights = (scale_weights / scale_weights.sum())
+        scale_weights = scale_weights / scale_weights.sum()
     if scale_weights.size(0) != scale_weights.numel():
         raise ValueError(f'Expected a vector of weights, got {scale_weights.dim()}D tensor')
 
@@ -160,9 +160,9 @@ class MultiScaleSSIMLoss(_Loss):
         # Loss-specific parameters.
         if scale_weights is None:
             # Values from MS-SSIM paper
-            self.scale_weights = torch.tensor([0.0448, 0.2856, 0.3001, 0.2363, 0.1333])
+            self.register_buffer("scale_weights", torch.tensor([0.0448, 0.2856, 0.3001, 0.2363, 0.1333]))
         else:
-            self.scale_weights = scale_weights
+            self.register_buffer("scale_weights", scale_weights)
 
         self.kernel_size = kernel_size
         self.kernel_sigma = kernel_sigma

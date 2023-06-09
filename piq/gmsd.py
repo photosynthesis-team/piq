@@ -185,7 +185,7 @@ def multi_scale_gmsd(x: torch.Tensor, y: torch.Tensor, data_range: Union[int, fl
         scale_weights = torch.tensor([0.096, 0.596, 0.289, 0.019], device=x.device, dtype=x.dtype)
     else:
         # Normalize scale weights
-        scale_weights = (scale_weights / scale_weights.sum())
+        scale_weights = scale_weights / scale_weights.sum()
 
     # Check that input is big enough
     num_scales = scale_weights.size(0)
@@ -280,7 +280,11 @@ class MultiScaleGMSDLoss(_Loss):
         # Loss-specific parameters.
         self.data_range = data_range
 
-        self.scale_weights = scale_weights
+        if scale_weights is None:
+            self.register_buffer("scale_weights", torch.tensor([0.096, 0.596, 0.289, 0.019]))
+        else:
+            self.register_buffer("scale_weights", scale_weights)
+
         self.chromatic = chromatic
         self.alpha = alpha
         self.beta1 = beta1

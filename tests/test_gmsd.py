@@ -62,12 +62,12 @@ def test_gmsd_raises_if_tensors_have_different_types(y, device: str) -> None:
     "data_range", [128, 255],
 )
 def test_gmsd_supports_different_data_ranges(x, y, data_range, device: str) -> None:
-    x_scaled = (x * data_range).type(torch.uint8)
-    y_scaled = (y * data_range).type(torch.uint8)
-    measure_scaled = gmsd(x_scaled.to(device), y_scaled.to(device), data_range=data_range)
+    x_scaled = (x * data_range).to(dtype=torch.uint8, device=device)
+    y_scaled = (y * data_range).to(dtype=torch.uint8, device=device)
+    measure_scaled = gmsd(x_scaled, y_scaled, data_range=data_range)
     measure = gmsd(
-        x_scaled.to(device) / float(data_range),
-        y_scaled.to(device) / float(data_range),
+        x_scaled / float(data_range),
+        y_scaled / float(data_range),
         data_range=1.0
     )
     diff = torch.abs(measure_scaled - measure)
@@ -76,16 +76,16 @@ def test_gmsd_supports_different_data_ranges(x, y, data_range, device: str) -> N
 
 def test_gmsd_fails_for_incorrect_data_range(x, y, device: str) -> None:
     # Scale to [0, 255]
-    x_scaled = (x * 255).type(torch.uint8)
-    y_scaled = (y * 255).type(torch.uint8)
+    x_scaled = (x * 255).to(dtype=torch.uint8, device=device)
+    y_scaled = (y * 255).to(dtype=torch.uint8, device=device)
     with pytest.raises(AssertionError):
-        gmsd(x_scaled.to(device), y_scaled.to(device), data_range=1.0)
+        gmsd(x_scaled, y_scaled, data_range=1.0)
 
 
 def test_gmsd_supports_greyscale_tensors(device: str) -> None:
-    y = torch.ones(2, 1, 96, 96)
-    x = torch.zeros(2, 1, 96, 96)
-    gmsd(x.to(device), y.to(device))
+    y = torch.ones(2, 1, 96, 96, device=device)
+    x = torch.zeros(2, 1, 96, 96, device=device)
+    gmsd(x, y)
 
 
 def test_gmsd_modes(x, y, device: str) -> None:
@@ -139,15 +139,15 @@ def test_gmsd_loss_raises_if_tensors_have_different_types(y, device: str) -> Non
     "data_range", [128, 255],
 )
 def test_gmsd_loss_supports_different_data_ranges(x, y, data_range, device: str) -> None:
-    x_scaled = (x * data_range).type(torch.uint8)
-    y_scaled = (y * data_range).type(torch.uint8)
+    x_scaled = (x * data_range).to(dtype=torch.uint8, device=device)
+    y_scaled = (y * data_range).to(dtype=torch.uint8, device=device)
     loss_scaled = GMSDLoss(data_range=data_range)
-    measure_scaled = loss_scaled(x_scaled.to(device), y_scaled.to(device))
+    measure_scaled = loss_scaled(x_scaled, y_scaled)
 
     loss = GMSDLoss()
     measure = loss(
-        x_scaled.to(device) / float(data_range),
-        y_scaled.to(device) / float(data_range),
+        x_scaled / float(data_range),
+        y_scaled / float(data_range),
     )
     diff = torch.abs(measure_scaled - measure)
     assert diff <= 1e-6, f'Result for same tensor with different data_range should be the same, got {diff}'
@@ -155,9 +155,9 @@ def test_gmsd_loss_supports_different_data_ranges(x, y, data_range, device: str)
 
 def test_gmsd_loss_supports_greyscale_tensors(device: str) -> None:
     loss = GMSDLoss()
-    y = torch.ones(2, 1, 96, 96)
-    x = torch.zeros(2, 1, 96, 96)
-    loss(x.to(device), y.to(device))
+    y = torch.ones(2, 1, 96, 96, device=device)
+    x = torch.zeros(2, 1, 96, 96, device=device)
+    loss(x, y)
 
 
 def test_gmsd_loss_modes(x, y, device: str) -> None:
@@ -184,12 +184,12 @@ def test_multi_scale_gmsd_zero_for_equal_tensors(x, device: str) -> None:
     "data_range", [128, 255],
 )
 def test_multi_scale_gmsd_supports_different_data_ranges(x, y, data_range, device: str) -> None:
-    x_scaled = (x * data_range).type(torch.uint8)
-    y_scaled = (y * data_range).type(torch.uint8)
-    measure_scaled = multi_scale_gmsd(x_scaled.to(device), y_scaled.to(device), data_range=data_range)
+    x_scaled = (x * data_range).to(dtype=torch.uint8, device=device)
+    y_scaled = (y * data_range).to(dtype=torch.uint8, device=device)
+    measure_scaled = multi_scale_gmsd(x_scaled, y_scaled, data_range=data_range)
     measure = multi_scale_gmsd(
-        x_scaled.to(device) / float(data_range),
-        y_scaled.to(device) / float(data_range),
+        x_scaled / float(data_range),
+        y_scaled / float(data_range),
         data_range=1.0
     )
     diff = torch.abs(measure_scaled - measure)
@@ -198,34 +198,36 @@ def test_multi_scale_gmsd_supports_different_data_ranges(x, y, data_range, devic
 
 def test_multi_scale_gmsd_fails_for_incorrect_data_range(x, y, device: str) -> None:
     # Scale to [0, 255]
-    x_scaled = (x * 255).type(torch.uint8)
-    y_scaled = (y * 255).type(torch.uint8)
+    x_scaled = (x * 255).to(dtype=torch.uint8, device=device)
+    y_scaled = (y * 255).to(dtype=torch.uint8, device=device)
     with pytest.raises(AssertionError):
-        multi_scale_gmsd(x_scaled.to(device), y_scaled.to(device), data_range=1.0)
+        multi_scale_gmsd(x_scaled, y_scaled, data_range=1.0)
 
 
 def test_multi_scale_gmsd_supports_greyscale_tensors(device: str) -> None:
-    y = torch.ones(2, 1, 96, 96)
-    x = torch.zeros(2, 1, 96, 96)
-    multi_scale_gmsd(x.to(device), y.to(device))
+    y = torch.ones(2, 1, 96, 96, device=device)
+    x = torch.zeros(2, 1, 96, 96, device=device)
+    multi_scale_gmsd(x, y)
 
 
 def test_multi_scale_gmsd_fails_for_greyscale_tensors_chromatic_flag(device: str) -> None:
-    y = torch.ones(2, 1, 96, 96)
-    x = torch.zeros(2, 1, 96, 96)
+    y = torch.ones(2, 1, 96, 96, device=device)
+    x = torch.zeros(2, 1, 96, 96, device=device)
     with pytest.raises(AssertionError):
-        multi_scale_gmsd(x.to(device), y.to(device), chromatic=True)
+        multi_scale_gmsd(x, y, chromatic=True)
 
 
 def test_multi_scale_gmsd_supports_custom_weights(x, y, device: str) -> None:
-    multi_scale_gmsd(x.to(device), y.to(device), scale_weights=torch.tensor([3., 4., 2., 1., 2.]))
+    scale_weights = torch.tensor([3., 4., 2., 1., 2.], device=device)
+    multi_scale_gmsd(x.to(device), y.to(device), scale_weights=scale_weights)
 
 
 def test_multi_scale_gmsd_raise_exception_for_small_images(device: str) -> None:
-    y = torch.ones(3, 1, 32, 32)
-    x = torch.zeros(3, 1, 32, 32)
+    y = torch.ones(3, 1, 32, 32, device=device)
+    x = torch.zeros(3, 1, 32, 32, device=device)
+    scale_weights = torch.tensor([3., 4., 2., 1., 2.], device=device)
     with pytest.raises(ValueError):
-        multi_scale_gmsd(x.to(device), y.to(device), scale_weights=torch.tensor([3., 4., 2., 1., 2.]))
+        multi_scale_gmsd(x, y, scale_weights=scale_weights)
 
 
 def test_multi_scale_gmsd_modes(x, y, device: str) -> None:
@@ -240,61 +242,68 @@ def test_multi_scale_gmsd_modes(x, y, device: str) -> None:
 # ================== Test class: `MultiScaleGMSDLoss` ==================
 def test_multi_scale_gmsd_loss_forward_backward(x, y, device: str) -> None:
     x.requires_grad_()
-    loss_value = MultiScaleGMSDLoss(chromatic=True)(x.to(device), y.to(device))
+    loss_value = MultiScaleGMSDLoss(chromatic=True).to(device)(x.to(device), y.to(device))
     loss_value.backward()
     assert torch.isfinite(x.grad).all(), LEAF_VARIABLE_ERROR_MESSAGE
 
 
 def test_multi_scale_gmsd_loss_zero_for_equal_tensors(x, device: str) -> None:
-    loss = MultiScaleGMSDLoss()
+    loss = MultiScaleGMSDLoss().to(device)
     y = x.clone()
     measure = loss(x.to(device), y.to(device))
     assert measure.abs() <= 1e-6, f'MultiScaleGMSD for equal tensors must be 0, got {measure}'
 
 
-def test_multi_scale_gmsd_loss_supports_different_data_ranges(x, y, device: str) -> None:
-    x_255 = x * 255
-    y_255 = y * 255
-    loss = MultiScaleGMSDLoss()
-    measure = loss(x.to(device), y.to(device))
-    loss_255 = MultiScaleGMSDLoss(data_range=255)
-    measure_255 = loss_255(x_255.to(device), y_255.to(device))
-    diff = torch.abs(measure_255 - measure)
-    assert diff <= 1e-4, f'Result for same tensor with different data_range should be the same, got {diff}'
+@pytest.mark.parametrize(
+    "data_range", [128, 255],
+)
+def test_multi_scale_gmsd_loss_supports_different_data_ranges(x, y, data_range, device: str) -> None:
+    x_scaled = (x * data_range).to(dtype=torch.uint8, device=device)
+    y_scaled = (y * data_range).to(dtype=torch.uint8, device=device)
+    loss_scaled = MultiScaleGMSDLoss(data_range=data_range).to(device)
+    measure_scaled = loss_scaled(x_scaled, y_scaled)
+
+    loss = MultiScaleGMSDLoss(data_range=1.).to(device)
+    measure = loss(x_scaled / float(data_range), y_scaled / float(data_range))
+
+    diff = torch.abs(measure_scaled - measure)
+    assert diff <= 1e-6, f'Result for same tensor with different data_range should be the same, got {diff}'
 
 
 def test_multi_scale_gmsd_loss_supports_greyscale_tensors(device: str) -> None:
-    loss = MultiScaleGMSDLoss()
-    y = torch.ones(2, 1, 96, 96)
-    x = torch.zeros(2, 1, 96, 96)
-    loss(x.to(device), y.to(device))
+    loss = MultiScaleGMSDLoss().to(device)
+    y = torch.ones(2, 1, 96, 96, device=device)
+    x = torch.zeros(2, 1, 96, 96, device=device)
+    loss(x, y)
 
 
 def test_multi_scale_gmsd_loss_fails_for_greyscale_tensors_chromatic_flag(device: str) -> None:
-    loss = MultiScaleGMSDLoss(chromatic=True)
-    y = torch.ones(2, 1, 96, 96)
-    x = torch.zeros(2, 1, 96, 96)
+    loss = MultiScaleGMSDLoss(chromatic=True).to(device)
+    y = torch.ones(2, 1, 96, 96, device=device)
+    x = torch.zeros(2, 1, 96, 96, device=device)
     with pytest.raises(AssertionError):
-        loss(x.to(device), y.to(device))
+        loss(x, y)
 
 
 def test_multi_scale_gmsd_loss_supports_custom_weights(x, y, device: str) -> None:
-    loss = MultiScaleGMSDLoss(scale_weights=torch.tensor([3., 4., 2., 1., 2.]))
+    loss = MultiScaleGMSDLoss(scale_weights=torch.tensor([3., 4., 2., 1., 2.])).to(device)
     loss(x.to(device), y.to(device))
 
 
 def test_multi_scale_gmsd_loss_raise_exception_for_small_images(device: str) -> None:
-    y = torch.ones(3, 1, 32, 32)
-    x = torch.zeros(3, 1, 32, 32)
-    loss = MultiScaleGMSDLoss(scale_weights=torch.tensor([3., 4., 2., 1., 2.]))
+    y = torch.ones(3, 1, 32, 32, device=device)
+    x = torch.zeros(3, 1, 32, 32, device=device)
+    loss = MultiScaleGMSDLoss(scale_weights=torch.tensor([3., 4., 2., 1., 2.])).to(device)
     with pytest.raises(ValueError):
-        loss(x.to(device), y.to(device))
+        loss(x, y)
 
 
 def test_multi_scale_loss_gmsd_modes(x, y, device: str) -> None:
     for reduction in ['mean', 'sum', 'none']:
-        MultiScaleGMSDLoss(reduction=reduction)(x.to(device), y.to(device))
+        loss = MultiScaleGMSDLoss(reduction=reduction).to(device)
+        loss(x.to(device), y.to(device))
 
     for reduction in ['DEADBEEF', 'random']:
         with pytest.raises(ValueError):
-            MultiScaleGMSDLoss(reduction=reduction)(x.to(device), y.to(device))
+            loss = MultiScaleGMSDLoss(reduction=reduction).to(device)
+            loss(x.to(device), y.to(device))

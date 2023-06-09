@@ -63,7 +63,7 @@ def test_multi_scale_ssim_measure_is_one_for_equal_tensors(x: torch.Tensor, devi
     measure = multi_scale_ssim(y, x, data_range=1.)
     assert torch.allclose(measure, torch.ones_like(measure)), \
         f'If equal tensors are passed MS-SSIM must be equal to 1 ' \
-        f'(considering floating point operation error up to 1 * 10^-6), got {measure + 1}'
+        f'(considering floating point operation error up to 1 * 10^-6), got {measure}'
 
 
 def test_multi_scale_ssim_measure_is_less_or_equal_to_one(ones_zeros_4d_5d: Tuple[torch.Tensor, torch.Tensor],
@@ -88,7 +88,7 @@ def test_multi_scale_ssim_raises_if_tensors_have_different_shapes(x_y_4d_5d, dev
         else:
             with pytest.raises(AssertionError):
                 multi_scale_ssim(wrong_shape_x, y)
-    scale_weights = torch.rand(2, 2)
+    scale_weights = torch.rand(2, 2, device=device)
     with pytest.raises(ValueError):
         multi_scale_ssim(x, y, scale_weights=scale_weights)
 
@@ -115,7 +115,7 @@ def test_multi_scale_ssim_raise_if_wrong_value_is_estimated(test_images: Tuple[t
                                                             scale_weights: torch.Tensor, device: str) -> None:
     for x, y in test_images:
         piq_ms_ssim = multi_scale_ssim(x.to(device), y.to(device), kernel_size=11, kernel_sigma=1.5,
-                                       data_range=255, reduction='none', scale_weights=scale_weights)
+                                       data_range=255, reduction='none', scale_weights=scale_weights.to(device))
         tf_x = tf.convert_to_tensor(x.permute(0, 2, 3, 1).numpy())
         tf_y = tf.convert_to_tensor(y.permute(0, 2, 3, 1).numpy())
         with tf.device('/CPU'):
@@ -164,10 +164,10 @@ def test_multi_scale_ssim_preserves_dtype(x, y, dtype, device: str) -> None:
 
 # ================== Test class: `MultiScaleSSIMLoss` ==================
 def test_multi_scale_ssim_loss_grad(x_y_4d_5d, device: str) -> None:
-    x = x_y_4d_5d[0].to(device)
-    y = x_y_4d_5d[1].to(device)
+    x = x_y_4d_5d[0]
+    y = x_y_4d_5d[1]
     x.requires_grad_()
-    loss = MultiScaleSSIMLoss(data_range=1.)(x, y).mean()
+    loss = MultiScaleSSIMLoss(data_range=1.).to(device)(x.to(device), y.to(device)).mean()
     loss.backward()
     assert torch.isfinite(x.grad).all(), f'Expected finite gradient values, got {x.grad}'
 
@@ -175,7 +175,7 @@ def test_multi_scale_ssim_loss_grad(x_y_4d_5d, device: str) -> None:
 def test_multi_scale_ssim_loss_symmetry(x_y_4d_5d, device: str) -> None:
     x = x_y_4d_5d[0].to(device)
     y = x_y_4d_5d[1].to(device)
-    loss = MultiScaleSSIMLoss()
+    loss = MultiScaleSSIMLoss().to(device)
     loss_value = loss(x, y)
     reverse_loss_value = loss(y, x)
     assert (loss_value == reverse_loss_value).all(), \
@@ -185,7 +185,7 @@ def test_multi_scale_ssim_loss_symmetry(x_y_4d_5d, device: str) -> None:
 def test_multi_scale_ssim_loss_equality(y, device: str) -> None:
     y = y.to(device)
     x = y.clone()
-    loss = MultiScaleSSIMLoss()(x, y)
+    loss = MultiScaleSSIMLoss().to(device)(x, y)
     assert (loss.abs() <= 1e-6).all(), f'If equal tensors are passed SSIM loss must be equal to 0 ' \
                                        f'(considering floating point operation error up to 1 * 10^-6), got {loss}'
 
@@ -195,7 +195,7 @@ def test_multi_scale_ssim_loss_is_less_or_equal_to_one(ones_zeros_4d_5d: Tuple[t
     # Create two maximally different tensors.
     ones = ones_zeros_4d_5d[0].to(device)
     zeros = ones_zeros_4d_5d[1].to(device)
-    loss = MultiScaleSSIMLoss()(ones, zeros)
+    loss = MultiScaleSSIMLoss().to(device)(ones, zeros)
     assert (loss <= 1).all(), f'MS-SSIM loss must be <= 1, got {loss}'
 
 
@@ -208,14 +208,14 @@ def test_multi_scale_ssim_loss_raises_if_tensors_have_different_shapes(x_y_4d_5d
     for size in list(itertools.product(*dims)):
         wrong_shape_x = torch.rand(size).to(y)
         if wrong_shape_x.size() == y.size():
-            MultiScaleSSIMLoss()(wrong_shape_x, y)
+            MultiScaleSSIMLoss().to(device)(wrong_shape_x, y)
         else:
             with pytest.raises(AssertionError):
-                MultiScaleSSIMLoss()(wrong_shape_x, y)
+                MultiScaleSSIMLoss().to(device)(wrong_shape_x, y)
 
     scale_weights = torch.rand(2, 2)
     with pytest.raises(ValueError):
-        MultiScaleSSIMLoss(scale_weights=scale_weights)(x, y)
+        MultiScaleSSIMLoss(scale_weights=scale_weights).to(device)(x, y)
 
 
 def test_multi_scale_ssim_loss_raises_if_tensors_have_different_types(x, y) -> None:
@@ -233,4 +233,4 @@ def test_ms_ssim_loss_raises_if_kernel_size_greater_than_image(x_y_4d_5d, device
     wrong_size_x = x[:, :, :min_size - 1, :min_size - 1]
     wrong_size_y = y[:, :, :min_size - 1, :min_size - 1]
     with pytest.raises(ValueError):
-        MultiScaleSSIMLoss(kernel_size=kernel_size)(wrong_size_x, wrong_size_y)
+        MultiScaleSSIMLoss(kernel_size=kernel_size).to(device)(wrong_size_x, wrong_size_y)
