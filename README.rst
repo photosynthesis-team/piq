@@ -167,6 +167,8 @@ Universal
 Acronym      Year    Metric
 ===========  ======  ==========
 CLIP-IQA     2023    `CLIP-IQA <https://arxiv.org/pdf/2207.12396.pdf>`_
+===========  ======  ==========
+
 
 Full-Reference (FR)
 ^^^^^^^^^^^^^^^^^^^
