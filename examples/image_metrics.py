@@ -22,6 +22,10 @@ def main():
     brisque_loss: torch.Tensor = piq.BRISQUELoss(data_range=1., reduction='none')(x)
     print(f"BRISQUE index: {brisque_index.item():0.4f}, loss: {brisque_loss.item():0.4f}")
 
+    # To compute CLIP-IQA score as a measure, use PyTorch module from the library
+    clip_iqa_index: torch.Tensor = piq.CLIPIQA(data_range=1.).to(x.device)(x)
+    print(f"CLIP-IQA: {clip_iqa_index.item():0.4f}")
+
     # To compute Content score as a loss function, use corresponding PyTorch module
     # By default VGG16 model is used, but any feature extractor model is supported.
     # Don't forget to adjust layers names accordingly. Features from different layers can be weighted differently.
@@ -62,6 +66,12 @@ def main():
     # In order to use HaarPSI as a loss function, use corresponding PyTorch module
     haarpsi_loss: torch.Tensor = piq.HaarPSILoss(data_range=1., reduction='none')(x, y)
     print(f"HaarPSI index: {haarpsi_index.item():0.4f}, loss: {haarpsi_loss.item():0.4f}")
+
+    # To compute IW-SSIM index as a measure, use lower case function from the library:
+    iw_ssim_index: torch.Tensor = piq.information_weighted_ssim(x, y, data_range=1.)
+    # In order to use IW-SSIM as a loss function, use corresponding PyTorch module:
+    iw_ssim_loss = piq.InformationWeightedSSIMLoss(data_range=1., reduction='none').to(x.device)(x, y)
+    print(f"IW-SSIM index: {iw_ssim_index.item():0.4f}, loss: {iw_ssim_loss.item():0.4f}")
 
     # To compute LPIPS as a loss function, use corresponding PyTorch module
     lpips_loss: torch.Tensor = piq.LPIPS(reduction='none')(x, y)

@@ -39,6 +39,11 @@ def main():
     msid: torch.Tensor = piq.MSID()(x_features, y_features)
     print(f"MSID: {msid:0.4f}")
 
+    # Use PR class to compute Improved Precision and Recall score from image features,
+    # pre-extracted from some feature extractor network:
+    pr: tuple = piq.PR()(x_features, y_features)
+    print(f"Improved Precision and Recall: {pr[0]:0.4f} {pr[1]:0.4f}")
+
 
 if __name__ == '__main__':
     main()
