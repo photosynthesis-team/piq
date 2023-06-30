@@ -35,8 +35,8 @@ Feature Similarity Index Measure (FSIM)
 .. autoclass:: piq.FSIMLoss
     :members:
 
-Spectral Residual based Similarity Measure (FSIM)
-'''''''''''''''''''''''''''''''''''''''''''''''''
+Spectral Residual based Similarity Measure (SR-SIM)
+'''''''''''''''''''''''''''''''''''''''''''''''''''
 .. autoclass:: piq.SRSIMLoss
     :members:
 
