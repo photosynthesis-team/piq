@@ -1,13 +1,6 @@
 Class Interface
 ===============
 
-Universal Metrics
------------------
-CLIP-IQA
-''''''''
-.. autoclass:: piq.CLIPIQA
-    :members:
-
 Full Reference Metrics
 ----------------------
 Structural Similarity (SSIM)
@@ -107,6 +100,12 @@ Blind/Referenceless Image Spatial Quality Evaluator (BRISQUE)
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 .. autoclass:: piq.BRISQUELoss
     :members:
+
+CLIP-IQA
+''''''''
+.. autoclass:: piq.CLIPIQA
+    :members:
+
 
 Feature Metrics
 ---------------

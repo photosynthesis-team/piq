@@ -161,15 +161,6 @@ For a full list of examples, see `feature metrics <https://github.com/photosynth
 List of metrics
 ---------------
 
-Universal
-^^^^^^^^^
-===========  ======  ==========
-Acronym      Year    Metric
-===========  ======  ==========
-CLIP-IQA     2022    `CLIP-IQA <https://arxiv.org/pdf/2207.12396.pdf>`_
-===========  ======  ==========
-
-
 Full-Reference (FR)
 ^^^^^^^^^^^^^^^^^^^
 
@@ -204,6 +195,7 @@ Acronym      Year    Metric
 ===========  ======  ==========
 TV           1937    `Total Variation <https://en.wikipedia.org/wiki/Total_variation>`_
 BRISQUE      2012    `Blind/Referenceless Image Spatial Quality Evaluator <https://ieeexplore.ieee.org/document/6272356>`_
+CLIP-IQA     2022    `CLIP-IQA <https://arxiv.org/pdf/2207.12396.pdf>`_
 ===========  ======  ==========
 
 Distribution-Based (DB)
