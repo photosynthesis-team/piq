@@ -27,6 +27,10 @@ Feature Similarity Index Measure (FSIM)
 '''''''''''''''''''''''''''''''''''''''
 .. autofunction:: piq.fsim
 
+Spectral Residual based Similarity (SR-SIM)
+'''''''''''''''''''''''''''''''''''''''''''
+.. autofunction:: piq.srsim
+
 Gradient Magnitude Similarity Deviation (GMSD)
 ''''''''''''''''''''''''''''''''''''''''''''''
 .. autofunction:: piq.gmsd
@@ -38,6 +42,10 @@ Multi-Scale Gradient Magnitude Similarity Deviation (MS-GMSD)
 Visual Saliency-induced Index (VSI)
 '''''''''''''''''''''''''''''''''''
 .. autofunction:: piq.vsi
+
+DCT Subband Similarity (DSS)
+''''''''''''''''''''''''''''
+.. autofunction:: piq.dss
 
 Haar Perceptual Similarity Index (HaarPSI)
 ''''''''''''''''''''''''''''''''''''''''''

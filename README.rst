@@ -175,13 +175,13 @@ VIFp         2004    `Visual Information Fidelity <https://ieeexplore.ieee.org/d
 FSIM         2011    `Feature Similarity Index Measure <https://ieeexplore.ieee.org/document/5705575>`_
 SR-SIM       2012    `Spectral Residual Based Similarity <https://sse.tongji.edu.cn/linzhang/ICIP12/ICIP-SR-SIM.pdf>`_
 GMSD         2013    `Gradient Magnitude Similarity Deviation <https://arxiv.org/abs/1308.3052>`_
+MS-GMSD      2017    `Multi-Scale Gradient Magnitude Similarity Deviation <https://ieeexplore.ieee.org/document/7952357>`_
 VSI          2014    `Visual Saliency-induced Index <https://ieeexplore.ieee.org/document/6873260>`_
 DSS          2015    `DCT Subband Similarity Index <https://ieeexplore.ieee.org/document/7351172>`_
 \-           2016    `Content Score <https://arxiv.org/abs/1508.06576>`_
 \-           2016    `Style Score <https://arxiv.org/abs/1508.06576>`_
 HaarPSI      2016    `Haar Perceptual Similarity Index <https://arxiv.org/abs/1607.06140>`_
 MDSI         2016    `Mean Deviation Similarity Index <https://arxiv.org/abs/1608.07433>`_
-MS-GMSD      2017    `Multi-Scale Gradient Magnitude Similarity Deviation <https://ieeexplore.ieee.org/document/7952357>`_
 LPIPS        2018    `Learned Perceptual Image Patch Similarity <https://arxiv.org/abs/1801.03924>`_
 PieAPP       2018    `Perceptual Image-Error Assessment through Pairwise Preference <https://arxiv.org/abs/1806.02067>`_
 DISTS        2020    `Deep Image Structure and Texture Similarity <https://arxiv.org/abs/2004.07728>`_
@@ -195,6 +195,7 @@ Acronym      Year    Metric
 ===========  ======  ==========
 TV           1937    `Total Variation <https://en.wikipedia.org/wiki/Total_variation>`_
 BRISQUE      2012    `Blind/Referenceless Image Spatial Quality Evaluator <https://ieeexplore.ieee.org/document/6272356>`_
+CLIP-IQA     2022    `CLIP-IQA <https://arxiv.org/pdf/2207.12396.pdf>`_
 ===========  ======  ==========
 
 Distribution-Based (DB)
@@ -277,11 +278,11 @@ GS           0.37 / -                     0.37 / -                     0.02 / -
 No-Reference (NR) Datasets
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 ===========  ===========================  ===========================
-     \                  KonIQ10k                    LIVE-itW         
+     \                  KonIQ10k                    LIVE-itW
 -----------  ---------------------------  ---------------------------
-  Source            PIQ / Reference            PIQ / Reference       
+  Source            PIQ / Reference            PIQ / Reference
 ===========  ===========================  ===========================
-BRISQUE      0.22 / -                     0.31 / -                   
+BRISQUE      0.22 / -                     0.31 / -
 CLIP-IQA     0.68 / 0.68 `CLIP-IQA off`_  0.64 / 0.64 `CLIP-IQA off`_
 ===========  ===========================  ===========================
 

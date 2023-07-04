@@ -26,7 +26,8 @@ TOKENS_URL = "https://github.com/photosynthesis-team/piq/releases/download/v0.7.
 
 class CLIPIQA(_Loss):
     r"""Creates a criterion that measures image quality based on a general notion of text-to-image similarity
-    learned by the CLIP[1] model during its large-scale pre-training on a large dataset with paired texts and images.
+    learned by the CLIP model (Radford et al., 2021) during its large-scale pre-training on a large dataset
+    with paired texts and images.
 
     The method is based on the idea that two antonyms ("Good photo" and "Bad photo") can be used as anchors in the
     text embedding space representing good and bad images in terms of their image quality.
@@ -35,13 +36,14 @@ class CLIPIQA(_Loss):
     1. Compute the image embedding of the image of interest using the pre-trained CLIP model;
     2. Compute the text embeddings of the selected anchor antonyms;
     3. Compute the angle (cosine similarity) between the image embedding (1) and both text embeddings (2);
-    4. Compute the Softmax of cosine similarities (3) -> CLIP-IQA[2] score.
+    4. Compute the Softmax of cosine similarities (3) -> CLIP-IQA score (Wang et al., 2022).
 
     This method is proposed to eliminate the linguistic ambiguity of the naive approach
     (using a single prompt, e.g., "Good photo").
 
-    This method has an extension called CLIP-IQA+[2] proposed in the same research paper.
-    It uses the same approach but also fine-tunes the CLIP weights using the CoOp[3] fine-tuning algorithm.
+    This method has an extension called CLIP-IQA+ proposed in the same research paper.
+    It uses the same approach but also fine-tunes the CLIP weights using the CoOp
+    fine-tuning algorithm (Zhou et al., 2022).
 
     Note:
         The initial computation of the metric is performed in `float32` and other dtypes (i.e. `float16`, `float64`)
@@ -50,7 +52,7 @@ class CLIPIQA(_Loss):
 
     Warning:
         In order to avoid implicit dtype conversion and normalization of input tensors, they are copied.
-        Note that it may consume extra memory, which might be noticible on large batch sizes.
+        Note that it may consume extra memory, which might be noticeable on large batch sizes.
 
     Args:
         data_range: Maximum value range of images (usually 1.0 or 255).
@@ -62,11 +64,13 @@ class CLIPIQA(_Loss):
         >>> score = clipiqa(x)
 
     References:
-        [1] Radford, Alec, et al. "Learning transferable visual models from natural language supervision."
+        Radford, Alec, et al. "Learning transferable visual models from natural language supervision."
         International conference on machine learning. PMLR, 2021.
-        [2] Wang, Jianyi, Kelvin CK Chan, and Chen Change Loy. "Exploring CLIP for Assessing the Look
+
+        Wang, Jianyi, Kelvin CK Chan, and Chen Change Loy. "Exploring CLIP for Assessing the Look
         and Feel of Images." arXiv preprint arXiv:2207.12396 (2022).
-        [3] Zhou, Kaiyang, et al. "Learning to prompt for vision-language models." International
+
+        Zhou, Kaiyang, et al. "Learning to prompt for vision-language models." International
         Journal of Computer Vision 130.9 (2022): 2337-2348.
     """
     def __init__(self, data_range: Union[float, int] = 1.) -> None:
@@ -75,7 +79,7 @@ class CLIPIQA(_Loss):
         self.feature_extractor = clip.load().eval()
         for param in self.feature_extractor.parameters():
             param.requires_grad = False
-        
+
         # Pre-computed tokens for prompt pairs: "Good photo.", "Bad photo.".
         tokens = download_tensor(TOKENS_URL, os.path.expanduser("~/.cache/clip"))
 
@@ -96,16 +100,16 @@ class CLIPIQA(_Loss):
         r"""Computation of CLIP-IQA metric for a given image :math:`x`.
 
         Args:
-            x: An input tensor. Shape :math:`(N, C, H, W)` or :math:`(C, H, W)`.
+            x: An input tensor. Shape :math:`(N, C, H, W)`.
                 The metric is designed in such a way that it expects:
-                - 3D or 4D PyTorch tensors;
-                - These tensors are have any ranges of values between 0 and 255;
-                - These tensros have channels first format.
+                - A 4D PyTorch tensor;
+                - The tensor might have flexible data ranges depending on `data_range` value;
+                - The tensor must have channels first format.
 
         Returns:
             The value of CLI-IQA score in [0, 1] range.
         """
-        _validate_input([x_input], dim_range=(3, 4), data_range=(0., 255.), check_for_channels_first=True)
+        _validate_input([x_input], dim_range=(4, 4), data_range=(0., 255.), check_for_channels_first=True)
 
         x = x_input.clone()
         x = x.float() / self.data_range

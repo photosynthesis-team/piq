@@ -3,8 +3,8 @@ Class Interface
 
 Full Reference Metrics
 ----------------------
-Structural Similarity
-'''''''''''''''''''''
+Structural Similarity (SSIM)
+''''''''''''''''''''''''''''
 .. autoclass:: piq.SSIMLoss
     :members:
 
@@ -28,6 +28,11 @@ Feature Similarity Index Measure (FSIM)
 .. autoclass:: piq.FSIMLoss
     :members:
 
+Spectral Residual based Similarity Measure (SR-SIM)
+'''''''''''''''''''''''''''''''''''''''''''''''''''
+.. autoclass:: piq.SRSIMLoss
+    :members:
+
 Gradient Magnitude Similarity Deviation (GMSD)
 ''''''''''''''''''''''''''''''''''''''''''''''
 .. autoclass:: piq.GMSDLoss
@@ -41,6 +46,11 @@ Multi-Scale Gradient Magnitude Similarity Deviation (MS-GMSD)
 Visual Saliency-induced Index (VSI)
 '''''''''''''''''''''''''''''''''''
 .. autoclass:: piq.VSILoss
+    :members:
+
+DCT Subband Similarity Index (DSS)
+'''''''''''''''''''''''''''''''''''
+.. autoclass:: piq.DSSLoss
     :members:
 
 Haar Perceptual Similarity Index (HaarPSI)
@@ -90,6 +100,12 @@ Blind/Referenceless Image Spatial Quality Evaluator (BRISQUE)
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 .. autoclass:: piq.BRISQUELoss
     :members:
+
+CLIP-IQA
+''''''''
+.. autoclass:: piq.CLIPIQA
+    :members:
+
 
 Feature Metrics
 ---------------
