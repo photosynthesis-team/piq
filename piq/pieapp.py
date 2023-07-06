@@ -164,6 +164,10 @@ class PieAPP(_Loss):
         """
         _validate_input([x, y], dim_range=(4, 4), data_range=(0, self.data_range))
 
+        # Rescale to [0, 255] range on which models was trained
+        x = x / float(self.data_range) * 255
+        y = y / float(self.data_range) * 255
+
         N, C, _, _ = x.shape
         if C == 1:
             x = x.repeat(1, 3, 1, 1)
@@ -172,8 +176,12 @@ class PieAPP(_Loss):
                           'The input images were converted to RGB by copying the grey channel 3 times.')
 
         self.model.to(device=x.device)
-        x_features, x_weights = self.get_features(x)
-        y_features, y_weights = self.get_features(y)
+        with torch.autograd.set_grad_enabled(self.enable_grad):
+            x_patches = crop_patches(x, size=64, stride=self.stride)
+            y_patches = crop_patches(y, size=64, stride=self.stride)
+
+            x_features, x_weights = self.model(x_patches)
+            y_features, y_weights = self.model(y_patches)
 
         distances, weights = self.model.compute_difference(
             y_features - x_features,
@@ -187,21 +195,3 @@ class PieAPP(_Loss):
         loss = torch.stack([(d * w).sum() / w.sum() for d, w in zip(distances, weights)])
 
         return _reduce(loss, self.reduction)
-
-    def get_features(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        r"""
-
-        Args:
-            x: Tensor. Shape :math:`(N, C, H, W)`.
-
-        Returns:
-            List of features extracted from intermediate layers weights
-        """
-        # Rescale to [0, 255] range on which models was trained
-        x = x / float(self.data_range) * 255
-        x_patches = crop_patches(x, size=64, stride=self.stride)
-
-        with torch.autograd.set_grad_enabled(self.enable_grad):
-            features, weights = self.model(x_patches)
-
-        return features, weights

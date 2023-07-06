@@ -98,7 +98,7 @@ def test_fsim_fails_for_incorrect_data_range(x, y, device: str) -> None:
         fsim(x_scaled.to(device), y_scaled.to(device), data_range=1.0)
 
 
-def test_fsim_simmular_to_matlab_implementation():
+def test_fsim_similar_to_matlab_implementation():
     # Greyscale images
     goldhill = torch.tensor(imread('tests/assets/goldhill.gif'))[None, None, ...]
     goldhill_jpeg = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'))[None, None, ...]

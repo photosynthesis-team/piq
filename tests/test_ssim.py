@@ -259,7 +259,7 @@ def test_ssim_loss_raise_if_wrong_value_is_estimated(test_images: Tuple[torch.Te
             f'got difference {(ssim_loss - 1. + tf_ssim).abs()}'
 
 
-def test_ssim_simmular_to_matlab_implementation():
+def test_ssim_similar_to_matlab_implementation():
     # Greyscale images
     goldhill = torch.tensor(imread('tests/assets/goldhill.gif'))[None, None, ...]
     goldhill_jpeg = torch.tensor(imread('tests/assets/goldhill_jpeg.gif'))[None, None, ...]
